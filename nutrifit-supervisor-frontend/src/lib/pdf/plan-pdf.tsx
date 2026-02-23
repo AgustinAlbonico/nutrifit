@@ -123,7 +123,7 @@ export function DocumentoPlan({ objetivoNutricional, comidas, nombreSocio }: Pro
   };
 
   const calcularTotalesDia = (dia: string) => {
-    let total = { calorias: 0, proteinas: 0, carbohidratos: 0, grasas: 0 };
+    const total = { calorias: 0, proteinas: 0, carbohidratos: 0, grasas: 0 };
     TIPOS_COMIDA.forEach(tipo => {
       const alimentos = obtenerComida(dia, tipo);
       const totales = calcularTotalesComida(alimentos);

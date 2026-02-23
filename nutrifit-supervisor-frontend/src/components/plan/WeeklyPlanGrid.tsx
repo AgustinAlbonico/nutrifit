@@ -1,6 +1,7 @@
 import { MealSlotCard, type AlimentoEnComida } from './MealSlotCard';
 export type { AlimentoEnComida } from './MealSlotCard';
 import { DailyTotalsCard } from './DailyTotalsCard';
+import { cn } from '@/lib/utils';
 
 const DIAS_SEMANA = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'] as const;
 const TIPOS_COMIDA = ['DESAYUNO', 'ALMUERZO', 'MERIENDA', 'CENA', 'COLACION'] as const;
@@ -50,61 +51,142 @@ export function WeeklyPlanGrid({
     );
   };
 
-  const formatearDia = (dia: DiaSemana): string => {
-    const nombres: Record<DiaSemana, string> = {
-      LUNES: 'Lun',
-      MARTES: 'Mar',
-      MIERCOLES: 'Mié',
-      JUEVES: 'Jue',
-      VIERNES: 'Vie',
-      SABADO: 'Sáb',
-      DOMINGO: 'Dom',
+  const formatearDia = (dia: DiaSemana): { corto: string; completo: string } => {
+    const nombres: Record<DiaSemana, { corto: string; completo: string }> = {
+      LUNES: { corto: 'Lun', completo: 'Lunes' },
+      MARTES: { corto: 'Mar', completo: 'Martes' },
+      MIERCOLES: { corto: 'Mié', completo: 'Miércoles' },
+      JUEVES: { corto: 'Jue', completo: 'Jueves' },
+      VIERNES: { corto: 'Vie', completo: 'Viernes' },
+      SABADO: { corto: 'Sáb', completo: 'Sábado' },
+      DOMINGO: { corto: 'Dom', completo: 'Domingo' },
     };
     return nombres[dia];
   };
 
-  return (
-    <div className="overflow-x-auto">
-      <div className="min-w-[1200px]">
-        <div className="grid grid-cols-8 gap-2 mb-2">
-          <div className="p-2 text-sm font-medium text-muted-foreground">Comida</div>
-          {DIAS_SEMANA.map(dia => {
-            const totales = calcularTotalesDia(dia);
-            return (
-              <div key={dia} className="p-2 text-center">
-                <div className="font-medium text-sm">{formatearDia(dia)}</div>
-                <DailyTotalsCard
-                  calorias={Math.round(totales.calorias)}
-                  proteinas={Math.round(totales.proteinas)}
-                  carbohidratos={Math.round(totales.carbohidratos)}
-                  grasas={Math.round(totales.grasas)}
-                  compacto
-                />
-              </div>
-            );
-          })}
-        </div>
+  const esFinde = (dia: DiaSemana): boolean => {
+    return dia === 'SABADO' || dia === 'DOMINGO';
+  };
 
-        {TIPOS_COMIDA.map(tipoComida => (
-          <div key={tipoComida} className="grid grid-cols-8 gap-2 mb-2">
-            <div className="p-2 flex items-center">
-              <span className="text-sm font-medium capitalize">
-                {tipoComida.toLowerCase()}
-              </span>
-            </div>
-            {DIAS_SEMANA.map(dia => (
-              <div key={`${dia}-${tipoComida}`} className="min-h-[120px]">
-                <MealSlotCard
-                  tipoComida={tipoComida}
-                  alimentos={obtenerComida(dia, tipoComida)}
-                  alAgregarAlimento={() => alAgregarAlimento(dia, tipoComida)}
-                  alEditarCantidad={(indice, cantidad) => alEditarCantidad(dia, tipoComida, indice, cantidad)}
-                  alEliminarAlimento={(indice) => alEliminarAlimento(dia, tipoComida, indice)}
-                />
-              </div>
-            ))}
+  return (
+    <div className="space-y-4">
+      {/* Desktop Grid */}
+      <div className="hidden lg:block overflow-x-auto">
+        <div className="min-w-[900px]">
+          {/* Header Row */}
+          <div className="grid grid-cols-8 gap-2 mb-3">
+            <div className="p-2" /> {/* Empty corner */}
+            {DIAS_SEMANA.map(dia => {
+              const totales = calcularTotalesDia(dia);
+              return (
+                <div 
+                  key={dia} 
+                  className={cn(
+                    "p-2 rounded-xl text-center transition-all",
+                    esFinde(dia) 
+                      ? "bg-gradient-to-br from-purple-500/5 to-pink-500/5 dark:from-purple-500/10 dark:to-pink-500/10"
+                      : "bg-muted/30"
+                  )}
+                >
+                  <div className={cn(
+                    "font-semibold text-sm mb-1",
+                    esFinde(dia) ? "text-purple-700 dark:text-purple-300" : ""
+                  )}>
+                    {formatearDia(dia).corto}
+                  </div>
+                  <DailyTotalsCard
+                    calorias={Math.round(totales.calorias)}
+                    proteinas={Math.round(totales.proteinas)}
+                    carbohidratos={Math.round(totales.carbohidratos)}
+                    grasas={Math.round(totales.grasas)}
+                    compacto
+                  />
+                </div>
+              );
+            })}
           </div>
-        ))}
+
+          {/* Meal Rows */}
+          {TIPOS_COMIDA.map(tipoComida => (
+            <div key={tipoComida} className="grid grid-cols-8 gap-2 mb-2">
+              {/* Meal Type Label */}
+              <div className="flex items-center justify-end pr-3">
+                <span className="text-sm font-medium text-muted-foreground capitalize">
+                  {tipoComida.toLowerCase()}
+                </span>
+              </div>
+              
+              {/* Day Cells */}
+              {DIAS_SEMANA.map(dia => (
+                <div key={`${dia}-${tipoComida}`} className="min-h-[100px]">
+                  <MealSlotCard
+                    tipoComida={tipoComida}
+                    alimentos={obtenerComida(dia, tipoComida)}
+                    alAgregarAlimento={() => alAgregarAlimento(dia, tipoComida)}
+                    alEditarCantidad={(indice, cantidad) => alEditarCantidad(dia, tipoComida, indice, cantidad)}
+                    alEliminarAlimento={(indice) => alEliminarAlimento(dia, tipoComida, indice)}
+                  />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Mobile Stacked View */}
+      <div className="lg:hidden space-y-6">
+        {DIAS_SEMANA.map(dia => {
+          const totales = calcularTotalesDia(dia);
+          return (
+            <div 
+              key={dia} 
+              className={cn(
+                "rounded-2xl border border-border/50 overflow-hidden",
+                esFinde(dia) 
+                  ? "bg-gradient-to-br from-purple-500/5 to-pink-500/5 dark:from-purple-500/10 dark:to-pink-500/10"
+                  : "bg-muted/20"
+              )}
+            >
+              {/* Day Header */}
+              <div className={cn(
+                "px-4 py-3 border-b border-border/30",
+                esFinde(dia) ? "bg-gradient-to-r from-purple-500/10 to-pink-500/10" : "bg-muted/30"
+              )}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className={cn(
+                      "font-semibold",
+                      esFinde(dia) ? "text-purple-700 dark:text-purple-300" : ""
+                    )}>
+                      {formatearDia(dia).completo}
+                    </h3>
+                  </div>
+                  <DailyTotalsCard
+                    calorias={Math.round(totales.calorias)}
+                    proteinas={Math.round(totales.proteinas)}
+                    carbohidratos={Math.round(totales.carbohidratos)}
+                    grasas={Math.round(totales.grasas)}
+                    compacto
+                  />
+                </div>
+              </div>
+
+              {/* Meals Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3">
+                {TIPOS_COMIDA.map(tipoComida => (
+                  <MealSlotCard
+                    key={`${dia}-${tipoComida}-mobile`}
+                    tipoComida={tipoComida}
+                    alimentos={obtenerComida(dia, tipoComida)}
+                    alAgregarAlimento={() => alAgregarAlimento(dia, tipoComida)}
+                    alEditarCantidad={(indice, cantidad) => alEditarCantidad(dia, tipoComida, indice, cantidad)}
+                    alEliminarAlimento={(indice) => alEliminarAlimento(dia, tipoComida, indice)}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

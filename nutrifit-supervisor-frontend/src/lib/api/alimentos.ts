@@ -21,12 +21,10 @@ interface ApiRespuesta<T> {
   success: boolean;
   data: T;
 }
-
 export async function obtenerGruposAlimenticios(token: string): Promise<GrupoAlimenticio[]> {
   const respuesta = await apiRequest<ApiRespuesta<GrupoAlimenticio[]>>('/alimentos/grupos', { token });
   return respuesta.data ?? [];
 }
-
 export async function buscarAlimentosPorGrupo(token: string, grupoId: number, limite = 50): Promise<Alimento[]> {
   const respuesta = await apiRequest<ApiRespuesta<Alimento[]>>(
     `/alimentos?grupoId=${grupoId}&limit=${limite}`,
@@ -34,7 +32,6 @@ export async function buscarAlimentosPorGrupo(token: string, grupoId: number, li
   );
   return respuesta.data ?? [];
 }
-
 export async function buscarAlimentosPorTexto(token: string, texto: string, limite = 20): Promise<Alimento[]> {
   const respuesta = await apiRequest<ApiRespuesta<Alimento[]>>(
     `/alimentos?search=${encodeURIComponent(texto)}&limit=${limite}`,

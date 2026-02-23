@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Download, Loader2 } from 'lucide-react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { Button } from '@/components/ui/button';
@@ -17,9 +18,10 @@ export function ExportPlanPDFButton({
   nombreSocio,
   planId,
 }: PropsBotonExportarPDF) {
+  const [timestamp] = useState(() => Date.now());
   const nombreArchivo = planId
     ? `plan-alimentacion-${planId}.pdf`
-    : `plan-alimentacion-${Date.now()}.pdf`;
+    : `plan-alimentacion-${timestamp}.pdf`;
 
   if (comidas.length === 0) {
     return (
