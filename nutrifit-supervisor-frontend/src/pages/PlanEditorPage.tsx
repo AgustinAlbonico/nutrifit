@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
-import { ArrowLeft, Save, Info, AlertCircle, ChevronLeft, Settings } from 'lucide-react';
+import { ArrowLeft, Save, Info, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -88,7 +88,6 @@ export function PlanEditorPage() {
 
   const [dialogoBusquedaAbierto, establecerDialogoBusquedaAbierto] = useState(false);
   const [slotSeleccionado, establecerSlotSeleccionado] = useState<{ dia: DiaSemana; tipoComida: TipoComida } | null>(null);
-  const [sidebarColapsado, establecerSidebarColapsado] = useState(true);
 
   const [, establecerAlimentosCache] = useState<Map<number, Alimento>>(new Map());
 
@@ -422,71 +421,40 @@ export function PlanEditorPage() {
       )}
 
       {/* Main Content */}
-      <div className="flex gap-4 xl:gap-6">
-        {/* Objective Card - Sidebar */}
-        <div className={sidebarColapsado ? 'hidden xl:flex w-14 shrink-0' : 'xl:w-72 shrink-0'}>
-          <Card 
-            className={
-              sidebarColapsado 
-                ? 'w-14 flex flex-col items-center py-4 rounded-2xl border-border/50'
-                : 'w-full rounded-2xl border-border/50'
-            }
-          >
-            {sidebarColapsado ? (
-              <button
-                type="button"
-                onClick={() => establecerSidebarColapsado(false)}
-                className="p-2 rounded-lg hover:bg-muted transition-colors"
-                title="Expandir configuracion"
-              >
-                <Settings className="h-5 w-5 text-muted-foreground" />
-              </button>
-            ) : (
-              <>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-gradient-to-r from-orange-500 to-rose-500" />
-                      Configuracion
-                    </CardTitle>
-                    <button
-                      type="button"
-                      onClick={() => establecerSidebarColapsado(true)}
-                      className="p-1 rounded hover:bg-muted transition-colors"
-                      title="Colapsar"
-                    >
-                      <ChevronLeft className="h-4 w-4 text-muted-foreground" />
-                    </button>
-                  </div>
-                  <CardDescription>
-                    Defini el objetivo del plan
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="objetivo" className="text-sm font-medium">
-                      Objetivo nutricional
-                    </Label>
-                    <Input
-                      id="objetivo"
-                      value={objetivoNutricional}
-                      onChange={(e) => establecerObjetivoNutricional(e.target.value)}
-                      placeholder="Ej: Perdida de peso, ganancia muscular..."
-                      maxLength={255}
-                      className="border-border/50 focus:border-orange-500/50"
-                    />
-                    <p className="text-xs text-muted-foreground text-right">
-                      {objetivoNutricional.length}/255
-                    </p>
-                  </div>
-                </CardContent>
-              </>
-            )}
-          </Card>
-        </div>
+      <div className="flex flex-col gap-6">
+        {/* Objective Card - Top Section */}
+        <Card className="rounded-2xl border-border/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-gradient-to-r from-orange-500 to-rose-500" />
+              Configuración
+            </CardTitle>
+            <CardDescription>
+              Definí el objetivo del plan
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 max-w-3xl">
+              <Label htmlFor="objetivo" className="text-sm font-medium">
+                Objetivo nutricional
+              </Label>
+              <Input
+                id="objetivo"
+                value={objetivoNutricional}
+                onChange={(e) => establecerObjetivoNutricional(e.target.value)}
+                placeholder="Ej: Pérdida de peso, ganancia muscular..."
+                maxLength={255}
+                className="border-border/50 focus:border-orange-500/50"
+              />
+              <p className="text-xs text-muted-foreground text-right">
+                {objetivoNutricional.length}/255
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Weekly Plan Grid */}
-        <Card className="flex-1 rounded-2xl border-border/50">
+        <Card className="w-full rounded-2xl border-border/50 overflow-hidden">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div>
@@ -505,13 +473,15 @@ export function PlanEditorPage() {
               )}
             </div>
           </CardHeader>
-          <CardContent>
-            <WeeklyPlanGrid
-              comidas={comidas}
-              alAgregarAlimento={alAgregarAlimento}
-              alEditarCantidad={alEditarCantidad}
-              alEliminarAlimento={alEliminarAlimento}
-            />
+          <CardContent className="p-0 sm:p-6 overflow-x-auto">
+            <div className="min-w-[1000px]">
+              <WeeklyPlanGrid
+                comidas={comidas}
+                alAgregarAlimento={alAgregarAlimento}
+                alEditarCantidad={alEditarCantidad}
+                alEliminarAlimento={alEliminarAlimento}
+              />
+            </div>
           </CardContent>
         </Card>
       </div>
