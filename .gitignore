@@ -1,0 +1,54 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+logs/
+
+# Test coverage
+coverage/
+
+# Credentials (security)
+CREDENTIALS.md
+
+# Agent/IDE config directories (local only)
+.agent/
+.agents/
+.claude/
+.clavix/
+.opencode/
+.sisyphus/
+.skills/
+.cursor/
+
+# Planning docs (local only)
+.planning/
+
+# Lock files for agents
+skills-lock.json
+openspec/
+
+# Temporary files
+*.tmp
+*.temp
