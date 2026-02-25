@@ -1,0 +1,43 @@
+import { TipoComida } from 'src/domain/entities/OpcionComida/TipoComida';
+import { DiaSemana } from 'src/domain/entities/DiaPlan/DiaSemana';
+import { SocioResponseDto } from 'src/application/socios/dtos/socio-response.dto';
+
+export class AlimentoResponseDto {
+  idAlimento: number;
+  nombre: string;
+  cantidad: number;
+  calorias: number | null;
+  proteinas: number | null;
+  carbohidratos: number | null;
+  grasas: number | null;
+  unidadMedida: string;
+}
+
+export class OpcionComidaResponseDto {
+  idOpcionComida: number;
+  tipoComida: TipoComida;
+  comentarios: string | null;
+  alimentos: AlimentoResponseDto[];
+}
+
+export class DiaPlanResponseDto {
+  idDiaPlan: number;
+  dia: DiaSemana;
+  orden: number;
+  opcionesComida: OpcionComidaResponseDto[];
+}
+
+export class PlanAlimentacionResponseDto {
+  idPlanAlimentacion: number;
+  fechaCreacion: Date;
+  objetivoNutricional: string;
+  activo: boolean;
+  eliminadoEn: Date | null;
+  motivoEliminacion: string | null;
+  motivoEdicion: string | null;
+  ultimaEdicion: Date | null;
+  socioId: number;
+  nutricionistaId: number;
+  socio?: SocioResponseDto;
+  dias: DiaPlanResponseDto[];
+}

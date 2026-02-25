@@ -1,0 +1,1 @@
+{"version":3,"file":"patologia.entity.js","sourceRoot":"","sources":["../../../../src/domain/entities/FichaSalud/patologia.entity.ts"],"names":[],"mappings":";;;AAAA,MAAa,eAAe;IAC1B,WAAW,CAAgB;IAC3B,MAAM,CAAS;IAEf,YAAY,cAA6B,IAAI,EAAE,MAAc;QAC3D,IAAI,CAAC,WAAW,GAAG,WAAW,CAAC;QAC/B,IAAI,CAAC,MAAM,GAAG,MAAM,CAAC;IACvB,CAAC;CACF;AARD,0CAQC"}

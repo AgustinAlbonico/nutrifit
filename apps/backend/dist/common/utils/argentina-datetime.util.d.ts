@@ -1,0 +1,12 @@
+export declare function normalizeTimeToHHmm(time: string): string;
+export declare function formatArgentinaDate(date: Date | string): string;
+export declare function formatArgentinaTimeHHmm(date: Date | string): string;
+export declare function formatArgentinaDateTime(date: Date | string): string;
+export declare function parseArgentinaDateInput(dateValue: string): Date;
+export declare function combineArgentinaDateAndTime(dateValue: Date | string, timeValue: string): Date;
+export declare function getArgentinaTodayDate(referenceDate?: Date): string;
+export declare function getArgentinaStartOfToday(referenceDate?: Date): Date;
+export declare function getArgentinaWeekdayIndex(date: Date | string): number;
+export declare function timeToMinutes(time: string): number;
+export declare function minutesToTime(minutes: number): string;
+export declare function getArgentinaNow(): Date;

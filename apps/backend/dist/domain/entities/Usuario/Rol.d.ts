@@ -1,0 +1,6 @@
+export declare enum Rol {
+    ADMIN = "ADMIN",
+    NUTRICIONISTA = "NUTRICIONISTA",
+    RECEPCIONISTA = "RECEPCIONISTA",
+    SOCIO = "SOCIO"
+}

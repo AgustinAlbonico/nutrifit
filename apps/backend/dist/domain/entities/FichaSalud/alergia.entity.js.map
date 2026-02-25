@@ -1,0 +1,1 @@
+{"version":3,"file":"alergia.entity.js","sourceRoot":"","sources":["../../../../src/domain/entities/FichaSalud/alergia.entity.ts"],"names":[],"mappings":";;;AAAA,MAAa,aAAa;IACxB,SAAS,CAAgB;IACzB,MAAM,CAAS;IAEf,YAAY,YAA2B,IAAI,EAAE,MAAc;QACzD,IAAI,CAAC,SAAS,GAAG,SAAS,CAAC;QAC3B,IAAI,CAAC,MAAM,GAAG,MAAM,CAAC;IACvB,CAAC;CACF;AARD,sCAQC"}

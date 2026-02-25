@@ -1,0 +1,1 @@
+{"version":3,"file":"grupo-alimenticio.entity.js","sourceRoot":"","sources":["../../../../src/domain/entities/Alimento/grupo-alimenticio.entity.ts"],"names":[],"mappings":";;;AAAA,MAAa,gBAAgB;IAC3B,kBAAkB,CAAgB;IAClC,WAAW,CAAS;IAEpB,YAAY,qBAAoC,IAAI,EAAE,WAAmB;QACvE,IAAI,CAAC,kBAAkB,GAAG,kBAAkB,CAAC;QAC7C,IAAI,CAAC,WAAW,GAAG,WAAW,CAAC;IACjC,CAAC;CACF;AARD,4CAQC"}

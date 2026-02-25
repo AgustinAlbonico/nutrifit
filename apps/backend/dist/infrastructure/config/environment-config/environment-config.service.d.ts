@@ -1,0 +1,31 @@
+import { ConfigService } from '@nestjs/config';
+import { DatabaseConfig } from 'src/domain/config/database.config';
+import { AppConfig } from 'src/domain/config/app.config';
+import { JWTConfig } from 'src/domain/config/jwt.config';
+import { MinioConfig } from 'src/domain/config/minio.config';
+import { SchedulerConfig } from 'src/domain/config/scheduler.config';
+export declare class EnvironmentConfigService implements DatabaseConfig, AppConfig, JWTConfig, MinioConfig, SchedulerConfig {
+    private readonly configService;
+    constructor(configService: ConfigService);
+    private getEnvironmentVariable;
+    getJwtSecret(): string;
+    getJwtExpirationTime(): string;
+    getPort(): number;
+    getAppName(): string;
+    getNodeEnv(): 'production' | 'test' | 'dev';
+    getDatabaseHost(): string;
+    getDatabasePort(): number;
+    getDatabaseUser(): string;
+    getDatabasePassword(): string;
+    getDatabaseName(): string;
+    getMinioEndpoint(): string;
+    getMinioPort(): number;
+    getMinioAccessKey(): string;
+    getMinioSecretKey(): string;
+    getMinioBucketName(): string;
+    getMinioUseSsl(): boolean;
+    getGroqApiKey(): string;
+    getGroqBaseUrl(): string;
+    getGroqModel(): string;
+    getAusenciaUmbralMinutos(): number;
+}
