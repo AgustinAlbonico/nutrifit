@@ -119,7 +119,7 @@ export class AsignarTurnoManualUseCase implements BaseUseCase {
     const turno = new TurnoOrmEntity();
     turno.fechaTurno = fechaTurno;
     turno.horaTurno = horaTurno;
-    turno.estadoTurno = EstadoTurno.PENDIENTE;
+    turno.estadoTurno = EstadoTurno.PROGRAMADO;
     turno.socio = socio;
     turno.nutricionista = nutricionistaOrm;
 

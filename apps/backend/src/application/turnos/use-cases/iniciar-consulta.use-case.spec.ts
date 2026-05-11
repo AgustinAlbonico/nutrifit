@@ -66,14 +66,14 @@ describe('IniciarConsultaUseCase', () => {
   it('debe lanzar error si turno no está PRESENTE', async () => {
     const turno = {
       idTurno: 1,
-      estadoTurno: EstadoTurno.PENDIENTE,
+      estadoTurno: EstadoTurno.PROGRAMADO,
     } as TurnoOrmEntity;
 
     jest.spyOn(turnoRepository, 'findOne').mockResolvedValue(turno);
 
     await expect(useCase.execute(1)).rejects.toThrow(BadRequestError);
     await expect(useCase.execute(1)).rejects.toThrow(
-      'No se puede iniciar consulta en un turno con estado PENDIENTE',
+      'No se puede iniciar consulta en un turno con estado PROGRAMADO',
     );
   });
 });

@@ -9,15 +9,30 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.EditarPlanAlimentacionDto = exports.EditarDiaPlanDto = exports.EditarOpcionComidaDto = void 0;
+exports.EditarPlanAlimentacionDto = exports.EditarDiaPlanDto = exports.EditarOpcionComidaDto = exports.EditarItemComidaDto = void 0;
 const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
 const DiaSemana_1 = require("../../../domain/entities/DiaPlan/DiaSemana");
 const TipoComida_1 = require("../../../domain/entities/OpcionComida/TipoComida");
+class EditarItemComidaDto {
+    alimentoId;
+    cantidad;
+}
+exports.EditarItemComidaDto = EditarItemComidaDto;
+__decorate([
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(1),
+    __metadata("design:type", Number)
+], EditarItemComidaDto.prototype, "alimentoId", void 0);
+__decorate([
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(1),
+    __metadata("design:type", Number)
+], EditarItemComidaDto.prototype, "cantidad", void 0);
 class EditarOpcionComidaDto {
     tipoComida;
     comentarios;
-    alimentosIds;
+    items;
 }
 exports.EditarOpcionComidaDto = EditarOpcionComidaDto;
 __decorate([
@@ -32,10 +47,10 @@ __decorate([
 ], EditarOpcionComidaDto.prototype, "comentarios", void 0);
 __decorate([
     (0, class_validator_1.IsArray)(),
-    (0, class_validator_1.IsInt)({ each: true }),
-    (0, class_validator_1.Min)(1, { each: true }),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => EditarItemComidaDto),
     __metadata("design:type", Array)
-], EditarOpcionComidaDto.prototype, "alimentosIds", void 0);
+], EditarOpcionComidaDto.prototype, "items", void 0);
 class EditarDiaPlanDto {
     dia;
     orden;
@@ -78,8 +93,8 @@ __decorate([
     __metadata("design:type", String)
 ], EditarPlanAlimentacionDto.prototype, "objetivoNutricional", void 0);
 __decorate([
-    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.MaxLength)(255),
     __metadata("design:type", String)
 ], EditarPlanAlimentacionDto.prototype, "motivoEdicion", void 0);

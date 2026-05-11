@@ -43,8 +43,8 @@ let RegistrarAsistenciaTurnoUseCase = class RegistrarAsistenciaTurnoUseCase {
         if (turno.nutricionista.idPersona !== nutricionistaId) {
             throw new custom_exceptions_1.ForbiddenError('No tiene permisos para registrar asistencia en este turno.');
         }
-        if (turno.estadoTurno !== EstadoTurno_1.EstadoTurno.CONFIRMADO) {
-            throw new custom_exceptions_1.BadRequestError('Solo se puede registrar asistencia en turnos CONFIRMADOS.');
+        if (turno.estadoTurno !== EstadoTurno_1.EstadoTurno.PRESENTE) {
+            throw new custom_exceptions_1.BadRequestError('Solo se puede registrar asistencia en turnos en estado PRESENTE.');
         }
         if (!this.hasTurnoElapsed(turno)) {
             throw new custom_exceptions_1.BadRequestError('Solo se puede registrar asistencia despues de la hora del turno.');

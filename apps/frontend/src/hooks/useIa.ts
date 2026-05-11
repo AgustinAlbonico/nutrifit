@@ -10,6 +10,8 @@ import type {
   ParametrosPlanSemanal,
   ParametrosSustitucion,
   ParametrosAnalisis,
+  ParametrosIdeasComida,
+  RespuestaIdeasComida,
 } from '@/types/ia';
 
 interface UseIaOptions {
@@ -103,5 +105,24 @@ export function useVerificarConexionIa({ token }: UseIaOptions) {
     },
     enabled: Boolean(token),
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useGenerarIdeasComida({ token }: UseIaOptions) {
+  return useMutation({
+    mutationFn: async (params: ParametrosIdeasComida): Promise<RespuestaIdeasComida> => {
+      const response = await apiRequest<{ success: boolean; data: RespuestaIdeasComida; error: string | null }>(
+        '/ia/ideas-comida',
+        {
+          method: 'POST',
+          token,
+          body: params,
+        },
+      );
+      if (!response.success && response.error) {
+        throw new Error(response.error);
+      }
+      return response.data;
+    },
   });
 }

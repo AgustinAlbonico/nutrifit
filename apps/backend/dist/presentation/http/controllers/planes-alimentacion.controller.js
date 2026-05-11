@@ -21,8 +21,9 @@ const logger_service_1 = require("../../../domain/services/logger.service");
 const role_decorator_1 = require("../../../infrastructure/auth/decorators/role.decorator");
 const actions_guard_1 = require("../../../infrastructure/auth/guards/actions.guard");
 const auth_guard_1 = require("../../../infrastructure/auth/guards/auth.guard");
-const plan_socio_access_guard_1 = require("../../../infrastructure/auth/guards/plan-socio-access.guard");
+const nutricionista_ownership_guard_1 = require("../../../infrastructure/auth/guards/nutricionista-ownership.guard");
 const roles_guard_1 = require("../../../infrastructure/auth/guards/roles.guard");
+const socio_resource_access_guard_1 = require("../../../infrastructure/auth/guards/socio-resource-access.guard");
 let PlanAlimentacionController = class PlanAlimentacionController {
     crearPlanAlimentacionUseCase;
     editarPlanAlimentacionUseCase;
@@ -93,7 +94,7 @@ exports.PlanAlimentacionController = PlanAlimentacionController;
 __decorate([
     (0, common_1.Post)(),
     (0, role_decorator_1.Rol)(Rol_1.Rol.NUTRICIONISTA, Rol_1.Rol.ADMIN),
-    (0, common_1.UseGuards)(plan_socio_access_guard_1.PlanSocioAccessGuard),
+    (0, common_1.UseGuards)(socio_resource_access_guard_1.SocioResourceAccessGuard),
     __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -103,6 +104,7 @@ __decorate([
 __decorate([
     (0, common_1.Get)('nutricionista/:nutricionistaId'),
     (0, role_decorator_1.Rol)(Rol_1.Rol.NUTRICIONISTA, Rol_1.Rol.ADMIN),
+    (0, common_1.UseGuards)(nutricionista_ownership_guard_1.NutricionistaOwnershipGuard),
     __param(0, (0, common_1.Param)('nutricionistaId', common_1.ParseIntPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
@@ -111,7 +113,7 @@ __decorate([
 __decorate([
     (0, common_1.Get)('socio/:socioId/activo'),
     (0, role_decorator_1.Rol)(Rol_1.Rol.NUTRICIONISTA, Rol_1.Rol.ADMIN, Rol_1.Rol.SOCIO),
-    (0, common_1.UseGuards)(plan_socio_access_guard_1.PlanSocioAccessGuard),
+    (0, common_1.UseGuards)(socio_resource_access_guard_1.SocioResourceAccessGuard),
     __param(0, (0, common_1.Param)('socioId', common_1.ParseIntPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
@@ -120,7 +122,7 @@ __decorate([
 __decorate([
     (0, common_1.Get)('socio/:socioId'),
     (0, role_decorator_1.Rol)(Rol_1.Rol.NUTRICIONISTA, Rol_1.Rol.ADMIN, Rol_1.Rol.SOCIO),
-    (0, common_1.UseGuards)(plan_socio_access_guard_1.PlanSocioAccessGuard),
+    (0, common_1.UseGuards)(socio_resource_access_guard_1.SocioResourceAccessGuard),
     __param(0, (0, common_1.Param)('socioId', common_1.ParseIntPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
@@ -129,7 +131,7 @@ __decorate([
 __decorate([
     (0, common_1.Get)(':id'),
     (0, role_decorator_1.Rol)(Rol_1.Rol.NUTRICIONISTA, Rol_1.Rol.ADMIN, Rol_1.Rol.SOCIO),
-    (0, common_1.UseGuards)(plan_socio_access_guard_1.PlanSocioAccessGuard),
+    (0, common_1.UseGuards)(socio_resource_access_guard_1.SocioResourceAccessGuard),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
@@ -138,7 +140,7 @@ __decorate([
 __decorate([
     (0, common_1.Put)(':id'),
     (0, role_decorator_1.Rol)(Rol_1.Rol.NUTRICIONISTA, Rol_1.Rol.ADMIN),
-    (0, common_1.UseGuards)(plan_socio_access_guard_1.PlanSocioAccessGuard),
+    (0, common_1.UseGuards)(socio_resource_access_guard_1.SocioResourceAccessGuard),
     __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __param(2, (0, common_1.Body)()),
@@ -149,7 +151,7 @@ __decorate([
 __decorate([
     (0, common_1.Delete)(':id'),
     (0, role_decorator_1.Rol)(Rol_1.Rol.NUTRICIONISTA, Rol_1.Rol.ADMIN),
-    (0, common_1.UseGuards)(plan_socio_access_guard_1.PlanSocioAccessGuard),
+    (0, common_1.UseGuards)(socio_resource_access_guard_1.SocioResourceAccessGuard),
     __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __param(2, (0, common_1.Body)()),
@@ -160,7 +162,7 @@ __decorate([
 __decorate([
     (0, common_1.Delete)(':id/contenido'),
     (0, role_decorator_1.Rol)(Rol_1.Rol.NUTRICIONISTA, Rol_1.Rol.ADMIN),
-    (0, common_1.UseGuards)(plan_socio_access_guard_1.PlanSocioAccessGuard),
+    (0, common_1.UseGuards)(socio_resource_access_guard_1.SocioResourceAccessGuard),
     __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __metadata("design:type", Function),

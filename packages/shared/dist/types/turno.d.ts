@@ -1,4 +1,4 @@
-export type EstadoTurno = 'PENDIENTE' | 'DISPONIBLE' | 'RESERVADO' | 'CONFIRMADO' | 'PRESENTE' | 'EN_CURSO' | 'REALIZADO' | 'CANCELADO' | 'AUSENTE' | 'REPROGRAMADO' | 'BLOQUEADO' | 'COMPLETADO';
+export type EstadoTurno = 'PROGRAMADO' | 'PRESENTE' | 'EN_CURSO' | 'REALIZADO' | 'CANCELADO' | 'AUSENTE';
 export interface InfoEstadoTurno {
     estado: EstadoTurno;
     nombre: string;

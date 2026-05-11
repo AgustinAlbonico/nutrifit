@@ -23,5 +23,10 @@ __exportStar(require("./profesional.controller"), exports);
 __exportStar(require("./socios.controller"), exports);
 __exportStar(require("./turnos.controller"), exports);
 __exportStar(require("./progreso.controller"), exports);
+__exportStar(require("./admin-auditoria.controller"), exports);
+__exportStar(require("./notificaciones.controller"), exports);
+__exportStar(require("./admin/admin-estadisticas.controller"), exports);
+__exportStar(require("./admin/admin-reportes.controller"), exports);
+__exportStar(require("./admin/configuracion.controller"), exports);
 __exportStar(require("./ai.controller"), exports);
 //# sourceMappingURL=index.js.map

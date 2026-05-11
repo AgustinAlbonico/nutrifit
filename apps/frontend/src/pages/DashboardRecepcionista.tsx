@@ -1,4 +1,11 @@
-import { LayoutDashboard, Calendar, CheckCircle, Clock, XCircle } from 'lucide-react';
+import type { EstadoTurno } from '@nutrifit/shared';
+import {
+  LayoutDashboard,
+  Calendar,
+  CheckCircle,
+  Clock,
+  PlayCircle,
+} from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRequest } from '@/lib/api';
@@ -12,7 +19,7 @@ interface TurnoRecepcion {
   idTurno: number;
   fechaTurno: string;
   horaTurno: string;
-  estadoTurno: 'PENDIENTE' | 'CONFIRMADO' | 'COMPLETADO' | 'CANCELADO';
+  estadoTurno: EstadoTurno;
   nombreSocio: string;
   nombreNutricionista: string;
   dniSocio: string;
@@ -42,9 +49,9 @@ export function DashboardRecepcionista() {
 
   // Calcular KPIs
   const totalTurnos = turnos.length;
-  const checkIns = turnos.filter((t) => t.estadoTurno === 'COMPLETADO').length;
-  const pendientes = turnos.filter((t) => t.estadoTurno === 'PENDIENTE').length;
-  const cancelados = turnos.filter((t) => t.estadoTurno === 'CANCELADO').length;
+  const presentes = turnos.filter((t) => t.estadoTurno === 'PRESENTE').length;
+  const pendientes = turnos.filter((t) => t.estadoTurno === 'PROGRAMADO').length;
+  const enCurso = turnos.filter((t) => t.estadoTurno === 'EN_CURSO').length;
 
   return (
     <div className="space-y-8 pb-10">
@@ -72,10 +79,10 @@ export function DashboardRecepcionista() {
           cargando={cargandoTurnos}
         />
         <EstadisticasKpiCard
-          titulo="Check-ins"
-          valor={checkIns}
+          titulo="Presentes"
+          valor={presentes}
           icono={<CheckCircle className="h-4 w-4" />}
-          badge={checkIns > 0 ? { texto: 'Atendidos', variante: 'success' } : undefined}
+          badge={presentes > 0 ? { texto: 'Check-in', variante: 'success' } : undefined}
           cargando={cargandoTurnos}
         />
         <EstadisticasKpiCard
@@ -86,9 +93,9 @@ export function DashboardRecepcionista() {
           cargando={cargandoTurnos}
         />
         <EstadisticasKpiCard
-          titulo="Cancelados"
-          valor={cancelados}
-          icono={<XCircle className="h-4 w-4" />}
+          titulo="En curso"
+          valor={enCurso}
+          icono={<PlayCircle className="h-4 w-4" />}
           cargando={cargandoTurnos}
         />
       </div>
@@ -103,8 +110,8 @@ export function DashboardRecepcionista() {
 
       {/* Footer - Resumen */}
       <div className="rounded-xl bg-muted/30 p-4 text-sm text-muted-foreground">
-        <strong>Resumen del día:</strong> {totalTurnos} turnos programados,{' '}
-        {checkIns} pacientes atendidos, {pendientes} en espera.
+        <strong>Resumen del día:</strong> {totalTurnos} turnos activos, {pendientes}{' '}
+        pendientes, {presentes} presentes y {enCurso} consultas en curso.
       </div>
     </div>
   );

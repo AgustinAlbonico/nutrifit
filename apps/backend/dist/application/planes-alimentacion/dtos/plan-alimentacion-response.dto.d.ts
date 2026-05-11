@@ -1,6 +1,7 @@
 import { TipoComida } from 'src/domain/entities/OpcionComida/TipoComida';
 import { DiaSemana } from 'src/domain/entities/DiaPlan/DiaSemana';
 import { SocioResponseDto } from 'src/application/socios/dtos/socio-response.dto';
+import { UnidadMedida } from 'src/domain/entities/Alimento/UnidadMedida';
 export declare class AlimentoResponseDto {
     idAlimento: number;
     nombre: string;
@@ -11,11 +12,18 @@ export declare class AlimentoResponseDto {
     grasas: number | null;
     unidadMedida: string;
 }
+export declare class ItemComidaResponseDto {
+    idItemComida: number;
+    cantidad: number;
+    unidad: UnidadMedida;
+    notas: string | null;
+    alimento: AlimentoResponseDto;
+}
 export declare class OpcionComidaResponseDto {
     idOpcionComida: number;
     tipoComida: TipoComida;
     comentarios: string | null;
-    alimentos: AlimentoResponseDto[];
+    items: ItemComidaResponseDto[];
 }
 export declare class DiaPlanResponseDto {
     idDiaPlan: number;

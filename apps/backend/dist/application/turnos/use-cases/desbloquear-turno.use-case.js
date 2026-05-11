@@ -40,8 +40,8 @@ let DesbloquearTurnoUseCase = class DesbloquearTurnoUseCase {
         if (turno.nutricionista.idPersona !== nutricionistaId) {
             throw new custom_exceptions_1.ForbiddenError('No tiene permisos para gestionar este turno.');
         }
-        if (turno.estadoTurno !== EstadoTurno_1.EstadoTurno.BLOQUEADO) {
-            throw new custom_exceptions_1.BadRequestError('Solo se pueden desbloquear turnos que esten en estado BLOQUEADO.');
+        if (turno.estadoTurno !== EstadoTurno_1.EstadoTurno.PROGRAMADO || turno.socio !== null) {
+            throw new custom_exceptions_1.BadRequestError('Solo se pueden desbloquear turnos bloqueados (PROGRAMADO sin socio).');
         }
         turno.estadoTurno = EstadoTurno_1.EstadoTurno.CANCELADO;
         const updatedTurno = await this.turnoRepository.save(turno);

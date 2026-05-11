@@ -1,4 +1,4 @@
-import { AgendaSlotDto, AsignarTurnoManualDto, BloquearTurnoDto, DatosTurnoResponseDto, FichaSaludPacienteResponseDto, FichaSaludSocioResponseDto, GetTurnosDelDiaQueryDto, GetAgendaDiariaQueryDto, GuardarMedicionesDto, GuardarObservacionesDto, HistorialConsultaPacienteResponseDto, ListMisTurnosQueryDto, ListPacientesProfesionalQueryDto, MiTurnoResponseDto, PacienteProfesionalResponseDto, RecepcionTurnoResponseDto, ReprogramarTurnoSocioDto, RegistrarAsistenciaTurnoDto, ReservarTurnoSocioDto, TurnoDelDiaResponseDto, TurnoOperacionResponseDto, UpsertFichaSaludSocioDto } from 'src/application/turnos/dtos';
+import { AgendaSlotDto, AsignarTurnoManualDto, BloquearTurnoDto, CancelarTurnoSocioDto, DatosTurnoResponseDto, FichaSaludPacienteResponseDto, FichaSaludSocioResponseDto, GetTurnosDelDiaQueryDto, GetAgendaDiariaQueryDto, GuardarMedicionesDto, GuardarObservacionesDto, HistorialConsultaPacienteResponseDto, ListMisTurnosQueryDto, ListPacientesProfesionalQueryDto, MiTurnoResponseDto, PacienteProfesionalResponseDto, RecepcionTurnoResponseDto, ReprogramarTurnoSocioDto, ConfirmarTurnoTokenDto, RegistrarAsistenciaTurnoDto, ReservarTurnoSocioDto, TurnoDelDiaResponseDto, TurnoOperacionResponseDto, UpsertFichaSaludSocioDto } from 'src/application/turnos/dtos';
 import { AsignarTurnoManualUseCase, BloquearTurnoUseCase, CancelarTurnoSocioUseCase, CheckInTurnoUseCase, ConfirmarTurnoSocioUseCase, DesbloquearTurnoUseCase, FinalizarConsultaUseCase, GetAgendaDiariaUseCase, GetFichaSaludPacienteUseCase, GetFichaSaludSocioUseCase, GetHistorialConsultasPacienteUseCase, GetTurnoByIdUseCase, GetTurnosDelDiaUseCase, GetTurnosRecepcionDiaUseCase, GetHistorialMedicionesUseCase, GetResumenProgresoUseCase, GuardarMedicionesUseCase, GuardarObservacionesUseCase, IniciarConsultaUseCase, ListMisTurnosUseCase, ListPacientesProfesionalUseCase, ReprogramarTurnoSocioUseCase, RegistrarAsistenciaTurnoUseCase, ReservarTurnoSocioUseCase, UpsertFichaSaludSocioUseCase } from 'src/application/turnos/use-cases';
 import { IAppLoggerService } from 'src/domain/services/logger.service';
 import { Request } from 'express';
@@ -28,8 +28,9 @@ export declare class TurnosController {
     private readonly registrarAsistenciaTurnoUseCase;
     private readonly reservarTurnoSocioUseCase;
     private readonly upsertFichaSaludSocioUseCase;
+    private readonly adjuntoClinicoService;
     private readonly logger;
-    constructor(getTurnosDelDiaUseCase: GetTurnosDelDiaUseCase, getAgendaDiariaUseCase: GetAgendaDiariaUseCase, getTurnosRecepcionDiaUseCase: GetTurnosRecepcionDiaUseCase, asignarTurnoManualUseCase: AsignarTurnoManualUseCase, bloquearTurnoUseCase: BloquearTurnoUseCase, desbloquearTurnoUseCase: DesbloquearTurnoUseCase, cancelarTurnoSocioUseCase: CancelarTurnoSocioUseCase, checkInTurnoUseCase: CheckInTurnoUseCase, confirmarTurnoSocioUseCase: ConfirmarTurnoSocioUseCase, finalizarConsultaUseCase: FinalizarConsultaUseCase, getFichaSaludPacienteUseCase: GetFichaSaludPacienteUseCase, getFichaSaludSocioUseCase: GetFichaSaludSocioUseCase, getHistorialConsultasPacienteUseCase: GetHistorialConsultasPacienteUseCase, getHistorialMedicionesUseCase: GetHistorialMedicionesUseCase, getResumenProgresoUseCase: GetResumenProgresoUseCase, getTurnoByIdUseCase: GetTurnoByIdUseCase, guardarMedicionesUseCase: GuardarMedicionesUseCase, guardarObservacionesUseCase: GuardarObservacionesUseCase, iniciarConsultaUseCase: IniciarConsultaUseCase, listMisTurnosUseCase: ListMisTurnosUseCase, listPacientesProfesionalUseCase: ListPacientesProfesionalUseCase, reprogramarTurnoSocioUseCase: ReprogramarTurnoSocioUseCase, registrarAsistenciaTurnoUseCase: RegistrarAsistenciaTurnoUseCase, reservarTurnoSocioUseCase: ReservarTurnoSocioUseCase, upsertFichaSaludSocioUseCase: UpsertFichaSaludSocioUseCase, logger: IAppLoggerService);
+    constructor(getTurnosDelDiaUseCase: GetTurnosDelDiaUseCase, getAgendaDiariaUseCase: GetAgendaDiariaUseCase, getTurnosRecepcionDiaUseCase: GetTurnosRecepcionDiaUseCase, asignarTurnoManualUseCase: AsignarTurnoManualUseCase, bloquearTurnoUseCase: BloquearTurnoUseCase, desbloquearTurnoUseCase: DesbloquearTurnoUseCase, cancelarTurnoSocioUseCase: CancelarTurnoSocioUseCase, checkInTurnoUseCase: CheckInTurnoUseCase, confirmarTurnoSocioUseCase: ConfirmarTurnoSocioUseCase, finalizarConsultaUseCase: FinalizarConsultaUseCase, getFichaSaludPacienteUseCase: GetFichaSaludPacienteUseCase, getFichaSaludSocioUseCase: GetFichaSaludSocioUseCase, getHistorialConsultasPacienteUseCase: GetHistorialConsultasPacienteUseCase, getHistorialMedicionesUseCase: GetHistorialMedicionesUseCase, getResumenProgresoUseCase: GetResumenProgresoUseCase, getTurnoByIdUseCase: GetTurnoByIdUseCase, guardarMedicionesUseCase: GuardarMedicionesUseCase, guardarObservacionesUseCase: GuardarObservacionesUseCase, iniciarConsultaUseCase: IniciarConsultaUseCase, listMisTurnosUseCase: ListMisTurnosUseCase, listPacientesProfesionalUseCase: ListPacientesProfesionalUseCase, reprogramarTurnoSocioUseCase: ReprogramarTurnoSocioUseCase, registrarAsistenciaTurnoUseCase: RegistrarAsistenciaTurnoUseCase, reservarTurnoSocioUseCase: ReservarTurnoSocioUseCase, upsertFichaSaludSocioUseCase: UpsertFichaSaludSocioUseCase, adjuntoClinicoService: any, logger: IAppLoggerService);
     getTurnosDelDia(nutricionistaId: number, query: GetTurnosDelDiaQueryDto): Promise<TurnoDelDiaResponseDto[]>;
     getTurnoById(turnoId: number, req: Request): Promise<DatosTurnoResponseDto>;
     getAgendaDiaria(nutricionistaId: number, query: GetAgendaDiariaQueryDto): Promise<AgendaSlotDto[]>;
@@ -47,8 +48,10 @@ export declare class TurnosController {
     reservarTurnoSocio(req: Request, payload: ReservarTurnoSocioDto): Promise<TurnoOperacionResponseDto>;
     listMisTurnos(req: Request, query: ListMisTurnosQueryDto): Promise<MiTurnoResponseDto[]>;
     reprogramarTurnoSocio(req: Request, turnoId: number, payload: ReprogramarTurnoSocioDto): Promise<TurnoOperacionResponseDto>;
-    cancelarTurnoSocio(req: Request, turnoId: number): Promise<TurnoOperacionResponseDto>;
+    cancelarTurnoSocio(req: Request, turnoId: number, dto: CancelarTurnoSocioDto): Promise<TurnoOperacionResponseDto>;
+    cancelarTurnoPorToken(turnoId: number, query: ConfirmarTurnoTokenDto, dto: CancelarTurnoSocioDto): Promise<TurnoOperacionResponseDto>;
     confirmarTurnoSocio(req: Request, turnoId: number): Promise<TurnoOperacionResponseDto>;
+    confirmarTurnoPorToken(turnoId: number, query: ConfirmarTurnoTokenDto): Promise<TurnoOperacionResponseDto>;
     checkInTurno(turnoId: number): Promise<{
         success: boolean;
         estado: string;
@@ -73,4 +76,12 @@ export declare class TurnosController {
     getResumenProgresoPaciente(nutricionistaId: number, socioId: number): Promise<import("src/application/turnos/use-cases").ResumenProgresoResponse>;
     getMiProgreso(req: Request): Promise<import("src/application/turnos/use-cases").ResumenProgresoResponse>;
     getMiHistorialMediciones(req: Request): Promise<import("src/application/turnos/use-cases").HistorialMedicionesResponse>;
+    subirAdjunto(turnoId: number, archivo: Express.Multer.File, req: Request): Promise<any>;
+    listarAdjuntos(turnoId: number): Promise<any>;
+    obtenerUrlAdjunto(turnoId: number, adjuntoId: number): Promise<{
+        url: any;
+    }>;
+    eliminarAdjunto(turnoId: number, adjuntoId: number, req: Request): Promise<{
+        success: boolean;
+    }>;
 }

@@ -17,11 +17,11 @@ export class ListarPlanesNutricionistaUseCase implements BaseUseCase {
     nutricionistaId: number,
   ): Promise<PlanAlimentacionResponseDto[]> {
     const planes = await this.planRepo.find({
-      where: { nutricionista: { idPersona: nutricionistaId } } as any,
+      where: { nutricionista: { idPersona: nutricionistaId } },
       relations: {
         socio: true,
         nutricionista: true,
-        dias: { opcionesComida: { alimentos: true } },
+        dias: { opcionesComida: { items: { alimento: true } } },
       },
       order: { fechaCreacion: 'DESC' },
     });

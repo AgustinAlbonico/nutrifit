@@ -8,6 +8,7 @@ import {
   OpcionComidaOrmEntity,
   PlanAlimentacionOrmEntity,
   SocioOrmEntity,
+  NotificacionOrmEntity,
   UsuarioOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
 import {
@@ -20,6 +21,9 @@ import {
   ObtenerPlanPorIdUseCase,
   VaciarContenidoPlanUseCase,
 } from './use-cases';
+import { AuditoriaModule } from 'src/infrastructure/services/auditoria/auditoria.module';
+import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
+import { RestriccionesModule } from 'src/application/restricciones/restricciones.module';
 
 @Module({
   imports: [
@@ -32,7 +36,10 @@ import {
       NutricionistaOrmEntity,
       FichaSaludOrmEntity,
       UsuarioOrmEntity,
+      NotificacionOrmEntity,
     ]),
+    AuditoriaModule,
+    RestriccionesModule,
   ],
   providers: [
     CrearPlanAlimentacionUseCase,
@@ -43,6 +50,7 @@ import {
     ListarPlanesSocioUseCase,
     ListarPlanesNutricionistaUseCase,
     VaciarContenidoPlanUseCase,
+    NotificacionesService,
   ],
   exports: [
     CrearPlanAlimentacionUseCase,

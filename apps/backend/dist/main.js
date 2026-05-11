@@ -15,6 +15,7 @@ const exception_filter_1 = require("./infrastructure/common/filter/exception.fil
 const common_1 = require("@nestjs/common");
 const api_response_interceptor_1 = require("./infrastructure/common/responseHandler/api-response.interceptor");
 const logger_service_1 = require("./domain/services/logger.service");
+const cors_config_1 = require("./infrastructure/config/cors/cors.config");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     const mainConfig = app.get(environment_config_service_1.EnvironmentConfigService);
@@ -31,13 +32,14 @@ async function bootstrap() {
     app.use((0, helmet_1.default)({
         crossOriginResourcePolicy: { policy: 'cross-origin' },
     }));
-    app.enableCors();
+    app.enableCors((0, cors_config_1.createCorsOptions)(mainConfig));
+    logger.log(`CORS habilitado para origenes: ${mainConfig.getCorsAllowedOrigins().join(', ')}`);
     app.use((_req, res, next) => {
         const originalJson = res.json.bind(res);
-        res.json = (body) => {
+        res.json = ((body) => {
             res.setHeader('Content-Type', 'application/json; charset=utf-8');
             return originalJson(body);
-        };
+        });
         next();
     });
     app.enableShutdownHooks();
@@ -56,5 +58,5 @@ async function bootstrap() {
     }
     await app.listen(mainConfig.getPort() ?? 3000);
 }
-bootstrap();
+void bootstrap();
 //# sourceMappingURL=main.js.map

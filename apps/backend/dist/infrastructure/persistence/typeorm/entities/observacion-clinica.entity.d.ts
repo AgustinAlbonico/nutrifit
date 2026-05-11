@@ -8,5 +8,6 @@ export declare class ObservacionClinicaOrmEntity {
     sugerencias: string | null;
     habitosSocio: string | null;
     objetivosSocio: string | null;
+    esPublica: boolean;
     turno: TurnoEntity;
 }

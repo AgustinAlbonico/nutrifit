@@ -1,3 +1,4 @@
+import type { EstadoTurno } from '@nutrifit/shared';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,6 +21,11 @@ import {
 } from '@/components/ui/select';
 import { Calendar, Clock, User, CheckCircle, Eye } from 'lucide-react';
 import { apiRequest } from '@/lib/api';
+import {
+  obtenerClasesEstadoTurno,
+  obtenerEtiquetaEstadoTurno,
+  puedeHacerCheckInTurno,
+} from '@/lib/turnos/estadoTurno';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -27,7 +33,7 @@ interface TurnoRecepcion {
   idTurno: number;
   fechaTurno: string;
   horaTurno: string;
-  estadoTurno: 'PENDIENTE' | 'CONFIRMADO' | 'COMPLETADO' | 'CANCELADO';
+  estadoTurno: EstadoTurno;
   nombreSocio: string;
   nombreNutricionista: string;
   dniSocio: string;
@@ -40,33 +46,17 @@ interface ApiResponse<T> {
   timestamp: string;
 }
 
-const ESTADOS_TURNO = [
+const ESTADOS_TURNO: Array<{ valor: EstadoTurno | 'TODOS'; etiqueta: string }> = [
   { valor: 'TODOS', etiqueta: 'Todos' },
-  { valor: 'PENDIENTE', etiqueta: 'Pendiente' },
-  { valor: 'CONFIRMADO', etiqueta: 'Confirmado' },
-  { valor: 'COMPLETADO', etiqueta: 'Completado' },
-  { valor: 'CANCELADO', etiqueta: 'Cancelado' },
+  { valor: 'PROGRAMADO', etiqueta: 'Programado' },
+  { valor: 'PRESENTE', etiqueta: 'Presente' },
+  { valor: 'EN_CURSO', etiqueta: 'En curso' },
 ];
-
-const getColorEstado = (estado: string) => {
-  switch (estado) {
-    case 'PENDIENTE':
-      return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-    case 'CONFIRMADO':
-      return 'bg-blue-100 text-blue-800 border-blue-200';
-    case 'COMPLETADO':
-      return 'bg-green-100 text-green-800 border-green-200';
-    case 'CANCELADO':
-      return 'bg-red-100 text-red-800 border-red-200';
-    default:
-      return 'bg-gray-100 text-gray-800 border-gray-200';
-  }
-};
 
 export function TurnosTablaCard() {
   const { token } = useAuth();
   const queryClient = useQueryClient();
-  const [filtroEstado, setFiltroEstado] = useState<string>('TODOS');
+  const [filtroEstado, setFiltroEstado] = useState<EstadoTurno | 'TODOS'>('TODOS');
 
   const { data: turnos = [], isLoading } = useQuery({
     queryKey: ['turnos-recepcion-dia', token],
@@ -132,7 +122,12 @@ export function TurnosTablaCard() {
               {turnos.length}
             </Badge>
           </CardTitle>
-          <Select value={filtroEstado} onValueChange={setFiltroEstado}>
+          <Select
+            value={filtroEstado}
+            onValueChange={(valor) =>
+              setFiltroEstado(valor as EstadoTurno | 'TODOS')
+            }
+          >
             <SelectTrigger className="w-36">
               <SelectValue />
             </SelectTrigger>
@@ -189,13 +184,15 @@ export function TurnosTablaCard() {
                       {turno.nombreNutricionista}
                     </TableCell>
                     <TableCell>
-                      <Badge className={`${getColorEstado(turno.estadoTurno)} border`}>
-                        {turno.estadoTurno}
+                      <Badge
+                        className={`${obtenerClasesEstadoTurno(turno.estadoTurno)} border`}
+                      >
+                        {obtenerEtiquetaEstadoTurno(turno.estadoTurno)}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        {turno.estadoTurno === 'PENDIENTE' && (
+                        {puedeHacerCheckInTurno(turno.estadoTurno) && (
                           <Button
                             size="sm"
                             variant="ghost"

@@ -6,4 +6,7 @@ export declare class TurnoOperacionResponseDto {
     estadoTurno: EstadoTurno;
     socioId: number;
     nutricionistaId: number;
+    gimnasioId?: number;
+    motivoCancelacion?: string;
+    fechaOriginal?: string;
 }

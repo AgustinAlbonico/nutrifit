@@ -108,3 +108,16 @@ export interface SolicitudSustitucion {
 export interface SolicitudAnalisis {
   planId: number;
 }
+
+// Propuesta de comida generada por IA
+export interface IngredienteIA {
+  nombre: string;
+  cantidad: string;
+  unidad: string;
+}
+
+export interface PropuestaIA {
+  nombre: string;
+  ingredientes: IngredienteIA[];
+  pasos: string[]; // 1-5 elementos
+}

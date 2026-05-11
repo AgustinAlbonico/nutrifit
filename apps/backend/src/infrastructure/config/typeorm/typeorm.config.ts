@@ -23,6 +23,7 @@ import { AccionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities
 import { GrupoPermisoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/grupo-permiso.entity';
 import { MedicionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/medicion.entity';
 import { DiaPlanOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/dia-plan.entity';
+import { ItemComidaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/item-comida.entity';
 import { ObjetivoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/objetivo.entity';
 import { FotoProgresoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/foto-progreso.entity';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
@@ -53,6 +54,7 @@ export const AppDataSource = (
     AsistenteOrmEntity,
     PatologiaOrmEntity,
     FichaSaludOrmEntity,
+    ItemComidaOrmEntity,
     OpcionComidaOrmEntity,
     NutricionistaOrmEntity,
     GrupoAlimenticioOrmEntity,

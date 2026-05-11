@@ -1,3 +1,4 @@
+import type { EstadoTurno } from '@nutrifit/shared';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -24,20 +25,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DatePicker } from '@/components/ui/date-picker';
 import { AsignarTurnoModal } from '@/components/turnos/AsignarTurnoModal';
 import { AvatarPaciente } from '@/components/ui/avatar-paciente';
+import {
+  obtenerEstadoVisualSlotAgenda,
+  obtenerEtiquetaEstadoTurno,
+} from '@/lib/turnos/estadoTurno';
 
 interface AgendaSlot {
   horaInicio: string;
   horaFin: string;
-  estado:
-    | 'LIBRE'
-    | 'PENDIENTE'
-    | 'CONFIRMADO'
-    | 'CANCELADO'
-    | 'REALIZADO'
-    | 'AUSENTE'
-    | 'REPROGRAMADO'
-    | 'BLOQUEADO'
-    | 'PRESENTE';
+  estado: EstadoTurno | 'LIBRE' | 'OCUPADO';
   turnoId?: number;
   socio?: {
     nombre: string;
@@ -235,7 +231,9 @@ export function TurnosProfesional() {
     setModalAsignarOpen(true);
   };
 
-  const getEstadoBadge = (estado: AgendaSlot['estado']) => {
+  const getEstadoBadge = (slot: AgendaSlot) => {
+    const estado = obtenerEstadoVisualSlotAgenda(slot);
+
     switch (estado) {
       case 'REALIZADO':
         return (
@@ -243,16 +241,16 @@ export function TurnosProfesional() {
             <CheckCircle2 className="mr-1 h-3 w-3" /> Realizado
           </Badge>
         );
-      case 'PENDIENTE':
+      case 'PROGRAMADO':
         return (
           <Badge className="border-amber-200 bg-amber-100 text-amber-800 hover:bg-amber-200">
-            <Clock className="mr-1 h-3 w-3" /> Pendiente
+            <Clock className="mr-1 h-3 w-3" /> Programado
           </Badge>
         );
-      case 'CONFIRMADO':
+      case 'BLOQUEADO':
         return (
-          <Badge className="border-blue-200 bg-blue-100 text-blue-800 hover:bg-blue-200">
-            <CheckCircle2 className="mr-1 h-3 w-3" /> Confirmado
+          <Badge className="border-rose-200 bg-rose-100 text-rose-800 hover:bg-rose-200">
+            <ShieldBan className="mr-1 h-3 w-3" /> Bloqueado
           </Badge>
         );
       case 'PRESENTE':
@@ -261,13 +259,18 @@ export function TurnosProfesional() {
             <User className="mr-1 h-3 w-3" /> Presente
           </Badge>
         );
+      case 'EN_CURSO':
+        return (
+          <Badge className="border-violet-200 bg-violet-100 text-violet-800 hover:bg-violet-200">
+            <PlayCircle className="mr-1 h-3 w-3" /> En curso
+          </Badge>
+        );
       case 'CANCELADO':
       case 'AUSENTE':
-      case 'BLOQUEADO':
+      case 'OCUPADO':
         return (
           <Badge className="border-rose-200 bg-rose-100 text-rose-800 hover:bg-rose-200">
-            <XCircle className="mr-1 h-3 w-3" />{' '}
-            {estado.charAt(0) + estado.slice(1).toLowerCase()}
+            <XCircle className="mr-1 h-3 w-3" /> {obtenerEtiquetaEstadoTurno(estado)}
           </Badge>
         );
       case 'LIBRE':
@@ -277,12 +280,6 @@ export function TurnosProfesional() {
             className="border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
           >
             Libre
-          </Badge>
-        );
-      case 'REPROGRAMADO':
-        return (
-          <Badge className="border-amber-200 bg-amber-100 text-amber-800 hover:bg-amber-200">
-            Reprogramado
           </Badge>
         );
       default:
@@ -437,6 +434,7 @@ export function TurnosProfesional() {
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {slots.map((slot) => {
+                const estadoVisual = obtenerEstadoVisualSlotAgenda(slot);
                 const turnoIdBloqueado =
                   typeof slot.turnoId === 'number' ? slot.turnoId : null;
 
@@ -444,24 +442,26 @@ export function TurnosProfesional() {
                   <div
                     key={slot.horaInicio}
                     className={`group relative flex flex-col overflow-hidden rounded-2xl border bg-card p-5 shadow-sm transition-all hover:shadow-md ${
-                      slot.estado === 'BLOQUEADO'
+                      estadoVisual === 'BLOQUEADO'
                         ? 'border-rose-100 bg-rose-50/30'
-                        : slot.estado === 'LIBRE'
+                        : estadoVisual === 'LIBRE'
                           ? 'border-slate-200'
                           : 'border-blue-100 bg-blue-50/20'
                     }`}
                   >
-                    {slot.estado !== 'LIBRE' && (
+                    {estadoVisual !== 'LIBRE' && (
                       <div
                         className={`absolute bottom-0 left-0 top-0 w-1.5 ${
-                          slot.estado === 'BLOQUEADO' ||
-                          slot.estado === 'CANCELADO' ||
-                          slot.estado === 'AUSENTE'
+                          estadoVisual === 'BLOQUEADO' ||
+                          estadoVisual === 'CANCELADO' ||
+                          estadoVisual === 'AUSENTE'
                             ? 'bg-rose-400'
-                            : slot.estado === 'REALIZADO'
+                            : estadoVisual === 'REALIZADO'
                               ? 'bg-emerald-400'
-                              : slot.estado === 'PENDIENTE'
+                              : estadoVisual === 'PROGRAMADO'
                                 ? 'bg-amber-400'
+                                : estadoVisual === 'EN_CURSO'
+                                  ? 'bg-violet-400'
                                 : 'bg-blue-400'
                         }`}
                       />
@@ -474,7 +474,7 @@ export function TurnosProfesional() {
                           {slot.horaInicio}
                         </span>
                       </div>
-                      {getEstadoBadge(slot.estado)}
+                      {getEstadoBadge(slot)}
                     </div>
 
                     <div className="mb-5 min-h-[3.5rem] flex-1 text-sm">
@@ -493,7 +493,7 @@ export function TurnosProfesional() {
                             </span>
                           </div>
                         </div>
-                      ) : slot.estado === 'BLOQUEADO' ? (
+                      ) : estadoVisual === 'BLOQUEADO' ? (
                         <div className="flex items-center pt-2 text-muted-foreground">
                           <ShieldBan className="mr-2 h-4 w-4" />
                           <span className="italic">Horario no disponible</span>
@@ -508,7 +508,7 @@ export function TurnosProfesional() {
 
                     {esNutricionista && (
                       <div className="mt-auto flex gap-2">
-                        {slot.estado === 'LIBRE' && (
+                        {estadoVisual === 'LIBRE' && (
                           <>
                             <Button
                               variant="outline"
@@ -537,7 +537,7 @@ export function TurnosProfesional() {
                           </>
                         )}
 
-                        {slot.estado === 'BLOQUEADO' &&
+                        {estadoVisual === 'BLOQUEADO' &&
                           turnoIdBloqueado !== null && (
                             <Button
                               variant="outline"
@@ -570,8 +570,7 @@ export function TurnosProfesional() {
                           </Button>
                         )}
 
-                        {(slot.estado === 'PENDIENTE' ||
-                          slot.estado === 'CONFIRMADO') && (
+                        {slot.estado === 'PROGRAMADO' && slot.socio && (
                           <Button
                             variant="secondary"
                             size="sm"

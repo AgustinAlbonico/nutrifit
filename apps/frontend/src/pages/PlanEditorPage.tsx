@@ -15,9 +15,9 @@ import { AvatarPaciente } from '@/components/ui/avatar-paciente';
 import { WeeklyPlanGrid, type ComidaEnPlan } from '@/components/plan/WeeklyPlanGrid';
 import { FoodSearchDialog } from '@/components/plan/FoodSearchDialog';
 import { ExportPlanPDFButton } from '@/components/plan/ExportPlanPDFButton';
-import { GeneradorPlanSemanal, GeneradorRecomendacion } from '@/components/ia';
+import { GeneradorPlanSemanal, GeneradorRecomendacion, IdeasComidaPanel } from '@/components/ia';
 import { buscarAlimentosPorTexto, type Alimento } from '@/lib/api/alimentos';
-import type { PlanSemanalIA, RecomendacionComida } from '@/types/ia';
+import type { PlanSemanalIA, RecomendacionComida, PropuestaIA } from '@/types/ia';
 
 const DIAS_SEMANA = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'] as const;
 const TIPOS_COMIDA = ['DESAYUNO', 'ALMUERZO', 'MERIENDA', 'CENA', 'COLACION'] as const;
@@ -36,13 +36,21 @@ interface AlimentoRespuesta {
   unidadMedida: string;
 }
 
+interface ItemRespuesta {
+  idItemComida: number;
+  cantidad: number;
+  unidad: string;
+  notas: string | null;
+  alimento: AlimentoRespuesta;
+}
+
 interface DiaRespuesta {
   dia: string;
   orden: number;
   opcionesComida: Array<{
     tipoComida: string;
     comentarios: string | null;
-    alimentos: AlimentoRespuesta[];
+    items: ItemRespuesta[];
   }>;
 }
 
@@ -191,7 +199,8 @@ export function PlanEditorPage() {
                 c => c.dia === dia.dia && c.tipoComida === opcion.tipoComida
               );
               if (index !== -1) {
-                nuevasComidas[index].alimentos = opcion.alimentos.map(a => {
+                nuevasComidas[index].alimentos = opcion.items.map(item => {
+                  const a = item.alimento;
                   const alimento: Alimento = {
                     idAlimento: a.idAlimento,
                     nombre: a.nombre,
@@ -206,7 +215,7 @@ export function PlanEditorPage() {
                   nuevoCache.set(a.idAlimento, alimento);
                   return {
                     alimento,
-                    cantidad: a.cantidad,
+                    cantidad: item.cantidad,
                   };
                 });
               }
@@ -372,6 +381,49 @@ export function PlanEditorPage() {
     [buscarAlimentoParaTexto],
   );
 
+  const agregarPropuestaAlPlan = useCallback(
+    async (propuesta: PropuestaIA, dia: DiaSemana, tipoComida: TipoComida) => {
+      if (!token) {
+        toast.error('No hay sesión activa.');
+        return;
+      }
+
+      try {
+        establecerAplicandoIa(true);
+        const todosLosIngredientes = propuesta.ingredientes.map((ing) => ing.nombre.trim()).filter(Boolean);
+        const alimentos = await mapearIngredientesAAlimentos(todosLosIngredientes);
+
+        if (alimentos.length === 0) {
+          toast.error('No se encontraron alimentos del catálogo para la propuesta.');
+          return;
+        }
+
+        establecerComidas((prev) => {
+          const nuevas = [...prev];
+          const idx = nuevas.findIndex((c) => c.dia === dia && c.tipoComida === tipoComida);
+          if (idx === -1) return prev;
+
+          nuevas[idx] = {
+            ...nuevas[idx],
+            alimentos: alimentos.map((alimento) => ({
+              alimento,
+              cantidad: alimento.cantidad || 100,
+            })),
+          };
+          return nuevas;
+        });
+
+        toast.success(`Propuesta "${propuesta.nombre}" aplicada en ${dia} - ${tipoComida}.`);
+      } catch (err) {
+        const mensaje = err instanceof Error ? err.message : 'No se pudo aplicar la propuesta.';
+        toast.error(mensaje);
+      } finally {
+        establecerAplicandoIa(false);
+      }
+    },
+    [token, mapearIngredientesAAlimentos],
+  );
+
   const aplicarRecomendacionesIa = useCallback(async (recomendaciones: RecomendacionComida[]) => {
     if (recomendaciones.length === 0) {
       toast.error('No hay recomendaciones para aplicar.');
@@ -526,7 +578,10 @@ export function PlanEditorPage() {
           return {
             tipoComida,
             comentarios: '',
-            alimentosIds: comida?.alimentos.map(a => a.alimento.idAlimento) ?? [],
+            items: comida?.alimentos.map((item) => ({
+              alimentoId: item.alimento.idAlimento,
+              cantidad: item.cantidad,
+            })) ?? [],
           };
         }),
       }));
@@ -804,6 +859,19 @@ export function PlanEditorPage() {
                 }}
               />
             </div>
+
+            {/* Ideas de comida individuales (RF36-RF38) */}
+            <IdeasComidaPanel
+              token={token}
+              socioId={Number(socioId ?? 0)}
+              alergias={obtenerAlergiasFicha}
+              restricciones={obtenerAlergiasFicha}
+              diaSeleccionado={diaSeleccionadoIa}
+              tipoComidaSeleccionada={tipoComidaSeleccionadaIa}
+              onPropuestaSeleccionada={(propuesta, dia, tipoComida) => {
+                void agregarPropuestaAlPlan(propuesta, dia as DiaSemana, tipoComida as TipoComida);
+              }}
+            />
           </CardContent>
         </Card>
 

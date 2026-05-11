@@ -30,6 +30,7 @@ const role_decorator_1 = require("../../../infrastructure/auth/decorators/role.d
 const auth_guard_1 = require("../../../infrastructure/auth/guards/auth.guard");
 const actions_guard_1 = require("../../../infrastructure/auth/guards/actions.guard");
 const roles_guard_1 = require("../../../infrastructure/auth/guards/roles.guard");
+const socio_resource_access_guard_1 = require("../../../infrastructure/auth/guards/socio-resource-access.guard");
 const Rol_1 = require("../../../domain/entities/Usuario/Rol");
 let ProgresoController = class ProgresoController {
     subirFotoProgresoUseCase;
@@ -162,7 +163,7 @@ __decorate([
 ], ProgresoController.prototype, "marcarObjetivo", null);
 exports.ProgresoController = ProgresoController = __decorate([
     (0, common_1.Controller)('progreso'),
-    (0, common_1.UseGuards)(auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard, actions_guard_1.ActionsGuard),
+    (0, common_1.UseGuards)(auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard, actions_guard_1.ActionsGuard, socio_resource_access_guard_1.SocioResourceAccessGuard),
     __param(7, (0, common_1.Inject)(logger_service_1.APP_LOGGER_SERVICE)),
     __metadata("design:paramtypes", [subir_foto_progreso_use_case_1.SubirFotoProgresoUseCase,
         obtener_galeria_fotos_use_case_1.ObtenerGaleriaFotosUseCase,

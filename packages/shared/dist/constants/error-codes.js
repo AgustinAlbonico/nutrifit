@@ -16,5 +16,9 @@ export const CODIGOS_ERROR = {
     TURNO_NO_DISPONIBLE: 'NEG_001',
     SOCIO_SIN_PROFESIONAL: 'NEG_002',
     FECHA_INVALIDA: 'NEG_003',
+    // Errores de plan alimentario (RF31-RF38)
+    PLAN_SIN_ITEMS: 'PLAN_001',
+    RESTRICCIONES_VIOLADAS: 'PLAN_002',
+    IA_SIN_RESULTADOS: 'PLAN_003',
 };
 //# sourceMappingURL=error-codes.js.map

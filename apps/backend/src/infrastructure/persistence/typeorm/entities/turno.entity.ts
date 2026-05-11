@@ -8,9 +8,15 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { GimnasioOrmEntity } from './gimnasio.entity';
 import { ObservacionClinicaOrmEntity } from './observacion-clinica.entity';
 import { MedicionOrmEntity } from './medicion.entity';
-import { NutricionistaOrmEntity, SocioOrmEntity } from './persona.entity';
+import {
+  EntrenadorOrmEntity,
+  NutricionistaOrmEntity,
+  SocioOrmEntity,
+} from './persona.entity';
+import { AdjuntoClinicoOrmEntity } from './adjunto-clinico.entity';
 
 @Entity('turno')
 export class TurnoOrmEntity {
@@ -38,6 +44,26 @@ export class TurnoOrmEntity {
   @Column({ name: 'ausente_at', type: 'datetime', nullable: true })
   ausenteAt: Date | null;
 
+  @Column({
+    name: 'motivo_cancelacion',
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+  })
+  motivoCancelacion: string | null;
+
+  @Column({ name: 'fecha_original', type: 'datetime', nullable: true })
+  fechaOriginal: Date | null;
+
+  @Column({
+    name: 'token_confirmacion',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    unique: true,
+  })
+  tokenConfirmacion: string | null;
+
   @OneToOne(
     () => ObservacionClinicaOrmEntity,
     (observacion) => observacion.turno,
@@ -51,6 +77,9 @@ export class TurnoOrmEntity {
 
   @OneToMany(() => MedicionOrmEntity, (medicion) => medicion.turno)
   mediciones: MedicionOrmEntity[];
+
+  @OneToMany(() => AdjuntoClinicoOrmEntity, (adjunto) => adjunto.turno)
+  adjuntos: AdjuntoClinicoOrmEntity[];
 
   @ManyToOne(() => SocioOrmEntity, (socio) => socio.turnos, {
     nullable: true,
@@ -67,4 +96,16 @@ export class TurnoOrmEntity {
   )
   @JoinColumn({ name: 'id_nutricionista' })
   nutricionista: NutricionistaOrmEntity;
+
+  @ManyToOne(() => EntrenadorOrmEntity, (entrenador) => entrenador.turnos, {
+    nullable: true,
+  })
+  @JoinColumn({ name: 'id_entrenador' })
+  entrenador?: EntrenadorOrmEntity;
+
+  @ManyToOne(() => GimnasioOrmEntity, (gimnasio) => gimnasio.turnos, {
+    nullable: true,
+  })
+  @JoinColumn({ name: 'id_gimnasio' })
+  gimnasio: GimnasioOrmEntity;
 }

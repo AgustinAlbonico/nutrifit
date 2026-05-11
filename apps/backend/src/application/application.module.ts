@@ -7,8 +7,8 @@ import { ProfesionalesModule } from './profesionales/profesionales.module';
 import { AgendaModule } from './agenda/agenda.module';
 import { TurnosModule } from './turnos/turnos.module';
 import { PlanesAlimentacionModule } from './planes-alimentacion/planes-alimentacion.module';
-
 import { AiModule } from './ai/ai.module';
+import { ReportesModule } from './reportes/reportes.module';
 
 @Module({
   imports: [
@@ -21,6 +21,7 @@ import { AiModule } from './ai/ai.module';
     TurnosModule,
     PlanesAlimentacionModule,
     AiModule,
+    ReportesModule,
   ],
   exports: [
     AuthModule,
@@ -31,6 +32,7 @@ import { AiModule } from './ai/ai.module';
     TurnosModule,
     PlanesAlimentacionModule,
     AiModule,
+    ReportesModule,
   ],
 })
 export class ApplicationModule {}

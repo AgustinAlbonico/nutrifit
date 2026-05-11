@@ -24,6 +24,8 @@ const logger_service_1 = require("../../../domain/services/logger.service");
 const argentina_datetime_util_1 = require("../../../common/utils/argentina-datetime.util");
 const entities_1 = require("../../../infrastructure/persistence/typeorm/entities");
 const typeorm_2 = require("typeorm");
+const notificaciones_service_1 = require("../../notificaciones/notificaciones.service");
+const tipo_notificacion_enum_1 = require("../../../domain/entities/Notificacion/tipo-notificacion.enum");
 let ReservarTurnoSocioUseCase = class ReservarTurnoSocioUseCase {
     usuarioRepository;
     socioRepository;
@@ -32,7 +34,8 @@ let ReservarTurnoSocioUseCase = class ReservarTurnoSocioUseCase {
     turnoRepository;
     nutricionistaRepository;
     logger;
-    constructor(usuarioRepository, socioRepository, nutricionistaOrmRepository, agendaRepository, turnoRepository, nutricionistaRepository, logger) {
+    notificacionesService;
+    constructor(usuarioRepository, socioRepository, nutricionistaOrmRepository, agendaRepository, turnoRepository, nutricionistaRepository, logger, notificacionesService) {
         this.usuarioRepository = usuarioRepository;
         this.socioRepository = socioRepository;
         this.nutricionistaOrmRepository = nutricionistaOrmRepository;
@@ -40,6 +43,7 @@ let ReservarTurnoSocioUseCase = class ReservarTurnoSocioUseCase {
         this.turnoRepository = turnoRepository;
         this.nutricionistaRepository = nutricionistaRepository;
         this.logger = logger;
+        this.notificacionesService = notificacionesService;
     }
     async execute(userId, payload) {
         const socio = await this.resolveSocioByUserId(userId);
@@ -85,10 +89,19 @@ let ReservarTurnoSocioUseCase = class ReservarTurnoSocioUseCase {
         const turno = new entities_1.TurnoOrmEntity();
         turno.fechaTurno = fechaTurno;
         turno.horaTurno = horaTurno;
-        turno.estadoTurno = EstadoTurno_1.EstadoTurno.PENDIENTE;
+        turno.estadoTurno = EstadoTurno_1.EstadoTurno.PROGRAMADO;
         turno.socio = socio;
         turno.nutricionista = nutricionistaOrm;
         const turnoCreado = await this.turnoRepository.save(turno);
+        if (socio.idPersona) {
+            await this.notificacionesService.crear({
+                destinatarioId: socio.idPersona,
+                tipo: tipo_notificacion_enum_1.TipoNotificacion.TURNO_RESERVADO,
+                titulo: 'Turno reservado',
+                mensaje: `Reservaste un turno para el ${(0, argentina_datetime_util_1.formatArgentinaDate)(turnoCreado.fechaTurno)} a las ${(0, argentina_datetime_util_1.normalizeTimeToHHmm)(turnoCreado.horaTurno)}.`,
+                metadata: { turnoId: turnoCreado.idTurno },
+            });
+        }
         this.logger.log(`Turno reservado por socio ${socio.idPersona}. Turno=${turnoCreado.idTurno}, profesional=${payload.nutricionistaId}.`);
         this.logger.log(`Notificacion interna pendiente de integracion para turno ${turnoCreado.idTurno}.`);
         return this.toResponseDto(turnoCreado);
@@ -207,6 +220,6 @@ exports.ReservarTurnoSocioUseCase = ReservarTurnoSocioUseCase = __decorate([
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        nutricionista_repository_1.NutricionistaRepository, Object])
+        nutricionista_repository_1.NutricionistaRepository, Object, notificaciones_service_1.NotificacionesService])
 ], ReservarTurnoSocioUseCase);
 //# sourceMappingURL=reservar-turno-socio.use-case.js.map

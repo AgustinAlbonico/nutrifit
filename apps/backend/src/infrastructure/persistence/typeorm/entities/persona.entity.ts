@@ -4,6 +4,7 @@ import {
   Column,
   Entity,
   JoinColumn,
+  ManyToOne,
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
@@ -21,6 +22,7 @@ import { PlanAlimentacionEntity } from 'src/domain/entities/PlanAlimentacion/pla
 import { UsuarioOrmEntity } from './usuario.entity';
 import { TurnoOrmEntity } from './turno.entity';
 import { TurnoEntity } from 'src/domain/entities/Turno/turno.entity';
+import { GimnasioOrmEntity } from './gimnasio.entity';
 
 @Entity('persona')
 @TableInheritance({ column: { type: 'varchar', name: 'tipo_persona' } })
@@ -63,6 +65,9 @@ export abstract class PersonaOrmEntity {
     nullable: true,
   })
   fotoPerfilKey: string | null;
+
+  @Column({ name: 'id_gimnasio', type: 'int' })
+  gimnasioId: number;
 
   @OneToOne(() => UsuarioOrmEntity, (usuario) => usuario.persona, {
     nullable: true,
@@ -151,4 +156,20 @@ export class NutricionistaOrmEntity extends PersonaOrmEntity {
     nullable: true,
   })
   turnos: TurnoOrmEntity[] | TurnoEntity[] | null;
+}
+
+@ChildEntity()
+export class EntrenadorOrmEntity extends PersonaOrmEntity {
+  @Column({ name: 'especialidad', type: 'varchar', length: 100 })
+  especialidad: string;
+
+  @Column({ name: 'fecha_baja', type: 'datetime', nullable: true })
+  @Type(() => Date)
+  fechaBaja: Date | null;
+
+  @OneToMany(() => TurnoOrmEntity, (turno) => turno.entrenador, {
+    eager: false,
+    nullable: true,
+  })
+  turnos: TurnoOrmEntity[] | TurnoEntity[];
 }

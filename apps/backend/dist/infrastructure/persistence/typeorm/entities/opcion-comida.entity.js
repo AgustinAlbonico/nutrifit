@@ -12,14 +12,41 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.OpcionComidaOrmEntity = void 0;
 const typeorm_1 = require("typeorm");
 const TipoComida_1 = require("../../../../domain/entities/OpcionComida/TipoComida");
-const alimento_entity_1 = require("./alimento.entity");
 const dia_plan_entity_1 = require("./dia-plan.entity");
+const item_comida_entity_1 = require("./item-comida.entity");
 let OpcionComidaOrmEntity = class OpcionComidaOrmEntity {
     idOpcionComida;
     comentarios;
     tipoComida;
     diaPlan;
-    alimentos;
+    items;
+    get alimentos() {
+        if (!this.items || this.items.length === 0) {
+            return [];
+        }
+        return this.items
+            .filter((item) => item.alimento != null)
+            .map((item) => item.alimento);
+    }
+    set alimentos(alimentos) {
+        if (!alimentos || alimentos.length === 0) {
+            this.items = [];
+            return;
+        }
+        this.items = alimentos.map((alimento) => {
+            const item = new item_comida_entity_1.ItemComidaOrmEntity();
+            item.alimentoId = alimento.idAlimento;
+            item.alimentoNombre = alimento.nombre;
+            item.alimento = alimento;
+            item.cantidad = alimento.cantidad;
+            item.unidad = alimento.unidadMedida;
+            item.opcionComida = this;
+            return item;
+        });
+    }
+    get tieneItemsReales() {
+        return (this.items !== undefined && this.items !== null && this.items.length > 0);
+    }
 };
 exports.OpcionComidaOrmEntity = OpcionComidaOrmEntity;
 __decorate([
@@ -42,23 +69,11 @@ __decorate([
     __metadata("design:type", dia_plan_entity_1.DiaPlanOrmEntity)
 ], OpcionComidaOrmEntity.prototype, "diaPlan", void 0);
 __decorate([
-    (0, typeorm_1.ManyToMany)(() => alimento_entity_1.AlimentoOrmEntity, {
-        eager: true,
-        nullable: true,
-    }),
-    (0, typeorm_1.JoinTable)({
-        name: 'opcion_comida_alimento',
-        joinColumn: {
-            name: 'id_opcion_comida',
-            referencedColumnName: 'idOpcionComida',
-        },
-        inverseJoinColumn: {
-            name: 'id_alimento',
-            referencedColumnName: 'idAlimento',
-        },
+    (0, typeorm_1.OneToMany)(() => item_comida_entity_1.ItemComidaOrmEntity, (item) => item.opcionComida, {
+        cascade: ['insert', 'update'],
     }),
     __metadata("design:type", Array)
-], OpcionComidaOrmEntity.prototype, "alimentos", void 0);
+], OpcionComidaOrmEntity.prototype, "items", void 0);
 exports.OpcionComidaOrmEntity = OpcionComidaOrmEntity = __decorate([
     (0, typeorm_1.Entity)('opcion_comida')
 ], OpcionComidaOrmEntity);

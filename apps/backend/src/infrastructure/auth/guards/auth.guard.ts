@@ -15,6 +15,10 @@ import {
 import { Request } from 'express';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
+interface AuthenticatedRequest extends Request {
+  user: JwtPayload;
+}
+
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(
@@ -32,7 +36,7 @@ export class JwtAuthGuard implements CanActivate {
       return true;
     }
 
-    const req = context.switchToHttp().getRequest<Request>();
+    const req = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const authHeader = req.headers['authorization'] as string;
     if (!authHeader) throw new UnauthorizedException('No token proporcionado');
 
@@ -42,7 +46,7 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     try {
-      (req as any).user = this.jwtService.verify<JwtPayload>(token);
+      req.user = this.jwtService.verify<JwtPayload>(token);
       return true;
     } catch {
       throw new UnauthorizedException('Token inválido');

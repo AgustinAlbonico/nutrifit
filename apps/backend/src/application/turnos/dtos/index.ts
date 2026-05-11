@@ -1,6 +1,8 @@
 export * from './agenda-slot.dto';
 export * from './asignar-turno-manual.dto';
 export * from './bloquear-turno.dto';
+export * from './cancelar-turno-socio.dto';
+export * from './confirmar-turno-token.dto';
 export * from './datos-turno-response.dto';
 export * from './ficha-salud-paciente-response.dto';
 export * from './ficha-salud-socio-response.dto';
@@ -17,6 +19,7 @@ export * from './recepcion-turno-response.dto';
 export * from './reprogramar-turno-socio.dto';
 export * from './registrar-asistencia-turno.dto';
 export * from './reservar-turno-socio.dto';
+export * from './turno-clinico-response.dto';
 export * from './turno-del-dia-response.dto';
 export * from './turno-operacion-response.dto';
 export * from './upsert-ficha-salud-socio.dto';

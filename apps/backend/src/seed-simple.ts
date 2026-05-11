@@ -98,19 +98,23 @@ async function runSeed() {
     apellido: string,
     genero: 'MASCULINO' | 'FEMENINO' | 'OTRO',
   ): Promise<void> => {
-    const imagenBuffer = generarImagenAvatar(nombre, apellido, genero);
+    try {
+      const imagenBuffer = generarImagenAvatar(nombre, apellido, genero);
 
-    await minioClient.putObject(
-      bucketName,
-      key,
-      imagenBuffer,
-      imagenBuffer.length,
-      {
-        'Content-Type': 'image/svg+xml',
-      },
-    );
+      await minioClient.putObject(
+        bucketName,
+        key,
+        imagenBuffer,
+        imagenBuffer.length,
+        {
+          'Content-Type': 'image/svg+xml',
+        },
+      );
 
-    console.log(`   📷 Imagen subida: ${key}`);
+      console.log(`   📷 Imagen subida: ${key}`);
+    } catch (minioError) {
+      console.log(`   ⚠️ MinIO no disponible, omitiendo imagen: ${key}`);
+    }
   };
 
   const obtenerUsuarioExistente = (
@@ -161,9 +165,59 @@ async function runSeed() {
       descripcion: 'Permite ver la lista de socios',
     },
     {
+      clave: 'socios.registrar',
+      nombre: 'Registrar socios',
+      descripcion: 'Permite registrar nuevos socios',
+    },
+    {
+      clave: 'socios.editar',
+      nombre: 'Editar socios',
+      descripcion: 'Permite editar socios existentes',
+    },
+    {
+      clave: 'socios.eliminar',
+      nombre: 'Eliminar socios',
+      descripcion: 'Permite eliminar socios',
+    },
+    {
+      clave: 'socios.reactivar',
+      nombre: 'Reactivar socios',
+      descripcion: 'Permite reactivar socios dados de baja',
+    },
+    {
       clave: 'agenda.ver',
       nombre: 'Ver agenda',
       descripcion: 'Permite ver la agenda',
+    },
+    {
+      clave: 'profesionales.ver',
+      nombre: 'Ver profesionales',
+      descripcion: 'Permite ver la lista de profesionales',
+    },
+    {
+      clave: 'profesionales.listar',
+      nombre: 'Listar profesionales',
+      descripcion: 'Permite listar profesionales',
+    },
+    {
+      clave: 'profesionales.actualizar',
+      nombre: 'Actualizar profesionales',
+      descripcion: 'Permite actualizar profesionales existentes',
+    },
+    {
+      clave: 'profesionales.crear',
+      nombre: 'Crear profesionales',
+      descripcion: 'Permite crear nuevos profesionales',
+    },
+    {
+      clave: 'profesionales.eliminar',
+      nombre: 'Eliminar profesionales',
+      descripcion: 'Permite eliminar profesionales',
+    },
+    {
+      clave: 'progreso.editar',
+      nombre: 'Editar progreso',
+      descripcion: 'Permite editar el progreso de un socio',
     },
   ] as const;
 
@@ -174,14 +228,19 @@ async function runSeed() {
       descripcion: 'Permite ver la lista de profesionales',
     },
     {
+      clave: 'profesionales.listar',
+      nombre: 'Listar profesionales',
+      descripcion: 'Permite listar profesionales',
+    },
+    {
+      clave: 'profesionales.actualizar',
+      nombre: 'Actualizar profesionales',
+      descripcion: 'Permite actualizar profesionales existentes',
+    },
+    {
       clave: 'profesionales.crear',
       nombre: 'Crear profesionales',
       descripcion: 'Permite crear nuevos profesionales',
-    },
-    {
-      clave: 'profesionales.editar',
-      nombre: 'Editar profesionales',
-      descripcion: 'Permite editar profesionales existentes',
     },
     {
       clave: 'profesionales.eliminar',
@@ -197,6 +256,21 @@ async function runSeed() {
       clave: 'permisos.gestionar',
       nombre: 'Gestionar permisos',
       descripcion: 'Permite gestionar permisos y grupos',
+    },
+    {
+      clave: 'auth.permissions.read',
+      nombre: 'Leer permisos',
+      descripcion: 'Permite leer permisos del sistema',
+    },
+    {
+      clave: 'auth.permissions.write',
+      nombre: 'Escribir permisos',
+      descripcion: 'Permite modificar permisos del sistema',
+    },
+    {
+      clave: 'auth.permissions.assign',
+      nombre: 'Asignar permisos',
+      descripcion: 'Permite asignar permisos a usuarios',
     },
   ] as const;
 
@@ -365,34 +439,34 @@ async function runSeed() {
     const bucketName = process.env.MINIO_BUCKET_NAME || 'nutrifit-fotos-perfil';
 
     // Asegurar que el bucket existe
-    const bucketExiste = await minioClient.bucketExists(bucketName);
-    if (!bucketExiste) {
-      await minioClient.makeBucket(bucketName, 'us-east-1');
-      console.log(`📦 Bucket '${bucketName}' creado`);
+    try {
+      const bucketExiste = await minioClient.bucketExists(bucketName);
+      if (!bucketExiste) {
+        await minioClient.makeBucket(bucketName, 'us-east-1');
+        console.log(`📦 Bucket '${bucketName}' creado`);
+      }
+    } catch (minioError) {
+      console.log(
+        `⚠️ MinIO no disponible, omitiendo subida de imágenes: ${minioError.message}`,
+      );
     }
 
     console.log('📷 Subiendo imágenes de perfil por defecto...');
 
     await dataSource.query(
-      `INSERT INTO grupo_permiso (clave, nombre, descripcion)
-       SELECT 'PROFESIONAL', 'Profesional', 'Grupo de permisos para nutricionistas'
-       WHERE NOT EXISTS (SELECT 1 FROM grupo_permiso WHERE clave = 'PROFESIONAL')`,
+      `INSERT IGNORE INTO grupo_permiso (clave, nombre, descripcion) VALUES ('PROFESIONAL', 'Profesional', 'Grupo de permisos para nutricionistas')`,
     );
 
     await dataSource.query(
-      `INSERT INTO grupo_permiso (clave, nombre, descripcion)
-       SELECT 'ADMIN', 'Administrador', 'Grupo de permisos para administradores'
-       WHERE NOT EXISTS (SELECT 1 FROM grupo_permiso WHERE clave = 'ADMIN')`,
+      `INSERT IGNORE INTO grupo_permiso (clave, nombre, descripcion) VALUES ('ADMIN', 'Administrador', 'Grupo de permisos para administradores')`,
     );
 
     console.log('📝 Verificando acciones de permisos...');
 
     for (const accion of [...accionesProfesional, ...accionesAdmin]) {
       await dataSource.query(
-        `INSERT INTO accion (clave, nombre, descripcion)
-         SELECT ?, ?, ?
-         WHERE NOT EXISTS (SELECT 1 FROM accion WHERE clave = ?)`,
-        [accion.clave, accion.nombre, accion.descripcion, accion.clave],
+        `INSERT IGNORE INTO accion (clave, nombre, descripcion) VALUES (?, ?, ?)`,
+        [accion.clave, accion.nombre, accion.descripcion],
       );
     }
 

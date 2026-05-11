@@ -3,8 +3,17 @@ export declare class DatosTurnoResponseDto {
     fechaTurno: string;
     horaTurno: string;
     estadoTurno: string;
+    consultaFinalizadaAt: string | null;
     socio: SocioTurnoResponseDto;
     fichaSalud: FichaSalud | null;
+    observacionClinica: ObservacionClinicaDto | null;
+}
+export declare class ObservacionClinicaDto {
+    comentario: string;
+    sugerencias: string | null;
+    habitosSocio: string | null;
+    objetivosSocio: string | null;
+    esPublica: boolean;
 }
 export declare class SocioTurnoResponseDto {
     idPersona: number;

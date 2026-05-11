@@ -1,3 +1,4 @@
+import type { EstadoTurno } from '@nutrifit/shared';
 import { Heart, Calendar, Activity, Target } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,12 +9,13 @@ import { GraficoProgresoCard } from '@/components/dashboard/GraficoProgresoCard'
 import { ObjetivosCard } from '@/components/dashboard/ObjetivosCard';
 import { AccionesRapidasSocioCard } from '@/components/dashboard/AccionesRapidasSocioCard';
 import { MensajeMotivacional } from '@/components/dashboard/MensajeMotivacional';
+import { esEstadoTurnoVigente } from '@/lib/turnos/estadoTurno';
 
 interface MiTurno {
   idTurno: number;
   fechaTurno: string;
   horaTurno: string;
-  estadoTurno: string;
+  estadoTurno: EstadoTurno;
   profesionalId: number;
   profesionalNombreCompleto: string;
   especialidad: string;
@@ -48,8 +50,17 @@ export function DashboardSocio() {
   const turnos = Array.isArray(turnosResponse) ? turnosResponse : (turnosResponse?.data ?? []);
 
   // Calcular proximo turno
+  const ahora = new Date();
   const proximoTurno = turnos
-    .filter((t) => t.estadoTurno !== 'CANCELADO' && t.estadoTurno !== 'COMPLETADO')
+    .filter((t) => esEstadoTurnoVigente(t.estadoTurno))
+    .filter((t) => {
+      if (t.estadoTurno === 'PRESENTE' || t.estadoTurno === 'EN_CURSO') {
+        return true;
+      }
+
+      const fechaTurno = new Date(`${t.fechaTurno}T${t.horaTurno}`);
+      return fechaTurno.getTime() >= ahora.getTime();
+    })
     .sort((a, b) => {
       const fechaA = new Date(`${a.fechaTurno}T${a.horaTurno}`);
       const fechaB = new Date(`${b.fechaTurno}T${b.horaTurno}`);

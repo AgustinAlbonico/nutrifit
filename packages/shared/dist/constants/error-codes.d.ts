@@ -11,6 +11,9 @@ export declare const CODIGOS_ERROR: {
     readonly TURNO_NO_DISPONIBLE: "NEG_001";
     readonly SOCIO_SIN_PROFESIONAL: "NEG_002";
     readonly FECHA_INVALIDA: "NEG_003";
+    readonly PLAN_SIN_ITEMS: "PLAN_001";
+    readonly RESTRICCIONES_VIOLADAS: "PLAN_002";
+    readonly IA_SIN_RESULTADOS: "PLAN_003";
 };
 export type CodigoError = (typeof CODIGOS_ERROR)[keyof typeof CODIGOS_ERROR];
 //# sourceMappingURL=error-codes.d.ts.map

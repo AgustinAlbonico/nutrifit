@@ -40,6 +40,10 @@ let LoginUseCase = class LoginUseCase {
         const isPasswordValid = await this.passwordEncrypter.comparePasswords(contrasena, user.contraseña);
         if (!isPasswordValid)
             throw new custom_exceptions_1.UnauthorizedError('Contraseña incorrecta');
+        const persona = user.persona;
+        if (persona?.fechaBaja) {
+            throw new custom_exceptions_1.UnauthorizedError('La cuenta está inactiva');
+        }
         const jwtPayload = {
             id: user.idUsuario,
             email: user.email,

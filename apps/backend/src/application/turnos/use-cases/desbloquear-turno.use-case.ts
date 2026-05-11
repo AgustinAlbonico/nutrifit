@@ -45,9 +45,9 @@ export class DesbloquearTurnoUseCase implements BaseUseCase {
       throw new ForbiddenError('No tiene permisos para gestionar este turno.');
     }
 
-    if (turno.estadoTurno !== EstadoTurno.BLOQUEADO) {
+    if (turno.estadoTurno !== EstadoTurno.PROGRAMADO || turno.socio !== null) {
       throw new BadRequestError(
-        'Solo se pueden desbloquear turnos que esten en estado BLOQUEADO.',
+        'Solo se pueden desbloquear turnos bloqueados (PROGRAMADO sin socio).',
       );
     }
 

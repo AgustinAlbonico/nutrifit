@@ -33,11 +33,12 @@ import { Rol } from 'src/infrastructure/auth/decorators/role.decorator';
 import { JwtAuthGuard } from 'src/infrastructure/auth/guards/auth.guard';
 import { ActionsGuard } from 'src/infrastructure/auth/guards/actions.guard';
 import { RolesGuard } from 'src/infrastructure/auth/guards/roles.guard';
+import { SocioResourceAccessGuard } from 'src/infrastructure/auth/guards/socio-resource-access.guard';
 import { Rol as RolEnum } from 'src/domain/entities/Usuario/Rol';
 import { TipoFoto } from 'src/domain/entities/FotoProgreso/tipo-foto.enum';
 
 @Controller('progreso')
-@UseGuards(JwtAuthGuard, RolesGuard, ActionsGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, ActionsGuard, SocioResourceAccessGuard)
 export class ProgresoController {
   constructor(
     private readonly subirFotoProgresoUseCase: SubirFotoProgresoUseCase,

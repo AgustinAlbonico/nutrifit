@@ -327,7 +327,7 @@ let AlimentosSyncService = AlimentosSyncService_1 = class AlimentosSyncService {
         const filasAlimentos = Array.isArray(filasAlimentosRaw)
             ? filasAlimentosRaw.filter(esFilaAlimentoCuracion)
             : [];
-        const usadosRaw = (await this.dataSource.query('SELECT DISTINCT id_alimento FROM opcion_comida_alimento'));
+        const usadosRaw = (await this.dataSource.query('SELECT DISTINCT id_alimento FROM item_comida'));
         const idsUsados = new Set((Array.isArray(usadosRaw) ? usadosRaw.filter(esFilaIdAlimento) : []).map((fila) => fila.id_alimento));
         const idsEliminar = new Set();
         const renombres = new Map();

@@ -35,7 +35,7 @@ let ActionsGuard = class ActionsGuard {
         if (!userId) {
             throw new common_1.ForbiddenException('No autorizado');
         }
-        if (request.user?.rol === Rol_1.Rol.ADMIN) {
+        if (request.user.rol === Rol_1.Rol.ADMIN) {
             return true;
         }
         const hasPermission = await this.permisosService.hasAllActions(userId, requiredActions);

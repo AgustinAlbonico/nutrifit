@@ -12,7 +12,7 @@ import { UsuarioOrmEntity } from 'src/infrastructure/persistence/typeorm/entitie
 import {
   AlimentoOrmEntity,
   DiaPlanOrmEntity,
-  FichaSaludOrmEntity,
+  ItemComidaOrmEntity,
   NutricionistaOrmEntity,
   OpcionComidaOrmEntity,
   PlanAlimentacionOrmEntity,
@@ -21,6 +21,12 @@ import {
 import { Repository } from 'typeorm';
 import { CrearPlanAlimentacionDto, PlanAlimentacionResponseDto } from '../dtos';
 import { mapPlanToResponse } from './plan-alimentacion.mapper';
+import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
+import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
+import {
+  formatearIncidenciasRestriccion,
+  RestriccionesValidator,
+} from 'src/application/restricciones/restricciones-validator.service';
 
 @Injectable()
 export class CrearPlanAlimentacionUseCase implements BaseUseCase {
@@ -37,10 +43,10 @@ export class CrearPlanAlimentacionUseCase implements BaseUseCase {
     private readonly socioRepo: Repository<SocioOrmEntity>,
     @InjectRepository(NutricionistaOrmEntity)
     private readonly nutricionistaRepo: Repository<NutricionistaOrmEntity>,
-    @InjectRepository(FichaSaludOrmEntity)
-    private readonly fichaSaludRepo: Repository<FichaSaludOrmEntity>,
     @InjectRepository(UsuarioOrmEntity)
     private readonly usuarioRepo: Repository<UsuarioOrmEntity>,
+    private readonly notificacionesService: NotificacionesService,
+    private readonly restriccionesValidator: RestriccionesValidator,
   ) {}
 
   async execute(
@@ -131,7 +137,9 @@ export class CrearPlanAlimentacionUseCase implements BaseUseCase {
     const todosAlimentosIds = [
       ...new Set(
         payload.dias.flatMap((d) =>
-          d.opcionesComida.flatMap((o) => o.alimentosIds),
+          d.opcionesComida.flatMap((o) =>
+            o.items.map((item) => item.alimentoId),
+          ),
         ),
       ),
     ];
@@ -142,42 +150,41 @@ export class CrearPlanAlimentacionUseCase implements BaseUseCase {
       throw new NotFoundError('Uno o más alimentos no existen en el sistema');
     }
 
-    // Validar alergias/restricciones del socio contra alimentos seleccionados
-    const fichaSalud = socio.fichaSalud
-      ? await this.fichaSaludRepo.findOne({
-          where: {
-            idFichaSalud: (socio.fichaSalud as FichaSaludOrmEntity)
-              .idFichaSalud,
-          },
-          relations: { alergias: true },
-        })
-      : null;
-
-    if (fichaSalud?.alergias?.length) {
-      const nombresAlergias = fichaSalud.alergias.map((a) =>
-        a.nombre.toLowerCase(),
-      );
-      const alimentoConflicto = alimentos.find((al) =>
-        nombresAlergias.some((alergia) =>
-          al.nombre.toLowerCase().includes(alergia),
-        ),
-      );
-      if (alimentoConflicto) {
-        throw new ConflictError(
-          `El alimento "${alimentoConflicto.nombre}" puede estar relacionado con una alergia registrada del socio.`,
-        );
-      }
-    }
-
     // Mapa rápido id -> entidad alimento
     const alimentoMap = new Map(alimentos.map((a) => [a.idAlimento, a]));
+
+    const incidenciasRestriccion =
+      await this.restriccionesValidator.generarIncidencias(
+        payload.dias.flatMap((diaDto) =>
+          diaDto.opcionesComida.flatMap((opcionDto, indiceOpcion) =>
+            opcionDto.items.map((itemDto, indiceItem) => {
+              const alimento = alimentoMap.get(itemDto.alimentoId)!;
+              return {
+                dia: diaDto.dia,
+                comida: opcionDto.tipoComida,
+                item: `${indiceOpcion + 1}.${indiceItem + 1}`,
+                alimentoId: alimento.idAlimento,
+                alimentoNombre: alimento.nombre,
+              };
+            }),
+          ),
+        ),
+        socio.idPersona ?? payload.socioId,
+      );
+
+    if (incidenciasRestriccion.length > 0) {
+      throw new ConflictError(
+        formatearIncidenciasRestriccion(incidenciasRestriccion),
+      );
+    }
 
     // Crear plan
     const plan = new PlanAlimentacionOrmEntity();
     plan.fechaCreacion = new Date();
     plan.objetivoNutricional = payload.objetivoNutricional;
-    plan.socio = socio as any;
-    plan.nutricionista = nutricionista as any;
+    plan.socio = socio as unknown as PlanAlimentacionOrmEntity['socio'];
+    plan.nutricionista =
+      nutricionista as unknown as PlanAlimentacionOrmEntity['nutricionista'];
     plan.activo = true;
     plan.eliminadoEn = null;
     plan.motivoEliminacion = null;
@@ -199,9 +206,22 @@ export class CrearPlanAlimentacionUseCase implements BaseUseCase {
         opcion.tipoComida = opcionDto.tipoComida;
         opcion.comentarios = opcionDto.comentarios ?? null;
         opcion.diaPlan = diaGuardado;
-        opcion.alimentos = opcionDto.alimentosIds.map(
-          (id) => alimentoMap.get(id)!,
-        );
+        opcion.items = opcionDto.items.map((itemDto) => {
+          const alimento = alimentoMap.get(itemDto.alimentoId)!;
+          const item = new ItemComidaOrmEntity();
+          item.alimentoId = alimento.idAlimento;
+          item.alimentoNombre = alimento.nombre;
+          item.cantidad = itemDto.cantidad;
+          item.unidad = alimento.unidadMedida;
+          item.notas = null;
+          item.calorias = alimento.calorias;
+          item.proteinas = alimento.proteinas;
+          item.carbohidratos = alimento.carbohidratos;
+          item.grasas = alimento.grasas;
+          item.alimento = alimento;
+          item.opcionComida = opcion;
+          return item;
+        });
         await this.opcionRepo.save(opcion);
       }
     }
@@ -210,11 +230,21 @@ export class CrearPlanAlimentacionUseCase implements BaseUseCase {
     const planCompleto = await this.planRepo.findOne({
       where: { idPlanAlimentacion: planGuardado.idPlanAlimentacion },
       relations: {
-        dias: { opcionesComida: { alimentos: true } },
+        dias: { opcionesComida: { items: { alimento: true } } },
         socio: true,
         nutricionista: true,
       },
     });
+
+    if (socio.idPersona) {
+      await this.notificacionesService.crear({
+        destinatarioId: socio.idPersona,
+        tipo: TipoNotificacion.PLAN_CREADO,
+        titulo: 'Plan de alimentación creado',
+        mensaje: 'Tu nutricionista creó un nuevo plan de alimentación.',
+        metadata: { planId: planGuardado.idPlanAlimentacion },
+      });
+    }
 
     return mapPlanToResponse(planCompleto!);
   }

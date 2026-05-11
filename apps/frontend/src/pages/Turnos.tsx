@@ -1,3 +1,4 @@
+import type { EstadoTurno } from '@nutrifit/shared';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { CalendarDays, CalendarPlus } from 'lucide-react';
@@ -12,6 +13,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { DatePicker } from '@/components/ui/date-picker';
 import {
+  obtenerEtiquetaEstadoTurno,
+  obtenerVarianteEstadoTurno,
+} from '@/lib/turnos/estadoTurno';
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -24,7 +29,7 @@ interface MiTurno {
   idTurno: number;
   fechaTurno: string;
   horaTurno: string;
-  estadoTurno: string;
+  estadoTurno: EstadoTurno;
   especialidad?: string;
   profesionalId?: number;
   profesionalNombreCompleto?: string;
@@ -45,7 +50,7 @@ interface TurnoOperacionResponse {
   idTurno: number;
   fechaTurno: string;
   horaTurno: string;
-  estadoTurno: string;
+  estadoTurno: EstadoTurno;
 }
 
 interface ApiResponse<T> {
@@ -122,38 +127,22 @@ export function Turnos() {
     return fechaFormateada.charAt(0).toUpperCase() + fechaFormateada.slice(1);
   };
 
-  const obtenerDescripcionEstado = (estadoTurno: string) => {
+  const obtenerDescripcionEstado = (estadoTurno: EstadoTurno) => {
     switch (estadoTurno) {
-      case 'PENDIENTE':
-        return 'Tu turno esta pendiente de confirmacion.';
-      case 'CONFIRMADO':
-        return 'Tu turno esta confirmado.';
-      case 'REPROGRAMADO':
-        return 'Este turno fue reprogramado.';
+      case 'PROGRAMADO':
+        return 'Tu turno esta programado y podes gestionarlo segun la politica vigente.';
+      case 'PRESENTE':
+        return 'Tu llegada ya fue registrada y el profesional puede iniciar la consulta.';
+      case 'EN_CURSO':
+        return 'La consulta se encuentra en curso.';
+      case 'REALIZADO':
+        return 'La consulta fue realizada.';
       case 'CANCELADO':
         return 'Este turno fue cancelado.';
-      case 'REALIZADO':
-        return 'Consulta realizada.';
       case 'AUSENTE':
         return 'No registraste asistencia a este turno.';
       default:
         return 'Estado actualizado del turno.';
-    }
-  };
-
-  const obtenerVarianteEstado = (estadoTurno: string) => {
-    switch (estadoTurno) {
-      case 'CONFIRMADO':
-      case 'REALIZADO':
-        return 'default' as const;
-      case 'PENDIENTE':
-      case 'REPROGRAMADO':
-        return 'secondary' as const;
-      case 'CANCELADO':
-      case 'AUSENTE':
-        return 'destructive' as const;
-      default:
-        return 'outline' as const;
     }
   };
 
@@ -572,7 +561,7 @@ export function Turnos() {
                     <option value="TODOS">Todos</option>
                     {estadosDisponibles.map((estado) => (
                       <option key={estado} value={estado}>
-                        {estado}
+                        {obtenerEtiquetaEstadoTurno(estado as EstadoTurno)}
                       </option>
                     ))}
                   </select>
@@ -642,9 +631,7 @@ export function Turnos() {
                       const descripcionEstado = obtenerDescripcionEstado(
                         turno.estadoTurno,
                       );
-                      const varianteEstado = obtenerVarianteEstado(
-                        turno.estadoTurno,
-                      );
+                      const varianteEstado = obtenerVarianteEstadoTurno(turno.estadoTurno);
                       const especialidadTurno =
                         turno.especialidad?.trim() ?? 'Nutricionista';
 
@@ -660,7 +647,9 @@ export function Turnos() {
                                 Horario: {turno.horaTurno} hs
                               </p>
                             </div>
-                            <Badge variant={varianteEstado}>{turno.estadoTurno}</Badge>
+                            <Badge variant={varianteEstado}>
+                              {obtenerEtiquetaEstadoTurno(turno.estadoTurno)}
+                            </Badge>
                           </div>
 
                           <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
@@ -688,7 +677,7 @@ export function Turnos() {
                             {descripcionEstado}
                           </p>
 
-                          {turno.estadoTurno === 'PENDIENTE' && (
+                          {turno.estadoTurno === 'PROGRAMADO' && (
                             <div className="mt-4 flex flex-wrap gap-2 border-t pt-3">
                               <Button
                                 size="sm"

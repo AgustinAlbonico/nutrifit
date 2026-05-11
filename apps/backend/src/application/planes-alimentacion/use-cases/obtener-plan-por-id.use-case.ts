@@ -18,7 +18,7 @@ export class ObtenerPlanPorIdUseCase implements BaseUseCase {
     const plan = await this.planRepo.findOne({
       where: { idPlanAlimentacion: planId },
       relations: {
-        dias: { opcionesComida: { alimentos: true } },
+        dias: { opcionesComida: { items: { alimento: true } } },
         socio: true,
         nutricionista: true,
       },

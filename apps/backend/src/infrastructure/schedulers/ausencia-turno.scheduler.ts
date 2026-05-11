@@ -1,10 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TurnoOrmEntity } from '../persistence/typeorm/entities/turno.entity';
 import { EstadoTurno } from 'src/domain/entities/Turno/EstadoTurno';
-import { EnvironmentConfigService } from '../config/environment-config/environment-config.service';
+import {
+  POLITICA_OPERATIVA_REPOSITORY,
+  IPoliticaOperativaRepository,
+} from 'src/application/politicas/politica-operativa.repository';
 
 @Injectable()
 export class AusenciaTurnoScheduler {
@@ -13,14 +16,14 @@ export class AusenciaTurnoScheduler {
   constructor(
     @InjectRepository(TurnoOrmEntity)
     private readonly turnoRepository: Repository<TurnoOrmEntity>,
-    private readonly configService: EnvironmentConfigService,
+    @Inject(POLITICA_OPERATIVA_REPOSITORY)
+    private readonly politicaRepository: IPoliticaOperativaRepository,
   ) {}
 
   @Cron('*/5 * * * *')
   async marcarAusentesAutomaticos(): Promise<void> {
     this.logger.log('Ejecutando verificación de turnos ausentes...');
 
-    const umbralMinutos = this.configService.getAusenciaUmbralMinutos();
     const ahora = new Date();
     const fechaHoy = ahora.toISOString().split('T')[0];
 
@@ -28,11 +31,15 @@ export class AusenciaTurnoScheduler {
       .createQueryBuilder('turno')
       .where('turno.fechaTurno = :fecha', { fecha: fechaHoy })
       .andWhere('turno.estadoTurno IN (:...estados)', {
-        estados: [EstadoTurno.PENDIENTE, EstadoTurno.CONFIRMADO],
+        estados: [EstadoTurno.PROGRAMADO],
       })
       .getMany();
 
     for (const turno of turnos) {
+      const gimnasioId = turno.gimnasio?.idGimnasio ?? 1;
+      const umbralMinutos =
+        await this.politicaRepository.getUmbralAusente(gimnasioId);
+
       const [hora, minuto] = turno.horaTurno.split(':').map(Number);
       const turnoTime = new Date(ahora);
       turnoTime.setHours(hora, minuto + umbralMinutos, 0, 0);

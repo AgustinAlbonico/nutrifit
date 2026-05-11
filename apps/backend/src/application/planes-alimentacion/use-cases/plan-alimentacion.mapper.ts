@@ -1,6 +1,7 @@
 import {
   AlimentoResponseDto,
   DiaPlanResponseDto,
+  ItemComidaResponseDto,
   OpcionComidaResponseDto,
   PlanAlimentacionResponseDto,
 } from '../dtos';
@@ -9,6 +10,7 @@ import { PlanAlimentacionOrmEntity } from 'src/infrastructure/persistence/typeor
 import { OpcionComidaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/opcion-comida.entity';
 import { DiaPlanOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/dia-plan.entity';
 import { AlimentoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/alimento.entity';
+import { ItemComidaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/item-comida.entity';
 
 export function mapAlimentoToResponse(
   alimento: AlimentoOrmEntity,
@@ -25,6 +27,18 @@ export function mapAlimentoToResponse(
   return dto;
 }
 
+export function mapItemComidaToResponse(
+  item: ItemComidaOrmEntity,
+): ItemComidaResponseDto {
+  const dto = new ItemComidaResponseDto();
+  dto.idItemComida = item.idItemComida;
+  dto.cantidad = item.cantidad;
+  dto.unidad = item.unidad;
+  dto.notas = item.notas;
+  dto.alimento = mapAlimentoToResponse(item.alimento);
+  return dto;
+}
+
 export function mapOpcionToResponse(
   opcion: OpcionComidaOrmEntity,
 ): OpcionComidaResponseDto {
@@ -32,9 +46,7 @@ export function mapOpcionToResponse(
   dto.idOpcionComida = opcion.idOpcionComida;
   dto.tipoComida = opcion.tipoComida;
   dto.comentarios = opcion.comentarios;
-  dto.alimentos = (opcion.alimentos ?? []).map((a) =>
-    mapAlimentoToResponse(a as AlimentoOrmEntity),
-  );
+  dto.items = (opcion.items ?? []).map(mapItemComidaToResponse);
   return dto;
 }
 
@@ -50,6 +62,15 @@ export function mapDiaToResponse(dia: DiaPlanOrmEntity): DiaPlanResponseDto {
 export function mapPlanToResponse(
   plan: PlanAlimentacionOrmEntity,
 ): PlanAlimentacionResponseDto {
+  const socio = plan.socio as { idPersona: number } | undefined;
+  const nutricionista = plan.nutricionista as { idPersona: number } | undefined;
+
+  if (!socio || !nutricionista) {
+    throw new Error(
+      'El plan de alimentacion requiere socio y nutricionista cargados.',
+    );
+  }
+
   const dto = new PlanAlimentacionResponseDto();
   dto.idPlanAlimentacion = plan.idPlanAlimentacion;
   dto.fechaCreacion = plan.fechaCreacion;
@@ -59,10 +80,8 @@ export function mapPlanToResponse(
   dto.motivoEliminacion = plan.motivoEliminacion;
   dto.motivoEdicion = plan.motivoEdicion;
   dto.ultimaEdicion = plan.ultimaEdicion;
-  dto.socioId = plan.socio ? (plan.socio as any).idPersona : undefined;
-  dto.nutricionistaId = plan.nutricionista
-    ? (plan.nutricionista as any).idPersona
-    : undefined;
+  dto.socioId = socio.idPersona;
+  dto.nutricionistaId = nutricionista.idPersona;
   dto.socio = plan.socio ? new SocioResponseDto(plan.socio) : undefined;
   dto.dias = (plan.dias ?? []).map(mapDiaToResponse);
   return dto;

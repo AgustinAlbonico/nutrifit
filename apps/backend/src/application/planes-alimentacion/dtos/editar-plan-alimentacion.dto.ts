@@ -13,6 +13,16 @@ import {
 import { DiaSemana } from 'src/domain/entities/DiaPlan/DiaSemana';
 import { TipoComida } from 'src/domain/entities/OpcionComida/TipoComida';
 
+export class EditarItemComidaDto {
+  @IsInt()
+  @Min(1)
+  alimentoId: number;
+
+  @IsInt()
+  @Min(1)
+  cantidad: number;
+}
+
 export class EditarOpcionComidaDto {
   @IsEnum(TipoComida)
   tipoComida: TipoComida;
@@ -23,9 +33,9 @@ export class EditarOpcionComidaDto {
   comentarios?: string;
 
   @IsArray()
-  @IsInt({ each: true })
-  @Min(1, { each: true })
-  alimentosIds: number[];
+  @ValidateNested({ each: true })
+  @Type(() => EditarItemComidaDto)
+  items: EditarItemComidaDto[];
 }
 
 export class EditarDiaPlanDto {
@@ -54,10 +64,10 @@ export class EditarPlanAlimentacionDto {
   @MaxLength(255)
   objetivoNutricional?: string;
 
-  @IsOptional()
   @IsString()
+  @IsNotEmpty()
   @MaxLength(255)
-  motivoEdicion?: string;
+  motivoEdicion: string;
 
   @IsOptional()
   @IsArray()

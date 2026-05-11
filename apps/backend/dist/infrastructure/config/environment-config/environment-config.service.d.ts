@@ -12,6 +12,7 @@ export declare class EnvironmentConfigService implements DatabaseConfig, AppConf
     getJwtExpirationTime(): string;
     getPort(): number;
     getAppName(): string;
+    getCorsAllowedOrigins(): string[];
     getNodeEnv(): 'production' | 'test' | 'dev';
     getDatabaseHost(): string;
     getDatabasePort(): number;

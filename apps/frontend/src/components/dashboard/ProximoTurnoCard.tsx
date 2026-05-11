@@ -1,15 +1,21 @@
+import type { EstadoTurno } from '@nutrifit/shared';
 import { useQuery } from '@tanstack/react-query';
 import { Calendar, Clock, User } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { apiRequest } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import {
+  esEstadoTurnoVigente,
+  obtenerClasesEstadoTurno,
+  obtenerEtiquetaEstadoTurno,
+} from '@/lib/turnos/estadoTurno';
 
 interface MiTurno {
   idTurno: number;
   fechaTurno: string;
   horaTurno: string;
-  estadoTurno: string;
+  estadoTurno: EstadoTurno;
   profesionalId: number;
   profesionalNombreCompleto: string;
   especialidad: string;
@@ -28,8 +34,17 @@ export function ProximoTurnoCard() {
   // Asegurar que turnos sea siempre un array (la API puede devolver null u objeto)
   const turnos = Array.isArray(data) ? data : [];
 
+  const ahora = new Date();
   const proximoTurno = turnos
-    .filter((t) => t.estadoTurno !== 'CANCELADO' && t.estadoTurno !== 'COMPLETADO')
+    .filter((t) => esEstadoTurnoVigente(t.estadoTurno))
+    .filter((t) => {
+      if (t.estadoTurno === 'PRESENTE' || t.estadoTurno === 'EN_CURSO') {
+        return true;
+      }
+
+      const fechaTurno = new Date(`${t.fechaTurno}T${t.horaTurno}`);
+      return fechaTurno.getTime() >= ahora.getTime();
+    })
     .sort((a, b) => {
       const fechaA = new Date(`${a.fechaTurno}T${a.horaTurno}`);
       const fechaB = new Date(`${b.fechaTurno}T${b.horaTurno}`);
@@ -79,8 +94,10 @@ export function ProximoTurnoCard() {
               <User className="h-4 w-4 text-muted-foreground" />
               <span>{proximoTurno.profesionalNombreCompleto}</span>
             </div>
-            <Badge className="bg-blue-100 text-blue-800 mt-2">
-              {proximoTurno.estadoTurno}
+            <Badge
+              className={`${obtenerClasesEstadoTurno(proximoTurno.estadoTurno)} mt-2`}
+            >
+              {obtenerEtiquetaEstadoTurno(proximoTurno.estadoTurno)}
             </Badge>
           </div>
         )}

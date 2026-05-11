@@ -37,6 +37,8 @@ import {
   UsuarioOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
 import { Not, Repository } from 'typeorm';
+import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
+import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
 
 @Injectable()
 export class ReservarTurnoSocioUseCase implements BaseUseCase {
@@ -55,6 +57,7 @@ export class ReservarTurnoSocioUseCase implements BaseUseCase {
     private readonly nutricionistaRepository: NutricionistaRepository,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
+    private readonly notificacionesService: NotificacionesService,
   ) {}
 
   async execute(
@@ -128,11 +131,21 @@ export class ReservarTurnoSocioUseCase implements BaseUseCase {
     const turno = new TurnoOrmEntity();
     turno.fechaTurno = fechaTurno;
     turno.horaTurno = horaTurno;
-    turno.estadoTurno = EstadoTurno.PENDIENTE;
+    turno.estadoTurno = EstadoTurno.PROGRAMADO;
     turno.socio = socio;
     turno.nutricionista = nutricionistaOrm;
 
     const turnoCreado = await this.turnoRepository.save(turno);
+
+    if (socio.idPersona) {
+      await this.notificacionesService.crear({
+        destinatarioId: socio.idPersona,
+        tipo: TipoNotificacion.TURNO_RESERVADO,
+        titulo: 'Turno reservado',
+        mensaje: `Reservaste un turno para el ${formatArgentinaDate(turnoCreado.fechaTurno)} a las ${normalizeTimeToHHmm(turnoCreado.horaTurno)}.`,
+        metadata: { turnoId: turnoCreado.idTurno },
+      });
+    }
 
     this.logger.log(
       `Turno reservado por socio ${socio.idPersona}. Turno=${turnoCreado.idTurno}, profesional=${payload.nutricionistaId}.`,

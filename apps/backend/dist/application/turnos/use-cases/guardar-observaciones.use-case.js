@@ -16,6 +16,7 @@ exports.GuardarObservacionesUseCase = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
+const EstadoTurno_1 = require("../../../domain/entities/Turno/EstadoTurno");
 const turno_entity_1 = require("../../../infrastructure/persistence/typeorm/entities/turno.entity");
 const observacion_clinica_entity_1 = require("../../../infrastructure/persistence/typeorm/entities/observacion-clinica.entity");
 const custom_exceptions_1 = require("../../../domain/exceptions/custom-exceptions");
@@ -34,11 +35,18 @@ let GuardarObservacionesUseCase = class GuardarObservacionesUseCase {
         if (!turno) {
             throw new custom_exceptions_1.BadRequestError('Turno no encontrado');
         }
+        if (turno.consultaFinalizadaAt !== null) {
+            throw new custom_exceptions_1.BadRequestError('No se pueden agregar observaciones a una consulta ya finalizada');
+        }
+        if (turno.estadoTurno !== EstadoTurno_1.EstadoTurno.EN_CURSO) {
+            throw new custom_exceptions_1.BadRequestError(`Solo se pueden guardar observaciones durante una consulta en curso. Estado actual: ${turno.estadoTurno}`);
+        }
         if (turno.observacionClinica) {
             turno.observacionClinica.comentario = dto.comentario;
             turno.observacionClinica.sugerencias = dto.sugerencias ?? null;
             turno.observacionClinica.habitosSocio = dto.habitosSocio ?? null;
             turno.observacionClinica.objetivosSocio = dto.objetivosSocio ?? null;
+            turno.observacionClinica.esPublica = dto.esPublica ?? false;
             await this.observacionRepository.save(turno.observacionClinica);
         }
         else {
@@ -61,6 +69,7 @@ let GuardarObservacionesUseCase = class GuardarObservacionesUseCase {
                 sugerencias: dto.sugerencias ?? null,
                 habitosSocio: dto.habitosSocio ?? null,
                 objetivosSocio: dto.objetivosSocio ?? null,
+                esPublica: dto.esPublica ?? false,
                 turno: turno,
             });
             await this.observacionRepository.save(observacion);

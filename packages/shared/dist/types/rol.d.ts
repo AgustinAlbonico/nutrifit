@@ -1,4 +1,4 @@
-export type Rol = 'SOCIO' | 'NUTRICIONISTA' | 'ASISTENTE' | 'ADMIN';
+export type Rol = 'SOCIO' | 'NUTRICIONISTA' | 'ENTRENADOR' | 'RECEPCIONISTA' | 'ADMIN';
 export interface InfoRol {
     rol: Rol;
     nombre: string;

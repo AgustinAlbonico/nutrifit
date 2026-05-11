@@ -1,15 +1,20 @@
+import type { EstadoTurno } from '@nutrifit/shared';
 import { useQuery } from '@tanstack/react-query';
 import { Calendar, Clock, User } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { apiRequest } from '@/lib/api';
+import {
+  obtenerClasesEstadoTurno,
+  obtenerEtiquetaEstadoTurno,
+} from '@/lib/turnos/estadoTurno';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface TurnoDelDia {
   idTurno: number;
   fechaTurno: string;
   horaTurno: string;
-  estadoTurno: string;
+  estadoTurno: EstadoTurno;
   tipoConsulta: string;
   socio: {
     idPersona: number;
@@ -40,21 +45,6 @@ export function TurnosDelDiaCard() {
     },
     enabled: !!token && !!personaId,
   });
-
-  const getEstadoColor = (estado: string) => {
-    switch (estado) {
-      case 'PENDIENTE':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'CONFIRMADO':
-        return 'bg-blue-100 text-blue-800';
-      case 'COMPLETADO':
-        return 'bg-green-100 text-green-800';
-      case 'CANCELADO':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
 
   if (isLoading) {
     return (
@@ -107,8 +97,8 @@ export function TurnosDelDiaCard() {
                     <span className="font-medium">{turno.socio.nombreCompleto}</span>
                   </div>
                 </div>
-                <Badge className={getEstadoColor(turno.estadoTurno)}>
-                  {turno.estadoTurno}
+                <Badge className={obtenerClasesEstadoTurno(turno.estadoTurno)}>
+                  {obtenerEtiquetaEstadoTurno(turno.estadoTurno)}
                 </Badge>
               </div>
             ))}

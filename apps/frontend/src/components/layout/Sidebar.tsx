@@ -14,6 +14,8 @@ import {
   TrendingUp,
   ChevronLeft,
   ChevronRight,
+  Shield,
+  Bell,
 } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -31,6 +33,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { obtenerUrlFoto } from '@/lib/api';
+import { NotificationCenter } from '@/features/notificaciones/components/NotificationCenter';
 
 export function Sidebar() {
   const { rol, email, nombre, apellido, fotoPerfilUrl, logout } = useAuth();
@@ -113,6 +116,18 @@ export function Sidebar() {
       label: 'Mi Plan',
       icon: Utensils,
       roles: ['SOCIO'],
+    },
+    {
+      to: '/notificaciones',
+      label: 'Notificaciones',
+      icon: Bell,
+      roles: ['ADMIN', 'NUTRICIONISTA', 'SOCIO', 'RECEPCIONISTA'],
+    },
+    {
+      to: '/admin/auditoria',
+      label: 'Auditoría',
+      icon: Shield,
+      roles: ['ADMIN'],
     },
     {
       to: '/recepcion/turnos',
@@ -200,6 +215,7 @@ export function Sidebar() {
               </span>
             </div>
           </div>
+          {expandido && <NotificationCenter />}
 
         </div>
 

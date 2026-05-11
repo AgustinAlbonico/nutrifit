@@ -17,6 +17,7 @@ const agenda_module_1 = require("./agenda/agenda.module");
 const turnos_module_1 = require("./turnos/turnos.module");
 const planes_alimentacion_module_1 = require("./planes-alimentacion/planes-alimentacion.module");
 const ai_module_1 = require("./ai/ai.module");
+const reportes_module_1 = require("./reportes/reportes.module");
 let ApplicationModule = class ApplicationModule {
 };
 exports.ApplicationModule = ApplicationModule;
@@ -32,6 +33,7 @@ exports.ApplicationModule = ApplicationModule = __decorate([
             turnos_module_1.TurnosModule,
             planes_alimentacion_module_1.PlanesAlimentacionModule,
             ai_module_1.AiModule,
+            reportes_module_1.ReportesModule,
         ],
         exports: [
             auth_module_1.AuthModule,
@@ -42,6 +44,7 @@ exports.ApplicationModule = ApplicationModule = __decorate([
             turnos_module_1.TurnosModule,
             planes_alimentacion_module_1.PlanesAlimentacionModule,
             ai_module_1.AiModule,
+            reportes_module_1.ReportesModule,
         ],
     })
 ], ApplicationModule);

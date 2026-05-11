@@ -13,6 +13,16 @@ import {
 import { DiaSemana } from 'src/domain/entities/DiaPlan/DiaSemana';
 import { TipoComida } from 'src/domain/entities/OpcionComida/TipoComida';
 
+export class CrearItemComidaDto {
+  @IsInt()
+  @Min(1)
+  alimentoId: number;
+
+  @IsInt()
+  @Min(1)
+  cantidad: number;
+}
+
 export class CrearOpcionComidaDto {
   @IsEnum(TipoComida)
   tipoComida: TipoComida;
@@ -23,9 +33,9 @@ export class CrearOpcionComidaDto {
   comentarios?: string;
 
   @IsArray()
-  @IsInt({ each: true })
-  @Min(1, { each: true })
-  alimentosIds: number[];
+  @ValidateNested({ each: true })
+  @Type(() => CrearItemComidaDto)
+  items: CrearItemComidaDto[];
 }
 
 export class CrearDiaPlanDto {

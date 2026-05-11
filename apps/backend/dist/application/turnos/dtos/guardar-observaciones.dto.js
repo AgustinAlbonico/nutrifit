@@ -16,6 +16,7 @@ class GuardarObservacionesDto {
     sugerencias;
     habitosSocio;
     objetivosSocio;
+    esPublica;
 }
 exports.GuardarObservacionesDto = GuardarObservacionesDto;
 __decorate([
@@ -38,4 +39,9 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], GuardarObservacionesDto.prototype, "objetivosSocio", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], GuardarObservacionesDto.prototype, "esPublica", void 0);
 //# sourceMappingURL=guardar-observaciones.dto.js.map

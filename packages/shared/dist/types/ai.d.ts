@@ -85,4 +85,14 @@ export interface SolicitudSustitucion {
 export interface SolicitudAnalisis {
     planId: number;
 }
+export interface IngredienteIA {
+    nombre: string;
+    cantidad: string;
+    unidad: string;
+}
+export interface PropuestaIA {
+    nombre: string;
+    ingredientes: IngredienteIA[];
+    pasos: string[];
+}
 //# sourceMappingURL=ai.d.ts.map

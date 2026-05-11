@@ -49,11 +49,19 @@ interface Alimento {
   unidadMedida: string;
 }
 
+interface ItemComida {
+  idItemComida: number;
+  cantidad: number;
+  unidad: string;
+  notas: string | null;
+  alimento: Alimento;
+}
+
 interface OpcionComida {
   idOpcionComida: number;
   tipoComida: TipoComida;
   comentarios: string | null;
-  alimentos: Alimento[];
+  items: ItemComida[];
 }
 
 interface DiaPlan {
@@ -120,16 +128,29 @@ interface TotalesNutricionales {
 }
 
 function calcularTotalesComida(comida: OpcionComida): TotalesNutricionales {
-  const alimentos = comida.alimentos || [];
-  return alimentos.reduce(
-    (acc, al) => ({
-      calorias: acc.calorias + (al?.calorias || 0),
-      proteinas: acc.proteinas + (al?.proteinas || 0),
-      carbohidratos: acc.carbohidratos + (al?.carbohidratos || 0),
-      grasas: acc.grasas + (al?.grasas || 0),
-    }),
+  const items = comida.items || [];
+  return items.reduce(
+    (acc, item) => {
+      const multiplicador = item.cantidad / (item.alimento.cantidad || 1);
+      return {
+        calorias: acc.calorias + (item.alimento.calorias || 0) * multiplicador,
+        proteinas: acc.proteinas + (item.alimento.proteinas || 0) * multiplicador,
+        carbohidratos:
+          acc.carbohidratos + (item.alimento.carbohidratos || 0) * multiplicador,
+        grasas: acc.grasas + (item.alimento.grasas || 0) * multiplicador,
+      };
+    },
     { calorias: 0, proteinas: 0, carbohidratos: 0, grasas: 0 }
   );
+}
+
+function calcularCaloriasItem(item: ItemComida): number | null {
+  if (item.alimento.calorias === null) {
+    return null;
+  }
+
+  const multiplicador = item.cantidad / (item.alimento.cantidad || 1);
+  return Math.round(item.alimento.calorias * multiplicador);
 }
 
 function calcularTotalesDia(dia: DiaPlan): TotalesNutricionales {
@@ -176,30 +197,30 @@ function obtenerColorComida(tipo: TipoComida | string): string {
 // Helper para convertir datos del plan al formato del PDF
 function convertirAComidasEnPlan(dias: DiaPlan[]): ComidaEnPlan[] {
   const comidas: ComidaEnPlan[] = [];
-  
+
   dias.forEach(dia => {
     dia.opcionesComida?.forEach(opcion => {
       comidas.push({
         dia: dia.dia as DiaSemana,
         tipoComida: opcion.tipoComida as TipoComida,
-        alimentos: (opcion.alimentos || []).map(al => ({
+        alimentos: (opcion.items || []).map(item => ({
           alimento: {
-            idAlimento: al.idAlimento,
-            nombre: al.nombre,
-            cantidad: al.cantidad,
-            unidadMedida: al.unidadMedida,
-            calorias: al.calorias,
-            proteinas: al.proteinas,
-            carbohidratos: al.carbohidratos,
-            grasas: al.grasas,
+            idAlimento: item.alimento.idAlimento,
+            nombre: item.alimento.nombre,
+            cantidad: item.alimento.cantidad,
+            unidadMedida: item.alimento.unidadMedida,
+            calorias: item.alimento.calorias,
+            proteinas: item.alimento.proteinas,
+            carbohidratos: item.alimento.carbohidratos,
+            grasas: item.alimento.grasas,
             grupoAlimenticio: null,
           },
-          cantidad: al.cantidad,
+          cantidad: item.cantidad,
         })),
       });
     });
   });
-  
+
   return comidas;
 }
 
@@ -266,20 +287,20 @@ export function MiPlanPage() {
     });
   };
 
-  const renderizarAlimento = (alimento: Alimento) => (
+  const renderizarAlimento = (item: ItemComida) => (
     <div
-      key={alimento.idAlimento}
+      key={item.idItemComida}
       className="flex items-center justify-between py-2 px-3 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors"
     >
       <div className="flex-1">
-        <span className="font-medium text-sm">{alimento.nombre}</span>
+        <span className="font-medium text-sm">{item.alimento.nombre}</span>
         <span className="text-muted-foreground text-xs ml-2">
-          ({alimento.cantidad} {alimento.unidadMedida})
+          ({item.cantidad} {item.unidad})
         </span>
       </div>
-      {alimento.calorias !== null && (
+      {calcularCaloriasItem(item) !== null && (
         <Badge variant="outline" className="text-xs">
-          {alimento.calorias} kcal
+          {calcularCaloriasItem(item)} kcal
         </Badge>
       )}
     </div>
@@ -324,8 +345,8 @@ export function MiPlanPage() {
         )}
 
         <div className="space-y-2">
-          {(comida.alimentos || []).length > 0 ? (
-            (comida.alimentos || []).filter(Boolean).map(renderizarAlimento)
+          {(comida.items || []).length > 0 ? (
+            (comida.items || []).filter(Boolean).map(renderizarAlimento)
           ) : (
             <p className="text-sm text-muted-foreground italic">Sin alimentos asignados</p>
           )}

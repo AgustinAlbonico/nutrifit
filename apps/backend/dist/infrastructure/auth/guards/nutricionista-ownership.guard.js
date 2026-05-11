@@ -14,6 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.NutricionistaOwnershipGuard = void 0;
 const common_1 = require("@nestjs/common");
+const Rol_1 = require("../../../domain/entities/Usuario/Rol");
 const usuario_repository_1 = require("../../../domain/entities/Usuario/usuario.repository");
 let NutricionistaOwnershipGuard = class NutricionistaOwnershipGuard {
     usuarioRepository;
@@ -22,12 +23,16 @@ let NutricionistaOwnershipGuard = class NutricionistaOwnershipGuard {
     }
     async canActivate(context) {
         const request = context.switchToHttp().getRequest();
+        const user = request.user;
+        if (user?.rol === Rol_1.Rol.ADMIN) {
+            return true;
+        }
         const nutricionistaIdParam = request.params?.nutricionistaId;
         if (!nutricionistaIdParam) {
             return true;
         }
         const nutricionistaId = Number(nutricionistaIdParam);
-        const userId = request.user?.id;
+        const userId = user?.id;
         if (!Number.isFinite(nutricionistaId) || !userId) {
             throw new common_1.ForbiddenException('No autorizado');
         }

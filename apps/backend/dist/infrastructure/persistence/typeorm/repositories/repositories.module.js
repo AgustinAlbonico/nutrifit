@@ -15,6 +15,8 @@ const entities_1 = require("../entities/");
 const socio_repository_1 = require("../../../../domain/entities/Persona/Socio/socio.repository");
 const usuario_repository_1 = require("../../../../domain/entities/Usuario/usuario.repository");
 const nutricionista_repository_1 = require("../../../../domain/entities/Persona/Nutricionista/nutricionista.repository");
+const politica_operativa_repository_1 = require("../../../../application/politicas/politica-operativa.repository");
+const politica_operativa_repository_impl_1 = require("../../../politicas/politica-operativa.repository.impl");
 let RepositoriesModule = class RepositoriesModule {
 };
 exports.RepositoriesModule = RepositoriesModule;
@@ -39,6 +41,7 @@ exports.RepositoriesModule = RepositoriesModule = __decorate([
                 entities_1.PlanAlimentacionOrmEntity,
                 entities_1.TurnoOrmEntity,
                 entities_1.UsuarioOrmEntity,
+                entities_1.GimnasioOrmEntity,
             ]),
         ],
         providers: [
@@ -48,8 +51,17 @@ exports.RepositoriesModule = RepositoriesModule = __decorate([
                 provide: nutricionista_repository_1.NUTRICIONISTA_REPOSITORY,
                 useClass: _1.NutricionistaRepositoryImplementation,
             },
+            {
+                provide: politica_operativa_repository_1.POLITICA_OPERATIVA_REPOSITORY,
+                useClass: politica_operativa_repository_impl_1.PoliticaOperativaRepositoryImpl,
+            },
         ],
-        exports: [usuario_repository_1.USUARIO_REPOSITORY, socio_repository_1.SOCIO_REPOSITORY, nutricionista_repository_1.NUTRICIONISTA_REPOSITORY],
+        exports: [
+            usuario_repository_1.USUARIO_REPOSITORY,
+            socio_repository_1.SOCIO_REPOSITORY,
+            nutricionista_repository_1.NUTRICIONISTA_REPOSITORY,
+            politica_operativa_repository_1.POLITICA_OPERATIVA_REPOSITORY,
+        ],
     })
 ], RepositoriesModule);
 //# sourceMappingURL=repositories.module.js.map

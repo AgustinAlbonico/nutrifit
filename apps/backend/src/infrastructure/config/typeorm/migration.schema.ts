@@ -1,28 +1,32 @@
 import 'reflect-metadata';
-import { AgendaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/agenda.entity';
-import { AlimentoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/alimento.entity';
+import { AgendaOrmEntity } from '../../persistence/typeorm/entities/agenda.entity';
+import { AlimentoOrmEntity } from '../../persistence/typeorm/entities/alimento.entity';
 import {
   AsistenteOrmEntity,
   NutricionistaOrmEntity,
   PersonaOrmEntity,
   SocioOrmEntity,
-} from 'src/infrastructure/persistence/typeorm/entities/persona.entity';
-import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/turno.entity';
+} from '../../persistence/typeorm/entities/persona.entity';
+import { TurnoOrmEntity } from '../../persistence/typeorm/entities/turno.entity';
 import {
   AlergiaOrmEntity,
   FichaSaludOrmEntity,
   PatologiaOrmEntity,
-} from 'src/infrastructure/persistence/typeorm/entities/ficha-salud.entity';
-import { UsuarioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/usuario.entity';
-import { OpcionComidaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/opcion-comida.entity';
-import { GrupoAlimenticioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/grupo-alimenticio.entity';
-import { PlanAlimentacionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/plan-alimentacion.entity';
-import { FormacionAcademicaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/formacion-academica.entity';
-import { ObservacionClinicaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/observacion-clinica.entity';
-import { AccionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/accion.entity';
-import { GrupoPermisoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/grupo-permiso.entity';
-import { MedicionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/medicion.entity';
-import { DiaPlanOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/dia-plan.entity';
+} from '../../persistence/typeorm/entities/ficha-salud.entity';
+import { UsuarioOrmEntity } from '../../persistence/typeorm/entities/usuario.entity';
+import { OpcionComidaOrmEntity } from '../../persistence/typeorm/entities/opcion-comida.entity';
+import { GrupoAlimenticioOrmEntity } from '../../persistence/typeorm/entities/grupo-alimenticio.entity';
+import { PlanAlimentacionOrmEntity } from '../../persistence/typeorm/entities/plan-alimentacion.entity';
+import { FormacionAcademicaOrmEntity } from '../../persistence/typeorm/entities/formacion-academica.entity';
+import { ObservacionClinicaOrmEntity } from '../../persistence/typeorm/entities/observacion-clinica.entity';
+import { AccionOrmEntity } from '../../persistence/typeorm/entities/accion.entity';
+import { GrupoPermisoOrmEntity } from '../../persistence/typeorm/entities/grupo-permiso.entity';
+import { MedicionOrmEntity } from '../../persistence/typeorm/entities/medicion.entity';
+import { DiaPlanOrmEntity } from '../../persistence/typeorm/entities/dia-plan.entity';
+import { GimnasioOrmEntity } from '../../persistence/typeorm/entities/gimnasio.entity';
+import { FotoProgresoOrmEntity } from '../../persistence/typeorm/entities/foto-progreso.entity';
+import { ItemComidaOrmEntity } from '../../persistence/typeorm/entities/item-comida.entity';
+import { ObjetivoOrmEntity } from '../../persistence/typeorm/entities/objetivo.entity';
 import { DataSource } from 'typeorm';
 
 export const AppMigrationDataSource = new DataSource({
@@ -44,6 +48,7 @@ export const AppMigrationDataSource = new DataSource({
     AsistenteOrmEntity,
     PatologiaOrmEntity,
     FichaSaludOrmEntity,
+    ItemComidaOrmEntity,
     OpcionComidaOrmEntity,
     NutricionistaOrmEntity,
     GrupoAlimenticioOrmEntity,
@@ -54,8 +59,11 @@ export const AppMigrationDataSource = new DataSource({
     GrupoPermisoOrmEntity,
     MedicionOrmEntity,
     DiaPlanOrmEntity,
+    GimnasioOrmEntity,
+    FotoProgresoOrmEntity,
+    ObjetivoOrmEntity,
   ],
-  migrations: ['src/infrastructure/persistence/typeorm/migrations/*.ts'],
+  migrations: ['dist/infrastructure/persistence/typeorm/migrations/*.js'],
   synchronize: false,
   logging: true,
 });

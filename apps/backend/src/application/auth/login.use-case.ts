@@ -49,6 +49,12 @@ export class LoginUseCase implements BaseUseCase {
     );
     if (!isPasswordValid) throw new UnauthorizedError('Contraseña incorrecta');
 
+    // Bloquear usuarios con fechaBaja (cuenta inactiva)
+    const persona = user.persona;
+    if (persona?.fechaBaja) {
+      throw new UnauthorizedError('La cuenta está inactiva');
+    }
+
     const jwtPayload: JwtPayload = {
       id: user.idUsuario,
       email: user.email,

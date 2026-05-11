@@ -2,6 +2,10 @@ import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BaseUseCase } from 'src/application/shared/use-case.base';
 import {
+  POLITICA_OPERATIVA_REPOSITORY,
+  IPoliticaOperativaRepository,
+} from 'src/application/politicas/politica-operativa.repository';
+import {
   ReprogramarTurnoSocioDto,
   TurnoOperacionResponseDto,
 } from 'src/application/turnos/dtos';
@@ -33,6 +37,10 @@ import {
   UsuarioOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
 import { Not, Repository } from 'typeorm';
+import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
+import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
+import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
+import { AccionAuditoria } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
 
 @Injectable()
 export class ReprogramarTurnoSocioUseCase implements BaseUseCase {
@@ -47,6 +55,10 @@ export class ReprogramarTurnoSocioUseCase implements BaseUseCase {
     private readonly agendaRepository: Repository<AgendaOrmEntity>,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
+    @Inject(POLITICA_OPERATIVA_REPOSITORY)
+    private readonly politicaRepository: IPoliticaOperativaRepository,
+    private readonly notificacionesService: NotificacionesService,
+    private readonly auditoriaService: AuditoriaService,
   ) {}
 
   async execute(
@@ -74,13 +86,13 @@ export class ReprogramarTurnoSocioUseCase implements BaseUseCase {
       );
     }
 
-    if (turno.estadoTurno !== EstadoTurno.PENDIENTE) {
+    if (turno.estadoTurno !== EstadoTurno.PROGRAMADO) {
       throw new BadRequestError(
-        'Solo se pueden reprogramar turnos en estado PENDIENTE.',
+        'Solo se pueden reprogramar turnos en estado PROGRAMADO.',
       );
     }
 
-    this.validate24hRule(turno.fechaTurno, turno.horaTurno);
+    await this.validatePolicyRule(turno);
 
     const nuevaFecha = parseArgentinaDateInput(payload.fechaTurno);
     const nuevaHora = normalizeTimeToHHmm(payload.horaTurno);
@@ -108,17 +120,54 @@ export class ReprogramarTurnoSocioUseCase implements BaseUseCase {
       );
     }
 
+    // Store original date for audit before updating
+    const fechaOriginalAnterior = turno.fechaOriginal;
+    turno.fechaOriginal = turno.fechaTurno;
     turno.fechaTurno = nuevaFecha;
     turno.horaTurno = nuevaHora;
-    turno.estadoTurno = EstadoTurno.REPROGRAMADO;
+    // La reprogramación mantiene el estado PROGRAMADO (el turno sigue programado, solo cambia fecha/hora)
 
     const updatedTurno = await this.turnoRepository.save(turno);
 
+    await this.auditoriaService.registrar({
+      usuarioId: userId,
+      accion: AccionAuditoria.TURNO_ESTADO_CAMBIO,
+      entidad: 'Turno',
+      entidadId: turnoId,
+      metadata: {
+        tipo: 'REPROGRAMACION',
+        fechaOriginal: fechaOriginalAnterior
+          ? formatArgentinaDate(fechaOriginalAnterior)
+          : null,
+        fechaNueva: formatArgentinaDate(nuevaFecha),
+        horaOriginal: normalizeTimeToHHmm(updatedTurno.horaTurno),
+        horaNueva: nuevaHora,
+        motivo: payload.motivo ?? null,
+      },
+    });
+
+    if (turno.socio.idPersona) {
+      await this.notificacionesService.crear({
+        destinatarioId: turno.socio.idPersona,
+        tipo: TipoNotificacion.TURNO_REPROGRAMADO,
+        titulo: 'Turno reprogramado',
+        mensaje: `Tu turno fue reprogramado para el ${formatArgentinaDate(updatedTurno.fechaTurno)} a las ${normalizeTimeToHHmm(updatedTurno.horaTurno)}.`,
+        metadata: { turnoId: updatedTurno.idTurno },
+      });
+    }
+
+    if (turno.nutricionista.idPersona) {
+      await this.notificacionesService.crear({
+        destinatarioId: turno.nutricionista.idPersona,
+        tipo: TipoNotificacion.TURNO_REPROGRAMADO,
+        titulo: 'Turno reprogramado por socio',
+        mensaje: `El socio reprogramó el turno #${turno.idTurno} para el ${formatArgentinaDate(updatedTurno.fechaTurno)} a las ${normalizeTimeToHHmm(updatedTurno.horaTurno)}.`,
+        metadata: { turnoId: updatedTurno.idTurno },
+      });
+    }
+
     this.logger.log(
       `Turno ${turnoId} reprogramado por socio ${socio.idPersona}.`,
-    );
-    this.logger.log(
-      `Notificacion interna pendiente de integracion para profesional ${turno.nutricionista.idPersona}.`,
     );
 
     return this.toResponseDto(updatedTurno);
@@ -160,6 +209,25 @@ export class ReprogramarTurnoSocioUseCase implements BaseUseCase {
     if (hoursDiff < 24) {
       throw new BadRequestError(
         'Solo se puede reprogramar con al menos 24 horas de anticipacion.',
+      );
+    }
+  }
+
+  private async validatePolicyRule(turno: TurnoOrmEntity): Promise<void> {
+    const gimnasioId = turno.gimnasio?.idGimnasio ?? 1;
+    const plazoHoras =
+      await this.politicaRepository.getPlazoReprogramacion(gimnasioId);
+    const scheduledDate = combineArgentinaDateAndTime(
+      turno.fechaTurno,
+      turno.horaTurno,
+    );
+    const now = new Date();
+    const hoursDiff =
+      (scheduledDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+    if (hoursDiff < plazoHoras) {
+      throw new BadRequestError(
+        `Solo se puede reprogramar con al menos ${plazoHoras} horas de anticipacion.`,
       );
     }
   }
@@ -267,6 +335,10 @@ export class ReprogramarTurnoSocioUseCase implements BaseUseCase {
     response.estadoTurno = turno.estadoTurno;
     response.socioId = turno.socio.idPersona ?? 0;
     response.nutricionistaId = turno.nutricionista.idPersona ?? 0;
+    response.gimnasioId = turno.gimnasio?.idGimnasio;
+    response.fechaOriginal = turno.fechaOriginal
+      ? formatArgentinaDate(turno.fechaOriginal)
+      : undefined;
     return response;
   }
 }

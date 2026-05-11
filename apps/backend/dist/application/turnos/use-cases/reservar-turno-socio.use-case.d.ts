@@ -4,6 +4,7 @@ import { NutricionistaRepository } from 'src/domain/entities/Persona/Nutricionis
 import { IAppLoggerService } from 'src/domain/services/logger.service';
 import { AgendaOrmEntity, NutricionistaOrmEntity, SocioOrmEntity, TurnoOrmEntity, UsuarioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities';
 import { Repository } from 'typeorm';
+import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 export declare class ReservarTurnoSocioUseCase implements BaseUseCase {
     private readonly usuarioRepository;
     private readonly socioRepository;
@@ -12,7 +13,8 @@ export declare class ReservarTurnoSocioUseCase implements BaseUseCase {
     private readonly turnoRepository;
     private readonly nutricionistaRepository;
     private readonly logger;
-    constructor(usuarioRepository: Repository<UsuarioOrmEntity>, socioRepository: Repository<SocioOrmEntity>, nutricionistaOrmRepository: Repository<NutricionistaOrmEntity>, agendaRepository: Repository<AgendaOrmEntity>, turnoRepository: Repository<TurnoOrmEntity>, nutricionistaRepository: NutricionistaRepository, logger: IAppLoggerService);
+    private readonly notificacionesService;
+    constructor(usuarioRepository: Repository<UsuarioOrmEntity>, socioRepository: Repository<SocioOrmEntity>, nutricionistaOrmRepository: Repository<NutricionistaOrmEntity>, agendaRepository: Repository<AgendaOrmEntity>, turnoRepository: Repository<TurnoOrmEntity>, nutricionistaRepository: NutricionistaRepository, logger: IAppLoggerService, notificacionesService: NotificacionesService);
     execute(userId: number, payload: ReservarTurnoSocioDto): Promise<TurnoOperacionResponseDto>;
     private resolveSocioByUserId;
     private validateAgendaAvailability;

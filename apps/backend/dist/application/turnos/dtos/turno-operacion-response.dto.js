@@ -8,6 +8,9 @@ class TurnoOperacionResponseDto {
     estadoTurno;
     socioId;
     nutricionistaId;
+    gimnasioId;
+    motivoCancelacion;
+    fechaOriginal;
 }
 exports.TurnoOperacionResponseDto = TurnoOperacionResponseDto;
 //# sourceMappingURL=turno-operacion-response.dto.js.map

@@ -5,6 +5,8 @@ import { FinalizarConsultaUseCase } from './finalizar-consulta.use-case';
 import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/turno.entity';
 import { EstadoTurno } from 'src/domain/entities/Turno/EstadoTurno';
 import { BadRequestError } from 'src/domain/exceptions/custom-exceptions';
+import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
+import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
 
 describe('FinalizarConsultaUseCase', () => {
   let useCase: FinalizarConsultaUseCase;
@@ -20,6 +22,14 @@ describe('FinalizarConsultaUseCase', () => {
             findOne: jest.fn(),
             save: jest.fn(),
           },
+        },
+        {
+          provide: NotificacionesService,
+          useValue: { crear: jest.fn() },
+        },
+        {
+          provide: AuditoriaService,
+          useValue: { registrar: jest.fn() },
         },
       ],
     }).compile();

@@ -11,11 +11,13 @@ import {
   SugerirSustitucionDto,
   AnalizarPlanDto,
 } from 'src/application/ai/dto';
+import { GenerarIdeasComidaInputDto } from 'src/application/ai/dto/generar-ideas-comida.dto';
 import {
   GenerarRecomendacionComidaUseCase,
   GenerarPlanSemanalUseCase,
   SugerirSustitucionUseCase,
   AnalizarPlanNutricionalUseCase,
+  GenerarIdeasComidaUseCase,
 } from 'src/application/ai/use-cases';
 import { Rol } from 'src/infrastructure/auth/decorators/role.decorator';
 import { JwtAuthGuard } from 'src/infrastructure/auth/guards/auth.guard';
@@ -32,6 +34,7 @@ export class AiController {
     private readonly generarPlanSemanalUseCase: GenerarPlanSemanalUseCase,
     private readonly sugerirSustitucionUseCase: SugerirSustitucionUseCase,
     private readonly analizarPlanNutricionalUseCase: AnalizarPlanNutricionalUseCase,
+    private readonly generarIdeasComidaUseCase: GenerarIdeasComidaUseCase,
   ) {}
 
   @Post('recomendacion')
@@ -99,5 +102,24 @@ export class AiController {
     return this.analizarPlanNutricionalUseCase.execute({
       planId: dto.planId,
     });
+  }
+
+  @Post('ideas-comida')
+  @Rol(RolEnum.NUTRICIONISTA)
+  @ApiOperation({
+    summary: 'Generar exactamente 2 ideas de comida con IA (RF36-RF38)',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Exactamente 2 propuestas generadas exitosamente',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Datos inválidos, restricciones no cumplibles o error de IA',
+  })
+  @ApiResponse({ status: 401, description: 'No autorizado' })
+  async generarIdeasComida(@Body() dto: GenerarIdeasComidaInputDto) {
+    const socioId = dto.socioId ?? 0;
+    return this.generarIdeasComidaUseCase.execute(socioId, dto);
   }
 }

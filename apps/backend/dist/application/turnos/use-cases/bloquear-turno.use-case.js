@@ -55,7 +55,8 @@ let BloquearTurnoUseCase = class BloquearTurnoUseCase {
             relations: ['socio'],
         });
         if (existingTurno) {
-            if (existingTurno.estadoTurno === EstadoTurno_1.EstadoTurno.BLOQUEADO) {
+            if (existingTurno.estadoTurno === EstadoTurno_1.EstadoTurno.PROGRAMADO &&
+                !existingTurno.socio) {
                 throw new custom_exceptions_1.ConflictError('El turno ya se encuentra bloqueado.');
             }
             throw new custom_exceptions_1.ConflictError('El horario seleccionado ya tiene un turno reservado. Cancelelo primero para bloquear.');
@@ -63,7 +64,7 @@ let BloquearTurnoUseCase = class BloquearTurnoUseCase {
         const turno = new entities_1.TurnoOrmEntity();
         turno.fechaTurno = fechaTurno;
         turno.horaTurno = horaTurno;
-        turno.estadoTurno = EstadoTurno_1.EstadoTurno.BLOQUEADO;
+        turno.estadoTurno = EstadoTurno_1.EstadoTurno.PROGRAMADO;
         turno.nutricionista = nutricionista;
         const turnoBloqueado = await this.turnoRepository.save(turno);
         this.logger.log(`Turno bloqueado por profesional ${nutricionistaId}. Turno=${turnoBloqueado.idTurno}, fecha=${payload.fecha}, hora=${horaTurno}.`);

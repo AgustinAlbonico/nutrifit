@@ -3,4 +3,5 @@ export declare class GuardarObservacionesDto {
     sugerencias?: string;
     habitosSocio?: string;
     objetivosSocio?: string;
+    esPublica?: boolean;
 }

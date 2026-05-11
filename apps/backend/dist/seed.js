@@ -33,6 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.accionesAdmin = exports.accionesProfesional = void 0;
 require("reflect-metadata");
 const typeorm_1 = require("typeorm");
 const grupo_permiso_entity_1 = require("./infrastructure/persistence/typeorm/entities/grupo-permiso.entity");
@@ -40,6 +41,10 @@ const accion_entity_1 = require("./infrastructure/persistence/typeorm/entities/a
 const typeorm_config_1 = require("./infrastructure/config/typeorm/typeorm.config");
 const dotenv = __importStar(require("dotenv"));
 dotenv.config({ path: '.env' });
+var acciones_constants_1 = require("./catalogos/acciones.constants");
+Object.defineProperty(exports, "accionesProfesional", { enumerable: true, get: function () { return acciones_constants_1.accionesProfesional; } });
+Object.defineProperty(exports, "accionesAdmin", { enumerable: true, get: function () { return acciones_constants_1.accionesAdmin; } });
+const acciones_constants_2 = require("./catalogos/acciones.constants");
 async function runSeed() {
     console.log('Iniciando seed de permisos...');
     const options = (0, typeorm_config_1.AppDataSource)({
@@ -78,86 +83,38 @@ async function runSeed() {
             hijos: [],
         });
         await grupoRepository.save(grupoAdmin);
-        console.log('📝 Creando acciones básicas...');
-        const acciones = [
-            {
-                clave: 'turnos.ver',
-                nombre: 'Ver turnos',
-                descripcion: 'Permite ver la lista de turnos',
-            },
-            {
-                clave: 'turnos.crear',
-                nombre: 'Crear turnos',
-                descripcion: 'Permite crear nuevos turnos',
-            },
-            {
-                clave: 'turnos.editar',
-                nombre: 'Editar turnos',
-                descripcion: 'Permite editar turnos existentes',
-            },
-            {
-                clave: 'turnos.eliminar',
-                nombre: 'Eliminar turnos',
-                descripcion: 'Permite eliminar turnos',
-            },
-            {
-                clave: 'socios.ver',
-                nombre: 'Ver socios',
-                descripcion: 'Permite ver la lista de socios',
-            },
-            {
-                clave: 'agenda.ver',
-                nombre: 'Ver agenda',
-                descripcion: 'Permite ver la agenda',
-            },
-        ];
-        const accionesCreadas = [];
-        for (const accion of acciones) {
-            const accionEntity = accionRepository.create(accion);
-            const saved = await accionRepository.save(accionEntity);
-            accionesCreadas.push(saved);
+        console.log('📝 Creando acciones de PROFESIONAL...');
+        const accionesProfesionalCreadas = [];
+        for (const accion of acciones_constants_2.accionesProfesional) {
+            const existeAccion = await accionRepository.findOne({
+                where: { clave: accion.clave },
+            });
+            if (!existeAccion) {
+                const accionEntity = accionRepository.create(accion);
+                const saved = await accionRepository.save(accionEntity);
+                accionesProfesionalCreadas.push(saved);
+            }
+            else {
+                accionesProfesionalCreadas.push(existeAccion);
+            }
         }
         console.log('📝 Asignando acciones al grupo PROFESIONAL...');
-        grupoProfesional.acciones = accionesCreadas;
+        grupoProfesional.acciones = accionesProfesionalCreadas;
         await grupoRepository.save(grupoProfesional);
         console.log('📝 Creando acciones de ADMIN...');
-        const accionesAdmin = [
-            {
-                clave: 'profesionales.ver',
-                nombre: 'Ver profesionales',
-                descripcion: 'Permite ver la lista de profesionales',
-            },
-            {
-                clave: 'profesionales.crear',
-                nombre: 'Crear profesionales',
-                descripcion: 'Permite crear nuevos profesionales',
-            },
-            {
-                clave: 'profesionales.editar',
-                nombre: 'Editar profesionales',
-                descripcion: 'Permite editar profesionales existentes',
-            },
-            {
-                clave: 'profesionales.eliminar',
-                nombre: 'Eliminar profesionales',
-                descripcion: 'Permite eliminar profesionales',
-            },
-            {
-                clave: 'usuarios.ver',
-                nombre: 'Ver usuarios',
-                descripcion: 'Permite ver la lista de usuarios',
-            },
-            {
-                clave: 'permisos.gestionar',
-                nombre: 'Gestionar permisos',
-                descripcion: 'Permite gestionar permisos y grupos',
-            },
-        ];
         const accionesAdminCreadas = [];
-        for (const accion of accionesAdmin) {
-            const accionEntity = accionRepository.create(accion);
-            const saved = await accionRepository.save(accionEntity);
-            accionesAdminCreadas.push(saved);
+        for (const accion of acciones_constants_2.accionesAdmin) {
+            const existeAccion = await accionRepository.findOne({
+                where: { clave: accion.clave },
+            });
+            if (!existeAccion) {
+                const accionEntity = accionRepository.create(accion);
+                const saved = await accionRepository.save(accionEntity);
+                accionesAdminCreadas.push(saved);
+            }
+            else {
+                accionesAdminCreadas.push(existeAccion);
+            }
         }
         console.log('📝 Asignando acciones al grupo ADMIN...');
         grupoAdmin.acciones = accionesAdminCreadas;
@@ -166,7 +123,7 @@ async function runSeed() {
         console.log('');
         console.log('📊 Resumen:');
         console.log(`   - Grupos creados: 2 (PROFESIONAL, ADMIN)`);
-        console.log(`   - Acciones PROFESIONAL: ${accionesCreadas.length}`);
+        console.log(`   - Acciones PROFESIONAL: ${accionesProfesionalCreadas.length}`);
         console.log(`   - Acciones ADMIN: ${accionesAdminCreadas.length}`);
     }
     catch (error) {

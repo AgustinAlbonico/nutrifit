@@ -34,7 +34,12 @@ let AnalizarPlanNutricionalUseCase = class AnalizarPlanNutricionalUseCase {
         try {
             const plan = await this.planRepository.findOne({
                 where: { idPlanAlimentacion: solicitud.planId },
-                relations: ['dias', 'dias.opcionesComida'],
+                relations: [
+                    'dias',
+                    'dias.opcionesComida',
+                    'dias.opcionesComida.items',
+                    'dias.opcionesComida.items.alimento',
+                ],
             });
             if (!plan) {
                 throw new custom_exceptions_1.NotFoundError('Plan de alimentación', String(solicitud.planId));
@@ -87,8 +92,8 @@ let AnalizarPlanNutricionalUseCase = class AnalizarPlanNutricionalUseCase {
             resumen += `\nDía ${dia.dia} (orden: ${dia.orden}):\n`;
             const opciones = dia.opcionesComida ?? [];
             for (const opcion of opciones) {
-                const alimentosStr = (opcion.alimentos ?? [])
-                    .map((a) => a.nombre)
+                const alimentosStr = (opcion.items ?? [])
+                    .map((item) => item.alimento?.nombre ?? item.alimentoNombre)
                     .join(', ');
                 resumen += `- ${opcion.tipoComida}: ${alimentosStr || 'Sin alimentos'}${opcion.comentarios ? ` (${opcion.comentarios})` : ''}\n`;
             }

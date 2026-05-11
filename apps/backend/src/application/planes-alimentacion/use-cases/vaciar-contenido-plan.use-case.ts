@@ -76,7 +76,9 @@ export class VaciarContenidoPlanUseCase implements BaseUseCase {
 
     // Contar elementos a eliminar
     const diasDelPlan = await this.diaPlanRepo.find({
-      where: { planAlimentacion: { idPlanAlimentacion: payload.planId } as any },
+      where: {
+        planAlimentacion: { idPlanAlimentacion: payload.planId } as any,
+      },
       relations: { opcionesComida: true },
     });
 

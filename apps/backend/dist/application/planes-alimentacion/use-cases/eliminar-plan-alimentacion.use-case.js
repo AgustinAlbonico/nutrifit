@@ -18,7 +18,11 @@ const typeorm_1 = require("@nestjs/typeorm");
 const custom_exceptions_1 = require("../../../domain/exceptions/custom-exceptions");
 const Rol_1 = require("../../../domain/entities/Usuario/Rol");
 const entities_1 = require("../../../infrastructure/persistence/typeorm/entities");
+const auditoria_service_1 = require("../../../infrastructure/services/auditoria/auditoria.service");
+const auditoria_entity_1 = require("../../../infrastructure/persistence/typeorm/entities/auditoria.entity");
 const typeorm_2 = require("typeorm");
+const notificaciones_service_1 = require("../../notificaciones/notificaciones.service");
+const tipo_notificacion_enum_1 = require("../../../domain/entities/Notificacion/tipo-notificacion.enum");
 class EliminarPlanAlimentacionResponseDto {
     mensaje;
     planId;
@@ -29,10 +33,14 @@ let EliminarPlanAlimentacionUseCase = class EliminarPlanAlimentacionUseCase {
     planRepo;
     nutricionistaRepo;
     usuarioRepo;
-    constructor(planRepo, nutricionistaRepo, usuarioRepo) {
+    auditoriaService;
+    notificacionesService;
+    constructor(planRepo, nutricionistaRepo, usuarioRepo, auditoriaService, notificacionesService) {
         this.planRepo = planRepo;
         this.nutricionistaRepo = nutricionistaRepo;
         this.usuarioRepo = usuarioRepo;
+        this.auditoriaService = auditoriaService;
+        this.notificacionesService = notificacionesService;
     }
     async execute(nutricionistaUserId, payload) {
         const plan = await this.planRepo.findOne({
@@ -57,6 +65,23 @@ let EliminarPlanAlimentacionUseCase = class EliminarPlanAlimentacionUseCase {
         plan.eliminadoEn = new Date();
         plan.motivoEliminacion = payload.motivoEliminacion;
         await this.planRepo.save(plan);
+        await this.auditoriaService.registrar({
+            usuarioId: nutricionistaUserId,
+            accion: auditoria_entity_1.AccionAuditoria.PLAN_DELETED,
+            entidad: 'PlanAlimentacion',
+            entidadId: plan.idPlanAlimentacion,
+            metadata: {
+                motivoEliminacion: payload.motivoEliminacion,
+                socioId: plan.socio?.idPersona,
+            },
+        });
+        await this.notificacionesService.crear({
+            destinatarioId: plan.socio?.idPersona,
+            tipo: tipo_notificacion_enum_1.TipoNotificacion.PLAN_ELIMINADO,
+            titulo: 'Plan de alimentación eliminado',
+            mensaje: 'Tu plan de alimentación activo fue eliminado.',
+            metadata: { planId: plan.idPlanAlimentacion },
+        });
         return {
             mensaje: 'Plan de alimentación eliminado correctamente.',
             planId: plan.idPlanAlimentacion,
@@ -72,6 +97,8 @@ exports.EliminarPlanAlimentacionUseCase = EliminarPlanAlimentacionUseCase = __de
     __param(2, (0, typeorm_1.InjectRepository)(entities_1.UsuarioOrmEntity)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
-        typeorm_2.Repository])
+        typeorm_2.Repository,
+        auditoria_service_1.AuditoriaService,
+        notificaciones_service_1.NotificacionesService])
 ], EliminarPlanAlimentacionUseCase);
 //# sourceMappingURL=eliminar-plan-alimentacion.use-case.js.map

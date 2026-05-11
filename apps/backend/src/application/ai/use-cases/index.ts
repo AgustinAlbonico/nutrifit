@@ -6,3 +6,4 @@ export {
 export { GenerarPlanSemanalUseCase } from './generar-plan-semanal.use-case';
 export { SugerirSustitucionUseCase } from './sugerir-sustitucion.use-case';
 export { AnalizarPlanNutricionalUseCase } from './analizar-plan-nutricional.use-case';
+export { GenerarIdeasComidaUseCase } from './generar-ideas-comida.use-case';

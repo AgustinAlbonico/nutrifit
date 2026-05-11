@@ -2,16 +2,14 @@ import {
   Column,
   Entity,
   JoinColumn,
-  JoinTable,
-  ManyToMany,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { TipoComida } from 'src/domain/entities/OpcionComida/TipoComida';
-import { Alimento } from 'src/domain/entities/Alimento/alimento.entity';
-import { AlimentoOrmEntity } from './alimento.entity';
 import { DiaPlanOrmEntity } from './dia-plan.entity';
-import { PlanAlimentacionEntity } from 'src/domain/entities/PlanAlimentacion/plan-alimentacion.entity';
+import { ItemComidaOrmEntity } from './item-comida.entity';
+import { AlimentoOrmEntity } from './alimento.entity';
 
 @Entity('opcion_comida')
 export class OpcionComidaOrmEntity {
@@ -30,20 +28,50 @@ export class OpcionComidaOrmEntity {
   @JoinColumn({ name: 'id_dia_plan' })
   diaPlan: DiaPlanOrmEntity;
 
-  @ManyToMany(() => AlimentoOrmEntity, {
-    eager: true,
-    nullable: true,
+  @OneToMany(() => ItemComidaOrmEntity, (item) => item.opcionComida, {
+    cascade: ['insert', 'update'],
   })
-  @JoinTable({
-    name: 'opcion_comida_alimento',
-    joinColumn: {
-      name: 'id_opcion_comida',
-      referencedColumnName: 'idOpcionComida',
-    },
-    inverseJoinColumn: {
-      name: 'id_alimento',
-      referencedColumnName: 'idAlimento',
-    },
-  })
-  alimentos: Alimento[];
+  items: ItemComidaOrmEntity[];
+
+  /**
+   * Acceso backwards-compatible a alimentos.
+   * Deriva los alimentos desde los items cargados.
+   * Requiere que se carguen los items con su relacion alimento.
+   */
+  get alimentos(): AlimentoOrmEntity[] {
+    if (!this.items || this.items.length === 0) {
+      return [];
+    }
+    return this.items
+      .filter((item) => item.alimento != null)
+      .map((item) => item.alimento);
+  }
+
+  /**
+   * Setter backwards-compatible para mantener la API existente.
+   * Cuando se asigna `opcion.alimentos = [...]}`, se crean Items de comida.
+   * Deprecated: usar `items` directamente.
+   */
+  set alimentos(alimentos: AlimentoOrmEntity[]) {
+    if (!alimentos || alimentos.length === 0) {
+      this.items = [];
+      return;
+    }
+    this.items = alimentos.map((alimento) => {
+      const item = new ItemComidaOrmEntity();
+      item.alimentoId = alimento.idAlimento;
+      item.alimentoNombre = alimento.nombre;
+      item.alimento = alimento;
+      item.cantidad = alimento.cantidad;
+      item.unidad = alimento.unidadMedida;
+      item.opcionComida = this;
+      return item;
+    });
+  }
+
+  get tieneItemsReales(): boolean {
+    return (
+      this.items !== undefined && this.items !== null && this.items.length > 0
+    );
+  }
 }

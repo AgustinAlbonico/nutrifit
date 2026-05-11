@@ -18,6 +18,7 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const turno_entity_1 = require("../../../infrastructure/persistence/typeorm/entities/turno.entity");
 const medicion_entity_1 = require("../../../infrastructure/persistence/typeorm/entities/medicion.entity");
+const EstadoTurno_1 = require("../../../domain/entities/Turno/EstadoTurno");
 const custom_exceptions_1 = require("../../../domain/exceptions/custom-exceptions");
 let GuardarMedicionesUseCase = class GuardarMedicionesUseCase {
     turnoRepository;
@@ -33,6 +34,12 @@ let GuardarMedicionesUseCase = class GuardarMedicionesUseCase {
         });
         if (!turno) {
             throw new custom_exceptions_1.NotFoundError('Turno no encontrado');
+        }
+        if (turno.consultaFinalizadaAt !== null) {
+            throw new custom_exceptions_1.BadRequestError('No se pueden agregar mediciones a una consulta ya finalizada');
+        }
+        if (turno.estadoTurno !== EstadoTurno_1.EstadoTurno.EN_CURSO) {
+            throw new custom_exceptions_1.BadRequestError(`Solo se pueden guardar mediciones durante una consulta en curso. Estado actual: ${turno.estadoTurno}`);
         }
         let altura = dto.altura;
         if (!altura) {
@@ -55,6 +62,7 @@ let GuardarMedicionesUseCase = class GuardarMedicionesUseCase {
         }
         const alturaEnMetros = altura / 100;
         const imc = parseFloat((dto.peso / (alturaEnMetros * alturaEnMetros)).toFixed(2));
+        this.validarRangosClinicos(dto, imc);
         let masaMagra = null;
         if (dto.porcentajeGrasa !== undefined) {
             masaMagra = parseFloat((dto.peso * (1 - dto.porcentajeGrasa / 100)).toFixed(2));
@@ -85,6 +93,21 @@ let GuardarMedicionesUseCase = class GuardarMedicionesUseCase {
             imc,
             idMedicion: savedMedicion.idMedicion,
         };
+    }
+    validarRangosClinicos(dto, imc) {
+        if (imc < 10 || imc > 80) {
+            throw new custom_exceptions_1.BadRequestError('El IMC calculado queda fuera de un rango clinico razonable. Revisá peso y altura.');
+        }
+        const tieneTensionSistolica = dto.tensionSistolica !== undefined;
+        const tieneTensionDiastolica = dto.tensionDiastolica !== undefined;
+        if (tieneTensionSistolica !== tieneTensionDiastolica) {
+            throw new custom_exceptions_1.BadRequestError('Para registrar la tensión arterial debes informar el valor sistólico y el diastólico.');
+        }
+        if (dto.tensionSistolica !== undefined &&
+            dto.tensionDiastolica !== undefined &&
+            dto.tensionDiastolica >= dto.tensionSistolica) {
+            throw new custom_exceptions_1.BadRequestError('La tensión diastólica debe ser menor que la sistólica.');
+        }
     }
 };
 exports.GuardarMedicionesUseCase = GuardarMedicionesUseCase;

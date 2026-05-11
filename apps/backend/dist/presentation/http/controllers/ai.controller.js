@@ -16,6 +16,7 @@ exports.AiController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const dto_1 = require("../../../application/ai/dto");
+const generar_ideas_comida_dto_1 = require("../../../application/ai/dto/generar-ideas-comida.dto");
 const use_cases_1 = require("../../../application/ai/use-cases");
 const role_decorator_1 = require("../../../infrastructure/auth/decorators/role.decorator");
 const auth_guard_1 = require("../../../infrastructure/auth/guards/auth.guard");
@@ -26,11 +27,13 @@ let AiController = class AiController {
     generarPlanSemanalUseCase;
     sugerirSustitucionUseCase;
     analizarPlanNutricionalUseCase;
-    constructor(generarRecomendacionUseCase, generarPlanSemanalUseCase, sugerirSustitucionUseCase, analizarPlanNutricionalUseCase) {
+    generarIdeasComidaUseCase;
+    constructor(generarRecomendacionUseCase, generarPlanSemanalUseCase, sugerirSustitucionUseCase, analizarPlanNutricionalUseCase, generarIdeasComidaUseCase) {
         this.generarRecomendacionUseCase = generarRecomendacionUseCase;
         this.generarPlanSemanalUseCase = generarPlanSemanalUseCase;
         this.sugerirSustitucionUseCase = sugerirSustitucionUseCase;
         this.analizarPlanNutricionalUseCase = analizarPlanNutricionalUseCase;
+        this.generarIdeasComidaUseCase = generarIdeasComidaUseCase;
     }
     async generarRecomendacion(dto) {
         return this.generarRecomendacionUseCase.execute({
@@ -56,6 +59,10 @@ let AiController = class AiController {
         return this.analizarPlanNutricionalUseCase.execute({
             planId: dto.planId,
         });
+    }
+    async generarIdeasComida(dto) {
+        const socioId = dto.socioId ?? 0;
+        return this.generarIdeasComidaUseCase.execute(socioId, dto);
     }
 };
 exports.AiController = AiController;
@@ -121,6 +128,26 @@ __decorate([
     __metadata("design:paramtypes", [dto_1.AnalizarPlanDto]),
     __metadata("design:returntype", Promise)
 ], AiController.prototype, "analizarPlan", null);
+__decorate([
+    (0, common_1.Post)('ideas-comida'),
+    (0, role_decorator_1.Rol)(Rol_1.Rol.NUTRICIONISTA),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Generar exactamente 2 ideas de comida con IA (RF36-RF38)',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 201,
+        description: 'Exactamente 2 propuestas generadas exitosamente',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 400,
+        description: 'Datos inválidos, restricciones no cumplibles o error de IA',
+    }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'No autorizado' }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [generar_ideas_comida_dto_1.GenerarIdeasComidaInputDto]),
+    __metadata("design:returntype", Promise)
+], AiController.prototype, "generarIdeasComida", null);
 exports.AiController = AiController = __decorate([
     (0, swagger_1.ApiTags)('IA - Recomendaciones Nutricionales'),
     (0, swagger_1.ApiBearerAuth)(),
@@ -129,6 +156,7 @@ exports.AiController = AiController = __decorate([
     __metadata("design:paramtypes", [use_cases_1.GenerarRecomendacionComidaUseCase,
         use_cases_1.GenerarPlanSemanalUseCase,
         use_cases_1.SugerirSustitucionUseCase,
-        use_cases_1.AnalizarPlanNutricionalUseCase])
+        use_cases_1.AnalizarPlanNutricionalUseCase,
+        use_cases_1.GenerarIdeasComidaUseCase])
 ], AiController);
 //# sourceMappingURL=ai.controller.js.map

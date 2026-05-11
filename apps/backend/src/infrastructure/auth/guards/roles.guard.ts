@@ -4,6 +4,10 @@ import { Rol } from 'src/domain/entities/Usuario/Rol';
 import { ROLE_KEY } from '../decorators/role.decorator';
 import { Request } from 'express';
 
+interface RequestWithUser extends Request {
+  user: { id: number; email: string; rol: Rol };
+}
+
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
@@ -18,7 +22,7 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    const user = (context.switchToHttp().getRequest<Request>() as any).user;
+    const user = context.switchToHttp().getRequest<RequestWithUser>().user;
 
     return requiredRoles.includes(user?.rol);
   }

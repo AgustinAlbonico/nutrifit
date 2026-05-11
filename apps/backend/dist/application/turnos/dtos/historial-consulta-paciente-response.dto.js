@@ -9,6 +9,7 @@ class HistorialConsultaPacienteResponseDto {
     tipoConsulta;
     notasProfesional;
     sugerencias;
+    esPublica;
     archivosAdjuntos;
 }
 exports.HistorialConsultaPacienteResponseDto = HistorialConsultaPacienteResponseDto;

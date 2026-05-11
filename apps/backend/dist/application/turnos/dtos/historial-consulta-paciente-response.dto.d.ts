@@ -7,5 +7,6 @@ export declare class HistorialConsultaPacienteResponseDto {
     tipoConsulta: string;
     notasProfesional: string | null;
     sugerencias: string | null;
+    esPublica: boolean;
     archivosAdjuntos: string[];
 }

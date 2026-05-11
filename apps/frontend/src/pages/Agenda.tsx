@@ -1,3 +1,4 @@
+import type { EstadoTurno } from '@nutrifit/shared';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -26,6 +27,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { DatePicker } from '@/components/ui/date-picker';
+import {
+  obtenerEstadoVisualSlotAgenda,
+  obtenerEtiquetaEstadoTurno,
+} from '@/lib/turnos/estadoTurno';
 
 interface AgendaItem {
   idAgenda: number;
@@ -76,7 +81,7 @@ interface ConfigureAgendaPayload {
 interface AgendaSlot {
   horaInicio: string;
   horaFin: string;
-  estado: 'LIBRE' | 'PENDIENTE' | 'CONFIRMADO' | 'CANCELADO' | 'REALIZADO' | 'AUSENTE' | 'REPROGRAMADO' | 'BLOQUEADO';
+  estado: EstadoTurno | 'LIBRE' | 'OCUPADO';
   turnoId?: number;
   socio?: {
     nombre: string;
@@ -322,16 +327,26 @@ export function Agenda() {
     }
   };
 
-  const getEstadoBadge = (estado: AgendaSlot['estado']) => {
+  const getEstadoBadge = (slot: AgendaSlot) => {
+    const estado = obtenerEstadoVisualSlotAgenda(slot);
+
     switch (estado) {
       case 'LIBRE':
         return <Badge className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white border-0 shadow-sm hover:from-emerald-600 hover:to-emerald-700">Libre</Badge>;
       case 'BLOQUEADO':
         return <Badge className="bg-gradient-to-r from-rose-500 to-rose-600 text-white border-0 shadow-sm hover:from-rose-600 hover:to-rose-700">Bloqueado</Badge>;
-      case 'PENDIENTE':
-        return <Badge className="bg-gradient-to-r from-amber-500 to-amber-600 text-white border-0 shadow-sm hover:from-amber-600 hover:to-amber-700">Pendiente</Badge>;
-      case 'CONFIRMADO':
-        return <Badge className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0 shadow-sm hover:from-blue-600 hover:to-blue-700">Confirmado</Badge>;
+      case 'PROGRAMADO':
+        return <Badge className="bg-gradient-to-r from-amber-500 to-amber-600 text-white border-0 shadow-sm hover:from-amber-600 hover:to-amber-700">Programado</Badge>;
+      case 'PRESENTE':
+        return <Badge className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0 shadow-sm hover:from-blue-600 hover:to-blue-700">Presente</Badge>;
+      case 'EN_CURSO':
+        return <Badge className="bg-gradient-to-r from-violet-500 to-violet-600 text-white border-0 shadow-sm hover:from-violet-600 hover:to-violet-700">En curso</Badge>;
+      case 'REALIZADO':
+        return <Badge className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white border-0 shadow-sm hover:from-emerald-600 hover:to-emerald-700">Realizado</Badge>;
+      case 'AUSENTE':
+      case 'CANCELADO':
+      case 'OCUPADO':
+        return <Badge variant="outline" className="shadow-sm">{obtenerEtiquetaEstadoTurno(estado)}</Badge>;
       default:
         return <Badge variant="outline" className="shadow-sm">{estado}</Badge>;
     }
@@ -647,8 +662,9 @@ export function Agenda() {
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {slotsExcepcion.map((slot) => {
                     const idTurnoBloqueado = slot.turnoId;
-                    const isBloqueado = slot.estado === 'BLOQUEADO';
-                    const isLibre = slot.estado === 'LIBRE';
+                    const estadoVisual = obtenerEstadoVisualSlotAgenda(slot);
+                    const isBloqueado = estadoVisual === 'BLOQUEADO';
+                    const isLibre = estadoVisual === 'LIBRE';
                     const isOcupado = !isBloqueado && !isLibre;
 
                     return (
@@ -669,7 +685,7 @@ export function Agenda() {
                             }`} />
                             <span className="font-bold text-xl tracking-tight">{slot.horaInicio}</span>
                           </div>
-                          {getEstadoBadge(slot.estado)}
+                          {getEstadoBadge(slot)}
                         </div>
                         
                         <div className="min-h-[4rem] text-sm flex flex-col justify-center">

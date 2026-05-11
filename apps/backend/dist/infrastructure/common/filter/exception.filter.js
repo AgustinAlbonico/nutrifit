@@ -55,21 +55,21 @@ let AppErrorFilter = AppErrorFilter_1 = class AppErrorFilter {
             else {
                 message = exception.message;
             }
-            if (statusCode === common_1.HttpStatus.UNAUTHORIZED) {
+            if (statusCode === 401) {
                 errorCode = error_codes_1.ErrorCode.UNAUTHORIZED;
                 message = 'Sesión inválida o vencida. Iniciá sesión nuevamente.';
             }
-            else if (statusCode === common_1.HttpStatus.FORBIDDEN) {
+            else if (statusCode === 403) {
                 errorCode = error_codes_1.ErrorCode.FORBIDDEN;
                 message = 'No tenés permisos para realizar esta acción.';
             }
-            else if (statusCode === common_1.HttpStatus.NOT_FOUND) {
+            else if (statusCode === 404) {
                 errorCode = error_codes_1.ErrorCode.NOT_FOUND;
             }
-            else if (statusCode === common_1.HttpStatus.CONFLICT) {
+            else if (statusCode === 409) {
                 errorCode = error_codes_1.ErrorCode.CONFLICT;
             }
-            else if (statusCode === common_1.HttpStatus.BAD_REQUEST) {
+            else if (statusCode === 400) {
                 errorCode = error_codes_1.ErrorCode.BAD_REQUEST;
             }
             else {

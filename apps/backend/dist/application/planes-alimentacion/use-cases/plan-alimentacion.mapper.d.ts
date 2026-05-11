@@ -1,9 +1,11 @@
-import { AlimentoResponseDto, DiaPlanResponseDto, OpcionComidaResponseDto, PlanAlimentacionResponseDto } from '../dtos';
+import { AlimentoResponseDto, DiaPlanResponseDto, ItemComidaResponseDto, OpcionComidaResponseDto, PlanAlimentacionResponseDto } from '../dtos';
 import { PlanAlimentacionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities';
 import { OpcionComidaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/opcion-comida.entity';
 import { DiaPlanOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/dia-plan.entity';
 import { AlimentoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/alimento.entity';
+import { ItemComidaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/item-comida.entity';
 export declare function mapAlimentoToResponse(alimento: AlimentoOrmEntity): AlimentoResponseDto;
+export declare function mapItemComidaToResponse(item: ItemComidaOrmEntity): ItemComidaResponseDto;
 export declare function mapOpcionToResponse(opcion: OpcionComidaOrmEntity): OpcionComidaResponseDto;
 export declare function mapDiaToResponse(dia: DiaPlanOrmEntity): DiaPlanResponseDto;
 export declare function mapPlanToResponse(plan: PlanAlimentacionOrmEntity): PlanAlimentacionResponseDto;

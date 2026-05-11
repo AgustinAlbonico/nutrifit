@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 process.env.TZ = 'America/Argentina/Buenos_Aires';
 import { NestFactory } from '@nestjs/core';
+import type { NextFunction, Request, Response } from 'express';
 import { AppModule } from './app.module';
 import { EnvironmentConfigService } from './infrastructure/config/environment-config/environment-config.service';
 import helmet from 'helmet';
@@ -14,6 +15,7 @@ import {
   APP_LOGGER_SERVICE,
   IAppLoggerService,
 } from './domain/services/logger.service';
+import { createCorsOptions } from './infrastructure/config/cors/cors.config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -50,15 +52,18 @@ async function bootstrap() {
   ); // Libreria de seguridad para la api
 
   //Features de nestjs
-  app.enableCors();
+  app.enableCors(createCorsOptions(mainConfig));
+  logger.log(
+    `CORS habilitado para origenes: ${mainConfig.getCorsAllowedOrigins().join(', ')}`,
+  );
 
   // Ensure UTF-8 charset for API responses
-  app.use((_req: any, res: any, next: any) => {
-    const originalJson = res.json.bind(res);
-    res.json = (body: any) => {
+  app.use((_req: Request, res: Response, next: NextFunction) => {
+    const originalJson = res.json.bind(res) as Response['json'];
+    res.json = ((body: unknown) => {
       res.setHeader('Content-Type', 'application/json; charset=utf-8');
       return originalJson(body);
-    };
+    }) as Response['json'];
     next();
   });
   // app.enableVersioning({
@@ -87,4 +92,4 @@ async function bootstrap() {
   await app.listen(mainConfig.getPort() ?? 3000);
 }
 
-bootstrap();
+void bootstrap();

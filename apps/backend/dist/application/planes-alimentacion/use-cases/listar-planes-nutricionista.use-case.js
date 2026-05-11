@@ -29,7 +29,7 @@ let ListarPlanesNutricionistaUseCase = class ListarPlanesNutricionistaUseCase {
             relations: {
                 socio: true,
                 nutricionista: true,
-                dias: { opcionesComida: { alimentos: true } },
+                dias: { opcionesComida: { items: { alimento: true } } },
             },
             order: { fechaCreacion: 'DESC' },
         });

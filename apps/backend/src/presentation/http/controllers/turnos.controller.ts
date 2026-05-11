@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Inject,
   Param,
@@ -11,11 +12,15 @@ import {
   Query,
   Req,
   UseGuards,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   AgendaSlotDto,
   AsignarTurnoManualDto,
   BloquearTurnoDto,
+  CancelarTurnoSocioDto,
   DatosTurnoResponseDto,
   FichaSaludPacienteResponseDto,
   FichaSaludSocioResponseDto,
@@ -30,6 +35,7 @@ import {
   PacienteProfesionalResponseDto,
   RecepcionTurnoResponseDto,
   ReprogramarTurnoSocioDto,
+  ConfirmarTurnoTokenDto,
   RegistrarAsistenciaTurnoDto,
   ReservarTurnoSocioDto,
   TurnoDelDiaResponseDto,
@@ -74,6 +80,8 @@ import { ActionsGuard } from 'src/infrastructure/auth/guards/actions.guard';
 import { JwtAuthGuard } from 'src/infrastructure/auth/guards/auth.guard';
 import { NutricionistaOwnershipGuard } from 'src/infrastructure/auth/guards/nutricionista-ownership.guard';
 import { RolesGuard } from 'src/infrastructure/auth/guards/roles.guard';
+import { SocioResourceAccessGuard } from 'src/infrastructure/auth/guards/socio-resource-access.guard';
+import { TurnoNutricionistaAccessGuard } from 'src/infrastructure/auth/guards/turno-nutricionista-access.guard';
 import { Request } from 'express';
 
 @Controller('turnos')
@@ -105,6 +113,7 @@ export class TurnosController {
     private readonly registrarAsistenciaTurnoUseCase: RegistrarAsistenciaTurnoUseCase,
     private readonly reservarTurnoSocioUseCase: ReservarTurnoSocioUseCase,
     private readonly upsertFichaSaludSocioUseCase: UpsertFichaSaludSocioUseCase,
+    private readonly adjuntoClinicoService: any, // AdjuntoClinicoService injected
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
   ) {}
@@ -125,11 +134,12 @@ export class TurnosController {
 
   @Get(':id')
   @Rol(RolEnum.NUTRICIONISTA)
+  @UseGuards(TurnoNutricionistaAccessGuard)
   async getTurnoById(
     @Param('id', ParseIntPipe) turnoId: number,
     @Req() req: Request,
   ): Promise<DatosTurnoResponseDto> {
-    const nutricionistaId = (req as any).user?.id;
+    const nutricionistaId = (req as any).resourceAccess?.actorPersonaId;
 
     this.logger.log(
       `Consultando turno completo ${turnoId} para nutricionista ${nutricionistaId}.`,
@@ -372,6 +382,7 @@ export class TurnosController {
   async cancelarTurnoSocio(
     @Req() req: Request,
     @Param('turnoId', ParseIntPipe) turnoId: number,
+    @Body() dto: CancelarTurnoSocioDto,
   ): Promise<TurnoOperacionResponseDto> {
     const userId = (req as any).user?.id;
 
@@ -379,7 +390,27 @@ export class TurnosController {
       `Cancelando turno ${turnoId} para socio usuario=${userId}.`,
     );
 
-    return this.cancelarTurnoSocioUseCase.execute(userId, turnoId);
+    return this.cancelarTurnoSocioUseCase.execute(
+      userId,
+      turnoId,
+      undefined,
+      dto,
+    );
+  }
+
+  @Post(':id/cancelar')
+  async cancelarTurnoPorToken(
+    @Param('id', ParseIntPipe) turnoId: number,
+    @Query() query: ConfirmarTurnoTokenDto,
+    @Body() dto: CancelarTurnoSocioDto,
+  ): Promise<TurnoOperacionResponseDto> {
+    this.logger.log(`Cancelando turno ${turnoId} por token.`);
+    return this.cancelarTurnoSocioUseCase.execute(
+      null,
+      turnoId,
+      query.token,
+      dto,
+    );
   }
 
   @Patch('socio/:turnoId/confirmar')
@@ -397,6 +428,15 @@ export class TurnosController {
     return this.confirmarTurnoSocioUseCase.execute(userId, turnoId);
   }
 
+  @Post(':id/confirmar')
+  async confirmarTurnoPorToken(
+    @Param('id', ParseIntPipe) turnoId: number,
+    @Query() query: ConfirmarTurnoTokenDto,
+  ): Promise<TurnoOperacionResponseDto> {
+    this.logger.log(`Confirmando turno ${turnoId} por token.`);
+    return this.confirmarTurnoSocioUseCase.execute(null, turnoId, query.token);
+  }
+
   @Post(':id/check-in')
   @Rol(RolEnum.RECEPCIONISTA)
   async checkInTurno(
@@ -408,7 +448,7 @@ export class TurnosController {
   }
 
   @Get('recepcion/dia')
-  @Rol(RolEnum.RECEPCIONISTA)
+  @Rol(RolEnum.RECEPCIONISTA, RolEnum.ADMIN)
   async getTurnosRecepcionDia(
     @Query('fecha') fecha?: string,
   ): Promise<RecepcionTurnoResponseDto[]> {
@@ -421,6 +461,7 @@ export class TurnosController {
 
   @Post(':id/iniciar-consulta')
   @Rol(RolEnum.NUTRICIONISTA)
+  @UseGuards(TurnoNutricionistaAccessGuard)
   async iniciarConsulta(
     @Param('id', ParseIntPipe) turnoId: number,
   ): Promise<{ success: boolean; estado: string }> {
@@ -431,6 +472,7 @@ export class TurnosController {
 
   @Post(':id/finalizar-consulta')
   @Rol(RolEnum.NUTRICIONISTA)
+  @UseGuards(TurnoNutricionistaAccessGuard)
   async finalizarConsulta(
     @Param('id', ParseIntPipe) turnoId: number,
   ): Promise<{ success: boolean; estado: string }> {
@@ -441,6 +483,7 @@ export class TurnosController {
 
   @Post(':id/mediciones')
   @Rol(RolEnum.NUTRICIONISTA)
+  @UseGuards(TurnoNutricionistaAccessGuard)
   async guardarMediciones(
     @Param('id', ParseIntPipe) turnoId: number,
     @Body() payload: GuardarMedicionesDto,
@@ -452,6 +495,7 @@ export class TurnosController {
 
   @Post(':id/observaciones')
   @Rol(RolEnum.NUTRICIONISTA)
+  @UseGuards(TurnoNutricionistaAccessGuard)
   async guardarObservaciones(
     @Param('id', ParseIntPipe) turnoId: number,
     @Body() payload: GuardarObservacionesDto,
@@ -465,7 +509,7 @@ export class TurnosController {
 
   @Get('profesional/:nutricionistaId/pacientes/:socioId/historial-mediciones')
   @Rol(RolEnum.NUTRICIONISTA)
-  @UseGuards(NutricionistaOwnershipGuard)
+  @UseGuards(NutricionistaOwnershipGuard, SocioResourceAccessGuard)
   async getHistorialMedicionesPaciente(
     @Param('nutricionistaId', ParseIntPipe) nutricionistaId: number,
     @Param('socioId', ParseIntPipe) socioId: number,
@@ -479,7 +523,7 @@ export class TurnosController {
 
   @Get('profesional/:nutricionistaId/pacientes/:socioId/progreso')
   @Rol(RolEnum.NUTRICIONISTA)
-  @UseGuards(NutricionistaOwnershipGuard)
+  @UseGuards(NutricionistaOwnershipGuard, SocioResourceAccessGuard)
   async getResumenProgresoPaciente(
     @Param('nutricionistaId', ParseIntPipe) nutricionistaId: number,
     @Param('socioId', ParseIntPipe) socioId: number,
@@ -493,23 +537,88 @@ export class TurnosController {
 
   @Get('socio/mi-progreso')
   @Rol(RolEnum.SOCIO)
+  @UseGuards(SocioResourceAccessGuard)
   async getMiProgreso(@Req() req: Request) {
-    const userId = (req as any).user?.id;
+    const socioId = (req as any).resourceAccess?.socioId;
 
-    this.logger.log(`Consultando mi progreso para socio usuario=${userId}.`);
+    this.logger.log(`Consultando mi progreso para socio ${socioId}.`);
 
-    return this.getResumenProgresoUseCase.execute(userId);
+    return this.getResumenProgresoUseCase.execute(socioId);
   }
 
   @Get('socio/mi-historial-mediciones')
   @Rol(RolEnum.SOCIO)
+  @UseGuards(SocioResourceAccessGuard)
   async getMiHistorialMediciones(@Req() req: Request) {
-    const userId = (req as any).user?.id;
+    const socioId = (req as any).resourceAccess?.socioId;
 
     this.logger.log(
-      `Consultando mi historial de mediciones para socio usuario=${userId}.`,
+      `Consultando mi historial de mediciones para socio ${socioId}.`,
     );
 
-    return this.getHistorialMedicionesUseCase.execute(userId);
+    return this.getHistorialMedicionesUseCase.execute(socioId);
+  }
+
+  // === ENDPOINTS DE ADJUNTOS CLÍNICOS ===
+
+  @Post(':id/adjuntos')
+  @Rol(RolEnum.NUTRICIONISTA)
+  @UseGuards(TurnoNutricionistaAccessGuard)
+  @UseInterceptors(FileInterceptor('archivo'))
+  async subirAdjunto(
+    @Param('id', ParseIntPipe) turnoId: number,
+    @UploadedFile() archivo: Express.Multer.File,
+    @Req() req: Request,
+  ) {
+    const usuarioId = (req as any).user?.id;
+    this.logger.log(`Subiendo adjunto para turno ${turnoId}.`);
+
+    return this.adjuntoClinicoService.subir({
+      turnoId,
+      usuarioId,
+      buffer: archivo.buffer,
+      nombreOriginal: archivo.originalname,
+      mimeType: archivo.mimetype,
+      sizeBytes: archivo.size,
+    });
+  }
+
+  @Get(':id/adjuntos')
+  @Rol(RolEnum.NUTRICIONISTA)
+  @UseGuards(TurnoNutricionistaAccessGuard)
+  async listarAdjuntos(@Param('id', ParseIntPipe) turnoId: number) {
+    this.logger.log(`Listando adjuntos para turno ${turnoId}.`);
+
+    return this.adjuntoClinicoService.listarPorTurno(turnoId);
+  }
+
+  @Get(':id/adjuntos/:adjId/url')
+  @Rol(RolEnum.NUTRICIONISTA)
+  @UseGuards(TurnoNutricionistaAccessGuard)
+  async obtenerUrlAdjunto(
+    @Param('id', ParseIntPipe) turnoId: number,
+    @Param('adjId', ParseIntPipe) adjuntoId: number,
+  ) {
+    this.logger.log(`Obteniendo URL firmada para adjunto ${adjuntoId}.`);
+
+    return {
+      url: await this.adjuntoClinicoService.obtenerUrlFirmada(adjuntoId),
+    };
+  }
+
+  @Delete(':id/adjuntos/:adjId')
+  @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN)
+  @UseGuards(TurnoNutricionistaAccessGuard)
+  async eliminarAdjunto(
+    @Param('id', ParseIntPipe) turnoId: number,
+    @Param('adjId', ParseIntPipe) adjuntoId: number,
+    @Req() req: Request,
+  ) {
+    const usuarioId = (req as any).user?.id;
+    const esAdmin = (req as any).user?.rol === RolEnum.ADMIN;
+    this.logger.log(`Eliminando adjunto ${adjuntoId} del turno ${turnoId}.`);
+
+    await this.adjuntoClinicoService.eliminar(adjuntoId, usuarioId, esAdmin);
+    return { success: true };
   }
 }

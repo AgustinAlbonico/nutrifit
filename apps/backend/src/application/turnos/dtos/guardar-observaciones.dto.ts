@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class GuardarObservacionesDto {
   @IsNotEmpty()
@@ -16,4 +16,8 @@ export class GuardarObservacionesDto {
   @IsOptional()
   @IsString()
   objetivosSocio?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  esPublica?: boolean;
 }

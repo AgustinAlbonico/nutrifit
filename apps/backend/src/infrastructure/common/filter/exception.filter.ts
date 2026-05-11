@@ -6,7 +6,6 @@ import {
   Logger,
   BadRequestException,
   HttpException,
-  HttpStatus,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { AppError } from 'src/domain/exceptions/custom-exceptions';
@@ -77,17 +76,17 @@ export class AppErrorFilter implements ExceptionFilter {
         message = exception.message;
       }
 
-      if (statusCode === HttpStatus.UNAUTHORIZED) {
+      if (statusCode === 401) {
         errorCode = ErrorCode.UNAUTHORIZED;
         message = 'Sesión inválida o vencida. Iniciá sesión nuevamente.';
-      } else if (statusCode === HttpStatus.FORBIDDEN) {
+      } else if (statusCode === 403) {
         errorCode = ErrorCode.FORBIDDEN;
         message = 'No tenés permisos para realizar esta acción.';
-      } else if (statusCode === HttpStatus.NOT_FOUND) {
+      } else if (statusCode === 404) {
         errorCode = ErrorCode.NOT_FOUND;
-      } else if (statusCode === HttpStatus.CONFLICT) {
+      } else if (statusCode === 409) {
         errorCode = ErrorCode.CONFLICT;
-      } else if (statusCode === HttpStatus.BAD_REQUEST) {
+      } else if (statusCode === 400) {
         errorCode = ErrorCode.BAD_REQUEST;
       } else {
         errorCode = ErrorCode.SERVER_ERROR;

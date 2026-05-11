@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ReprogramarTurnoSocioUseCase = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
+const politica_operativa_repository_1 = require("../../politicas/politica-operativa.repository");
 const dtos_1 = require("../dtos");
 const dia_semana_1 = require("../../../domain/entities/Agenda/dia-semana");
 const EstadoTurno_1 = require("../../../domain/entities/Turno/EstadoTurno");
@@ -23,18 +24,28 @@ const logger_service_1 = require("../../../domain/services/logger.service");
 const argentina_datetime_util_1 = require("../../../common/utils/argentina-datetime.util");
 const entities_1 = require("../../../infrastructure/persistence/typeorm/entities");
 const typeorm_2 = require("typeorm");
+const notificaciones_service_1 = require("../../notificaciones/notificaciones.service");
+const tipo_notificacion_enum_1 = require("../../../domain/entities/Notificacion/tipo-notificacion.enum");
+const auditoria_service_1 = require("../../../infrastructure/services/auditoria/auditoria.service");
+const auditoria_entity_1 = require("../../../infrastructure/persistence/typeorm/entities/auditoria.entity");
 let ReprogramarTurnoSocioUseCase = class ReprogramarTurnoSocioUseCase {
     usuarioRepository;
     socioRepository;
     turnoRepository;
     agendaRepository;
     logger;
-    constructor(usuarioRepository, socioRepository, turnoRepository, agendaRepository, logger) {
+    politicaRepository;
+    notificacionesService;
+    auditoriaService;
+    constructor(usuarioRepository, socioRepository, turnoRepository, agendaRepository, logger, politicaRepository, notificacionesService, auditoriaService) {
         this.usuarioRepository = usuarioRepository;
         this.socioRepository = socioRepository;
         this.turnoRepository = turnoRepository;
         this.agendaRepository = agendaRepository;
         this.logger = logger;
+        this.politicaRepository = politicaRepository;
+        this.notificacionesService = notificacionesService;
+        this.auditoriaService = auditoriaService;
     }
     async execute(userId, turnoId, payload) {
         const socio = await this.resolveSocioByUserId(userId);
@@ -51,10 +62,10 @@ let ReprogramarTurnoSocioUseCase = class ReprogramarTurnoSocioUseCase {
         if (turno.socio.idPersona !== socio.idPersona) {
             throw new custom_exceptions_1.ForbiddenError('No tiene permisos para reprogramar este turno.');
         }
-        if (turno.estadoTurno !== EstadoTurno_1.EstadoTurno.PENDIENTE) {
-            throw new custom_exceptions_1.BadRequestError('Solo se pueden reprogramar turnos en estado PENDIENTE.');
+        if (turno.estadoTurno !== EstadoTurno_1.EstadoTurno.PROGRAMADO) {
+            throw new custom_exceptions_1.BadRequestError('Solo se pueden reprogramar turnos en estado PROGRAMADO.');
         }
-        this.validate24hRule(turno.fechaTurno, turno.horaTurno);
+        await this.validatePolicyRule(turno);
         const nuevaFecha = (0, argentina_datetime_util_1.parseArgentinaDateInput)(payload.fechaTurno);
         const nuevaHora = (0, argentina_datetime_util_1.normalizeTimeToHHmm)(payload.horaTurno);
         this.validateDateTimeNotInPast(nuevaFecha, nuevaHora);
@@ -71,12 +82,46 @@ let ReprogramarTurnoSocioUseCase = class ReprogramarTurnoSocioUseCase {
         if (conflictingTurno) {
             throw new custom_exceptions_1.ConflictError('No hay disponibilidad en el nuevo horario seleccionado.');
         }
+        const fechaOriginalAnterior = turno.fechaOriginal;
+        turno.fechaOriginal = turno.fechaTurno;
         turno.fechaTurno = nuevaFecha;
         turno.horaTurno = nuevaHora;
-        turno.estadoTurno = EstadoTurno_1.EstadoTurno.REPROGRAMADO;
         const updatedTurno = await this.turnoRepository.save(turno);
+        await this.auditoriaService.registrar({
+            usuarioId: userId,
+            accion: auditoria_entity_1.AccionAuditoria.TURNO_ESTADO_CAMBIO,
+            entidad: 'Turno',
+            entidadId: turnoId,
+            metadata: {
+                tipo: 'REPROGRAMACION',
+                fechaOriginal: fechaOriginalAnterior
+                    ? (0, argentina_datetime_util_1.formatArgentinaDate)(fechaOriginalAnterior)
+                    : null,
+                fechaNueva: (0, argentina_datetime_util_1.formatArgentinaDate)(nuevaFecha),
+                horaOriginal: (0, argentina_datetime_util_1.normalizeTimeToHHmm)(updatedTurno.horaTurno),
+                horaNueva: nuevaHora,
+                motivo: payload.motivo ?? null,
+            },
+        });
+        if (turno.socio.idPersona) {
+            await this.notificacionesService.crear({
+                destinatarioId: turno.socio.idPersona,
+                tipo: tipo_notificacion_enum_1.TipoNotificacion.TURNO_REPROGRAMADO,
+                titulo: 'Turno reprogramado',
+                mensaje: `Tu turno fue reprogramado para el ${(0, argentina_datetime_util_1.formatArgentinaDate)(updatedTurno.fechaTurno)} a las ${(0, argentina_datetime_util_1.normalizeTimeToHHmm)(updatedTurno.horaTurno)}.`,
+                metadata: { turnoId: updatedTurno.idTurno },
+            });
+        }
+        if (turno.nutricionista.idPersona) {
+            await this.notificacionesService.crear({
+                destinatarioId: turno.nutricionista.idPersona,
+                tipo: tipo_notificacion_enum_1.TipoNotificacion.TURNO_REPROGRAMADO,
+                titulo: 'Turno reprogramado por socio',
+                mensaje: `El socio reprogramó el turno #${turno.idTurno} para el ${(0, argentina_datetime_util_1.formatArgentinaDate)(updatedTurno.fechaTurno)} a las ${(0, argentina_datetime_util_1.normalizeTimeToHHmm)(updatedTurno.horaTurno)}.`,
+                metadata: { turnoId: updatedTurno.idTurno },
+            });
+        }
         this.logger.log(`Turno ${turnoId} reprogramado por socio ${socio.idPersona}.`);
-        this.logger.log(`Notificacion interna pendiente de integracion para profesional ${turno.nutricionista.idPersona}.`);
         return this.toResponseDto(updatedTurno);
     }
     async resolveSocioByUserId(userId) {
@@ -104,6 +149,16 @@ let ReprogramarTurnoSocioUseCase = class ReprogramarTurnoSocioUseCase {
         const hoursDiff = (scheduledDate.getTime() - now.getTime()) / (1000 * 60 * 60);
         if (hoursDiff < 24) {
             throw new custom_exceptions_1.BadRequestError('Solo se puede reprogramar con al menos 24 horas de anticipacion.');
+        }
+    }
+    async validatePolicyRule(turno) {
+        const gimnasioId = turno.gimnasio?.idGimnasio ?? 1;
+        const plazoHoras = await this.politicaRepository.getPlazoReprogramacion(gimnasioId);
+        const scheduledDate = (0, argentina_datetime_util_1.combineArgentinaDateAndTime)(turno.fechaTurno, turno.horaTurno);
+        const now = new Date();
+        const hoursDiff = (scheduledDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+        if (hoursDiff < plazoHoras) {
+            throw new custom_exceptions_1.BadRequestError(`Solo se puede reprogramar con al menos ${plazoHoras} horas de anticipacion.`);
         }
     }
     async validateAgendaAvailability(nutricionistaId, fechaTurno, horaTurno) {
@@ -180,6 +235,10 @@ let ReprogramarTurnoSocioUseCase = class ReprogramarTurnoSocioUseCase {
         response.estadoTurno = turno.estadoTurno;
         response.socioId = turno.socio.idPersona ?? 0;
         response.nutricionistaId = turno.nutricionista.idPersona ?? 0;
+        response.gimnasioId = turno.gimnasio?.idGimnasio;
+        response.fechaOriginal = turno.fechaOriginal
+            ? (0, argentina_datetime_util_1.formatArgentinaDate)(turno.fechaOriginal)
+            : undefined;
         return response;
     }
 };
@@ -191,9 +250,11 @@ exports.ReprogramarTurnoSocioUseCase = ReprogramarTurnoSocioUseCase = __decorate
     __param(2, (0, typeorm_1.InjectRepository)(entities_1.TurnoOrmEntity)),
     __param(3, (0, typeorm_1.InjectRepository)(entities_1.AgendaOrmEntity)),
     __param(4, (0, common_1.Inject)(logger_service_1.APP_LOGGER_SERVICE)),
+    __param(5, (0, common_1.Inject)(politica_operativa_repository_1.POLITICA_OPERATIVA_REPOSITORY)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        typeorm_2.Repository, Object])
+        typeorm_2.Repository, Object, Object, notificaciones_service_1.NotificacionesService,
+        auditoria_service_1.AuditoriaService])
 ], ReprogramarTurnoSocioUseCase);
 //# sourceMappingURL=reprogramar-turno-socio.use-case.js.map

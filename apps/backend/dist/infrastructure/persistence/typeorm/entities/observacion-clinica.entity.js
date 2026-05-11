@@ -22,6 +22,7 @@ let ObservacionClinicaOrmEntity = class ObservacionClinicaOrmEntity {
     sugerencias;
     habitosSocio;
     objetivosSocio;
+    esPublica;
     turno;
 };
 exports.ObservacionClinicaOrmEntity = ObservacionClinicaOrmEntity;
@@ -46,7 +47,6 @@ __decorate([
     __metadata("design:type", Number)
 ], ObservacionClinicaOrmEntity.prototype, "imc", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: '', type: 'date' }),
     (0, typeorm_1.Column)({ name: 'sugerencias', type: 'varchar', length: 255, nullable: true }),
     __metadata("design:type", Object)
 ], ObservacionClinicaOrmEntity.prototype, "sugerencias", void 0);
@@ -68,6 +68,14 @@ __decorate([
     }),
     __metadata("design:type", Object)
 ], ObservacionClinicaOrmEntity.prototype, "objetivosSocio", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        name: 'es_publica',
+        type: 'boolean',
+        default: false,
+    }),
+    __metadata("design:type", Boolean)
+], ObservacionClinicaOrmEntity.prototype, "esPublica", void 0);
 __decorate([
     (0, typeorm_1.OneToOne)(() => turno_entity_1.TurnoOrmEntity, (turno) => turno.observacionClinica, {
         nullable: false,

@@ -14,6 +14,10 @@ const app_logger_module_1 = require("../../infrastructure/common/logger/app-logg
 const entities_1 = require("../../infrastructure/persistence/typeorm/entities");
 const nutricionista_repository_2 = require("../../infrastructure/persistence/typeorm/repositories/nutricionista.repository");
 const use_cases_1 = require("./use-cases");
+const auditoria_module_1 = require("../../infrastructure/services/auditoria/auditoria.module");
+const adjunto_clinico_module_1 = require("../../infrastructure/services/adjunto-clinico/adjunto-clinico.module");
+const notificaciones_service_1 = require("../notificaciones/notificaciones.service");
+const notificacion_entity_1 = require("../../infrastructure/persistence/typeorm/entities/notificacion.entity");
 let TurnosModule = class TurnosModule {
 };
 exports.TurnosModule = TurnosModule;
@@ -29,10 +33,14 @@ exports.TurnosModule = TurnosModule = __decorate([
                 entities_1.ObservacionClinicaOrmEntity,
                 entities_1.PatologiaOrmEntity,
                 entities_1.SocioOrmEntity,
+                entities_1.TurnoConfirmacionTokenOrmEntity,
                 entities_1.TurnoOrmEntity,
                 entities_1.UsuarioOrmEntity,
+                notificacion_entity_1.NotificacionOrmEntity,
             ]),
             app_logger_module_1.AppLoggerModule,
+            auditoria_module_1.AuditoriaModule,
+            adjunto_clinico_module_1.AdjuntoClinicoModule,
         ],
         providers: [
             use_cases_1.AsignarTurnoManualUseCase,
@@ -60,6 +68,7 @@ exports.TurnosModule = TurnosModule = __decorate([
             use_cases_1.RegistrarAsistenciaTurnoUseCase,
             use_cases_1.ReservarTurnoSocioUseCase,
             use_cases_1.UpsertFichaSaludSocioUseCase,
+            notificaciones_service_1.NotificacionesService,
             {
                 provide: nutricionista_repository_1.NUTRICIONISTA_REPOSITORY,
                 useClass: nutricionista_repository_2.NutricionistaRepositoryImplementation,

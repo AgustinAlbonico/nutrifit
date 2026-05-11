@@ -498,7 +498,7 @@ export class AlimentosSyncService implements OnModuleInit {
       : [];
 
     const usadosRaw = (await this.dataSource.query(
-      'SELECT DISTINCT id_alimento FROM opcion_comida_alimento',
+      'SELECT DISTINCT id_alimento FROM item_comida',
     )) as unknown;
     const idsUsados = new Set(
       (Array.isArray(usadosRaw) ? usadosRaw.filter(esFilaIdAlimento) : []).map(

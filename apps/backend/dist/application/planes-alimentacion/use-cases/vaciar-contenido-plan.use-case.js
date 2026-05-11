@@ -66,7 +66,9 @@ let VaciarContenidoPlanUseCase = class VaciarContenidoPlanUseCase {
             }
         }
         const diasDelPlan = await this.diaPlanRepo.find({
-            where: { planAlimentacion: { idPlanAlimentacion: payload.planId } },
+            where: {
+                planAlimentacion: { idPlanAlimentacion: payload.planId },
+            },
             relations: { opcionesComida: true },
         });
         let totalOpciones = 0;

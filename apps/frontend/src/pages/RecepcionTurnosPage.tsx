@@ -3,8 +3,14 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ClipboardCheck } from 'lucide-react';
 
+import type { EstadoTurno } from '@nutrifit/shared';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRequest } from '@/lib/api';
+import {
+  obtenerClasesEstadoTurno,
+  obtenerEtiquetaEstadoTurno,
+  puedeHacerCheckInTurno,
+} from '@/lib/turnos/estadoTurno';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,7 +28,7 @@ interface TurnoRecepcion {
   idTurno: number;
   fechaTurno: string;
   horaTurno: string;
-  estadoTurno: 'PENDIENTE' | 'CONFIRMADO' | 'PRESENTE' | 'EN_CURSO' | 'REALIZADO' | 'CANCELADO' | 'AUSENTE';
+  estadoTurno: EstadoTurno;
   nombreSocio: string;
   nombreNutricionista: string;
   dniSocio: string;
@@ -113,56 +119,16 @@ export function RecepcionTurnosPage() {
     }
   };
 
-  const getEstadoBadge = (estado: TurnoRecepcion['estadoTurno']) => {
-    switch (estado) {
-      case 'PENDIENTE':
-        return (
-          <Badge
-            variant="secondary"
-            className="border-yellow-200 bg-yellow-50 text-yellow-700"
-          >
-            Pendiente
-          </Badge>
-        );
-      case 'CONFIRMADO':
-        return (
-          <Badge className="border-blue-200 bg-blue-50 text-blue-700">
-            Confirmado
-          </Badge>
-        );
-      case 'PRESENTE':
-        return (
-          <Badge className="border-green-200 bg-green-50 text-green-700">
-            Presente
-          </Badge>
-        );
-      case 'EN_CURSO':
-        return (
-          <Badge className="border-purple-200 bg-purple-50 text-purple-700">
-            En curso
-          </Badge>
-        );
-      case 'REALIZADO':
-        return (
-          <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700">
-            Realizado
-          </Badge>
-        );
-      case 'CANCELADO':
-        return <Badge variant="destructive">Cancelado</Badge>;
-      case 'AUSENTE':
-        return (
-          <Badge variant="outline" className="border-gray-300 text-gray-600">
-            Ausente
-          </Badge>
-        );
-      default:
-        return <Badge variant="outline">{estado}</Badge>;
-    }
+  const getEstadoBadge = (estado: EstadoTurno) => {
+    return (
+      <Badge className={obtenerClasesEstadoTurno(estado)}>
+        {obtenerEtiquetaEstadoTurno(estado)}
+      </Badge>
+    );
   };
 
   const puedeHacerCheckIn = (turno: TurnoRecepcion) => {
-    return turno.estadoTurno === 'PENDIENTE' || turno.estadoTurno === 'CONFIRMADO';
+    return puedeHacerCheckInTurno(turno.estadoTurno);
   };
 
   if (!esRecepcionista) {
@@ -215,7 +181,7 @@ export function RecepcionTurnosPage() {
             <p className="text-sm text-muted-foreground">Cargando turnos...</p>
           ) : turnos.length === 0 ? (
             <div className="py-8 text-center text-muted-foreground">
-              No hay turnos programados para este día.
+              No hay turnos activos para este día.
             </div>
           ) : (
             <div className="overflow-x-auto">

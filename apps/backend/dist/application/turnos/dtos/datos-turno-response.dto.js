@@ -1,15 +1,25 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.FichaSalud = exports.SocioTurnoResponseDto = exports.DatosTurnoResponseDto = void 0;
+exports.FichaSalud = exports.SocioTurnoResponseDto = exports.ObservacionClinicaDto = exports.DatosTurnoResponseDto = void 0;
 class DatosTurnoResponseDto {
     idTurno;
     fechaTurno;
     horaTurno;
     estadoTurno;
+    consultaFinalizadaAt;
     socio;
     fichaSalud;
+    observacionClinica;
 }
 exports.DatosTurnoResponseDto = DatosTurnoResponseDto;
+class ObservacionClinicaDto {
+    comentario;
+    sugerencias;
+    habitosSocio;
+    objetivosSocio;
+    esPublica;
+}
+exports.ObservacionClinicaDto = ObservacionClinicaDto;
 class SocioTurnoResponseDto {
     idPersona;
     nombre;

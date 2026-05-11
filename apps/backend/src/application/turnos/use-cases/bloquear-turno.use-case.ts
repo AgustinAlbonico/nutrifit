@@ -76,7 +76,10 @@ export class BloquearTurnoUseCase implements BaseUseCase {
     });
 
     if (existingTurno) {
-      if (existingTurno.estadoTurno === EstadoTurno.BLOQUEADO) {
+      if (
+        existingTurno.estadoTurno === EstadoTurno.PROGRAMADO &&
+        !existingTurno.socio
+      ) {
         throw new ConflictError('El turno ya se encuentra bloqueado.');
       }
       throw new ConflictError(
@@ -84,11 +87,11 @@ export class BloquearTurnoUseCase implements BaseUseCase {
       );
     }
 
-    // 3. Crear turno bloqueado
+    // 3. Crear turno bloqueado (PROGRAMADO sin socio = bloqueado)
     const turno = new TurnoOrmEntity();
     turno.fechaTurno = fechaTurno;
     turno.horaTurno = horaTurno;
-    turno.estadoTurno = EstadoTurno.BLOQUEADO;
+    turno.estadoTurno = EstadoTurno.PROGRAMADO;
     turno.nutricionista = nutricionista;
     // turno.socio no se asigna porque es opcional en la entidad y null no es compatible directo si strictNullChecks está activo
     // Al ser opcional en la entidad, simplemente no la asignamos o la dejamos undefined

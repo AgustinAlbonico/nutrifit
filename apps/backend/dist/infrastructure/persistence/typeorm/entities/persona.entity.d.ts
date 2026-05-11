@@ -22,6 +22,7 @@ export declare abstract class PersonaOrmEntity {
     provincia: string;
     dni: string | null;
     fotoPerfilKey: string | null;
+    gimnasioId: number;
     usuario: UsuarioOrmEntity | null;
 }
 export declare class SocioOrmEntity extends PersonaOrmEntity {
@@ -42,4 +43,9 @@ export declare class NutricionistaOrmEntity extends PersonaOrmEntity {
     formacionAcademica: FormacionAcademicaOrmEntity[] | FormacionAcademicaEntity[];
     planesAlimentacion: PlanAlimentacionOrmEntity[] | PlanAlimentacionEntity[] | null;
     turnos: TurnoOrmEntity[] | TurnoEntity[] | null;
+}
+export declare class EntrenadorOrmEntity extends PersonaOrmEntity {
+    especialidad: string;
+    fechaBaja: Date | null;
+    turnos: TurnoOrmEntity[] | TurnoEntity[];
 }

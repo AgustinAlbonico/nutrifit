@@ -14,6 +14,7 @@ const nutricionista_repository_1 = require("../../domain/entities/Persona/Nutric
 const nutricionista_repository_2 = require("../../infrastructure/persistence/typeorm/repositories/nutricionista.repository");
 const app_logger_module_1 = require("../../infrastructure/common/logger/app-logger.module");
 const groq_module_1 = require("../../infrastructure/services/groq/groq.module");
+const restricciones_module_1 = require("../restricciones/restricciones.module");
 const use_cases_1 = require("./use-cases");
 let AiModule = class AiModule {
 };
@@ -25,9 +26,11 @@ exports.AiModule = AiModule = __decorate([
                 entities_1.SocioOrmEntity,
                 entities_1.PlanAlimentacionOrmEntity,
                 entities_1.NutricionistaOrmEntity,
+                entities_1.SugerenciaIAOrmEntity,
             ]),
             app_logger_module_1.AppLoggerModule,
             groq_module_1.GroqModule,
+            restricciones_module_1.RestriccionesModule,
         ],
         providers: [
             use_cases_1.PrepararContextoPacienteUseCase,
@@ -35,6 +38,7 @@ exports.AiModule = AiModule = __decorate([
             use_cases_1.GenerarPlanSemanalUseCase,
             use_cases_1.SugerirSustitucionUseCase,
             use_cases_1.AnalizarPlanNutricionalUseCase,
+            use_cases_1.GenerarIdeasComidaUseCase,
             {
                 provide: nutricionista_repository_1.NUTRICIONISTA_REPOSITORY,
                 useClass: nutricionista_repository_2.NutricionistaRepositoryImplementation,
@@ -46,6 +50,7 @@ exports.AiModule = AiModule = __decorate([
             use_cases_1.GenerarPlanSemanalUseCase,
             use_cases_1.SugerirSustitucionUseCase,
             use_cases_1.AnalizarPlanNutricionalUseCase,
+            use_cases_1.GenerarIdeasComidaUseCase,
         ],
     })
 ], AiModule);

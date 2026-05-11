@@ -39,7 +39,7 @@ export class GetTurnoByIdUseCase implements BaseUseCase {
     // 1. Buscar el turno con todas las relaciones necesarias
     const turno = await this.turnoRepository.findOne({
       where: { idTurno: turnoId },
-      relations: ['socio', 'nutricionista'],
+      relations: ['socio', 'nutricionista', 'observacionClinica'],
     });
 
     if (!turno) {
@@ -128,8 +128,18 @@ export class GetTurnoByIdUseCase implements BaseUseCase {
       fechaTurno: this.formatDate(turno.fechaTurno),
       horaTurno: turno.horaTurno,
       estadoTurno: turno.estadoTurno as string,
+      consultaFinalizadaAt: turno.consultaFinalizadaAt?.toISOString() ?? null,
       socio: socioResponse,
       fichaSalud: fichaSaludResponse,
+      observacionClinica: turno.observacionClinica
+        ? {
+            comentario: turno.observacionClinica.comentario,
+            sugerencias: turno.observacionClinica.sugerencias,
+            habitosSocio: turno.observacionClinica.habitosSocio,
+            objetivosSocio: turno.observacionClinica.objetivosSocio,
+            esPublica: turno.observacionClinica.esPublica,
+          }
+        : null,
     };
 
     return response;

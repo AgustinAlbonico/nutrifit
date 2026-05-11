@@ -11,8 +11,12 @@ import {
   NutricionistaOrmEntity,
   PlanAlimentacionOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
+import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
+import { AccionAuditoria } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
 import { Repository } from 'typeorm';
 import { EliminarPlanAlimentacionDto } from '../dtos';
+import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
+import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
 
 export class EliminarPlanAlimentacionResponseDto {
   mensaje: string;
@@ -29,6 +33,8 @@ export class EliminarPlanAlimentacionUseCase implements BaseUseCase {
     private readonly nutricionistaRepo: Repository<NutricionistaOrmEntity>,
     @InjectRepository(UsuarioOrmEntity)
     private readonly usuarioRepo: Repository<UsuarioOrmEntity>,
+    private readonly auditoriaService: AuditoriaService,
+    private readonly notificacionesService: NotificacionesService,
   ) {}
 
   async execute(
@@ -68,6 +74,25 @@ export class EliminarPlanAlimentacionUseCase implements BaseUseCase {
     plan.motivoEliminacion = payload.motivoEliminacion;
 
     await this.planRepo.save(plan);
+
+    await this.auditoriaService.registrar({
+      usuarioId: nutricionistaUserId,
+      accion: AccionAuditoria.PLAN_DELETED,
+      entidad: 'PlanAlimentacion',
+      entidadId: plan.idPlanAlimentacion,
+      metadata: {
+        motivoEliminacion: payload.motivoEliminacion,
+        socioId: (plan.socio as any)?.idPersona,
+      },
+    });
+
+    await this.notificacionesService.crear({
+      destinatarioId: (plan.socio as any)?.idPersona,
+      tipo: TipoNotificacion.PLAN_ELIMINADO,
+      titulo: 'Plan de alimentación eliminado',
+      mensaje: 'Tu plan de alimentación activo fue eliminado.',
+      metadata: { planId: plan.idPlanAlimentacion },
+    });
 
     return {
       mensaje: 'Plan de alimentación eliminado correctamente.',

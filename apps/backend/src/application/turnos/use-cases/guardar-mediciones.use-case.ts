@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/turno.entity';
 import { MedicionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/medicion.entity';
+import { EstadoTurno } from 'src/domain/entities/Turno/EstadoTurno';
 import {
   BadRequestError,
   NotFoundError,
@@ -37,6 +38,18 @@ export class GuardarMedicionesUseCase {
       throw new NotFoundError('Turno no encontrado');
     }
 
+    if (turno.consultaFinalizadaAt !== null) {
+      throw new BadRequestError(
+        'No se pueden agregar mediciones a una consulta ya finalizada',
+      );
+    }
+
+    if (turno.estadoTurno !== EstadoTurno.EN_CURSO) {
+      throw new BadRequestError(
+        `Solo se pueden guardar mediciones durante una consulta en curso. Estado actual: ${turno.estadoTurno}`,
+      );
+    }
+
     // Obtener altura: usar la del DTO si viene, si no buscar la última registrada
     let altura = dto.altura;
     if (!altura) {
@@ -65,6 +78,8 @@ export class GuardarMedicionesUseCase {
     const imc = parseFloat(
       (dto.peso / (alturaEnMetros * alturaEnMetros)).toFixed(2),
     );
+
+    this.validarRangosClinicos(dto, imc);
 
     // Calcular masa magra si hay porcentaje de grasa
     let masaMagra: number | null = null;
@@ -102,5 +117,32 @@ export class GuardarMedicionesUseCase {
       imc,
       idMedicion: savedMedicion.idMedicion,
     };
+  }
+
+  private validarRangosClinicos(dto: GuardarMedicionesDto, imc: number): void {
+    if (imc < 10 || imc > 80) {
+      throw new BadRequestError(
+        'El IMC calculado queda fuera de un rango clinico razonable. Revisá peso y altura.',
+      );
+    }
+
+    const tieneTensionSistolica = dto.tensionSistolica !== undefined;
+    const tieneTensionDiastolica = dto.tensionDiastolica !== undefined;
+
+    if (tieneTensionSistolica !== tieneTensionDiastolica) {
+      throw new BadRequestError(
+        'Para registrar la tensión arterial debes informar el valor sistólico y el diastólico.',
+      );
+    }
+
+    if (
+      dto.tensionSistolica !== undefined &&
+      dto.tensionDiastolica !== undefined &&
+      dto.tensionDiastolica >= dto.tensionSistolica
+    ) {
+      throw new BadRequestError(
+        'La tensión diastólica debe ser menor que la sistólica.',
+      );
+    }
   }
 }

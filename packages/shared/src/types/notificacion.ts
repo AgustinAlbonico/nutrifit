@@ -1,0 +1,23 @@
+export enum TipoNotificacion {
+  TURNO_RESERVADO = 'TURNO_RESERVADO',
+  TURNO_CANCELADO = 'TURNO_CANCELADO',
+  TURNO_REPROGRAMADO = 'TURNO_REPROGRAMADO',
+  CHECK_IN = 'CHECK_IN',
+  PLAN_CREADO = 'PLAN_CREADO',
+  PLAN_EDITADO = 'PLAN_EDITADO',
+  PLAN_ELIMINADO = 'PLAN_ELIMINADO',
+  CONSULTA_FINALIZADA = 'CONSULTA_FINALIZADA',
+}
+
+export enum EstadoNotificacion {
+  NO_LEIDA = 'NO_LEIDA',
+  LEIDA = 'LEIDA',
+}
+
+export interface NotificacionMetaData {
+  turnoId?: number;
+  planId?: number;
+  consultaId?: number;
+  rutaNavegacion?: string;
+  [clave: string]: unknown;
+}

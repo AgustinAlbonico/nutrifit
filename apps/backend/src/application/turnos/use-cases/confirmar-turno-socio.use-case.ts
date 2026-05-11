@@ -20,10 +20,14 @@ import {
 } from 'src/common/utils/argentina-datetime.util';
 import {
   SocioOrmEntity,
+  TurnoConfirmacionTokenOrmEntity,
   TurnoOrmEntity,
   UsuarioOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
 import { Repository } from 'typeorm';
+import { createHash } from 'crypto';
+import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
+import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
 
 @Injectable()
 export class ConfirmarTurnoSocioUseCase implements BaseUseCase {
@@ -34,15 +38,19 @@ export class ConfirmarTurnoSocioUseCase implements BaseUseCase {
     private readonly socioRepository: Repository<SocioOrmEntity>,
     @InjectRepository(TurnoOrmEntity)
     private readonly turnoRepository: Repository<TurnoOrmEntity>,
+    @InjectRepository(TurnoConfirmacionTokenOrmEntity)
+    private readonly tokenRepository: Repository<TurnoConfirmacionTokenOrmEntity>,
+    private readonly notificacionesService: NotificacionesService,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
   ) {}
 
   async execute(
-    userId: number,
+    userId: number | null,
     turnoId: number,
+    tokenConfirmacion?: string,
   ): Promise<TurnoOperacionResponseDto> {
-    const socio = await this.resolveSocioByUserId(userId);
+    const socio = userId ? await this.resolveSocioByUserId(userId) : null;
 
     const turno = await this.turnoRepository.findOne({
       where: { idTurno: turnoId },
@@ -56,29 +64,76 @@ export class ConfirmarTurnoSocioUseCase implements BaseUseCase {
       throw new NotFoundError('Turno', String(turnoId));
     }
 
-    if (turno.socio.idPersona !== socio.idPersona) {
+    if (socio && turno.socio.idPersona !== socio.idPersona) {
       throw new ForbiddenError('No tiene permisos para confirmar este turno.');
     }
 
-    if (
-      turno.estadoTurno !== EstadoTurno.PENDIENTE &&
-      turno.estadoTurno !== EstadoTurno.REPROGRAMADO
-    ) {
+    if (tokenConfirmacion) {
+      await this.validarTokenConfirmacion(turnoId, tokenConfirmacion);
+    }
+
+    if (turno.estadoTurno !== EstadoTurno.PROGRAMADO) {
       throw new BadRequestError(
-        'Solo se pueden confirmar turnos en estado PENDIENTE o REPROGRAMADO.',
+        'Solo se pueden confirmar turnos en estado PROGRAMADO.',
       );
     }
 
     this.validateConfirmationWindow(turno.fechaTurno, turno.horaTurno);
 
-    turno.estadoTurno = EstadoTurno.CONFIRMADO;
+    turno.estadoTurno = EstadoTurno.PRESENTE;
+    (turno as any).confirmedAt = new Date();
     const updatedTurno = await this.turnoRepository.save(turno);
 
+    if (turno.socio.idPersona) {
+      await this.notificacionesService.crear({
+        destinatarioId: turno.socio.idPersona,
+        tipo: TipoNotificacion.TURNO_RESERVADO,
+        titulo: 'Turno confirmado',
+        mensaje: `Tu turno del ${formatArgentinaDate(turno.fechaTurno)} a las ${normalizeTimeToHHmm(turno.horaTurno)} fue confirmado.`,
+        metadata: { turnoId: turno.idTurno },
+      });
+    }
+
+    if (turno.nutricionista.idPersona) {
+      await this.notificacionesService.crear({
+        destinatarioId: turno.nutricionista.idPersona,
+        tipo: TipoNotificacion.TURNO_RESERVADO,
+        titulo: 'Turno confirmado por socio',
+        mensaje: `El socio confirmó el turno #${turno.idTurno} del ${formatArgentinaDate(turno.fechaTurno)} a las ${normalizeTimeToHHmm(turno.horaTurno)}.`,
+        metadata: { turnoId: turno.idTurno },
+      });
+    }
+
     this.logger.log(
-      `Turno ${turnoId} confirmado por socio ${socio.idPersona}.`,
+      `Turno ${turnoId} confirmado por socio ${socio?.idPersona ?? 'token'}.`,
     );
 
     return this.toResponseDto(updatedTurno);
+  }
+
+  private async validarTokenConfirmacion(
+    turnoId: number,
+    tokenPlano: string,
+  ): Promise<void> {
+    const tokenHash = createHash('sha256').update(tokenPlano).digest('hex');
+    const registro = await this.tokenRepository.findOne({
+      where: { turnoId, tokenHash },
+    });
+
+    if (!registro) {
+      throw new BadRequestError('Token de confirmación inválido.');
+    }
+
+    if (registro.usadoEn) {
+      throw new BadRequestError('El token ya fue utilizado.');
+    }
+
+    if (registro.expiraEn.getTime() < Date.now()) {
+      throw new BadRequestError('El token de confirmación expiró.');
+    }
+
+    registro.usadoEn = new Date();
+    await this.tokenRepository.save(registro);
   }
 
   private async resolveSocioByUserId(userId: number): Promise<SocioOrmEntity> {

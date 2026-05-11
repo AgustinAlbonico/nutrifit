@@ -11,6 +11,8 @@ enum VariablesEntorno {
   PORT = 'PORT',
   APP_NAME = 'APP_NAME',
   NODE_ENV = 'NODE_ENV',
+  FRONTEND_URL = 'FRONTEND_URL',
+  CORS_ALLOWED_ORIGINS = 'CORS_ALLOWED_ORIGINS',
   DATABASE_HOST = 'DATABASE_HOST',
   DATABASE_PORT = 'DATABASE_PORT',
   DATABASE_NAME = 'DATABASE_NAME',
@@ -29,6 +31,13 @@ enum VariablesEntorno {
   GROQ_MODEL = 'GROQ_MODEL',
   AUSENCIA_UMBRAL_MINUTOS = 'AUSENCIA_UMBRAL_MINUTOS',
 }
+
+const ORIGENES_DESARROLLO_POR_DEFECTO = [
+  'http://localhost:4173',
+  'http://127.0.0.1:4173',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+];
 
 @Injectable()
 export class EnvironmentConfigService
@@ -61,6 +70,35 @@ export class EnvironmentConfigService
 
   getAppName(): string {
     return this.getEnvironmentVariable<string>(VariablesEntorno.APP_NAME);
+  }
+
+  getCorsAllowedOrigins(): string[] {
+    const configuredOrigins = this.configService.get<string>(
+      VariablesEntorno.CORS_ALLOWED_ORIGINS,
+      '',
+    );
+    const frontendUrl = this.configService.get<string>(
+      VariablesEntorno.FRONTEND_URL,
+      '',
+    );
+
+    const origins = [...configuredOrigins.split(','), frontendUrl]
+      .map((origin) => origin.trim().replace(/\/+$/, ''))
+      .filter((origin) => origin.length > 0);
+
+    const uniqueOrigins = Array.from(new Set(origins));
+
+    if (uniqueOrigins.length > 0) {
+      return uniqueOrigins;
+    }
+
+    if (this.getNodeEnv() === 'production') {
+      throw new EnvironmentConfigurationError(
+        `${VariablesEntorno.CORS_ALLOWED_ORIGINS}|${VariablesEntorno.FRONTEND_URL}`,
+      );
+    }
+
+    return ORIGENES_DESARROLLO_POR_DEFECTO;
   }
 
   getNodeEnv(): 'production' | 'test' | 'dev' {

@@ -6,10 +6,18 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { Request } from 'express';
+import { Rol } from 'src/domain/entities/Usuario/Rol';
 import {
   USUARIO_REPOSITORY,
   UsuarioRepository,
 } from 'src/domain/entities/Usuario/usuario.repository';
+
+type RequestWithUser = Request & {
+  user?: {
+    id?: number;
+    rol?: Rol;
+  };
+};
 
 @Injectable()
 export class NutricionistaOwnershipGuard implements CanActivate {
@@ -19,7 +27,12 @@ export class NutricionistaOwnershipGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<Request>();
+    const request = context.switchToHttp().getRequest<RequestWithUser>();
+    const user = request.user;
+
+    if (user?.rol === Rol.ADMIN) {
+      return true;
+    }
 
     const nutricionistaIdParam = request.params?.nutricionistaId;
     if (!nutricionistaIdParam) {
@@ -27,7 +40,7 @@ export class NutricionistaOwnershipGuard implements CanActivate {
     }
 
     const nutricionistaId = Number(nutricionistaIdParam);
-    const userId = (request as any).user?.id;
+    const userId = user?.id;
 
     if (!Number.isFinite(nutricionistaId) || !userId) {
       throw new ForbiddenException('No autorizado');

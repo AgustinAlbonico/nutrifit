@@ -53,9 +53,9 @@ export class RegistrarAsistenciaTurnoUseCase implements BaseUseCase {
       );
     }
 
-    if (turno.estadoTurno !== EstadoTurno.CONFIRMADO) {
+    if (turno.estadoTurno !== EstadoTurno.PRESENTE) {
       throw new BadRequestError(
-        'Solo se puede registrar asistencia en turnos CONFIRMADOS.',
+        'Solo se puede registrar asistencia en turnos en estado PRESENTE.',
       );
     }
 

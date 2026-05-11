@@ -19,14 +19,23 @@ const typeorm_2 = require("typeorm");
 const turno_entity_1 = require("../../../infrastructure/persistence/typeorm/entities/turno.entity");
 const EstadoTurno_1 = require("../../../domain/entities/Turno/EstadoTurno");
 const custom_exceptions_1 = require("../../../domain/exceptions/custom-exceptions");
+const notificaciones_service_1 = require("../../notificaciones/notificaciones.service");
+const tipo_notificacion_enum_1 = require("../../../domain/entities/Notificacion/tipo-notificacion.enum");
+const auditoria_service_1 = require("../../../infrastructure/services/auditoria/auditoria.service");
+const auditoria_entity_1 = require("../../../infrastructure/persistence/typeorm/entities/auditoria.entity");
 let FinalizarConsultaUseCase = class FinalizarConsultaUseCase {
     turnoRepository;
-    constructor(turnoRepository) {
+    notificacionesService;
+    auditoriaService;
+    constructor(turnoRepository, notificacionesService, auditoriaService) {
         this.turnoRepository = turnoRepository;
+        this.notificacionesService = notificacionesService;
+        this.auditoriaService = auditoriaService;
     }
     async execute(turnoId) {
         const turno = await this.turnoRepository.findOne({
             where: { idTurno: turnoId },
+            relations: { socio: true },
         });
         if (!turno) {
             throw new custom_exceptions_1.BadRequestError('Turno no encontrado');
@@ -34,9 +43,30 @@ let FinalizarConsultaUseCase = class FinalizarConsultaUseCase {
         if (turno.estadoTurno !== EstadoTurno_1.EstadoTurno.EN_CURSO) {
             throw new custom_exceptions_1.BadRequestError(`No se puede finalizar consulta en un turno con estado ${turno.estadoTurno}`);
         }
+        if (turno.consultaFinalizadaAt !== null) {
+            throw new custom_exceptions_1.BadRequestError('La consulta ya fue finalizada');
+        }
         turno.estadoTurno = EstadoTurno_1.EstadoTurno.REALIZADO;
         turno.consultaFinalizadaAt = new Date();
         await this.turnoRepository.save(turno);
+        await this.auditoriaService.registrar({
+            accion: auditoria_entity_1.AccionAuditoria.CONSULTA_FINALIZADA,
+            entidad: 'Turno',
+            entidadId: turnoId,
+            metadata: {
+                estadoAnterior: EstadoTurno_1.EstadoTurno.EN_CURSO,
+                estadoNuevo: EstadoTurno_1.EstadoTurno.REALIZADO,
+            },
+        });
+        if (turno.socio?.idPersona) {
+            await this.notificacionesService.crear({
+                destinatarioId: turno.socio.idPersona,
+                tipo: tipo_notificacion_enum_1.TipoNotificacion.CONSULTA_FINALIZADA,
+                titulo: 'Consulta finalizada',
+                mensaje: `Se finalizó tu consulta del turno #${turno.idTurno}.`,
+                metadata: { turnoId: turno.idTurno },
+            });
+        }
         return { success: true, estado: EstadoTurno_1.EstadoTurno.REALIZADO };
     }
 };
@@ -44,6 +74,8 @@ exports.FinalizarConsultaUseCase = FinalizarConsultaUseCase;
 exports.FinalizarConsultaUseCase = FinalizarConsultaUseCase = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(turno_entity_1.TurnoOrmEntity)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        notificaciones_service_1.NotificacionesService,
+        auditoria_service_1.AuditoriaService])
 ], FinalizarConsultaUseCase);
 //# sourceMappingURL=finalizar-consulta.use-case.js.map

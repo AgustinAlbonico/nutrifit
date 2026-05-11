@@ -19,7 +19,6 @@ export class ObservacionClinicaOrmEntity {
   @Column({ name: 'imc', type: 'decimal', precision: 5, scale: 2 })
   imc: number;
 
-  @Column({ name: '', type: 'date' })
   @Column({ name: 'sugerencias', type: 'varchar', length: 255, nullable: true })
   sugerencias: string | null;
 
@@ -38,6 +37,13 @@ export class ObservacionClinicaOrmEntity {
     nullable: true,
   })
   objetivosSocio: string | null;
+
+  @Column({
+    name: 'es_publica',
+    type: 'boolean',
+    default: false,
+  })
+  esPublica: boolean;
 
   @OneToOne(() => TurnoOrmEntity, (turno) => turno.observacionClinica, {
     nullable: false,

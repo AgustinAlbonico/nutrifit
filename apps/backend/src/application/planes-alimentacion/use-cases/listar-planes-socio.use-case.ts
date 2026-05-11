@@ -32,7 +32,7 @@ export class ListarPlanesSocioUseCase implements BaseUseCase {
         socio: { idPersona: socioId },
       },
       relations: {
-        dias: { opcionesComida: { alimentos: true } },
+        dias: { opcionesComida: { items: { alimento: true } } },
         socio: true,
         nutricionista: true,
       },

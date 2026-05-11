@@ -18,6 +18,8 @@ var VariablesEntorno;
     VariablesEntorno["PORT"] = "PORT";
     VariablesEntorno["APP_NAME"] = "APP_NAME";
     VariablesEntorno["NODE_ENV"] = "NODE_ENV";
+    VariablesEntorno["FRONTEND_URL"] = "FRONTEND_URL";
+    VariablesEntorno["CORS_ALLOWED_ORIGINS"] = "CORS_ALLOWED_ORIGINS";
     VariablesEntorno["DATABASE_HOST"] = "DATABASE_HOST";
     VariablesEntorno["DATABASE_PORT"] = "DATABASE_PORT";
     VariablesEntorno["DATABASE_NAME"] = "DATABASE_NAME";
@@ -36,6 +38,12 @@ var VariablesEntorno;
     VariablesEntorno["GROQ_MODEL"] = "GROQ_MODEL";
     VariablesEntorno["AUSENCIA_UMBRAL_MINUTOS"] = "AUSENCIA_UMBRAL_MINUTOS";
 })(VariablesEntorno || (VariablesEntorno = {}));
+const ORIGENES_DESARROLLO_POR_DEFECTO = [
+    'http://localhost:4173',
+    'http://127.0.0.1:4173',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+];
 let EnvironmentConfigService = class EnvironmentConfigService {
     configService;
     constructor(configService) {
@@ -61,6 +69,21 @@ let EnvironmentConfigService = class EnvironmentConfigService {
     }
     getAppName() {
         return this.getEnvironmentVariable(VariablesEntorno.APP_NAME);
+    }
+    getCorsAllowedOrigins() {
+        const configuredOrigins = this.configService.get(VariablesEntorno.CORS_ALLOWED_ORIGINS, '');
+        const frontendUrl = this.configService.get(VariablesEntorno.FRONTEND_URL, '');
+        const origins = [...configuredOrigins.split(','), frontendUrl]
+            .map((origin) => origin.trim().replace(/\/+$/, ''))
+            .filter((origin) => origin.length > 0);
+        const uniqueOrigins = Array.from(new Set(origins));
+        if (uniqueOrigins.length > 0) {
+            return uniqueOrigins;
+        }
+        if (this.getNodeEnv() === 'production') {
+            throw new environment_config_error_1.EnvironmentConfigurationError(`${VariablesEntorno.CORS_ALLOWED_ORIGINS}|${VariablesEntorno.FRONTEND_URL}`);
+        }
+        return ORIGENES_DESARROLLO_POR_DEFECTO;
     }
     getNodeEnv() {
         return this.getEnvironmentVariable(VariablesEntorno.NODE_ENV);

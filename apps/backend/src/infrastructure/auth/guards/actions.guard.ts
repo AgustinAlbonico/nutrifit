@@ -10,6 +10,10 @@ import { PermisosService } from 'src/application/permisos/permisos.service';
 import { Request } from 'express';
 import { Rol } from 'src/domain/entities/Usuario/Rol';
 
+interface AuthenticatedRequest extends Request {
+  user: { id: number; email: string; rol: Rol };
+}
+
 @Injectable()
 export class ActionsGuard implements CanActivate {
   constructor(
@@ -28,14 +32,14 @@ export class ActionsGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest<Request>();
-    const userId = (request as any).user?.id;
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    const userId = request.user?.id;
 
     if (!userId) {
       throw new ForbiddenException('No autorizado');
     }
 
-    if ((request as any).user?.rol === Rol.ADMIN) {
+    if (request.user.rol === Rol.ADMIN) {
       return true;
     }
 

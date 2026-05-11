@@ -12,4 +12,5 @@ export declare class GuardarMedicionesUseCase {
     private readonly medicionRepository;
     constructor(turnoRepository: Repository<TurnoOrmEntity>, medicionRepository: Repository<MedicionOrmEntity>);
     execute(turnoId: number, dto: GuardarMedicionesDto): Promise<GuardarMedicionesResponse>;
+    private validarRangosClinicos;
 }

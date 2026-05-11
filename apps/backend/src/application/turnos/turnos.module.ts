@@ -11,6 +11,7 @@ import {
   ObservacionClinicaOrmEntity,
   PatologiaOrmEntity,
   SocioOrmEntity,
+  TurnoConfirmacionTokenOrmEntity,
   TurnoOrmEntity,
   UsuarioOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
@@ -42,6 +43,10 @@ import {
   ReservarTurnoSocioUseCase,
   UpsertFichaSaludSocioUseCase,
 } from './use-cases';
+import { AuditoriaModule } from 'src/infrastructure/services/auditoria/auditoria.module';
+import { AdjuntoClinicoModule } from 'src/infrastructure/services/adjunto-clinico/adjunto-clinico.module';
+import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
+import { NotificacionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/notificacion.entity';
 
 @Module({
   imports: [
@@ -54,10 +59,14 @@ import {
       ObservacionClinicaOrmEntity,
       PatologiaOrmEntity,
       SocioOrmEntity,
+      TurnoConfirmacionTokenOrmEntity,
       TurnoOrmEntity,
       UsuarioOrmEntity,
+      NotificacionOrmEntity,
     ]),
     AppLoggerModule,
+    AuditoriaModule,
+    AdjuntoClinicoModule,
   ],
   providers: [
     AsignarTurnoManualUseCase,
@@ -85,6 +94,7 @@ import {
     RegistrarAsistenciaTurnoUseCase,
     ReservarTurnoSocioUseCase,
     UpsertFichaSaludSocioUseCase,
+    NotificacionesService,
     {
       provide: NUTRICIONISTA_REPOSITORY,
       useClass: NutricionistaRepositoryImplementation,

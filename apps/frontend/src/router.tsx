@@ -29,6 +29,8 @@ import { ProgresoPacientePage } from '@/pages/ProgresoPacientePage';
 import { PacientesPage } from '@/pages/PacientesPage';
 import { GestionPlanesPage } from '@/pages/GestionPlanesPage';
 import { GestionAlimentosPage } from '@/pages/GestionAlimentosPage';
+import { AdminAuditoriaPage } from '@/pages/AdminAuditoriaPage';
+import { NotificacionesPage } from '@/features/notificaciones/pages/NotificacionesPage';
 
 // Definir el tipo del context del router
 declare module '@tanstack/react-router' {
@@ -243,6 +245,19 @@ const alimentosRoute = createRoute({
   component: GestionAlimentosPage,
 });
 
+// Auditoría del sistema (solo admin)
+const auditoriaRoute = createRoute({
+  getParentRoute: () => authLayoutRoute,
+  path: '/admin/auditoria',
+  component: AdminAuditoriaPage,
+});
+
+const notificacionesRoute = createRoute({
+  getParentRoute: () => authLayoutRoute,
+  path: '/notificaciones',
+  component: NotificacionesPage,
+});
+
 // Default redirect to dashboard or login
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -280,6 +295,8 @@ const routeTree = rootRoute.addChildren([
     pacientesRoute,
     planesRoute,
     alimentosRoute,
+    auditoriaRoute,
+    notificacionesRoute,
   ]),
 ]);
 

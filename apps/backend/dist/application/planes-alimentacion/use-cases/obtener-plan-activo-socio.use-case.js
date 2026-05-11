@@ -39,7 +39,7 @@ let ObtenerPlanActivoSocioUseCase = class ObtenerPlanActivoSocioUseCase {
                 activo: true,
             },
             relations: {
-                dias: { opcionesComida: { alimentos: true } },
+                dias: { opcionesComida: { items: { alimento: true } } },
                 socio: true,
                 nutricionista: true,
             },

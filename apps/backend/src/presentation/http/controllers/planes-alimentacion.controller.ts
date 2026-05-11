@@ -37,8 +37,9 @@ import {
 import { Rol } from 'src/infrastructure/auth/decorators/role.decorator';
 import { ActionsGuard } from 'src/infrastructure/auth/guards/actions.guard';
 import { JwtAuthGuard } from 'src/infrastructure/auth/guards/auth.guard';
-import { PlanSocioAccessGuard } from 'src/infrastructure/auth/guards/plan-socio-access.guard';
+import { NutricionistaOwnershipGuard } from 'src/infrastructure/auth/guards/nutricionista-ownership.guard';
 import { RolesGuard } from 'src/infrastructure/auth/guards/roles.guard';
+import { SocioResourceAccessGuard } from 'src/infrastructure/auth/guards/socio-resource-access.guard';
 import { Request } from 'express';
 
 @Controller('planes-alimentacion')
@@ -59,7 +60,7 @@ export class PlanAlimentacionController {
 
   @Post()
   @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN)
-  @UseGuards(PlanSocioAccessGuard)
+  @UseGuards(SocioResourceAccessGuard)
   async crearPlan(
     @Req() req: Request,
     @Body() payload: CrearPlanAlimentacionDto,
@@ -76,6 +77,7 @@ export class PlanAlimentacionController {
 
   @Get('nutricionista/:nutricionistaId')
   @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN)
+  @UseGuards(NutricionistaOwnershipGuard)
   async listarPlanesNutricionista(
     @Param('nutricionistaId', ParseIntPipe) nutricionistaId: number,
   ): Promise<PlanAlimentacionResponseDto[]> {
@@ -87,7 +89,7 @@ export class PlanAlimentacionController {
 
   @Get('socio/:socioId/activo')
   @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN, RolEnum.SOCIO)
-  @UseGuards(PlanSocioAccessGuard)
+  @UseGuards(SocioResourceAccessGuard)
   async obtenerPlanActivoSocio(
     @Param('socioId', ParseIntPipe) socioId: number,
   ): Promise<PlanAlimentacionResponseDto> {
@@ -97,7 +99,7 @@ export class PlanAlimentacionController {
 
   @Get('socio/:socioId')
   @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN, RolEnum.SOCIO)
-  @UseGuards(PlanSocioAccessGuard)
+  @UseGuards(SocioResourceAccessGuard)
   async listarPlanesSocio(
     @Param('socioId', ParseIntPipe) socioId: number,
   ): Promise<PlanAlimentacionResponseDto[]> {
@@ -107,7 +109,7 @@ export class PlanAlimentacionController {
 
   @Get(':id')
   @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN, RolEnum.SOCIO)
-  @UseGuards(PlanSocioAccessGuard)
+  @UseGuards(SocioResourceAccessGuard)
   async obtenerPlanPorId(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<PlanAlimentacionResponseDto> {
@@ -117,7 +119,7 @@ export class PlanAlimentacionController {
 
   @Put(':id')
   @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN)
-  @UseGuards(PlanSocioAccessGuard)
+  @UseGuards(SocioResourceAccessGuard)
   async editarPlan(
     @Req() req: Request,
     @Param('id', ParseIntPipe) id: number,
@@ -135,7 +137,7 @@ export class PlanAlimentacionController {
 
   @Delete(':id')
   @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN)
-  @UseGuards(PlanSocioAccessGuard)
+  @UseGuards(SocioResourceAccessGuard)
   async eliminarPlan(
     @Req() req: Request,
     @Param('id', ParseIntPipe) id: number,
@@ -153,7 +155,7 @@ export class PlanAlimentacionController {
 
   @Delete(':id/contenido')
   @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN)
-  @UseGuards(PlanSocioAccessGuard)
+  @UseGuards(SocioResourceAccessGuard)
   async vaciarContenidoPlan(
     @Req() req: Request,
     @Param('id', ParseIntPipe) id: number,

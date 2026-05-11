@@ -38,7 +38,7 @@ let ListarPlanesSocioUseCase = class ListarPlanesSocioUseCase {
                 socio: { idPersona: socioId },
             },
             relations: {
-                dias: { opcionesComida: { alimentos: true } },
+                dias: { opcionesComida: { items: { alimento: true } } },
                 socio: true,
                 nutricionista: true,
             },

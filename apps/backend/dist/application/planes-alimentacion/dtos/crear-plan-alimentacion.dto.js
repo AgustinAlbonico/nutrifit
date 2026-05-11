@@ -9,15 +9,30 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CrearPlanAlimentacionDto = exports.CrearDiaPlanDto = exports.CrearOpcionComidaDto = void 0;
+exports.CrearPlanAlimentacionDto = exports.CrearDiaPlanDto = exports.CrearOpcionComidaDto = exports.CrearItemComidaDto = void 0;
 const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
 const DiaSemana_1 = require("../../../domain/entities/DiaPlan/DiaSemana");
 const TipoComida_1 = require("../../../domain/entities/OpcionComida/TipoComida");
+class CrearItemComidaDto {
+    alimentoId;
+    cantidad;
+}
+exports.CrearItemComidaDto = CrearItemComidaDto;
+__decorate([
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(1),
+    __metadata("design:type", Number)
+], CrearItemComidaDto.prototype, "alimentoId", void 0);
+__decorate([
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(1),
+    __metadata("design:type", Number)
+], CrearItemComidaDto.prototype, "cantidad", void 0);
 class CrearOpcionComidaDto {
     tipoComida;
     comentarios;
-    alimentosIds;
+    items;
 }
 exports.CrearOpcionComidaDto = CrearOpcionComidaDto;
 __decorate([
@@ -32,10 +47,10 @@ __decorate([
 ], CrearOpcionComidaDto.prototype, "comentarios", void 0);
 __decorate([
     (0, class_validator_1.IsArray)(),
-    (0, class_validator_1.IsInt)({ each: true }),
-    (0, class_validator_1.Min)(1, { each: true }),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => CrearItemComidaDto),
     __metadata("design:type", Array)
-], CrearOpcionComidaDto.prototype, "alimentosIds", void 0);
+], CrearOpcionComidaDto.prototype, "items", void 0);
 class CrearDiaPlanDto {
     dia;
     orden;

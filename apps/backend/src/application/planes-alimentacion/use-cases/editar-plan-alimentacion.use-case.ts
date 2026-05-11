@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { BaseUseCase } from 'src/application/shared/use-case.base';
 import {
   BadRequestError,
+  ConflictError,
   ForbiddenError,
   NotFoundError,
 } from 'src/domain/exceptions/custom-exceptions';
@@ -11,18 +12,26 @@ import { UsuarioOrmEntity } from 'src/infrastructure/persistence/typeorm/entitie
 import {
   AlimentoOrmEntity,
   DiaPlanOrmEntity,
-  FichaSaludOrmEntity,
+  ItemComidaOrmEntity,
   NutricionistaOrmEntity,
   OpcionComidaOrmEntity,
   PlanAlimentacionOrmEntity,
   SocioOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
+import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
+import { AccionAuditoria } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
 import { DataSource, In, Repository } from 'typeorm';
 import {
   EditarPlanAlimentacionDto,
   PlanAlimentacionResponseDto,
 } from '../dtos';
 import { mapPlanToResponse } from './plan-alimentacion.mapper';
+import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
+import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
+import {
+  formatearIncidenciasRestriccion,
+  RestriccionesValidator,
+} from 'src/application/restricciones/restricciones-validator.service';
 
 @Injectable()
 export class EditarPlanAlimentacionUseCase implements BaseUseCase {
@@ -39,11 +48,12 @@ export class EditarPlanAlimentacionUseCase implements BaseUseCase {
     private readonly socioRepo: Repository<SocioOrmEntity>,
     @InjectRepository(NutricionistaOrmEntity)
     private readonly nutricionistaRepo: Repository<NutricionistaOrmEntity>,
-    @InjectRepository(FichaSaludOrmEntity)
-    private readonly fichaSaludRepo: Repository<FichaSaludOrmEntity>,
     @InjectRepository(UsuarioOrmEntity)
     private readonly usuarioRepo: Repository<UsuarioOrmEntity>,
+    private readonly auditoriaService: AuditoriaService,
     private readonly dataSource: DataSource,
+    private readonly notificacionesService: NotificacionesService,
+    private readonly restriccionesValidator: RestriccionesValidator,
   ) {}
 
   async execute(
@@ -56,7 +66,7 @@ export class EditarPlanAlimentacionUseCase implements BaseUseCase {
         relations: {
           nutricionista: true,
           socio: { fichaSalud: true },
-          dias: { opcionesComida: { alimentos: true } },
+          dias: { opcionesComida: { items: { alimento: true } } },
         },
       });
 
@@ -73,9 +83,21 @@ export class EditarPlanAlimentacionUseCase implements BaseUseCase {
         throw new ForbiddenError('Usuario no encontrado.');
       }
 
+      const nutricionistaPlan = plan.nutricionista as unknown as {
+        idPersona: number | null;
+      };
+      const socioPlan = plan.socio as unknown as {
+        idPersona: number | null;
+      };
+      const socioPlanId = socioPlan.idPersona;
+
+      if (socioPlanId == null) {
+        throw new NotFoundError('Socio', String(payload.planId));
+      }
+
       // Solo el nutricionista dueño o ADMIN puede editar
       if (usuario.rol !== Rol.ADMIN) {
-        if ((plan.nutricionista as any).idPersona !== nutricionistaUserId) {
+        if (nutricionistaPlan.idPersona !== nutricionistaUserId) {
           throw new ForbiddenError(
             'Solo el nutricionista responsable del plan puede editarlo.',
           );
@@ -110,7 +132,9 @@ export class EditarPlanAlimentacionUseCase implements BaseUseCase {
         const todosAlimentosIds = [
           ...new Set(
             payload.dias.flatMap((d) =>
-              d.opcionesComida.flatMap((o) => o.alimentosIds),
+              d.opcionesComida.flatMap((o) =>
+                o.items.map((item) => item.alimentoId),
+              ),
             ),
           ),
         ];
@@ -123,32 +147,32 @@ export class EditarPlanAlimentacionUseCase implements BaseUseCase {
           );
         }
 
-        // Validar alergias/restricciones del socio
-        const socioConFicha = plan.socio as any;
-        const fichaSalud = socioConFicha?.fichaSalud
-          ? await this.fichaSaludRepo.findOne({
-              where: { idFichaSalud: socioConFicha.fichaSalud.idFichaSalud },
-              relations: { alergias: true },
-            })
-          : null;
-
-        if (fichaSalud?.alergias?.length) {
-          const nombresAlergias = fichaSalud.alergias.map((a) =>
-            a.nombre.toLowerCase(),
-          );
-          const alimentoConflicto = alimentos.find((al) =>
-            nombresAlergias.some((alergia) =>
-              al.nombre.toLowerCase().includes(alergia),
-            ),
-          );
-          if (alimentoConflicto) {
-            throw new ForbiddenError(
-              `El alimento "${alimentoConflicto.nombre}" puede estar relacionado con una alergia registrada del socio.`,
-            );
-          }
-        }
-
         const alimentoMap = new Map(alimentos.map((a) => [a.idAlimento, a]));
+
+        const incidenciasRestriccion =
+          await this.restriccionesValidator.generarIncidencias(
+            payload.dias.flatMap((diaDto) =>
+              diaDto.opcionesComida.flatMap((opcionDto, indiceOpcion) =>
+                opcionDto.items.map((itemDto, indiceItem) => {
+                  const alimento = alimentoMap.get(itemDto.alimentoId)!;
+                  return {
+                    dia: diaDto.dia,
+                    comida: opcionDto.tipoComida,
+                    item: `${indiceOpcion + 1}.${indiceItem + 1}`,
+                    alimentoId: alimento.idAlimento,
+                    alimentoNombre: alimento.nombre,
+                  };
+                }),
+              ),
+            ),
+            socioPlanId,
+          );
+
+        if (incidenciasRestriccion.length > 0) {
+          throw new ConflictError(
+            formatearIncidenciasRestriccion(incidenciasRestriccion),
+          );
+        }
 
         await this.dataSource.transaction(async (manager) => {
           for (const diaExistente of plan.dias ?? []) {
@@ -170,9 +194,22 @@ export class EditarPlanAlimentacionUseCase implements BaseUseCase {
               opcion.tipoComida = opcionDto.tipoComida;
               opcion.comentarios = opcionDto.comentarios ?? null;
               opcion.diaPlan = diaGuardado;
-              opcion.alimentos = opcionDto.alimentosIds.map(
-                (id) => alimentoMap.get(id)!,
-              );
+              opcion.items = opcionDto.items.map((itemDto) => {
+                const alimento = alimentoMap.get(itemDto.alimentoId)!;
+                const item = new ItemComidaOrmEntity();
+                item.alimentoId = alimento.idAlimento;
+                item.alimentoNombre = alimento.nombre;
+                item.cantidad = itemDto.cantidad;
+                item.unidad = alimento.unidadMedida;
+                item.notas = null;
+                item.calorias = alimento.calorias;
+                item.proteinas = alimento.proteinas;
+                item.carbohidratos = alimento.carbohidratos;
+                item.grasas = alimento.grasas;
+                item.alimento = alimento;
+                item.opcionComida = opcion;
+                return item;
+              });
               await manager.save(opcion);
             }
           }
@@ -199,13 +236,17 @@ export class EditarPlanAlimentacionUseCase implements BaseUseCase {
 
       // Get dias separately to avoid any relation issues
       const dias = await this.diaRepo.find({
-        where: { planAlimentacion: { idPlanAlimentacion: planId } as any },
-        relations: ['opcionesComida', 'opcionesComida.alimentos'],
+        where: { planAlimentacion: { idPlanAlimentacion: planId } },
+        relations: [
+          'opcionesComida',
+          'opcionesComida.items',
+          'opcionesComida.items.alimento',
+        ],
         order: { orden: 'ASC' },
       });
 
       if (planActualizado) {
-        (planActualizado as any).dias = dias;
+        planActualizado.dias = dias;
       }
 
       if (!planActualizado) {
@@ -216,6 +257,33 @@ export class EditarPlanAlimentacionUseCase implements BaseUseCase {
       }
 
       try {
+        await this.auditoriaService.registrar({
+          usuarioId: nutricionistaUserId,
+          accion: AccionAuditoria.PLAN_EDITADO,
+          entidad: 'PlanAlimentacion',
+          entidadId: plan.idPlanAlimentacion,
+          metadata: {
+            objetivoNutricional: plan.objetivoNutricional,
+            motivoEdicion: payload.motivoEdicion,
+          },
+        });
+
+        const socioActualizado = planActualizado.socio as unknown as {
+          idPersona: number | null;
+        };
+
+        if (socioActualizado.idPersona == null) {
+          throw new NotFoundError('Socio', String(plan.idPlanAlimentacion));
+        }
+
+        await this.notificacionesService.crear({
+          destinatarioId: socioActualizado.idPersona,
+          tipo: TipoNotificacion.PLAN_EDITADO,
+          titulo: 'Plan de alimentación editado',
+          mensaje: 'Tu nutricionista actualizó tu plan de alimentación.',
+          metadata: { planId: planActualizado.idPlanAlimentacion },
+        });
+
         return mapPlanToResponse(planActualizado);
       } catch (err) {
         console.error('[EditarPlanAlimentacionUseCase] Error in mapper:', err);

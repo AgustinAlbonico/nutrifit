@@ -11,6 +11,9 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const entities_1 = require("../../infrastructure/persistence/typeorm/entities");
 const use_cases_1 = require("./use-cases");
+const auditoria_module_1 = require("../../infrastructure/services/auditoria/auditoria.module");
+const notificaciones_service_1 = require("../notificaciones/notificaciones.service");
+const restricciones_module_1 = require("../restricciones/restricciones.module");
 let PlanesAlimentacionModule = class PlanesAlimentacionModule {
 };
 exports.PlanesAlimentacionModule = PlanesAlimentacionModule;
@@ -26,7 +29,10 @@ exports.PlanesAlimentacionModule = PlanesAlimentacionModule = __decorate([
                 entities_1.NutricionistaOrmEntity,
                 entities_1.FichaSaludOrmEntity,
                 entities_1.UsuarioOrmEntity,
+                entities_1.NotificacionOrmEntity,
             ]),
+            auditoria_module_1.AuditoriaModule,
+            restricciones_module_1.RestriccionesModule,
         ],
         providers: [
             use_cases_1.CrearPlanAlimentacionUseCase,
@@ -37,6 +43,7 @@ exports.PlanesAlimentacionModule = PlanesAlimentacionModule = __decorate([
             use_cases_1.ListarPlanesSocioUseCase,
             use_cases_1.ListarPlanesNutricionistaUseCase,
             use_cases_1.VaciarContenidoPlanUseCase,
+            notificaciones_service_1.NotificacionesService,
         ],
         exports: [
             use_cases_1.CrearPlanAlimentacionUseCase,

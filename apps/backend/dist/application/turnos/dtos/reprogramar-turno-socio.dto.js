@@ -15,6 +15,7 @@ const TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
 class ReprogramarTurnoSocioDto {
     fechaTurno;
     horaTurno;
+    motivo;
 }
 exports.ReprogramarTurnoSocioDto = ReprogramarTurnoSocioDto;
 __decorate([
@@ -28,4 +29,10 @@ __decorate([
     }),
     __metadata("design:type", String)
 ], ReprogramarTurnoSocioDto.prototype, "horaTurno", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(500),
+    __metadata("design:type", String)
+], ReprogramarTurnoSocioDto.prototype, "motivo", void 0);
 //# sourceMappingURL=reprogramar-turno-socio.dto.js.map

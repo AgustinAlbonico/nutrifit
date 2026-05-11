@@ -37,7 +37,7 @@ export class GetTurnosRecepcionDiaUseCase implements BaseUseCase {
       .innerJoinAndSelect('turno.nutricionista', 'nutricionista')
       .where('DATE(turno.fechaTurno) = :targetDate', { targetDate })
       .andWhere('turno.estadoTurno IN (:...estados)', {
-        estados: ['PENDIENTE', 'CONFIRMADO', 'PRESENTE', 'EN_CURSO'],
+        estados: ['PROGRAMADO', 'PRESENTE', 'EN_CURSO'],
       })
       .orderBy('turno.horaTurno', 'ASC');
 

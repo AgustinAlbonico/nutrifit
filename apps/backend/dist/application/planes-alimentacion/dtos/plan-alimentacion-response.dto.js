@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PlanAlimentacionResponseDto = exports.DiaPlanResponseDto = exports.OpcionComidaResponseDto = exports.AlimentoResponseDto = void 0;
+exports.PlanAlimentacionResponseDto = exports.DiaPlanResponseDto = exports.OpcionComidaResponseDto = exports.ItemComidaResponseDto = exports.AlimentoResponseDto = void 0;
 class AlimentoResponseDto {
     idAlimento;
     nombre;
@@ -12,11 +12,19 @@ class AlimentoResponseDto {
     unidadMedida;
 }
 exports.AlimentoResponseDto = AlimentoResponseDto;
+class ItemComidaResponseDto {
+    idItemComida;
+    cantidad;
+    unidad;
+    notas;
+    alimento;
+}
+exports.ItemComidaResponseDto = ItemComidaResponseDto;
 class OpcionComidaResponseDto {
     idOpcionComida;
     tipoComida;
     comentarios;
-    alimentos;
+    items;
 }
 exports.OpcionComidaResponseDto = OpcionComidaResponseDto;
 class DiaPlanResponseDto {

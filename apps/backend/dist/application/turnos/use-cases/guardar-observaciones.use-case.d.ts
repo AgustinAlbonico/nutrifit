@@ -1,12 +1,8 @@
 import { Repository } from 'typeorm';
 import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/turno.entity';
 import { ObservacionClinicaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/observacion-clinica.entity';
-export interface GuardarObservacionesDto {
-    comentario: string;
-    sugerencias?: string;
-    habitosSocio?: string;
-    objetivosSocio?: string;
-}
+import { GuardarObservacionesDto } from '../dtos/guardar-observaciones.dto';
+export type GuardarObservacionesInput = GuardarObservacionesDto;
 export declare class GuardarObservacionesUseCase {
     private readonly turnoRepository;
     private readonly observacionRepository;

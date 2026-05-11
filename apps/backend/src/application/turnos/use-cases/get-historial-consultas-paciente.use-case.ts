@@ -97,6 +97,7 @@ export class GetHistorialConsultasPacienteUseCase implements BaseUseCase {
       response.tipoConsulta = 'Consulta nutricional';
       response.notasProfesional = turno.observacionClinica?.comentario ?? null;
       response.sugerencias = turno.observacionClinica?.sugerencias ?? null;
+      response.esPublica = turno.observacionClinica?.esPublica ?? false;
       response.archivosAdjuntos = [];
       return response;
     });

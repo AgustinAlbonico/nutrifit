@@ -20,28 +20,29 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const turno_entity_1 = require("../persistence/typeorm/entities/turno.entity");
 const EstadoTurno_1 = require("../../domain/entities/Turno/EstadoTurno");
-const environment_config_service_1 = require("../config/environment-config/environment-config.service");
+const politica_operativa_repository_1 = require("../../application/politicas/politica-operativa.repository");
 let AusenciaTurnoScheduler = AusenciaTurnoScheduler_1 = class AusenciaTurnoScheduler {
     turnoRepository;
-    configService;
+    politicaRepository;
     logger = new common_1.Logger(AusenciaTurnoScheduler_1.name);
-    constructor(turnoRepository, configService) {
+    constructor(turnoRepository, politicaRepository) {
         this.turnoRepository = turnoRepository;
-        this.configService = configService;
+        this.politicaRepository = politicaRepository;
     }
     async marcarAusentesAutomaticos() {
         this.logger.log('Ejecutando verificación de turnos ausentes...');
-        const umbralMinutos = this.configService.getAusenciaUmbralMinutos();
         const ahora = new Date();
         const fechaHoy = ahora.toISOString().split('T')[0];
         const turnos = await this.turnoRepository
             .createQueryBuilder('turno')
             .where('turno.fechaTurno = :fecha', { fecha: fechaHoy })
             .andWhere('turno.estadoTurno IN (:...estados)', {
-            estados: [EstadoTurno_1.EstadoTurno.PENDIENTE, EstadoTurno_1.EstadoTurno.CONFIRMADO],
+            estados: [EstadoTurno_1.EstadoTurno.PROGRAMADO],
         })
             .getMany();
         for (const turno of turnos) {
+            const gimnasioId = turno.gimnasio?.idGimnasio ?? 1;
+            const umbralMinutos = await this.politicaRepository.getUmbralAusente(gimnasioId);
             const [hora, minuto] = turno.horaTurno.split(':').map(Number);
             const turnoTime = new Date(ahora);
             turnoTime.setHours(hora, minuto + umbralMinutos, 0, 0);
@@ -64,7 +65,7 @@ __decorate([
 exports.AusenciaTurnoScheduler = AusenciaTurnoScheduler = AusenciaTurnoScheduler_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(turno_entity_1.TurnoOrmEntity)),
-    __metadata("design:paramtypes", [typeorm_2.Repository,
-        environment_config_service_1.EnvironmentConfigService])
+    __param(1, (0, common_1.Inject)(politica_operativa_repository_1.POLITICA_OPERATIVA_REPOSITORY)),
+    __metadata("design:paramtypes", [typeorm_2.Repository, Object])
 ], AusenciaTurnoScheduler);
 //# sourceMappingURL=ausencia-turno.scheduler.js.map

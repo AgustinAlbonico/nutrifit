@@ -12,9 +12,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TurnoOrmEntity = void 0;
 const EstadoTurno_1 = require("../../../../domain/entities/Turno/EstadoTurno");
 const typeorm_1 = require("typeorm");
+const gimnasio_entity_1 = require("./gimnasio.entity");
 const observacion_clinica_entity_1 = require("./observacion-clinica.entity");
 const medicion_entity_1 = require("./medicion.entity");
 const persona_entity_1 = require("./persona.entity");
+const adjunto_clinico_entity_1 = require("./adjunto-clinico.entity");
 let TurnoOrmEntity = class TurnoOrmEntity {
     idTurno;
     fechaTurno;
@@ -24,10 +26,16 @@ let TurnoOrmEntity = class TurnoOrmEntity {
     consultaIniciadaAt;
     consultaFinalizadaAt;
     ausenteAt;
+    motivoCancelacion;
+    fechaOriginal;
+    tokenConfirmacion;
     observacionClinica;
     mediciones;
+    adjuntos;
     socio;
     nutricionista;
+    entrenador;
+    gimnasio;
 };
 exports.TurnoOrmEntity = TurnoOrmEntity;
 __decorate([
@@ -63,6 +71,29 @@ __decorate([
     __metadata("design:type", Object)
 ], TurnoOrmEntity.prototype, "ausenteAt", void 0);
 __decorate([
+    (0, typeorm_1.Column)({
+        name: 'motivo_cancelacion',
+        type: 'varchar',
+        length: 500,
+        nullable: true,
+    }),
+    __metadata("design:type", Object)
+], TurnoOrmEntity.prototype, "motivoCancelacion", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'fecha_original', type: 'datetime', nullable: true }),
+    __metadata("design:type", Object)
+], TurnoOrmEntity.prototype, "fechaOriginal", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        name: 'token_confirmacion',
+        type: 'varchar',
+        length: 255,
+        nullable: true,
+        unique: true,
+    }),
+    __metadata("design:type", Object)
+], TurnoOrmEntity.prototype, "tokenConfirmacion", void 0);
+__decorate([
     (0, typeorm_1.OneToOne)(() => observacion_clinica_entity_1.ObservacionClinicaOrmEntity, (observacion) => observacion.turno, {
         eager: true,
         nullable: true,
@@ -74,6 +105,10 @@ __decorate([
     (0, typeorm_1.OneToMany)(() => medicion_entity_1.MedicionOrmEntity, (medicion) => medicion.turno),
     __metadata("design:type", Array)
 ], TurnoOrmEntity.prototype, "mediciones", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => adjunto_clinico_entity_1.AdjuntoClinicoOrmEntity, (adjunto) => adjunto.turno),
+    __metadata("design:type", Array)
+], TurnoOrmEntity.prototype, "adjuntos", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => persona_entity_1.SocioOrmEntity, (socio) => socio.turnos, {
         nullable: true,
@@ -88,6 +123,20 @@ __decorate([
     (0, typeorm_1.JoinColumn)({ name: 'id_nutricionista' }),
     __metadata("design:type", persona_entity_1.NutricionistaOrmEntity)
 ], TurnoOrmEntity.prototype, "nutricionista", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => persona_entity_1.EntrenadorOrmEntity, (entrenador) => entrenador.turnos, {
+        nullable: true,
+    }),
+    (0, typeorm_1.JoinColumn)({ name: 'id_entrenador' }),
+    __metadata("design:type", persona_entity_1.EntrenadorOrmEntity)
+], TurnoOrmEntity.prototype, "entrenador", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => gimnasio_entity_1.GimnasioOrmEntity, (gimnasio) => gimnasio.turnos, {
+        nullable: true,
+    }),
+    (0, typeorm_1.JoinColumn)({ name: 'id_gimnasio' }),
+    __metadata("design:type", gimnasio_entity_1.GimnasioOrmEntity)
+], TurnoOrmEntity.prototype, "gimnasio", void 0);
 exports.TurnoOrmEntity = TurnoOrmEntity = __decorate([
     (0, typeorm_1.Entity)('turno')
 ], TurnoOrmEntity);

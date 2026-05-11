@@ -17,6 +17,10 @@ const accion_entity_1 = require("../../persistence/typeorm/entities/accion.entit
 const grupo_permiso_entity_1 = require("../../persistence/typeorm/entities/grupo-permiso.entity");
 const medicion_entity_1 = require("../../persistence/typeorm/entities/medicion.entity");
 const dia_plan_entity_1 = require("../../persistence/typeorm/entities/dia-plan.entity");
+const gimnasio_entity_1 = require("../../persistence/typeorm/entities/gimnasio.entity");
+const foto_progreso_entity_1 = require("../../persistence/typeorm/entities/foto-progreso.entity");
+const item_comida_entity_1 = require("../../persistence/typeorm/entities/item-comida.entity");
+const objetivo_entity_1 = require("../../persistence/typeorm/entities/objetivo.entity");
 const typeorm_1 = require("typeorm");
 exports.AppMigrationDataSource = new typeorm_1.DataSource({
     type: 'mysql',
@@ -37,6 +41,7 @@ exports.AppMigrationDataSource = new typeorm_1.DataSource({
         persona_entity_1.AsistenteOrmEntity,
         ficha_salud_entity_1.PatologiaOrmEntity,
         ficha_salud_entity_1.FichaSaludOrmEntity,
+        item_comida_entity_1.ItemComidaOrmEntity,
         opcion_comida_entity_1.OpcionComidaOrmEntity,
         persona_entity_1.NutricionistaOrmEntity,
         grupo_alimenticio_entity_1.GrupoAlimenticioOrmEntity,
@@ -47,8 +52,11 @@ exports.AppMigrationDataSource = new typeorm_1.DataSource({
         grupo_permiso_entity_1.GrupoPermisoOrmEntity,
         medicion_entity_1.MedicionOrmEntity,
         dia_plan_entity_1.DiaPlanOrmEntity,
+        gimnasio_entity_1.GimnasioOrmEntity,
+        foto_progreso_entity_1.FotoProgresoOrmEntity,
+        objetivo_entity_1.ObjetivoOrmEntity,
     ],
-    migrations: ['src/infrastructure/persistence/typeorm/migrations/*.ts'],
+    migrations: ['dist/infrastructure/persistence/typeorm/migrations/*.js'],
     synchronize: false,
     logging: true,
 });

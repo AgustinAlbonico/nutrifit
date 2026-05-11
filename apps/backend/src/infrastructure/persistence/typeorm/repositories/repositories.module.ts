@@ -23,14 +23,16 @@ import {
   PlanAlimentacionOrmEntity,
   TurnoOrmEntity,
   UsuarioOrmEntity,
+  GimnasioOrmEntity,
 } from '../entities/';
 import { SOCIO_REPOSITORY } from 'src/domain/entities/Persona/Socio/socio.repository';
 import { USUARIO_REPOSITORY } from 'src/domain/entities/Usuario/usuario.repository';
 import { NUTRICIONISTA_REPOSITORY } from 'src/domain/entities/Persona/Nutricionista/nutricionista.repository';
+import { POLITICA_OPERATIVA_REPOSITORY } from 'src/application/politicas/politica-operativa.repository';
+import { PoliticaOperativaRepositoryImpl } from 'src/infrastructure/politicas/politica-operativa.repository.impl';
 
 // This module is responsible for providing TypeORM repositories for the application.
 // It imports the TypeOrmConfigModule for database configuration and registers the necessary entities.
-// Ahora agrego a cada cu los repositorios y entidades que necesito en vez de usar.
 @Module({
   imports: [
     TypeOrmConfigModule,
@@ -51,6 +53,7 @@ import { NUTRICIONISTA_REPOSITORY } from 'src/domain/entities/Persona/Nutricioni
       PlanAlimentacionOrmEntity,
       TurnoOrmEntity,
       UsuarioOrmEntity,
+      GimnasioOrmEntity,
     ]),
   ],
   providers: [
@@ -60,7 +63,16 @@ import { NUTRICIONISTA_REPOSITORY } from 'src/domain/entities/Persona/Nutricioni
       provide: NUTRICIONISTA_REPOSITORY,
       useClass: NutricionistaRepositoryImplementation,
     },
+    {
+      provide: POLITICA_OPERATIVA_REPOSITORY,
+      useClass: PoliticaOperativaRepositoryImpl,
+    },
   ],
-  exports: [USUARIO_REPOSITORY, SOCIO_REPOSITORY, NUTRICIONISTA_REPOSITORY],
+  exports: [
+    USUARIO_REPOSITORY,
+    SOCIO_REPOSITORY,
+    NUTRICIONISTA_REPOSITORY,
+    POLITICA_OPERATIVA_REPOSITORY,
+  ],
 })
 export class RepositoriesModule {}

@@ -36,7 +36,10 @@ interface DiaPlan {
 interface OpcionComida {
   tipoComida: string;
   comentarios: string | null;
-  alimentosIds: number[];
+  items: Array<{
+    alimentoId: number;
+    cantidad: number;
+  }>;
 }
 
 type EstadoPlan = 'CARGANDO' | 'ACTIVO' | 'SIN_PLAN' | 'ERROR';

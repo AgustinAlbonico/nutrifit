@@ -44,3 +44,27 @@ export interface ParametrosSustitucion {
 export interface ParametrosAnalisis {
   planId: number;
 }
+
+// --- IdeasComida (RF36-RF38) ---
+export interface IngredienteIA {
+  nombre: string;
+  cantidad: string;
+  unidad: string;
+}
+
+export interface PropuestaIA {
+  nombre: string;
+  ingredientes: IngredienteIA[];
+  pasos: string[];
+}
+
+export interface ParametrosIdeasComida {
+  objetivo: string;
+  restricciones?: string[];
+  infoExtra: string;
+  socioId?: number;
+}
+
+export interface RespuestaIdeasComida {
+  propuestas: [PropuestaIA, PropuestaIA];
+}
