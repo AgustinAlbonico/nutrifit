@@ -5,6 +5,7 @@ import { RolesGuard } from 'src/infrastructure/auth/guards/roles.guard';
 import { Rol } from 'src/infrastructure/auth/decorators/role.decorator';
 import { Rol as RolEnum } from 'src/domain/entities/Usuario/Rol';
 import { GetKpiCompletoUseCase } from 'src/application/reportes/use-cases/get-kpi-completo.use-case';
+import { KpiCompletoDto } from 'src/application/reportes/dtos/kpi-completo.dto';
 
 @Controller('admin/reportes')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -70,7 +71,7 @@ export class AdminReportesController {
     }
   }
 
-  private generarCsvKpi(kpi: any): string {
+  private generarCsvKpi(kpi: KpiCompletoDto): string {
     const lines: string[] = [];
 
     // Header

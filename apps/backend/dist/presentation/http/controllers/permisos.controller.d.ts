@@ -1,4 +1,3 @@
-import { Request } from 'express';
 import { PermisosService } from 'src/application/permisos/permisos.service';
 import { AsignarAccionesDto } from 'src/application/permisos/dtos/asignar-acciones.dto';
 import { AsignarGruposDto } from 'src/application/permisos/dtos/asignar-grupos.dto';
@@ -19,7 +18,7 @@ export declare class PermisosController {
     asignarGruposAUsuario(userId: number, dto: AsignarGruposDto): Promise<import("../../../infrastructure/persistence/typeorm/entities").UsuarioOrmEntity>;
     asignarAccionesAUsuario(userId: number, dto: AsignarAccionesDto): Promise<import("../../../infrastructure/persistence/typeorm/entities").UsuarioOrmEntity>;
     accionesDeUsuario(userId: number): Promise<string[]>;
-    buscarUsuarios(req: Request): Promise<{
+    buscarUsuarios(pageRaw?: string, limitRaw?: string, search?: string, isActiveRaw?: string): Promise<{
         data: import("../../../infrastructure/persistence/typeorm/entities").UsuarioOrmEntity[];
         pagination: {
             page: number;
@@ -30,5 +29,5 @@ export declare class PermisosController {
             hasPreviousPage: boolean;
         };
     }>;
-    misAcciones(req: Request): Promise<string[]>;
+    misAcciones(userId: number): Promise<string[]>;
 }

@@ -250,3 +250,29 @@ Clavix automatically selects appropriate depth based on your prompt quality.
 
 For more information, run `clavix --help` in your terminal.
 <!-- CLAVIX:END -->
+
+### Auto-invoke Skills
+
+When performing these actions, ALWAYS invoke the corresponding skill FIRST:
+
+| Action | Skill |
+|--------|-------|
+| accessibility | `accessibility` |
+| Adding shadcn/ui components | `shadcn` |
+| Adding Vite plugins | `vite` |
+| Building React components and pages | `frontend-design` |
+| Configuring Vite build | `vite` |
+| Configuring Vitest | `vitest` |
+| Creating new frontend features | `frontend-design` |
+| Customizing shadcn components | `shadcn` |
+| Designing UI layouts | `frontend-design` |
+| javascript-testing-patterns | `javascript-testing-patterns` |
+| Mocking in tests | `vitest` |
+| seo | `seo` |
+| Setting up frontend build | `vite` |
+| tailwind-css-patterns | `tailwind-css-patterns` |
+| tailwind-v4-shadcn | `tailwind-v4-shadcn` |
+| typescript-advanced-types | `typescript-advanced-types` |
+| vercel-composition-patterns | `vercel-composition-patterns` |
+| vercel-react-best-practices | `vercel-react-best-practices` |
+| Writing frontend tests | `vitest` |

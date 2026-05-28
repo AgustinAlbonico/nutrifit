@@ -12,7 +12,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ObservacionClinicaOrmEntity = void 0;
 const typeorm_1 = require("typeorm");
 const turno_entity_1 = require("./turno.entity");
-const turno_entity_2 = require("../../../../domain/entities/Turno/turno.entity");
 let ObservacionClinicaOrmEntity = class ObservacionClinicaOrmEntity {
     idObservacion;
     comentario;
@@ -80,7 +79,7 @@ __decorate([
     (0, typeorm_1.OneToOne)(() => turno_entity_1.TurnoOrmEntity, (turno) => turno.observacionClinica, {
         nullable: false,
     }),
-    __metadata("design:type", turno_entity_2.TurnoEntity)
+    __metadata("design:type", turno_entity_1.TurnoOrmEntity)
 ], ObservacionClinicaOrmEntity.prototype, "turno", void 0);
 exports.ObservacionClinicaOrmEntity = ObservacionClinicaOrmEntity = __decorate([
     (0, typeorm_1.Entity)('observacion_clinica')

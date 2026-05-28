@@ -25,7 +25,7 @@ let SocioRepositoryImplementation = class SocioRepositoryImplementation {
     }
     async save(entity) {
         const socioCreado = await this.socioRepository.save(this.toOrmEntity(entity));
-        return new socio_entity_1.SocioEntity(socioCreado.idPersona, socioCreado.nombre, socioCreado.apellido, socioCreado.fechaNacimiento, socioCreado.telefono, socioCreado.genero, socioCreado.direccion, socioCreado.ciudad, socioCreado.provincia, socioCreado.dni ?? '', [], null, []);
+        return this.toEntity(socioCreado);
     }
     async update(id, entity) {
         await this.socioRepository.update(id, {
@@ -50,14 +50,10 @@ let SocioRepositoryImplementation = class SocioRepositoryImplementation {
         return this.toEntity(socioActualizado);
     }
     async delete(id) {
-        await this.socioRepository.update(id, {
-            fechaBaja: new Date(),
-        });
+        await this.socioRepository.update(id, { fechaBaja: new Date() });
     }
     async reactivar(id) {
-        await this.socioRepository.update(id, {
-            fechaBaja: null,
-        });
+        await this.socioRepository.update(id, { fechaBaja: null });
     }
     async findAll() {
         const socios = await this.socioRepository.find({
@@ -73,34 +69,34 @@ let SocioRepositoryImplementation = class SocioRepositoryImplementation {
         return socio ? this.toEntity(socio) : null;
     }
     toOrmEntity(socio) {
-        const socioOrmEntity = new persona_entity_1.SocioOrmEntity();
-        socioOrmEntity.idPersona = socio.idPersona;
-        socioOrmEntity.nombre = socio.nombre;
-        socioOrmEntity.apellido = socio.apellido;
-        socioOrmEntity.fechaNacimiento = socio.fechaNacimiento;
-        socioOrmEntity.genero = socio.genero;
-        socioOrmEntity.ciudad = socio.ciudad;
-        socioOrmEntity.provincia = socio.provincia;
-        socioOrmEntity.telefono = socio.telefono;
-        socioOrmEntity.direccion = socio.direccion;
-        socioOrmEntity.dni = socio.dni;
-        socioOrmEntity.fotoPerfilKey = socio.fotoPerfilKey;
-        socioOrmEntity.fechaAlta = new Date();
-        socioOrmEntity.fichaSalud = null;
-        socioOrmEntity.planesAlimentacion = [];
-        socioOrmEntity.turnos = [];
-        return socioOrmEntity;
+        const orm = new persona_entity_1.SocioOrmEntity();
+        orm.idPersona = socio.idPersona;
+        orm.nombre = socio.nombre;
+        orm.apellido = socio.apellido;
+        orm.fechaNacimiento = socio.fechaNacimiento;
+        orm.genero = socio.genero;
+        orm.ciudad = socio.ciudad;
+        orm.provincia = socio.provincia;
+        orm.telefono = socio.telefono;
+        orm.direccion = socio.direccion;
+        orm.dni = socio.dni;
+        orm.fotoPerfilKey = socio.fotoPerfilKey;
+        orm.fechaAlta = new Date();
+        orm.fichaSalud = null;
+        orm.planesAlimentacion = [];
+        orm.turnos = [];
+        return orm;
     }
-    toEntity(socio) {
-        const entity = new socio_entity_1.SocioEntity(socio.idPersona, socio.nombre, socio.apellido, socio.fechaNacimiento, socio.telefono, socio.genero, socio.direccion, socio.ciudad, socio.provincia, socio.dni ?? '', [], socio.fichaSalud, []);
-        if (socio.fechaBaja) {
-            entity.fechaBaja = socio.fechaBaja;
+    toEntity(orm) {
+        const entity = new socio_entity_1.SocioEntity(orm.idPersona, orm.nombre, orm.apellido, orm.fechaNacimiento, orm.telefono, orm.genero, orm.direccion, orm.ciudad, orm.provincia, orm.dni ?? '', [], null, []);
+        if (orm.fechaBaja) {
+            entity.fechaBaja = orm.fechaBaja;
         }
-        if (socio.usuario?.email) {
-            entity.email = socio.usuario.email;
+        if (orm.usuario?.email) {
+            entity.email = orm.usuario.email;
         }
-        if (socio.fotoPerfilKey) {
-            entity.fotoPerfilKey = socio.fotoPerfilKey;
+        if (orm.fotoPerfilKey) {
+            entity.fotoPerfilKey = orm.fotoPerfilKey;
         }
         return entity;
     }

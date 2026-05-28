@@ -21,12 +21,15 @@ const Rol_1 = require("../../../domain/entities/Usuario/Rol");
 const logger_service_1 = require("../../../domain/services/logger.service");
 const role_decorator_1 = require("../../../infrastructure/auth/decorators/role.decorator");
 const actions_decorator_1 = require("../../../infrastructure/auth/decorators/actions.decorator");
+const current_user_decorator_1 = require("../../../infrastructure/auth/decorators/current-user.decorator");
+const resource_access_decorator_1 = require("../../../infrastructure/auth/decorators/resource-access.decorator");
 const actions_guard_1 = require("../../../infrastructure/auth/guards/actions.guard");
 const auth_guard_1 = require("../../../infrastructure/auth/guards/auth.guard");
 const nutricionista_ownership_guard_1 = require("../../../infrastructure/auth/guards/nutricionista-ownership.guard");
 const roles_guard_1 = require("../../../infrastructure/auth/guards/roles.guard");
 const socio_resource_access_guard_1 = require("../../../infrastructure/auth/guards/socio-resource-access.guard");
 const turno_nutricionista_access_guard_1 = require("../../../infrastructure/auth/guards/turno-nutricionista-access.guard");
+const adjunto_clinico_service_1 = require("../../../infrastructure/services/adjunto-clinico/adjunto-clinico.service");
 let TurnosController = class TurnosController {
     getTurnosDelDiaUseCase;
     getAgendaDiariaUseCase;
@@ -88,8 +91,11 @@ let TurnosController = class TurnosController {
         this.logger.log(`Consultando turnos del dia para profesional ${nutricionistaId}.`);
         return this.getTurnosDelDiaUseCase.execute(nutricionistaId, query);
     }
-    async getTurnoById(turnoId, req) {
-        const nutricionistaId = req.resourceAccess?.actorPersonaId;
+    async getTurnoById(turnoId, access) {
+        const nutricionistaId = access.actorPersonaId;
+        if (nutricionistaId == null) {
+            throw new common_1.ForbiddenException('No se pudo resolver el profesional.');
+        }
         this.logger.log(`Consultando turno completo ${turnoId} para nutricionista ${nutricionistaId}.`);
         return this.getTurnoByIdUseCase.execute(turnoId, nutricionistaId);
     }
@@ -125,13 +131,11 @@ let TurnosController = class TurnosController {
         this.logger.log(`Listando pacientes de profesional ${nutricionistaId}.`);
         return this.listPacientesProfesionalUseCase.execute(nutricionistaId, query);
     }
-    async upsertFichaSaludSocio(req, payload) {
-        const userId = req.user?.id;
+    async upsertFichaSaludSocio(userId, payload) {
         this.logger.log(`Actualizando ficha de salud para socio usuario=${userId}.`);
         return this.upsertFichaSaludSocioUseCase.execute(userId, payload);
     }
-    async getFichaSaludSocio(req) {
-        const userId = req.user?.id;
+    async getFichaSaludSocio(userId) {
         this.logger.log(`Consultando ficha de salud para socio usuario=${userId}.`);
         return this.getFichaSaludSocioUseCase.execute(userId);
     }
@@ -153,23 +157,19 @@ let TurnosController = class TurnosController {
         this.logger.log(`Admin consulta disponibilidad del profesional ${nutricionistaId} para fecha ${query.fecha}.`);
         return this.getAgendaDiariaUseCase.execute(nutricionistaId, query);
     }
-    async reservarTurnoSocio(req, payload) {
-        const userId = req.user?.id;
+    async reservarTurnoSocio(userId, payload) {
         this.logger.log(`Reservando turno para socio usuario=${userId}.`);
         return this.reservarTurnoSocioUseCase.execute(userId, payload);
     }
-    async listMisTurnos(req, query) {
-        const userId = req.user?.id;
+    async listMisTurnos(userId, query) {
         this.logger.log(`Consultando mis turnos para socio usuario=${userId}.`);
         return this.listMisTurnosUseCase.execute(userId, query);
     }
-    async reprogramarTurnoSocio(req, turnoId, payload) {
-        const userId = req.user?.id;
+    async reprogramarTurnoSocio(userId, turnoId, payload) {
         this.logger.log(`Reprogramando turno ${turnoId} para socio usuario=${userId}.`);
         return this.reprogramarTurnoSocioUseCase.execute(userId, turnoId, payload);
     }
-    async cancelarTurnoSocio(req, turnoId, dto) {
-        const userId = req.user?.id;
+    async cancelarTurnoSocio(userId, turnoId, dto) {
         this.logger.log(`Cancelando turno ${turnoId} para socio usuario=${userId}.`);
         return this.cancelarTurnoSocioUseCase.execute(userId, turnoId, undefined, dto);
     }
@@ -177,8 +177,7 @@ let TurnosController = class TurnosController {
         this.logger.log(`Cancelando turno ${turnoId} por token.`);
         return this.cancelarTurnoSocioUseCase.execute(null, turnoId, query.token, dto);
     }
-    async confirmarTurnoSocio(req, turnoId) {
-        const userId = req.user?.id;
+    async confirmarTurnoSocio(userId, turnoId) {
         this.logger.log(`Confirmando turno ${turnoId} para socio usuario=${userId}.`);
         return this.confirmarTurnoSocioUseCase.execute(userId, turnoId);
     }
@@ -218,18 +217,23 @@ let TurnosController = class TurnosController {
         this.logger.log(`Consultando resumen de progreso. Profesional=${nutricionistaId}, socio=${socioId}.`);
         return this.getResumenProgresoUseCase.execute(socioId);
     }
-    async getMiProgreso(req) {
-        const socioId = req.resourceAccess?.socioId;
+    async getMiProgreso(access) {
+        const socioId = access.socioId;
+        if (socioId == null) {
+            throw new common_1.ForbiddenException('No se pudo resolver el socio.');
+        }
         this.logger.log(`Consultando mi progreso para socio ${socioId}.`);
         return this.getResumenProgresoUseCase.execute(socioId);
     }
-    async getMiHistorialMediciones(req) {
-        const socioId = req.resourceAccess?.socioId;
+    async getMiHistorialMediciones(access) {
+        const socioId = access.socioId;
+        if (socioId == null) {
+            throw new common_1.ForbiddenException('No se pudo resolver el socio.');
+        }
         this.logger.log(`Consultando mi historial de mediciones para socio ${socioId}.`);
         return this.getHistorialMedicionesUseCase.execute(socioId);
     }
-    async subirAdjunto(turnoId, archivo, req) {
-        const usuarioId = req.user?.id;
+    async subirAdjunto(turnoId, archivo, usuarioId) {
         this.logger.log(`Subiendo adjunto para turno ${turnoId}.`);
         return this.adjuntoClinicoService.subir({
             turnoId,
@@ -250,11 +254,10 @@ let TurnosController = class TurnosController {
             url: await this.adjuntoClinicoService.obtenerUrlFirmada(adjuntoId),
         };
     }
-    async eliminarAdjunto(turnoId, adjuntoId, req) {
-        const usuarioId = req.user?.id;
-        const esAdmin = req.user?.rol === Rol_1.Rol.ADMIN;
+    async eliminarAdjunto(turnoId, adjuntoId, user) {
+        const esAdmin = user.rol === Rol_1.Rol.ADMIN;
         this.logger.log(`Eliminando adjunto ${adjuntoId} del turno ${turnoId}.`);
-        await this.adjuntoClinicoService.eliminar(adjuntoId, usuarioId, esAdmin);
+        await this.adjuntoClinicoService.eliminar(adjuntoId, user.id, esAdmin);
         return { success: true };
     }
 };
@@ -274,7 +277,7 @@ __decorate([
     (0, role_decorator_1.Rol)(Rol_1.Rol.NUTRICIONISTA),
     (0, common_1.UseGuards)(turno_nutricionista_access_guard_1.TurnoNutricionistaAccessGuard),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
-    __param(1, (0, common_1.Req)()),
+    __param(1, (0, resource_access_decorator_1.ResourceAccess)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number, Object]),
     __metadata("design:returntype", Promise)
@@ -363,18 +366,18 @@ __decorate([
 __decorate([
     (0, common_1.Put)('socio/ficha-salud'),
     (0, role_decorator_1.Rol)(Rol_1.Rol.SOCIO),
-    __param(0, (0, common_1.Req)()),
+    __param(0, (0, current_user_decorator_1.CurrentUserId)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, dtos_1.UpsertFichaSaludSocioDto]),
+    __metadata("design:paramtypes", [Number, dtos_1.UpsertFichaSaludSocioDto]),
     __metadata("design:returntype", Promise)
 ], TurnosController.prototype, "upsertFichaSaludSocio", null);
 __decorate([
     (0, common_1.Get)('socio/ficha-salud'),
     (0, role_decorator_1.Rol)(Rol_1.Rol.SOCIO),
-    __param(0, (0, common_1.Req)()),
+    __param(0, (0, current_user_decorator_1.CurrentUserId)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
 ], TurnosController.prototype, "getFichaSaludSocio", null);
 __decorate([
@@ -399,39 +402,39 @@ __decorate([
 __decorate([
     (0, common_1.Post)('socio/reservar'),
     (0, role_decorator_1.Rol)(Rol_1.Rol.SOCIO),
-    __param(0, (0, common_1.Req)()),
+    __param(0, (0, current_user_decorator_1.CurrentUserId)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, dtos_1.ReservarTurnoSocioDto]),
+    __metadata("design:paramtypes", [Number, dtos_1.ReservarTurnoSocioDto]),
     __metadata("design:returntype", Promise)
 ], TurnosController.prototype, "reservarTurnoSocio", null);
 __decorate([
     (0, common_1.Get)('socio/mis-turnos'),
     (0, role_decorator_1.Rol)(Rol_1.Rol.SOCIO),
-    __param(0, (0, common_1.Req)()),
+    __param(0, (0, current_user_decorator_1.CurrentUserId)()),
     __param(1, (0, common_1.Query)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, dtos_1.ListMisTurnosQueryDto]),
+    __metadata("design:paramtypes", [Number, dtos_1.ListMisTurnosQueryDto]),
     __metadata("design:returntype", Promise)
 ], TurnosController.prototype, "listMisTurnos", null);
 __decorate([
     (0, common_1.Patch)('socio/:turnoId/reprogramar'),
     (0, role_decorator_1.Rol)(Rol_1.Rol.SOCIO),
-    __param(0, (0, common_1.Req)()),
+    __param(0, (0, current_user_decorator_1.CurrentUserId)()),
     __param(1, (0, common_1.Param)('turnoId', common_1.ParseIntPipe)),
     __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Number, dtos_1.ReprogramarTurnoSocioDto]),
+    __metadata("design:paramtypes", [Number, Number, dtos_1.ReprogramarTurnoSocioDto]),
     __metadata("design:returntype", Promise)
 ], TurnosController.prototype, "reprogramarTurnoSocio", null);
 __decorate([
     (0, common_1.Patch)('socio/:turnoId/cancelar'),
     (0, role_decorator_1.Rol)(Rol_1.Rol.SOCIO),
-    __param(0, (0, common_1.Req)()),
+    __param(0, (0, current_user_decorator_1.CurrentUserId)()),
     __param(1, (0, common_1.Param)('turnoId', common_1.ParseIntPipe)),
     __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Number, dtos_1.CancelarTurnoSocioDto]),
+    __metadata("design:paramtypes", [Number, Number, dtos_1.CancelarTurnoSocioDto]),
     __metadata("design:returntype", Promise)
 ], TurnosController.prototype, "cancelarTurnoSocio", null);
 __decorate([
@@ -447,10 +450,10 @@ __decorate([
 __decorate([
     (0, common_1.Patch)('socio/:turnoId/confirmar'),
     (0, role_decorator_1.Rol)(Rol_1.Rol.SOCIO),
-    __param(0, (0, common_1.Req)()),
+    __param(0, (0, current_user_decorator_1.CurrentUserId)()),
     __param(1, (0, common_1.Param)('turnoId', common_1.ParseIntPipe)),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Number]),
+    __metadata("design:paramtypes", [Number, Number]),
     __metadata("design:returntype", Promise)
 ], TurnosController.prototype, "confirmarTurnoSocio", null);
 __decorate([
@@ -539,7 +542,7 @@ __decorate([
     (0, common_1.Get)('socio/mi-progreso'),
     (0, role_decorator_1.Rol)(Rol_1.Rol.SOCIO),
     (0, common_1.UseGuards)(socio_resource_access_guard_1.SocioResourceAccessGuard),
-    __param(0, (0, common_1.Req)()),
+    __param(0, (0, resource_access_decorator_1.ResourceAccess)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
@@ -548,7 +551,7 @@ __decorate([
     (0, common_1.Get)('socio/mi-historial-mediciones'),
     (0, role_decorator_1.Rol)(Rol_1.Rol.SOCIO),
     (0, common_1.UseGuards)(socio_resource_access_guard_1.SocioResourceAccessGuard),
-    __param(0, (0, common_1.Req)()),
+    __param(0, (0, resource_access_decorator_1.ResourceAccess)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
@@ -560,9 +563,9 @@ __decorate([
     (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('archivo')),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __param(1, (0, common_1.UploadedFile)()),
-    __param(2, (0, common_1.Req)()),
+    __param(2, (0, current_user_decorator_1.CurrentUserId)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, Object, Object]),
+    __metadata("design:paramtypes", [Number, Object, Number]),
     __metadata("design:returntype", Promise)
 ], TurnosController.prototype, "subirAdjunto", null);
 __decorate([
@@ -590,7 +593,7 @@ __decorate([
     (0, common_1.UseGuards)(turno_nutricionista_access_guard_1.TurnoNutricionistaAccessGuard),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __param(1, (0, common_1.Param)('adjId', common_1.ParseIntPipe)),
-    __param(2, (0, common_1.Req)()),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number, Number, Object]),
     __metadata("design:returntype", Promise)
@@ -623,6 +626,7 @@ exports.TurnosController = TurnosController = __decorate([
         use_cases_1.ReprogramarTurnoSocioUseCase,
         use_cases_1.RegistrarAsistenciaTurnoUseCase,
         use_cases_1.ReservarTurnoSocioUseCase,
-        use_cases_1.UpsertFichaSaludSocioUseCase, Object, Object])
+        use_cases_1.UpsertFichaSaludSocioUseCase,
+        adjunto_clinico_service_1.AdjuntoClinicoService, Object])
 ], TurnosController);
 //# sourceMappingURL=turnos.controller.js.map

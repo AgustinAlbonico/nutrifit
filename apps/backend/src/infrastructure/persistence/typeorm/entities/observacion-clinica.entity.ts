@@ -1,6 +1,5 @@
 import { Column, Entity, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { TurnoOrmEntity } from './turno.entity';
-import { TurnoEntity } from 'src/domain/entities/Turno/turno.entity';
 
 @Entity('observacion_clinica')
 export class ObservacionClinicaOrmEntity {
@@ -48,5 +47,5 @@ export class ObservacionClinicaOrmEntity {
   @OneToOne(() => TurnoOrmEntity, (turno) => turno.observacionClinica, {
     nullable: false,
   })
-  turno: TurnoEntity;
+  turno: TurnoOrmEntity;
 }

@@ -47,7 +47,6 @@ async function bootstrap() {
         const swaggerConfig = new swagger_1.DocumentBuilder()
             .setTitle(`${mainConfig.getAppName()} API`)
             .setDescription('Descripcion de la api de NutriFit Supervisor')
-            .setExternalDoc('Postman Collection', '/openapi-json')
             .setVersion('1.0')
             .addBearerAuth(undefined, 'access-token')
             .addBearerAuth(undefined, 'refresh-token')

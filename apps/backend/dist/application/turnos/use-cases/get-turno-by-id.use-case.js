@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var GetTurnoByIdUseCase_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GetTurnoByIdUseCase = void 0;
 const common_1 = require("@nestjs/common");
@@ -22,10 +23,11 @@ const FrecuenciaComidas_1 = require("../../../domain/entities/FichaSalud/Frecuen
 const ConsumoAlcohol_1 = require("../../../domain/entities/FichaSalud/ConsumoAlcohol");
 const entities_1 = require("../../../infrastructure/persistence/typeorm/entities");
 const typeorm_2 = require("typeorm");
-let GetTurnoByIdUseCase = class GetTurnoByIdUseCase {
+let GetTurnoByIdUseCase = GetTurnoByIdUseCase_1 = class GetTurnoByIdUseCase {
     turnoRepository;
     nutricionistaRepository;
     fichaSaludRepository;
+    logger = new common_1.Logger(GetTurnoByIdUseCase_1.name);
     constructor(turnoRepository, nutricionistaRepository, fichaSaludRepository) {
         this.turnoRepository = turnoRepository;
         this.nutricionistaRepository = nutricionistaRepository;
@@ -88,7 +90,7 @@ let GetTurnoByIdUseCase = class GetTurnoByIdUseCase {
                 }
             }
             catch (error) {
-                console.error('Error al buscar ficha de salud:', error);
+                this.logger.error('Error al buscar ficha de salud', error instanceof Error ? error.stack : String(error));
             }
         }
         const response = {
@@ -163,7 +165,7 @@ let GetTurnoByIdUseCase = class GetTurnoByIdUseCase {
     }
 };
 exports.GetTurnoByIdUseCase = GetTurnoByIdUseCase;
-exports.GetTurnoByIdUseCase = GetTurnoByIdUseCase = __decorate([
+exports.GetTurnoByIdUseCase = GetTurnoByIdUseCase = GetTurnoByIdUseCase_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(entities_1.TurnoOrmEntity)),
     __param(1, (0, typeorm_1.InjectRepository)(entities_1.NutricionistaOrmEntity)),

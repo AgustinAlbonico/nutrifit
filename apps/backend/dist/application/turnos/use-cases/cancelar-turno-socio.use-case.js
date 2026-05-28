@@ -105,7 +105,6 @@ let CancelarTurnoSocioUseCase = class CancelarTurnoSocioUseCase {
             });
         }
         this.logger.log(`Turno ${turnoId} cancelado por socio ${socio?.idPersona ?? 'token'}.`);
-        this.logger.log(`Notificacion interna pendiente de integracion para profesional ${turno.nutricionista.idPersona}.`);
         return this.toResponseDto(updatedTurno);
     }
     async validarTokenConfirmacion(turnoId, tokenPlano) {

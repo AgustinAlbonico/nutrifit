@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { EntityManager, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SocioOrmEntity } from '../entities/persona.entity';
 import { SocioEntity } from 'src/domain/entities/Persona/Socio/socio.entity';
@@ -16,21 +16,8 @@ export class SocioRepositoryImplementation implements SocioRepository {
     const socioCreado = await this.socioRepository.save(
       this.toOrmEntity(entity),
     );
-    return new SocioEntity(
-      socioCreado.idPersona,
-      socioCreado.nombre,
-      socioCreado.apellido,
-      socioCreado.fechaNacimiento,
-      socioCreado.telefono,
-      socioCreado.genero,
-      socioCreado.direccion,
-      socioCreado.ciudad,
-      socioCreado.provincia,
-      socioCreado.dni ?? '',
-      [],
-      null,
-      [],
-    );
+
+    return this.toEntity(socioCreado);
   }
 
   async update(id: number, entity: SocioEntity): Promise<SocioEntity> {
@@ -46,29 +33,28 @@ export class SocioRepositoryImplementation implements SocioRepository {
       provincia: entity.provincia,
       dni: entity.dni,
       fotoPerfilKey: entity.fotoPerfilKey,
-    } as Partial<SocioOrmEntity>);
+    });
+
     const socioActualizado = await this.socioRepository.findOne({
       where: { idPersona: id },
       relations: ['usuario'],
     });
+
     if (!socioActualizado) {
       throw new Error(`Socio con id ${id} no encontrado`);
     }
+
     return this.toEntity(socioActualizado);
   }
 
   async delete(id: number): Promise<void> {
-    // Baja lógica - actualizar fechaBaja
-    await this.socioRepository.update(id, {
-      fechaBaja: new Date(),
-    } as Partial<SocioOrmEntity>);
+    // Baja lógica: marcar fechaBaja
+    await this.socioRepository.update(id, { fechaBaja: new Date() });
   }
 
   async reactivar(id: number): Promise<void> {
-    // Reactivar - limpiar fechaBaja
-    await this.socioRepository.update(id, {
-      fechaBaja: null,
-    } as Partial<SocioOrmEntity>);
+    // Reactivar: limpiar fechaBaja
+    await this.socioRepository.update(id, { fechaBaja: null });
   }
 
   async findAll(): Promise<SocioEntity[]> {
@@ -76,6 +62,7 @@ export class SocioRepositoryImplementation implements SocioRepository {
       relations: ['usuario'],
       order: { idPersona: 'ASC' },
     });
+
     return socios.map((socio) => this.toEntity(socio));
   }
 
@@ -83,57 +70,60 @@ export class SocioRepositoryImplementation implements SocioRepository {
     const socio = await this.socioRepository.findOne({
       where: { idPersona: id },
     });
+
     return socio ? this.toEntity(socio) : null;
   }
 
-  private toOrmEntity(socio: SocioEntity) {
-    const socioOrmEntity = new SocioOrmEntity();
-    socioOrmEntity.idPersona = socio.idPersona;
-    socioOrmEntity.nombre = socio.nombre;
-    socioOrmEntity.apellido = socio.apellido;
-    socioOrmEntity.fechaNacimiento = socio.fechaNacimiento;
-    socioOrmEntity.genero = socio.genero;
-    socioOrmEntity.ciudad = socio.ciudad;
-    socioOrmEntity.provincia = socio.provincia;
-    socioOrmEntity.telefono = socio.telefono;
-    socioOrmEntity.direccion = socio.direccion;
-    socioOrmEntity.dni = socio.dni;
-    socioOrmEntity.fotoPerfilKey = socio.fotoPerfilKey;
-    socioOrmEntity.fechaAlta = new Date();
-    socioOrmEntity.fichaSalud = null;
-    socioOrmEntity.planesAlimentacion = [];
-    socioOrmEntity.turnos = [];
-    return socioOrmEntity;
+  private toOrmEntity(socio: SocioEntity): SocioOrmEntity {
+    const orm = new SocioOrmEntity();
+    orm.idPersona = socio.idPersona;
+    orm.nombre = socio.nombre;
+    orm.apellido = socio.apellido;
+    orm.fechaNacimiento = socio.fechaNacimiento;
+    orm.genero = socio.genero;
+    orm.ciudad = socio.ciudad;
+    orm.provincia = socio.provincia;
+    orm.telefono = socio.telefono;
+    orm.direccion = socio.direccion;
+    orm.dni = socio.dni;
+    orm.fotoPerfilKey = socio.fotoPerfilKey;
+    orm.fechaAlta = new Date();
+    orm.fichaSalud = null;
+    orm.planesAlimentacion = [];
+    orm.turnos = [];
+    return orm;
   }
 
-  private toEntity(socio: SocioOrmEntity): SocioEntity {
+  private toEntity(orm: SocioOrmEntity): SocioEntity {
     const entity = new SocioEntity(
-      socio.idPersona,
-      socio.nombre,
-      socio.apellido,
-      socio.fechaNacimiento,
-      socio.telefono,
-      socio.genero,
-      socio.direccion,
-      socio.ciudad,
-      socio.provincia,
-      socio.dni ?? '',
+      orm.idPersona,
+      orm.nombre,
+      orm.apellido,
+      orm.fechaNacimiento,
+      orm.telefono,
+      orm.genero,
+      orm.direccion,
+      orm.ciudad,
+      orm.provincia,
+      orm.dni ?? '',
       [],
-      socio.fichaSalud as any,
+      null,
       [],
     );
-    // Asignar fechaBaja si existe
-    if (socio.fechaBaja) {
-      (entity as any).fechaBaja = socio.fechaBaja;
+
+    // PersonaEntity expone email, fechaBaja y fotoPerfilKey en sus props.
+    if (orm.fechaBaja) {
+      entity.fechaBaja = orm.fechaBaja;
     }
-    // Asignar email del usuario asociado
-    if (socio.usuario?.email) {
-      (entity as any).email = socio.usuario.email;
+
+    if (orm.usuario?.email) {
+      entity.email = orm.usuario.email;
     }
-    // Asignar fotoPerfilKey
-    if (socio.fotoPerfilKey) {
-      (entity as any).fotoPerfilKey = socio.fotoPerfilKey;
+
+    if (orm.fotoPerfilKey) {
+      entity.fotoPerfilKey = orm.fotoPerfilKey;
     }
+
     return entity;
   }
 }

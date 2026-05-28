@@ -8,10 +8,7 @@ import {
 } from 'typeorm';
 import { NutricionistaOrmEntity, SocioOrmEntity } from './persona.entity';
 import { DiaPlanOrmEntity } from './dia-plan.entity';
-import { NutricionistaEntity } from 'src/domain/entities/Persona/Nutricionista/nutricionista.entity';
 import { OpcionComidaOrmEntity } from './opcion-comida.entity';
-import { OpcionComidaEntity } from 'src/domain/entities/OpcionComida/opcion-comida.entity';
-import { SocioEntity } from 'src/domain/entities/Persona/Socio/socio.entity';
 
 @Entity('plan_alimentacion')
 export class PlanAlimentacionOrmEntity {
@@ -28,7 +25,7 @@ export class PlanAlimentacionOrmEntity {
     nullable: false,
   })
   @JoinColumn({ name: 'id_socio' })
-  socio: SocioEntity;
+  socio: SocioOrmEntity;
 
   @ManyToOne(
     () => NutricionistaOrmEntity,
@@ -38,7 +35,7 @@ export class PlanAlimentacionOrmEntity {
     },
   )
   @JoinColumn({ name: 'id_nutricionista' })
-  nutricionista: NutricionistaEntity;
+  nutricionista: NutricionistaOrmEntity;
 
   @Column({ name: 'activo', type: 'boolean', default: true })
   activo: boolean;

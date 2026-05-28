@@ -163,10 +163,11 @@ export class NutricionistaRepositoryImplementation implements NutricionistaRepos
       orm.fechaBaja,
       orm.usuario?.email ?? '',
     );
-    // Asignar fotoPerfilKey
+
     if (orm.fotoPerfilKey) {
-      (entity as any).fotoPerfilKey = orm.fotoPerfilKey;
+      entity.fotoPerfilKey = orm.fotoPerfilKey;
     }
+
     return entity;
   }
 }

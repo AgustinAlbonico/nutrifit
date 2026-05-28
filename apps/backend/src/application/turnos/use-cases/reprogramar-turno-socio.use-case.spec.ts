@@ -6,6 +6,7 @@ import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/
 import { SocioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/persona.entity';
 import { UsuarioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/usuario.entity';
 import { AgendaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/agenda.entity';
+import { GimnasioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/gimnasio.entity';
 import { EstadoTurno } from 'src/domain/entities/Turno/EstadoTurno';
 import { ReprogramarTurnoSocioDto } from 'src/application/turnos/dtos';
 import {
@@ -250,7 +251,7 @@ describe('ReprogramarTurnoSocioUseCase', () => {
     it('debe usar el plazo de reprogramacion de la politica del gimnasio', async () => {
       // Arrange
       const mockTurno = buildMockTurno();
-      mockTurno.gimnasio = { idGimnasio: 5 } as any;
+      mockTurno.gimnasio = { idGimnasio: 5 } as GimnasioOrmEntity;
       usuarioRepository.findOne.mockResolvedValue(mockUsuario);
       socioRepository.findOne.mockResolvedValue(mockSocio);
       turnoRepository.findOne.mockResolvedValue(mockTurno);
@@ -308,7 +309,7 @@ describe('ReprogramarTurnoSocioUseCase', () => {
 
     it('debe usar gimnasioId 1 por defecto cuando el turno no tiene gimnasio asignado', async () => {
       // Arrange
-      const mockTurno = buildMockTurno({ gimnasio: undefined as any });
+      const mockTurno = buildMockTurno({ gimnasio: undefined });
       usuarioRepository.findOne.mockResolvedValue(mockUsuario);
       socioRepository.findOne.mockResolvedValue(mockSocio);
       turnoRepository.findOne.mockResolvedValue(mockTurno);
@@ -345,7 +346,7 @@ describe('ReprogramarTurnoSocioUseCase', () => {
     it('debe registrar auditoria al reprogramar', async () => {
       // Arrange
       const mockTurno = buildMockTurno();
-      mockTurno.gimnasio = { idGimnasio: 1 } as any;
+      mockTurno.gimnasio = { idGimnasio: 1 } as GimnasioOrmEntity;
       usuarioRepository.findOne.mockResolvedValue(mockUsuario);
       socioRepository.findOne.mockResolvedValue(mockSocio);
       turnoRepository.findOne.mockResolvedValue(mockTurno);

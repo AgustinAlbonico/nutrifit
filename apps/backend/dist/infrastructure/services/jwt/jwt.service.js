@@ -8,13 +8,15 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var JwtServiceImpl_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.JwtServiceImpl = void 0;
 const common_1 = require("@nestjs/common");
 const jwt_1 = require("@nestjs/jwt");
 const custom_exceptions_1 = require("../../../domain/exceptions/custom-exceptions");
-let JwtServiceImpl = class JwtServiceImpl {
+let JwtServiceImpl = JwtServiceImpl_1 = class JwtServiceImpl {
     jwtService;
+    logger = new common_1.Logger(JwtServiceImpl_1.name);
     constructor(jwtService) {
         this.jwtService = jwtService;
     }
@@ -26,13 +28,13 @@ let JwtServiceImpl = class JwtServiceImpl {
             return this.jwtService.verify(token);
         }
         catch (error) {
-            console.error('Error verifying JWT:', error);
+            this.logger.warn('Verificación de JWT fallida', error instanceof Error ? error.message : String(error));
             throw new custom_exceptions_1.UnauthorizedError('Token invalido o expirado');
         }
     }
 };
 exports.JwtServiceImpl = JwtServiceImpl;
-exports.JwtServiceImpl = JwtServiceImpl = __decorate([
+exports.JwtServiceImpl = JwtServiceImpl = JwtServiceImpl_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [jwt_1.JwtService])
 ], JwtServiceImpl);

@@ -19,6 +19,7 @@ const login_use_case_1 = require("../../../application/auth/login.use-case");
 const logger_service_1 = require("../../../domain/services/logger.service");
 const auth_guard_1 = require("../../../infrastructure/auth/guards/auth.guard");
 const permisos_service_1 = require("../../../application/permisos/permisos.service");
+const current_user_decorator_1 = require("../../../infrastructure/auth/decorators/current-user.decorator");
 const usuario_repository_1 = require("../../../domain/entities/Usuario/usuario.repository");
 let AuthController = class AuthController {
     loginUseCase;
@@ -37,34 +38,17 @@ let AuthController = class AuthController {
         this.logger.log(`Login correcto para el usuario con email: ${body.email}, tiene el rol de ${res.rol}`);
         return res;
     }
-    async getPermissions(req) {
-        const userId = req.user?.id;
-        if (!userId) {
-            return [];
-        }
+    async getPermissions(userId) {
         return this.permisosService.getAccionesEfectivasUsuario(userId);
     }
-    async getProfile(req) {
-        const user = req.user;
-        const userId = user?.id;
-        if (!userId) {
-            return {
-                idUsuario: null,
-                idPersona: null,
-                email: null,
-                rol: null,
-                nombre: null,
-                apellido: null,
-                fotoPerfilUrl: null,
-            };
-        }
-        const perfil = await this.usuarioRepository.findPerfilByUserId(userId);
+    async getProfile(user) {
+        const perfil = await this.usuarioRepository.findPerfilByUserId(user.id);
         if (!perfil) {
             return {
-                idUsuario: userId,
+                idUsuario: user.id,
                 idPersona: null,
-                email: user?.email ?? null,
-                rol: user?.rol ?? null,
+                email: user.email ?? null,
+                rol: user.rol ?? null,
                 nombre: null,
                 apellido: null,
                 fotoPerfilUrl: null,
@@ -95,15 +79,15 @@ __decorate([
 __decorate([
     (0, common_1.Get)('permissions'),
     (0, common_1.UseGuards)(auth_guard_1.JwtAuthGuard),
-    __param(0, (0, common_1.Req)()),
+    __param(0, (0, current_user_decorator_1.CurrentUserId)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "getPermissions", null);
 __decorate([
     (0, common_1.Get)('perfil'),
     (0, common_1.UseGuards)(auth_guard_1.JwtAuthGuard),
-    __param(0, (0, common_1.Req)()),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)

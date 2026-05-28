@@ -3,7 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { BaseUseCase } from 'src/application/shared/use-case.base';
 import { AsignarTurnoManualDto } from 'src/application/turnos/dtos/asignar-turno-manual.dto';
 import { TurnoOperacionResponseDto } from 'src/application/turnos/dtos/turno-operacion-response.dto';
+import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import { DiaSemana } from 'src/domain/entities/Agenda/dia-semana';
+import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
 import { EstadoTurno } from 'src/domain/entities/Turno/EstadoTurno';
 import {
   NUTRICIONISTA_REPOSITORY,
@@ -48,6 +50,7 @@ export class AsignarTurnoManualUseCase implements BaseUseCase {
     private readonly nutricionistaRepository: NutricionistaRepository,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
+    private readonly notificacionesService: NotificacionesService,
   ) {}
 
   async execute(
@@ -125,11 +128,18 @@ export class AsignarTurnoManualUseCase implements BaseUseCase {
 
     const turnoCreado = await this.turnoRepository.save(turno);
 
+    if (socio.idPersona) {
+      await this.notificacionesService.crear({
+        destinatarioId: socio.idPersona,
+        tipo: TipoNotificacion.TURNO_RESERVADO,
+        titulo: 'Nuevo turno asignado',
+        mensaje: `Te asignaron un turno para el ${formatArgentinaDate(turnoCreado.fechaTurno)} a las ${normalizeTimeToHHmm(turnoCreado.horaTurno)}.`,
+        metadata: { turnoId: turnoCreado.idTurno },
+      });
+    }
+
     this.logger.log(
       `Turno manual asignado. Turno=${turnoCreado.idTurno}, profesional=${nutricionistaId}, socio=${payload.socioId}.`,
-    );
-    this.logger.log(
-      `Notificacion interna pendiente de integracion para socio ${payload.socioId} por turno ${turnoCreado.idTurno}.`,
     );
 
     return this.toResponseDto(turnoCreado);

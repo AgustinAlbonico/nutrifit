@@ -1,4 +1,4 @@
-import { TurnoEntity } from 'src/domain/entities/Turno/turno.entity';
+import { TurnoOrmEntity } from './turno.entity';
 export declare class ObservacionClinicaOrmEntity {
     idObservacion: number;
     comentario: string;
@@ -9,5 +9,5 @@ export declare class ObservacionClinicaOrmEntity {
     habitosSocio: string | null;
     objetivosSocio: string | null;
     esPublica: boolean;
-    turno: TurnoEntity;
+    turno: TurnoOrmEntity;
 }

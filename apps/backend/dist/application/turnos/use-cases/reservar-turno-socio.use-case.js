@@ -103,7 +103,6 @@ let ReservarTurnoSocioUseCase = class ReservarTurnoSocioUseCase {
             });
         }
         this.logger.log(`Turno reservado por socio ${socio.idPersona}. Turno=${turnoCreado.idTurno}, profesional=${payload.nutricionistaId}.`);
-        this.logger.log(`Notificacion interna pendiente de integracion para turno ${turnoCreado.idTurno}.`);
         return this.toResponseDto(turnoCreado);
     }
     async resolveSocioByUserId(userId) {

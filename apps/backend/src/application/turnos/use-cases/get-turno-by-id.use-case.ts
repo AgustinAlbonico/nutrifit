@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BaseUseCase } from 'src/application/shared/use-case.base';
 import {
@@ -23,6 +23,7 @@ import { Repository } from 'typeorm';
 
 @Injectable()
 export class GetTurnoByIdUseCase implements BaseUseCase {
+  private readonly logger = new Logger(GetTurnoByIdUseCase.name);
   constructor(
     @InjectRepository(TurnoOrmEntity)
     private readonly turnoRepository: Repository<TurnoOrmEntity>,
@@ -118,7 +119,10 @@ export class GetTurnoByIdUseCase implements BaseUseCase {
         }
       } catch (error) {
         // Si hay error al buscar la ficha de salud, continuamos sin ella
-        console.error('Error al buscar ficha de salud:', error);
+        this.logger.error(
+          'Error al buscar ficha de salud',
+          error instanceof Error ? error.stack : String(error),
+        );
       }
     }
 

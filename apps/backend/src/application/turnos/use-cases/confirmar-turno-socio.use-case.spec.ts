@@ -57,7 +57,7 @@ describe('ConfirmarTurnoSocioUseCase token flow', () => {
       horaTurno: '23:59',
       socio: { idPersona: 20 },
       nutricionista: { idPersona: 30 },
-    } as any;
+    } as unknown as TurnoOrmEntity;
     turnoRepository.findOne.mockResolvedValue(turno);
 
     const token = 'abc123';
@@ -66,7 +66,7 @@ describe('ConfirmarTurnoSocioUseCase token flow', () => {
       tokenHash: createHash('sha256').update(token).digest('hex'),
       expiraEn: new Date(Date.now() + 3600 * 1000),
       usadoEn: null,
-    } as any);
+    } as TurnoConfirmacionTokenOrmEntity);
     turnoRepository.save.mockResolvedValue(turno);
 
     await useCase.execute(null, 10, token);
@@ -81,7 +81,7 @@ describe('ConfirmarTurnoSocioUseCase token flow', () => {
       horaTurno: '23:59',
       socio: { idPersona: 20 },
       nutricionista: { idPersona: 30 },
-    } as any);
+    } as unknown as TurnoOrmEntity);
     tokenRepository.findOne.mockResolvedValue(null);
 
     await expect(useCase.execute(null, 10, 'bad')).rejects.toThrow(
@@ -97,13 +97,13 @@ describe('ConfirmarTurnoSocioUseCase token flow', () => {
       horaTurno: '23:59',
       socio: { idPersona: 20 },
       nutricionista: { idPersona: 30 },
-    } as any);
+    } as unknown as TurnoOrmEntity);
     tokenRepository.findOne.mockResolvedValue({
       turnoId: 10,
       tokenHash: 'x',
       expiraEn: new Date(Date.now() - 1000),
       usadoEn: null,
-    } as any);
+    } as TurnoConfirmacionTokenOrmEntity);
 
     await expect(useCase.execute(null, 10, 'abc')).rejects.toThrow(
       BadRequestError,
@@ -118,13 +118,13 @@ describe('ConfirmarTurnoSocioUseCase token flow', () => {
       horaTurno: '23:59',
       socio: { idPersona: 20 },
       nutricionista: { idPersona: 30 },
-    } as any);
+    } as unknown as TurnoOrmEntity);
     tokenRepository.findOne.mockResolvedValue({
       turnoId: 10,
       tokenHash: 'x',
       expiraEn: new Date(Date.now() + 1000),
       usadoEn: new Date(),
-    } as any);
+    } as TurnoConfirmacionTokenOrmEntity);
 
     await expect(useCase.execute(null, 10, 'abc')).rejects.toThrow(
       BadRequestError,

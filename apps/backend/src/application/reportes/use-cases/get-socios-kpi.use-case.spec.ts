@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { GetSociosKpiUseCase } from './get-socios-kpi.use-case';
 import { SocioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/persona.entity';
 import { FichaSaludOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/ficha-salud.entity';
@@ -51,7 +51,7 @@ describe('GetSociosKpiUseCase', () => {
     };
     jest
       .spyOn(socioRepository, 'createQueryBuilder')
-      .mockReturnValue(mockQueryBuilder as any);
+      .mockReturnValue(mockQueryBuilder as unknown as SelectQueryBuilder<SocioOrmEntity>);
 
     const mockFichaBuilder = {
       select: jest.fn().mockReturnThis(),
@@ -63,7 +63,7 @@ describe('GetSociosKpiUseCase', () => {
     };
     jest
       .spyOn(fichaSaludRepository, 'createQueryBuilder')
-      .mockReturnValue(mockFichaBuilder as any);
+      .mockReturnValue(mockFichaBuilder as unknown as SelectQueryBuilder<FichaSaludOrmEntity>);
 
     const mockPlanBuilder = {
       select: jest.fn().mockReturnThis(),
@@ -74,7 +74,7 @@ describe('GetSociosKpiUseCase', () => {
     };
     jest
       .spyOn(planRepository, 'createQueryBuilder')
-      .mockReturnValue(mockPlanBuilder as any);
+      .mockReturnValue(mockPlanBuilder as unknown as SelectQueryBuilder<PlanAlimentacionOrmEntity>);
 
     const result = await useCase.execute();
 
@@ -93,7 +93,7 @@ describe('GetSociosKpiUseCase', () => {
     };
     jest
       .spyOn(socioRepository, 'createQueryBuilder')
-      .mockReturnValue(mockQueryBuilder as any);
+      .mockReturnValue(mockQueryBuilder as unknown as SelectQueryBuilder<SocioOrmEntity>);
 
     const mockFichaBuilder = {
       select: jest.fn().mockReturnThis(),
@@ -105,7 +105,7 @@ describe('GetSociosKpiUseCase', () => {
     };
     jest
       .spyOn(fichaSaludRepository, 'createQueryBuilder')
-      .mockReturnValue(mockFichaBuilder as any);
+      .mockReturnValue(mockFichaBuilder as unknown as SelectQueryBuilder<FichaSaludOrmEntity>);
 
     const mockPlanBuilder = {
       select: jest.fn().mockReturnThis(),
@@ -116,7 +116,7 @@ describe('GetSociosKpiUseCase', () => {
     };
     jest
       .spyOn(planRepository, 'createQueryBuilder')
-      .mockReturnValue(mockPlanBuilder as any);
+      .mockReturnValue(mockPlanBuilder as unknown as SelectQueryBuilder<PlanAlimentacionOrmEntity>);
 
     const result = await useCase.execute();
 

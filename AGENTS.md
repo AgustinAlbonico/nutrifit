@@ -1,259 +1,268 @@
-# AGENTS.md - Nutrifit Supervisor Monorepo
+# AGENTS.md - NutriFit Supervisor
 
-This file defines default instructions for coding agents working in this repository.
+## Descripción del Sistema
+
+**NutriFit Supervisor** es un sistema de gestión de servicios de salud en gimnasios. Permite a **socios** reservar turnos con profesionales de salud (nutricionistas), completar fichas clínicas, consultar planes alimentarios y seguir su progreso. Los **profesionales** gestionan agendas y atienden pacientes. Los **administradores** supervisan el sistema.
+
+Stack: NestJS (backend) + React + Vite (frontend) + MySQL + TypeORM, en monorepo npm workspaces.
+
+---
+
+## Skill Routing
+
+Invoke the appropriate skill before starting any task. Match by **file context** (file extension/folder) and **task context** (what you're doing).
+
+### Backend (NestJS)
+
+| Task | Skill | Path |
+|------|-------|------|
+| New module/controller/service | `nestjs-best-practices` | `.agents/skills/nestjs-best-practices/SKILL.md` |
+| API endpoints, HTTP layer | `nestjs-best-practices` | `.agents/skills/nestjs-best-practices/SKILL.md` |
+| Auth/JWT, guards, security | `nestjs-best-practices` | `.agents/skills/nestjs-best-practices/SKILL.md` |
+| Database/TypeORM, migrations | `nestjs-best-practices` | `.agents/skills/nestjs-best-practices/SKILL.md` |
+| Error handling, exception filters | `nestjs-best-practices` | `.agents/skills/nestjs-best-practices/SKILL.md` |
+| Performance, caching | `nestjs-best-practices` | `.agents/skills/nestjs-best-practices/SKILL.md` |
+| Testing (unit/e2e) | `javascript-testing-patterns` | `.agents/skills/javascript-testing-patterns/SKILL.md` |
+| Architecture decisions | `architecture-patterns` | `C:\Users\agust\.config\opencode\skills\architecture-patterns/SKILL.md` |
+
+### Frontend (React + Vite)
+
+| Task | Skill | Path |
+|------|-------|------|
+| New pages, components, UI | `frontend-design` | `.agents/skills/frontend-design/SKILL.md` |
+| Tailwind CSS + shadcn/ui | `tailwind-v4-shadcn` | `.agents/skills/tailwind-v4-shadcn/SKILL.md` |
+| shadcn/ui components | `shadcn` | `.agents/skills/shadcn/SKILL.md` |
+| Vite config, build, plugins | `vite` | `.agents/skills/vite/SKILL.md` |
+| Vitest tests | `vitest` | `.agents/skills/vitest/SKILL.md` |
+| Accessibility (ARIA, a11y) | `accessibility` | `.agents/skills/accessibility/SKILL.md` |
+| React performance, hooks | `vercel-react-best-practices` | `.agents/skills/vercel-react-best-practices/SKILL.md` |
+| Advanced TypeScript types | `typescript-advanced-types` | `.agents/skills/typescript-advanced-types/SKILL.md` |
+| Tailwind patterns/layouts | `tailwind-css-patterns` | `.agents/skills/tailwind-css-patterns/SKILL.md` |
+| SEO optimization | `seo` | `.agents/skills/seo/SKILL.md` |
+
+### Cross-cutting
+
+| Task | Skill | Path |
+|------|-------|------|
+| Creative feature design | `brainstorming` | `C:\Users\agust\.agents\skills\brainstorming/SKILL.md` |
+| PRD/planning | Clavix commands | See `CLAUDE.md` |
+| Code review | `requesting-code-review` | `.agents/skills/requesting-code-review/SKILL.md` |
+| Bug diagnosis | `interactive-bug` | `C:\Users\agust\.agents\skills\interactive-bug/SKILL.md` |
+| E2E testing | `e2e-qa-tester` or `playwright-e2e-testing` | `.agents/skills/e2e-qa-tester/SKILL.md` |
+
+---
+
+## Project Name
+
+`nutrifit-supervisor` (manifest), actual folder is `nutrifit/`.
 
 ## Monorepo Structure
 
-Este proyecto usa **npm workspaces** para gestionar múltiples paquetes:
-
 ```
-nutrifit-supervisor/
+nutrifit/
 ├── apps/
-│   ├── backend/      # @nutrifit/backend - NestJS + TypeScript + TypeORM + Jest
-│   └── frontend/     # @nutrifit/frontend - React + Vite + TypeScript + Vitest
+│   ├── backend/               # @nutrifit/backend — NestJS + TypeORM + MySQL
+│   └── frontend/             # @nutrifit/frontend — React + Vite + TypeScript
 ├── packages/
-│   └── shared/       # @nutrifit/shared - Tipos y constantes compartidas
-├── package.json      # Configuración raíz del monorepo
-└── AGENTS.md         # Este archivo
+│   └── shared/               # @nutrifit/shared — shared types/constants
+└── package.json
 ```
 
-### Workspaces
+## Critical Rules
 
-| Workspace | Package Name | Descripción |
-|-----------|-------------|-------------|
-| `apps/backend` | `@nutrifit/backend` | API REST con NestJS |
-| `apps/frontend` | `@nutrifit/frontend` | SPA con React + Vite |
-| `packages/shared` | `@nutrifit/shared` | Tipos, constantes y utilidades compartidas |
+**Dev servers MUST run in background** (terminal blocks otherwise):
+- Backend: `npm run dev:backend` launches via `nest start --watch`
+- Frontend: `npm run dev:frontend` launches via `vite` on port 5173
+- Both together: `npm run dev` uses `concurrently`
 
-## Rule Files Discovery
+**Shared package must be built before use**: `npm run build:shared` before `build:frontend` if shared types changed.
 
-- `.cursorrules`: not found
-- `.cursor/rules/`: not found
-- `.github/copilot-instructions.md`: not found
-- Only AGENTS guidance exists (root + frontend + local skill docs).
+## Node / Tool Versions
+
+- Node >= 20.0.0, npm >= 10.0.0
+- Frontend: TypeScript ~5.9.3 (pinned minor)
+- Backend: TypeScript ^5.7.3
 
 ## Development Commands
 
-### Comandos desde la raíz (Monorepo)
+### Root (monorepo)
 
 ```bash
-# Instalar todas las dependencias
-npm install
-
-# Desarrollo - ambos servicios
-npm run dev
-
-# Desarrollo individual
-npm run dev:frontend    # Solo frontend
-npm run dev:backend     # Solo backend
-
-# Build
-npm run build           # Build de todos los workspaces
-npm run build:frontend  # Solo frontend
-npm run build:backend   # Solo backend
-npm run build:shared    # Solo shared
-
-# Testing
-npm run test            # Tests de todos los workspaces
-npm run test:frontend   # Solo frontend
-npm run test:backend    # Solo backend
-
-# Linting
-npm run lint            # Lint de todos los workspaces
-npm run lint:frontend   # Solo frontend
-npm run lint:backend    # Solo backend
-
-# Type checking
-npm run typecheck       # Typecheck de todos los workspaces
-
-# Base de datos
-npm run db:migrate      # Ejecutar migraciones
-npm run db:seed         # Ejecutar seeds
-
-# Limpieza
-npm run clean           # Limpiar node_modules y dist
-```
-
-### Comandos específicos por workspace
-
-Para ejecutar comandos en un workspace específico desde la raíz:
-
-```bash
-# Usando --workspace
-npm run <script> --workspace=@nutrifit/backend
-npm run <script> --workspace=@nutrifit/frontend
-
-# O navegando al directorio
-cd apps/backend && npm run <script>
-cd apps/frontend && npm run <script>
+npm run dev              # Both frontend + backend concurrently
+npm run dev:frontend     # Frontend only
+npm run dev:backend     # Backend only
+npm run build           # All workspaces
+npm run build:frontend
+npm run build:backend
+npm run build:shared
+npm run test            # All workspaces
+npm run test:frontend
+npm run test:backend
+npm run lint            # All workspaces
+npm run lint:frontend
+npm run lint:backend
+npm run typecheck       # All workspaces (runs tsc -b on each)
+npm run db:migrate       # typeorm migration:run (needs dist/ built first)
+npm run db:seed         # ts-node src/seed-simple.ts
+npm run clean           # clean dist + node_modules
 ```
 
 ### Backend (Jest)
 
 ```bash
-# Desde la raíz
-npm run test:backend
+# From apps/backend/
+npm test                 # All tests
+npx jest --watch        # Watch mode
+npx jest --coverage     # Coverage
 
-# Desde apps/backend
-npm test
-npm run test:watch
-npm run test:cov
+# Single test (recommended for local debugging)
+npx jest src/application/turnos/use-cases/reservar-turno-socio.use-case.spec.ts --runInBand
+npx jest --runInBand -t "debe reservar"  # By name pattern
+
+# E2E
 npm run test:e2e
 
-# Single test file (recommended)
-npx jest src/application/turnos/use-cases/reservar-turno-socio.use-case.spec.ts --runInBand
+# Seeding
+npm run seed:completo   # Full seed with test data
+npm run seed:alimentos:ar  # Argentine food database seed
 
-# Single test by name pattern
-npx jest --runInBand -t "debe reservar"
+# Migrations
+npm run migration:generate <name>
+npm run migration:run
+npm run migration:revert
 ```
 
-Notes:
-- Backend Jest `rootDir` is `src` (see `apps/backend/package.json`).
-- Prefer `--runInBand` for deterministic local debugging.
+> **Jest quirk**: `rootDir` is `src` (configured in `apps/backend/package.json`). Module name mapper maps `src/(.*)` → `<rootDir>/$1`.
+> **Backend uses `nest build`**, not `tsc`. Build output is `dist/`.
 
 ### Frontend (Vitest)
 
 ```bash
-# Desde la raíz
-npm run test:frontend
-
-# Desde apps/frontend
-npm test
-npm run test:watch
+# From apps/frontend/
+npm run build          # tsc -b && vite build
+npm run typecheck     # tsc -b only
+npm run lint          # eslint .
+npm test              # vitest run --passWithNoTests
+npm run test:watch   # vitest --passWithNoTests
 npm run test:coverage
-
-# Single test file (run once)
-npx vitest run src/components/ui/button.test.tsx
-
-# Single test file (watch)
-npx vitest src/components/ui/button.test.tsx
-
-# Single test by name pattern
-npx vitest run -t "renderiza"
 ```
 
-## Build, Typecheck, and Lint Expectations
+> **Frontend uses Tailwind CSS v4** (not v3). Styling conventions in `DESIGN_SYSTEM.md`.
 
-- For backend changes: run `npm run lint:backend` and `npm run build:backend`.
-- For frontend changes: run `npm run typecheck`, `npm run lint:frontend`, and `npm run build:frontend`.
-- For cross-cutting changes: run `npm run build` and `npm run lint`.
-- Do not finish work with failing checks unless explicitly requested.
+## Build & Verification Order
+
+1. Backend changes: `npm run lint:backend && npm run build:backend`
+2. Frontend changes: `npm run typecheck && npm run lint:frontend && npm run build:frontend`
+3. Cross-cutting: `npm run build && npm run lint`
+4. **Never finish with failing checks** unless explicitly requested
+5. If `migration:run` fails, run `build:backend` first
 
 ## Shared Package (@nutrifit/shared)
 
-El paquete `@nutrifit/shared` contiene tipos, constantes y utilidades compartidas entre backend y frontend.
-
-### Uso en Backend
-
 ```typescript
-// En apps/backend/src/...
+// Backend/Frontend
 import { Rol, EstadoTurno, CODIGOS_ERROR } from '@nutrifit/shared';
 import type { TokenPayload, RespuestaAutenticacion } from '@nutrifit/shared';
 ```
 
-### Uso en Frontend
+Contents: `types/rol.ts`, `types/auth.ts`, `types/turno.ts`, `constants/error-codes.ts`.
 
-```typescript
-// En apps/frontend/src/...
-import { Rol, ESTADOS_TURNO } from '@nutrifit/shared';
-import type { SesionUsuario, EstadoTurno } from '@nutrifit/shared';
-```
+## Import Conventions
 
-### Contenido del paquete
+**Backend**: Prefer absolute imports rooted at `src/...`. Import groups:
+1. framework/external
+2. application/domain/common
+3. infrastructure/local
 
-- `types/rol.ts` - Tipos de roles del sistema
-- `types/auth.ts` - Tipos de autenticación
-- `types/turno.ts` - Tipos y constantes de estados de turno
-- `constants/error-codes.ts` - Códigos de error del sistema
+**Frontend**: Use `@/` alias for all app code (`@/components`, `@/lib`, `@/types`). Never use relative chains like `../../../lib/api`. Use `import type` for type-only imports.
 
-## Import and Module Conventions
+## Naming and Code Language
 
-### Backend
+- **ALL code in Spanish**: variables, functions, hooks, components, types, and user-facing UI copy. This is enforced.
+- Follow existing naming in each file; do not force renames unrelated to your task.
 
-- Prefer absolute imports rooted at `src/...`.
-- Keep import groups consistent:
-  1) framework/external,
-  2) application/domain/common,
-  3) infrastructure/local.
-- Existing code mixes alias and relative imports; prefer matching the file's local style.
-- For shared types: `import { ... } from '@nutrifit/shared'`.
-
-### Frontend
-
-- Use `@/` alias for app code (`@/components`, `@/lib`, `@/types`, etc.).
-- Avoid long relative chains like `../../../lib/api`.
-- Use `import type` for type-only imports.
-- For shared types: `import { ... } from '@nutrifit/shared'`.
-
-## Naming and Language
-
-- Domain language is Spanish in most business code and UI copy.
-- Frontend convention explicitly requires Spanish names for variables, functions, hooks, components, and types.
-- Follow existing naming in each file; do not force renames unrelated to the task.
-
-## TypeScript and Typing Rules
+## TypeScript Rules
 
 - Prefer explicit interfaces/types for API payloads and UI state.
 - Reuse shared types from `@nutrifit/shared` when practical.
-- Reuse local types from `src/types` in frontend for UI-specific types.
-- Avoid `any`; if unavoidable, isolate and narrow immediately.
-- Frontend TS is strict (`strict: true`), so resolve unused vars/params and nullability correctly.
+- Frontend is `strict: true` — resolve all unused vars, params, and nullability issues.
+- Backend: same strictness via inherited config. Avoid `any`; narrow immediately if unavoidable.
 
-## Error Handling Patterns
+## Error Handling
 
-### Backend
+**Backend**: Use domain exceptions from `src/domain/exceptions/custom-exceptions` (`BadRequestError`, `ConflictError`, `ForbiddenError`, `NotFoundError`, `UnauthorizedError`). Throw meaningful Spanish messages.
 
-- Use domain exceptions from `src/domain/exceptions/custom-exceptions`:
-  - `BadRequestError`, `ConflictError`, `ForbiddenError`, `NotFoundError`, `UnauthorizedError`.
-- Throw meaningful, user-facing Spanish messages where the module already does so.
-- Validate early in use-cases and return fast on invalid state.
+**Frontend**: Wrap API calls in try/catch. Normalize: `err instanceof Error ? err.message : '...'`. Store user-facing errors in component state.
 
-### Frontend
+## Architectural Boundaries
 
-- Use `try/catch` around API calls.
-- Normalize unknown errors with `error instanceof Error ? error.message : '...'`.
-- Store user-facing errors in component state and render clear feedback.
+**Backend (Clean Architecture)**:
+- `domain/` — entities, repository interfaces, core rules
+- `application/` — use-cases + DTOs
+- `infrastructure/` — ORM, auth, external integrations
+- `presentation/` — HTTP controllers
+- **Business rules live in use-cases, not controllers**
 
-## Architectural Guidance
+**Frontend**: Hook-first component pattern. Keep server communication in `apiRequest` utility / page logic. Keep UI components presentational.
 
-### Backend
+## Backend Environment (.env)
 
-- Respect Clean Architecture boundaries:
-  - `domain`: entities, repository interfaces, core rules.
-  - `application`: use-cases + DTOs.
-  - `infrastructure`: ORM/auth/external integrations.
-  - `presentation`: controllers and HTTP wiring.
-- Put business rules in use-cases, not controllers.
+```env
+DATABASE_HOST=localhost
+DATABASE_PORT=3306
+DATABASE_USER=root
+DATABASE_PASSWORD=root
+DATABASE_NAME=nutrifit_supervisor
+PORT=3000
+NODE_ENV=dev
+```
 
-### Frontend
+## Test Credentials (seed data)
 
-- Prefer hook-first component structure.
-- Keep server communication in API utility usage (`apiRequest`) and page/container logic.
-- Keep UI components presentational and reusable.
+All test users share password: `123456`
 
-## Formatting and Lint
+| Email | Rol |
+|-------|-----|
+| `admin@nutrifit.com` | ADMIN |
+| `nutri@nutrifit.com` | NUTRICIONISTA |
+| `socio@nutrifit.com` | SOCIO |
 
-- Backend uses ESLint + Prettier plugin integration.
-- Frontend uses flat ESLint config with React Hooks, TanStack Query/Router, and JSX A11y plugins.
-- Do not introduce a separate formatting style that conflicts with existing lint rules.
+Run `npm run seed:completo` (from `apps/backend`) to populate all test data.
 
-## Clavix Commands
+## Local Skills
 
-<!-- CLAVIX:START -->
-# Clavix - Prompt Improvement Assistant
+Project-local skills exist in `.agents/skills/` — these override generic skills when matched by file context:
+- `frontend-design/`, `nestjs-best-practices/`, `tailwind-v4-shadcn/`, `shadcn/`, `vite/`, `vitest/`, `accessibility/`
 
-Clavix is installed in this project. Use the following slash commands:
+## Rule Files
 
-- `/clavix:improve [prompt]` - Optimize prompts with smart depth auto-selection
-- `/clavix:prd` - Generate a PRD through guided questions
-- `/clavix:start` - Start conversational mode for iterative refinement
-- `/clavix:summarize` - Extract optimized prompt from conversation
+- `.cursorrules`, `.cursor/rules/`, `.github/copilot-instructions.md`: none
+- `.agents/skills/` and `C:\Users\agust\.config\opencode\skills\` contain project and user skill definitions
+- `ARCHITECTURE_PATTERNS.md` at root covers frontend patterns (sidebar, modals, error handling, state management, design tokens)
 
-When to use:
-- Standard depth: quick cleanup for simple, clear prompts
-- Comprehensive depth: thorough analysis for complex requirements
-- PRD mode: strategic planning with architecture and business impact
+## Clavix
 
-Clavix automatically selects the appropriate depth based on prompt quality.
-For more information, run `clavix --help` in your terminal.
-<!-- CLAVIX:END -->
+This project uses **Clavix** for prompt improvement and PRD generation. Reference `CLAUDE.md` for the full command set (`/clavix:improve`, `/clavix:prd`, `/clavix:plan`, `/clavix:implement`, etc.). Skill registry at `.atl/skill-registry.md` auto-indexes all installed skills.
+
+## Formatting
+
+- Backend: ESLint + Prettier plugin integration
+- Frontend: flat ESLint config with React Hooks, TanStack Query/Router, JSX A11y plugins — **no standalone Prettier config**
+- Do not introduce formatting styles that conflict with existing lint rules
+### Auto-invoke Skills
+
+When performing these actions, ALWAYS invoke the corresponding skill FIRST:
+
+| Action | Skill |
+|--------|-------|
+| Adding a new skill | `skill-sync` |
+| Configurar skills del proyecto | `project-onboarding` |
+| Configuring Docker Compose | `docker-expert` |
+| Container optimization | `docker-expert` |
+| Instalar skills recomendadas | `project-onboarding` |
+| Onboarding de proyecto existente | `project-onboarding` |
+| Regenerating AGENTS.md skill routing tables | `skill-sync` |
+| requesting-code-review | `requesting-code-review` |
+| Setup inicial de skills | `project-onboarding` |
+| Updating skill metadata | `skill-sync` |
+| Writing Dockerfiles | `docker-expert` |

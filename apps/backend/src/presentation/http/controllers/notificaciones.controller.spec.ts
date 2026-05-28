@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { Reflector } from '@nestjs/core';
+import { ExecutionContext } from '@nestjs/common';
 import { NotificacionesController } from './notificaciones.controller';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import { JwtAuthGuard } from 'src/infrastructure/auth/guards/auth.guard';
@@ -8,8 +9,6 @@ import { ActionsGuard } from 'src/infrastructure/auth/guards/actions.guard';
 import { Rol as RolEnum } from 'src/domain/entities/Usuario/Rol';
 import { EstadoNotificacion } from 'src/domain/entities/Notificacion/estado-notificacion.enum';
 import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
-import { SetMetadata } from '@nestjs/common';
-import { ROLE_KEY } from 'src/infrastructure/auth/decorators/role.decorator';
 
 describe('NotificacionesController - Admin', () => {
   let controller: NotificacionesController;
@@ -56,7 +55,6 @@ describe('NotificacionesController - Admin', () => {
       };
       mockService.listarAdmin.mockResolvedValue(resultadoEsperado);
 
-      const req = { user: { id: 1, rol: RolEnum.ADMIN } } as any;
       const result = await controller.listarAdmin(
         '5',
         TipoNotificacion.TURNO_RESERVADO,
@@ -117,7 +115,7 @@ describe('NotificacionesController - Admin Unauthorized', () => {
       }),
       getHandler: () => ({}),
       getClass: () => ({}),
-    } as any;
+    } as unknown as ExecutionContext;
 
     // Simular que el handler tiene @Rol(RolEnum.ADMIN)
     jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([RolEnum.ADMIN]);

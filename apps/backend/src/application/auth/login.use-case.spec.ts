@@ -10,12 +10,10 @@ import {
   IPasswordEncrypterService,
 } from 'src/domain/services/password-encrypter.service';
 import { JWT_SERVICE, IJwtService } from 'src/domain/services/jwt.service';
-import {
-  APP_LOGGER_SERVICE,
-  IAppLoggerService,
-} from 'src/domain/services/logger.service';
+import { APP_LOGGER_SERVICE } from 'src/domain/services/logger.service';
 import { Rol } from 'src/domain/entities/Usuario/Rol';
 import { PersonaEntity } from 'src/domain/entities/Persona/persona.entity';
+import { UsuarioEntity } from 'src/domain/entities/Usuario/usuario.entity';
 
 describe('LoginUseCase - fechaBaja blocking', () => {
   let useCase: LoginUseCase;
@@ -43,10 +41,11 @@ describe('LoginUseCase - fechaBaja blocking', () => {
     fechaBaja: new Date('2025-01-01'),
   };
 
-  const mockUser = {
+  const mockUser: UsuarioEntity = {
     idUsuario: 1,
     email: 'juan@test.com',
     contraseña: 'hashedPassword123',
+    fechaHoraAlta: new Date(),
     rol: 'SOCIO' as Rol,
     persona: mockPersonaActiva as PersonaEntity,
     grupos: [],
@@ -54,10 +53,11 @@ describe('LoginUseCase - fechaBaja blocking', () => {
     getAccionesEfectivas: () => [],
   };
 
-  const mockUserInactivo = {
+  const mockUserInactivo: UsuarioEntity = {
     idUsuario: 2,
     email: 'maria@test.com',
     contraseña: 'hashedPassword123',
+    fechaHoraAlta: new Date(),
     rol: 'SOCIO' as Rol,
     persona: mockPersonaInactiva as PersonaEntity,
     grupos: [],
@@ -110,7 +110,7 @@ describe('LoginUseCase - fechaBaja blocking', () => {
     it('debe bloquear login cuando persona tiene fechaBaja activa', async () => {
       jest
         .spyOn(userRepository, 'findByEmail')
-        .mockResolvedValue(mockUserInactivo as any);
+        .mockResolvedValue(mockUserInactivo);
       jest.spyOn(passwordEncrypter, 'comparePasswords').mockResolvedValue(true);
       jest.spyOn(jwtService, 'sign').mockReturnValue('fake-jwt-token');
 
@@ -126,7 +126,7 @@ describe('LoginUseCase - fechaBaja blocking', () => {
     it('debe permitir login cuando persona no tiene fechaBaja', async () => {
       jest
         .spyOn(userRepository, 'findByEmail')
-        .mockResolvedValue(mockUser as any);
+        .mockResolvedValue(mockUser);
       jest.spyOn(passwordEncrypter, 'comparePasswords').mockResolvedValue(true);
       jest.spyOn(jwtService, 'sign').mockReturnValue('fake-jwt-token');
 

@@ -18,6 +18,7 @@ export declare class EditarPlanAlimentacionUseCase implements BaseUseCase {
     private readonly dataSource;
     private readonly notificacionesService;
     private readonly restriccionesValidator;
+    private readonly logger;
     constructor(planRepo: Repository<PlanAlimentacionOrmEntity>, diaRepo: Repository<DiaPlanOrmEntity>, opcionRepo: Repository<OpcionComidaOrmEntity>, alimentoRepo: Repository<AlimentoOrmEntity>, socioRepo: Repository<SocioOrmEntity>, nutricionistaRepo: Repository<NutricionistaOrmEntity>, usuarioRepo: Repository<UsuarioOrmEntity>, auditoriaService: AuditoriaService, dataSource: DataSource, notificacionesService: NotificacionesService, restriccionesValidator: RestriccionesValidator);
     execute(nutricionistaUserId: number, payload: EditarPlanAlimentacionDto): Promise<PlanAlimentacionResponseDto>;
 }

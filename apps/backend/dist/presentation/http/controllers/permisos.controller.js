@@ -22,6 +22,7 @@ const create_grupo_permiso_dto_1 = require("../../../application/permisos/dtos/c
 const update_accion_dto_1 = require("../../../application/permisos/dtos/update-accion.dto");
 const update_grupo_permiso_dto_1 = require("../../../application/permisos/dtos/update-grupo-permiso.dto");
 const actions_decorator_1 = require("../../../infrastructure/auth/decorators/actions.decorator");
+const current_user_decorator_1 = require("../../../infrastructure/auth/decorators/current-user.decorator");
 const role_decorator_1 = require("../../../infrastructure/auth/decorators/role.decorator");
 const auth_guard_1 = require("../../../infrastructure/auth/guards/auth.guard");
 const actions_guard_1 = require("../../../infrastructure/auth/guards/actions.guard");
@@ -62,25 +63,18 @@ let PermisosController = class PermisosController {
     async accionesDeUsuario(userId) {
         return this.permisosService.getAccionesEfectivasUsuario(userId);
     }
-    async buscarUsuarios(req) {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 15;
-        const search = req.query.search || '';
-        const isActive = req.query.isActive !== undefined
-            ? req.query.isActive === 'true'
-            : undefined;
+    async buscarUsuarios(pageRaw, limitRaw, search, isActiveRaw) {
+        const page = pageRaw ? parseInt(pageRaw, 10) || 1 : 1;
+        const limit = limitRaw ? parseInt(limitRaw, 10) || 15 : 15;
+        const isActive = isActiveRaw !== undefined ? isActiveRaw === 'true' : undefined;
         return this.permisosService.listarUsuariosPaginado({
             page,
             limit,
-            search,
+            search: search ?? '',
             isActive,
         });
     }
-    async misAcciones(req) {
-        const userId = req.user?.id;
-        if (!userId) {
-            return [];
-        }
+    async misAcciones(userId) {
         return this.permisosService.getAccionesEfectivasUsuario(userId);
     }
 };
@@ -182,16 +176,19 @@ __decorate([
     (0, common_1.Get)('users'),
     (0, role_decorator_1.Rol)(Rol_1.Rol.ADMIN),
     (0, actions_decorator_1.Actions)('auth.permissions.read'),
-    __param(0, (0, common_1.Req)()),
+    __param(0, (0, common_1.Query)('page')),
+    __param(1, (0, common_1.Query)('limit')),
+    __param(2, (0, common_1.Query)('search')),
+    __param(3, (0, common_1.Query)('isActive')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [String, String, String, String]),
     __metadata("design:returntype", Promise)
 ], PermisosController.prototype, "buscarUsuarios", null);
 __decorate([
     (0, common_1.Get)('me/actions'),
-    __param(0, (0, common_1.Req)()),
+    __param(0, (0, current_user_decorator_1.CurrentUserId)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
 ], PermisosController.prototype, "misAcciones", null);
 exports.PermisosController = PermisosController = __decorate([

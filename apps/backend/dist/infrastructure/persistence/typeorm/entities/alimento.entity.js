@@ -13,7 +13,6 @@ exports.AlimentoOrmEntity = void 0;
 const typeorm_1 = require("typeorm");
 const UnidadMedida_1 = require("../../../../domain/entities/Alimento/UnidadMedida");
 const grupo_alimenticio_entity_1 = require("./grupo-alimenticio.entity");
-const grupo_alimenticio_entity_2 = require("../../../../domain/entities/Alimento/grupo-alimenticio.entity");
 let AlimentoOrmEntity = class AlimentoOrmEntity {
     idAlimento;
     nombre;
@@ -76,7 +75,7 @@ __decorate([
             referencedColumnName: 'idGrupoAlimenticio',
         },
     }),
-    __metadata("design:type", grupo_alimenticio_entity_2.GrupoAlimenticio)
+    __metadata("design:type", Array)
 ], AlimentoOrmEntity.prototype, "grupoAlimenticio", void 0);
 exports.AlimentoOrmEntity = AlimentoOrmEntity = __decorate([
     (0, typeorm_1.Entity)('alimento')

@@ -5,6 +5,7 @@ import { CancelarTurnoSocioUseCase } from './cancelar-turno-socio.use-case';
 import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/turno.entity';
 import { SocioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/persona.entity';
 import { UsuarioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/usuario.entity';
+import { GimnasioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/gimnasio.entity';
 import { EstadoTurno } from 'src/domain/entities/Turno/EstadoTurno';
 import {
   POLITICA_OPERATIVA_REPOSITORY,
@@ -189,7 +190,7 @@ describe('CancelarTurnoSocioUseCase', () => {
     it('debe usar el plazo de cancelacion de la politica del gimnasio', async () => {
       // Arrange
       const mockTurno = buildMockTurno();
-      mockTurno.gimnasio = { idGimnasio: 5 } as any;
+      mockTurno.gimnasio = { idGimnasio: 5 } as GimnasioOrmEntity;
       usuarioRepository.findOne.mockResolvedValue(mockUsuario);
       socioRepository.findOne.mockResolvedValue(mockSocio);
       turnoRepository.findOne.mockResolvedValue(mockTurno);
@@ -274,7 +275,7 @@ describe('CancelarTurnoSocioUseCase', () => {
 
     it('debe usar gimnasioId 1 por defecto cuando el turno no tiene gimnasio asignado', async () => {
       // Arrange
-      const mockTurno = buildMockTurno({ gimnasio: undefined as any });
+      const mockTurno = buildMockTurno({ gimnasio: undefined });
       usuarioRepository.findOne.mockResolvedValue(mockUsuario);
       socioRepository.findOne.mockResolvedValue(mockSocio);
       turnoRepository.findOne.mockResolvedValue(mockTurno);

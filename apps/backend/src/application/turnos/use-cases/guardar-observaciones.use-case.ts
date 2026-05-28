@@ -81,7 +81,7 @@ export class GuardarObservacionesUseCase {
         habitosSocio: dto.habitosSocio ?? null,
         objetivosSocio: dto.objetivosSocio ?? null,
         esPublica: dto.esPublica ?? false,
-        turno: turno as any,
+        turno,
       });
 
       await this.observacionRepository.save(observacion);

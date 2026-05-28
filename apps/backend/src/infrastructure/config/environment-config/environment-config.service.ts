@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DatabaseConfig } from 'src/domain/config/database.config';
 import { EnvironmentConfigurationError } from './environment-config.error';
@@ -43,13 +43,18 @@ const ORIGENES_DESARROLLO_POR_DEFECTO = [
 export class EnvironmentConfigService
   implements DatabaseConfig, AppConfig, JWTConfig, MinioConfig, SchedulerConfig
 {
+  private readonly logger = new Logger(EnvironmentConfigService.name);
+
   constructor(private readonly configService: ConfigService) {}
 
   private getEnvironmentVariable<T>(key: string): T {
     try {
       return this.configService.getOrThrow<T>(key);
     } catch (error) {
-      console.log(error);
+      this.logger.warn(
+        `Variable de entorno faltante: ${key}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw new EnvironmentConfigurationError(key);
     }
   }

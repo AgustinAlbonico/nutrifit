@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { GuardarObservacionesUseCase } from './guardar-observaciones.use-case';
 import { GuardarObservacionesDto } from '../dtos/guardar-observaciones.dto';
 import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/turno.entity';
@@ -125,7 +125,7 @@ describe('GuardarObservacionesUseCase', () => {
 
     jest
       .spyOn(turnoRepository, 'createQueryBuilder')
-      .mockReturnValue(queryBuilder as any);
+      .mockReturnValue(queryBuilder as unknown as SelectQueryBuilder<TurnoOrmEntity>);
 
     const nuevaObservacion = {
       idObservacion: 2,
@@ -204,7 +204,7 @@ describe('GuardarObservacionesUseCase', () => {
 
     jest
       .spyOn(turnoRepository, 'createQueryBuilder')
-      .mockReturnValue(queryBuilder as any);
+      .mockReturnValue(queryBuilder as unknown as SelectQueryBuilder<TurnoOrmEntity>);
 
     const dto: GuardarObservacionesDto = {
       comentario: 'Test',

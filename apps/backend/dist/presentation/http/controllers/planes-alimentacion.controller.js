@@ -18,6 +18,7 @@ const dtos_1 = require("../../../application/planes-alimentacion/dtos");
 const use_cases_1 = require("../../../application/planes-alimentacion/use-cases");
 const Rol_1 = require("../../../domain/entities/Usuario/Rol");
 const logger_service_1 = require("../../../domain/services/logger.service");
+const current_user_decorator_1 = require("../../../infrastructure/auth/decorators/current-user.decorator");
 const role_decorator_1 = require("../../../infrastructure/auth/decorators/role.decorator");
 const actions_guard_1 = require("../../../infrastructure/auth/guards/actions.guard");
 const auth_guard_1 = require("../../../infrastructure/auth/guards/auth.guard");
@@ -45,8 +46,7 @@ let PlanAlimentacionController = class PlanAlimentacionController {
         this.vaciarContenidoPlanUseCase = vaciarContenidoPlanUseCase;
         this.logger = logger;
     }
-    async crearPlan(req, payload) {
-        const nutricionistaUserId = req.user?.id;
+    async crearPlan(nutricionistaUserId, payload) {
         this.logger.log(`Creando plan de alimentación para socio ${payload.socioId} por nutricionista ${nutricionistaUserId}.`);
         return this.crearPlanAlimentacionUseCase.execute(nutricionistaUserId, payload);
     }
@@ -66,24 +66,21 @@ let PlanAlimentacionController = class PlanAlimentacionController {
         this.logger.log(`Consultando plan de alimentación ${id}.`);
         return this.obtenerPlanPorIdUseCase.execute(id);
     }
-    async editarPlan(req, id, payload) {
-        const nutricionistaUserId = req.user?.id;
+    async editarPlan(nutricionistaUserId, id, payload) {
         this.logger.log(`Editando plan de alimentación ${id} por nutricionista ${nutricionistaUserId}.`);
         return this.editarPlanAlimentacionUseCase.execute(nutricionistaUserId, {
             ...payload,
             planId: id,
         });
     }
-    async eliminarPlan(req, id, payload) {
-        const nutricionistaUserId = req.user?.id;
+    async eliminarPlan(nutricionistaUserId, id, payload) {
         this.logger.log(`Eliminando plan de alimentación ${id} por nutricionista ${nutricionistaUserId}.`);
         return this.eliminarPlanAlimentacionUseCase.execute(nutricionistaUserId, {
             ...payload,
             planId: id,
         });
     }
-    async vaciarContenidoPlan(req, id) {
-        const nutricionistaUserId = req.user?.id;
+    async vaciarContenidoPlan(nutricionistaUserId, id) {
         this.logger.log(`Vaciando contenido del plan ${id} por nutricionista ${nutricionistaUserId}.`);
         return this.vaciarContenidoPlanUseCase.execute(nutricionistaUserId, {
             planId: id,
@@ -95,10 +92,10 @@ __decorate([
     (0, common_1.Post)(),
     (0, role_decorator_1.Rol)(Rol_1.Rol.NUTRICIONISTA, Rol_1.Rol.ADMIN),
     (0, common_1.UseGuards)(socio_resource_access_guard_1.SocioResourceAccessGuard),
-    __param(0, (0, common_1.Req)()),
+    __param(0, (0, current_user_decorator_1.CurrentUserId)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, dtos_1.CrearPlanAlimentacionDto]),
+    __metadata("design:paramtypes", [Number, dtos_1.CrearPlanAlimentacionDto]),
     __metadata("design:returntype", Promise)
 ], PlanAlimentacionController.prototype, "crearPlan", null);
 __decorate([
@@ -141,32 +138,32 @@ __decorate([
     (0, common_1.Put)(':id'),
     (0, role_decorator_1.Rol)(Rol_1.Rol.NUTRICIONISTA, Rol_1.Rol.ADMIN),
     (0, common_1.UseGuards)(socio_resource_access_guard_1.SocioResourceAccessGuard),
-    __param(0, (0, common_1.Req)()),
+    __param(0, (0, current_user_decorator_1.CurrentUserId)()),
     __param(1, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Number, dtos_1.EditarPlanAlimentacionDto]),
+    __metadata("design:paramtypes", [Number, Number, dtos_1.EditarPlanAlimentacionDto]),
     __metadata("design:returntype", Promise)
 ], PlanAlimentacionController.prototype, "editarPlan", null);
 __decorate([
     (0, common_1.Delete)(':id'),
     (0, role_decorator_1.Rol)(Rol_1.Rol.NUTRICIONISTA, Rol_1.Rol.ADMIN),
     (0, common_1.UseGuards)(socio_resource_access_guard_1.SocioResourceAccessGuard),
-    __param(0, (0, common_1.Req)()),
+    __param(0, (0, current_user_decorator_1.CurrentUserId)()),
     __param(1, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Number, dtos_1.EliminarPlanAlimentacionDto]),
+    __metadata("design:paramtypes", [Number, Number, dtos_1.EliminarPlanAlimentacionDto]),
     __metadata("design:returntype", Promise)
 ], PlanAlimentacionController.prototype, "eliminarPlan", null);
 __decorate([
     (0, common_1.Delete)(':id/contenido'),
     (0, role_decorator_1.Rol)(Rol_1.Rol.NUTRICIONISTA, Rol_1.Rol.ADMIN),
     (0, common_1.UseGuards)(socio_resource_access_guard_1.SocioResourceAccessGuard),
-    __param(0, (0, common_1.Req)()),
+    __param(0, (0, current_user_decorator_1.CurrentUserId)()),
     __param(1, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Number]),
+    __metadata("design:paramtypes", [Number, Number]),
     __metadata("design:returntype", Promise)
 ], PlanAlimentacionController.prototype, "vaciarContenidoPlan", null);
 exports.PlanAlimentacionController = PlanAlimentacionController = __decorate([

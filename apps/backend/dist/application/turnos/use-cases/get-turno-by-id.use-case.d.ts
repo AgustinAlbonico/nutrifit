@@ -6,6 +6,7 @@ export declare class GetTurnoByIdUseCase implements BaseUseCase {
     private readonly turnoRepository;
     private readonly nutricionistaRepository;
     private readonly fichaSaludRepository;
+    private readonly logger;
     constructor(turnoRepository: Repository<TurnoOrmEntity>, nutricionistaRepository: Repository<NutricionistaOrmEntity>, fichaSaludRepository: Repository<FichaSaludOrmEntity>);
     execute(turnoId: number, nutricionistaId: number): Promise<DatosTurnoResponseDto>;
     private mapNivelActividad;

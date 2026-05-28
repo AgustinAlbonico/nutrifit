@@ -1,0 +1,9 @@
+feat: improve feature-shaper skill with AI-ready PRD practices
+
+- Convert phase files from .ts to .md
+- Add Task Packets instead of generic phases
+- Include I/O examples in functional requirements
+- Add Non-Goals to scope
+- Formalize testing strategy
+- Refactor templates to be completely domain-agnostic
+- Generate example docs for meta-hidratacion feature

@@ -3,7 +3,6 @@ import {
   Controller,
   Get,
   Inject,
-  Req,
   UseGuards,
   Post,
 } from '@nestjs/common';
@@ -15,7 +14,10 @@ import {
 } from 'src/domain/services/logger.service';
 import { JwtAuthGuard } from 'src/infrastructure/auth/guards/auth.guard';
 import { PermisosService } from 'src/application/permisos/permisos.service';
-import { Request } from 'express';
+import {
+  CurrentUser,
+  CurrentUserId,
+} from 'src/infrastructure/auth/decorators/current-user.decorator';
 import {
   USUARIO_REPOSITORY,
   UsuarioRepository,
@@ -43,41 +45,21 @@ export class AuthController {
 
   @Get('permissions')
   @UseGuards(JwtAuthGuard)
-  async getPermissions(@Req() req: Request) {
-    const userId = (req as any).user?.id;
-    if (!userId) {
-      return [];
-    }
-
+  async getPermissions(@CurrentUserId() userId: number) {
     return this.permisosService.getAccionesEfectivasUsuario(userId);
   }
 
   @Get('perfil')
   @UseGuards(JwtAuthGuard)
-  async getProfile(@Req() req: Request) {
-    const user = (req as any).user;
-    const userId = user?.id;
-
-    if (!userId) {
-      return {
-        idUsuario: null,
-        idPersona: null,
-        email: null,
-        rol: null,
-        nombre: null,
-        apellido: null,
-        fotoPerfilUrl: null,
-      };
-    }
-
-    const perfil = await this.usuarioRepository.findPerfilByUserId(userId);
+  async getProfile(@CurrentUser() user: Express.AuthenticatedUserPayload) {
+    const perfil = await this.usuarioRepository.findPerfilByUserId(user.id);
 
     if (!perfil) {
       return {
-        idUsuario: userId,
+        idUsuario: user.id,
         idPersona: null,
-        email: user?.email ?? null,
-        rol: user?.rol ?? null,
+        email: user.email ?? null,
+        rol: user.rol ?? null,
         nombre: null,
         apellido: null,
         fotoPerfilUrl: null,

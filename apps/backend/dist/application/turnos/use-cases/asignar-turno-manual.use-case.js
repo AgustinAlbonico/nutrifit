@@ -16,7 +16,9 @@ exports.AsignarTurnoManualUseCase = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const turno_operacion_response_dto_1 = require("../dtos/turno-operacion-response.dto");
+const notificaciones_service_1 = require("../../notificaciones/notificaciones.service");
 const dia_semana_1 = require("../../../domain/entities/Agenda/dia-semana");
+const tipo_notificacion_enum_1 = require("../../../domain/entities/Notificacion/tipo-notificacion.enum");
 const EstadoTurno_1 = require("../../../domain/entities/Turno/EstadoTurno");
 const nutricionista_repository_1 = require("../../../domain/entities/Persona/Nutricionista/nutricionista.repository");
 const custom_exceptions_1 = require("../../../domain/exceptions/custom-exceptions");
@@ -31,13 +33,15 @@ let AsignarTurnoManualUseCase = class AsignarTurnoManualUseCase {
     agendaRepository;
     nutricionistaRepository;
     logger;
-    constructor(turnoRepository, socioRepository, nutricionistaOrmRepository, agendaRepository, nutricionistaRepository, logger) {
+    notificacionesService;
+    constructor(turnoRepository, socioRepository, nutricionistaOrmRepository, agendaRepository, nutricionistaRepository, logger, notificacionesService) {
         this.turnoRepository = turnoRepository;
         this.socioRepository = socioRepository;
         this.nutricionistaOrmRepository = nutricionistaOrmRepository;
         this.agendaRepository = agendaRepository;
         this.nutricionistaRepository = nutricionistaRepository;
         this.logger = logger;
+        this.notificacionesService = notificacionesService;
     }
     async execute(nutricionistaId, payload) {
         const nutricionista = await this.nutricionistaRepository.findById(nutricionistaId);
@@ -85,8 +89,16 @@ let AsignarTurnoManualUseCase = class AsignarTurnoManualUseCase {
         turno.socio = socio;
         turno.nutricionista = nutricionistaOrm;
         const turnoCreado = await this.turnoRepository.save(turno);
+        if (socio.idPersona) {
+            await this.notificacionesService.crear({
+                destinatarioId: socio.idPersona,
+                tipo: tipo_notificacion_enum_1.TipoNotificacion.TURNO_RESERVADO,
+                titulo: 'Nuevo turno asignado',
+                mensaje: `Te asignaron un turno para el ${(0, argentina_datetime_util_1.formatArgentinaDate)(turnoCreado.fechaTurno)} a las ${(0, argentina_datetime_util_1.normalizeTimeToHHmm)(turnoCreado.horaTurno)}.`,
+                metadata: { turnoId: turnoCreado.idTurno },
+            });
+        }
         this.logger.log(`Turno manual asignado. Turno=${turnoCreado.idTurno}, profesional=${nutricionistaId}, socio=${payload.socioId}.`);
-        this.logger.log(`Notificacion interna pendiente de integracion para socio ${payload.socioId} por turno ${turnoCreado.idTurno}.`);
         return this.toResponseDto(turnoCreado);
     }
     async validateAgendaAvailability(nutricionistaId, fechaTurno, horaTurno) {
@@ -169,6 +181,6 @@ exports.AsignarTurnoManualUseCase = AsignarTurnoManualUseCase = __decorate([
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        nutricionista_repository_1.NutricionistaRepository, Object])
+        nutricionista_repository_1.NutricionistaRepository, Object, notificaciones_service_1.NotificacionesService])
 ], AsignarTurnoManualUseCase);
 //# sourceMappingURL=asignar-turno-manual.use-case.js.map

@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Inject,
   Param,
@@ -10,7 +11,6 @@ import {
   Post,
   Put,
   Query,
-  Req,
   UseGuards,
   UploadedFile,
   UseInterceptors,
@@ -76,13 +76,18 @@ import {
 } from 'src/domain/services/logger.service';
 import { Rol } from 'src/infrastructure/auth/decorators/role.decorator';
 import { Actions } from 'src/infrastructure/auth/decorators/actions.decorator';
+import {
+  CurrentUser,
+  CurrentUserId,
+} from 'src/infrastructure/auth/decorators/current-user.decorator';
+import { ResourceAccess } from 'src/infrastructure/auth/decorators/resource-access.decorator';
 import { ActionsGuard } from 'src/infrastructure/auth/guards/actions.guard';
 import { JwtAuthGuard } from 'src/infrastructure/auth/guards/auth.guard';
 import { NutricionistaOwnershipGuard } from 'src/infrastructure/auth/guards/nutricionista-ownership.guard';
 import { RolesGuard } from 'src/infrastructure/auth/guards/roles.guard';
 import { SocioResourceAccessGuard } from 'src/infrastructure/auth/guards/socio-resource-access.guard';
 import { TurnoNutricionistaAccessGuard } from 'src/infrastructure/auth/guards/turno-nutricionista-access.guard';
-import { Request } from 'express';
+import { AdjuntoClinicoService } from 'src/infrastructure/services/adjunto-clinico/adjunto-clinico.service';
 
 @Controller('turnos')
 @UseGuards(JwtAuthGuard, RolesGuard, ActionsGuard)
@@ -113,7 +118,7 @@ export class TurnosController {
     private readonly registrarAsistenciaTurnoUseCase: RegistrarAsistenciaTurnoUseCase,
     private readonly reservarTurnoSocioUseCase: ReservarTurnoSocioUseCase,
     private readonly upsertFichaSaludSocioUseCase: UpsertFichaSaludSocioUseCase,
-    private readonly adjuntoClinicoService: any, // AdjuntoClinicoService injected
+    private readonly adjuntoClinicoService: AdjuntoClinicoService,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
   ) {}
@@ -137,9 +142,13 @@ export class TurnosController {
   @UseGuards(TurnoNutricionistaAccessGuard)
   async getTurnoById(
     @Param('id', ParseIntPipe) turnoId: number,
-    @Req() req: Request,
+    @ResourceAccess() access: Express.ResourceAccessContext,
   ): Promise<DatosTurnoResponseDto> {
-    const nutricionistaId = (req as any).resourceAccess?.actorPersonaId;
+    const nutricionistaId = access.actorPersonaId;
+
+    if (nutricionistaId == null) {
+      throw new ForbiddenException('No se pudo resolver el profesional.');
+    }
 
     this.logger.log(
       `Consultando turno completo ${turnoId} para nutricionista ${nutricionistaId}.`,
@@ -269,11 +278,9 @@ export class TurnosController {
   @Put('socio/ficha-salud')
   @Rol(RolEnum.SOCIO)
   async upsertFichaSaludSocio(
-    @Req() req: Request,
+    @CurrentUserId() userId: number,
     @Body() payload: UpsertFichaSaludSocioDto,
   ): Promise<FichaSaludSocioResponseDto> {
-    const userId = (req as any).user?.id;
-
     this.logger.log(
       `Actualizando ficha de salud para socio usuario=${userId}.`,
     );
@@ -284,10 +291,8 @@ export class TurnosController {
   @Get('socio/ficha-salud')
   @Rol(RolEnum.SOCIO)
   async getFichaSaludSocio(
-    @Req() req: Request,
+    @CurrentUserId() userId: number,
   ): Promise<FichaSaludSocioResponseDto | null> {
-    const userId = (req as any).user?.id;
-
     this.logger.log(`Consultando ficha de salud para socio usuario=${userId}.`);
 
     return this.getFichaSaludSocioUseCase.execute(userId);
@@ -338,11 +343,9 @@ export class TurnosController {
   @Post('socio/reservar')
   @Rol(RolEnum.SOCIO)
   async reservarTurnoSocio(
-    @Req() req: Request,
+    @CurrentUserId() userId: number,
     @Body() payload: ReservarTurnoSocioDto,
   ): Promise<TurnoOperacionResponseDto> {
-    const userId = (req as any).user?.id;
-
     this.logger.log(`Reservando turno para socio usuario=${userId}.`);
 
     return this.reservarTurnoSocioUseCase.execute(userId, payload);
@@ -351,11 +354,9 @@ export class TurnosController {
   @Get('socio/mis-turnos')
   @Rol(RolEnum.SOCIO)
   async listMisTurnos(
-    @Req() req: Request,
+    @CurrentUserId() userId: number,
     @Query() query: ListMisTurnosQueryDto,
   ): Promise<MiTurnoResponseDto[]> {
-    const userId = (req as any).user?.id;
-
     this.logger.log(`Consultando mis turnos para socio usuario=${userId}.`);
 
     return this.listMisTurnosUseCase.execute(userId, query);
@@ -364,12 +365,10 @@ export class TurnosController {
   @Patch('socio/:turnoId/reprogramar')
   @Rol(RolEnum.SOCIO)
   async reprogramarTurnoSocio(
-    @Req() req: Request,
+    @CurrentUserId() userId: number,
     @Param('turnoId', ParseIntPipe) turnoId: number,
     @Body() payload: ReprogramarTurnoSocioDto,
   ): Promise<TurnoOperacionResponseDto> {
-    const userId = (req as any).user?.id;
-
     this.logger.log(
       `Reprogramando turno ${turnoId} para socio usuario=${userId}.`,
     );
@@ -380,12 +379,10 @@ export class TurnosController {
   @Patch('socio/:turnoId/cancelar')
   @Rol(RolEnum.SOCIO)
   async cancelarTurnoSocio(
-    @Req() req: Request,
+    @CurrentUserId() userId: number,
     @Param('turnoId', ParseIntPipe) turnoId: number,
     @Body() dto: CancelarTurnoSocioDto,
   ): Promise<TurnoOperacionResponseDto> {
-    const userId = (req as any).user?.id;
-
     this.logger.log(
       `Cancelando turno ${turnoId} para socio usuario=${userId}.`,
     );
@@ -416,11 +413,9 @@ export class TurnosController {
   @Patch('socio/:turnoId/confirmar')
   @Rol(RolEnum.SOCIO)
   async confirmarTurnoSocio(
-    @Req() req: Request,
+    @CurrentUserId() userId: number,
     @Param('turnoId', ParseIntPipe) turnoId: number,
   ): Promise<TurnoOperacionResponseDto> {
-    const userId = (req as any).user?.id;
-
     this.logger.log(
       `Confirmando turno ${turnoId} para socio usuario=${userId}.`,
     );
@@ -538,8 +533,12 @@ export class TurnosController {
   @Get('socio/mi-progreso')
   @Rol(RolEnum.SOCIO)
   @UseGuards(SocioResourceAccessGuard)
-  async getMiProgreso(@Req() req: Request) {
-    const socioId = (req as any).resourceAccess?.socioId;
+  async getMiProgreso(@ResourceAccess() access: Express.ResourceAccessContext) {
+    const socioId = access.socioId;
+
+    if (socioId == null) {
+      throw new ForbiddenException('No se pudo resolver el socio.');
+    }
 
     this.logger.log(`Consultando mi progreso para socio ${socioId}.`);
 
@@ -549,8 +548,14 @@ export class TurnosController {
   @Get('socio/mi-historial-mediciones')
   @Rol(RolEnum.SOCIO)
   @UseGuards(SocioResourceAccessGuard)
-  async getMiHistorialMediciones(@Req() req: Request) {
-    const socioId = (req as any).resourceAccess?.socioId;
+  async getMiHistorialMediciones(
+    @ResourceAccess() access: Express.ResourceAccessContext,
+  ) {
+    const socioId = access.socioId;
+
+    if (socioId == null) {
+      throw new ForbiddenException('No se pudo resolver el socio.');
+    }
 
     this.logger.log(
       `Consultando mi historial de mediciones para socio ${socioId}.`,
@@ -568,9 +573,8 @@ export class TurnosController {
   async subirAdjunto(
     @Param('id', ParseIntPipe) turnoId: number,
     @UploadedFile() archivo: Express.Multer.File,
-    @Req() req: Request,
+    @CurrentUserId() usuarioId: number,
   ) {
-    const usuarioId = (req as any).user?.id;
     this.logger.log(`Subiendo adjunto para turno ${turnoId}.`);
 
     return this.adjuntoClinicoService.subir({
@@ -612,13 +616,12 @@ export class TurnosController {
   async eliminarAdjunto(
     @Param('id', ParseIntPipe) turnoId: number,
     @Param('adjId', ParseIntPipe) adjuntoId: number,
-    @Req() req: Request,
+    @CurrentUser() user: Express.AuthenticatedUserPayload,
   ) {
-    const usuarioId = (req as any).user?.id;
-    const esAdmin = (req as any).user?.rol === RolEnum.ADMIN;
+    const esAdmin = user.rol === RolEnum.ADMIN;
     this.logger.log(`Eliminando adjunto ${adjuntoId} del turno ${turnoId}.`);
 
-    await this.adjuntoClinicoService.eliminar(adjuntoId, usuarioId, esAdmin);
+    await this.adjuntoClinicoService.eliminar(adjuntoId, user.id, esAdmin);
     return { success: true };
   }
 }

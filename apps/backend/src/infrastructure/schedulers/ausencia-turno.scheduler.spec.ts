@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { AusenciaTurnoScheduler } from './ausencia-turno.scheduler';
 import { TurnoOrmEntity } from '../persistence/typeorm/entities/turno.entity';
 import { EstadoTurno } from 'src/domain/entities/Turno/EstadoTurno';
@@ -66,7 +66,7 @@ describe('AusenciaTurnoScheduler', () => {
 
     jest
       .spyOn(turnoRepository, 'createQueryBuilder')
-      .mockReturnValue(queryBuilder as any);
+      .mockReturnValue(queryBuilder as unknown as SelectQueryBuilder<TurnoOrmEntity>);
 
     jest.useFakeTimers();
     jest.setSystemTime(ahora);
@@ -109,7 +109,7 @@ describe('AusenciaTurnoScheduler', () => {
 
     jest
       .spyOn(turnoRepository, 'createQueryBuilder')
-      .mockReturnValue(queryBuilder as any);
+      .mockReturnValue(queryBuilder as unknown as SelectQueryBuilder<TurnoOrmEntity>);
 
     jest.useFakeTimers();
     jest.setSystemTime(ahora);

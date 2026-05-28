@@ -70,7 +70,7 @@ let GuardarObservacionesUseCase = class GuardarObservacionesUseCase {
                 habitosSocio: dto.habitosSocio ?? null,
                 objetivosSocio: dto.objetivosSocio ?? null,
                 esPublica: dto.esPublica ?? false,
-                turno: turno,
+                turno,
             });
             await this.observacionRepository.save(observacion);
         }

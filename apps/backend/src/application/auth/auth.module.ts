@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import type { StringValue } from 'ms';
 
 import { PasswordEncrypterService } from 'src/infrastructure/services/bcrypt/bcrypt.service';
 import { LoginUseCase } from './login.use-case';
@@ -22,7 +23,9 @@ import { EnvironmentConfigService } from 'src/infrastructure/config/environment-
       inject: [EnvironmentConfigService],
       useFactory: (configService: EnvironmentConfigService) => ({
         secret: configService.getJwtSecret(),
-        signOptions: { expiresIn: configService.getJwtExpirationTime() as any },
+        signOptions: {
+          expiresIn: configService.getJwtExpirationTime() as StringValue,
+        },
       }),
     }),
     AppLoggerModule,

@@ -1,6 +1,6 @@
-import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
-import { Request } from 'express';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { Rol as RolEnum } from 'src/domain/entities/Usuario/Rol';
+import { AccionAuditoria } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
 import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
 import { JwtAuthGuard } from 'src/infrastructure/auth/guards/auth.guard';
 import { RolesGuard } from 'src/infrastructure/auth/guards/roles.guard';
@@ -9,7 +9,7 @@ import { Rol } from 'src/infrastructure/auth/decorators/role.decorator';
 interface FiltrosAuditoriaDto {
   fechaDesde?: string;
   fechaHasta?: string;
-  accion?: string;
+  accion?: AccionAuditoria;
   entidad?: string;
   usuarioId?: number;
 }
@@ -39,7 +39,7 @@ export class AdminAuditoriaController {
     return this.auditoriaService.listarConFiltros({
       fechaDesde: filtros.fechaDesde ? new Date(filtros.fechaDesde) : undefined,
       fechaHasta: filtros.fechaHasta ? new Date(filtros.fechaHasta) : undefined,
-      accion: filtros.accion as any,
+      accion: filtros.accion,
       entidad: filtros.entidad,
       usuarioId: filtros.usuarioId,
     });

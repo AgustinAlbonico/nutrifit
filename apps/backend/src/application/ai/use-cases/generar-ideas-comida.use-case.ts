@@ -141,8 +141,9 @@ export class GenerarIdeasComidaUseCase implements BaseUseCase {
       }
 
       // Tomar exactamente 2
-      const output = new GenerarIdeasComidaOutputDto();
-      output.propuestas = propuestasValidas.slice(0, 2) as any;
+      const output: GenerarIdeasComidaOutputDto = {
+        propuestas: propuestasValidas.slice(0, 2),
+      };
 
       // Guardar la sugerencia exitosa
       await this.sugerenciaRepo.save({
@@ -167,7 +168,7 @@ export class GenerarIdeasComidaUseCase implements BaseUseCase {
       this.logger.error(`Error generando ideas de comida: ${mensaje}`);
 
       return {
-        datos: { propuestas: [] } as any,
+        datos: { propuestas: [] },
         error: mensaje,
       };
     }

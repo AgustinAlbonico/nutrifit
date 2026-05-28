@@ -6,10 +6,9 @@ import {
   ParseIntPipe,
   Post,
   Put,
-  Req,
+  Query,
   UseGuards,
 } from '@nestjs/common';
-import { Request } from 'express';
 import { PermisosService } from 'src/application/permisos/permisos.service';
 import { AsignarAccionesDto } from 'src/application/permisos/dtos/asignar-acciones.dto';
 import { AsignarGruposDto } from 'src/application/permisos/dtos/asignar-grupos.dto';
@@ -18,6 +17,7 @@ import { CreateGrupoPermisoDto } from 'src/application/permisos/dtos/create-grup
 import { UpdateAccionDto } from 'src/application/permisos/dtos/update-accion.dto';
 import { UpdateGrupoPermisoDto } from 'src/application/permisos/dtos/update-grupo-permiso.dto';
 import { Actions } from 'src/infrastructure/auth/decorators/actions.decorator';
+import { CurrentUserId } from 'src/infrastructure/auth/decorators/current-user.decorator';
 import { Rol } from 'src/infrastructure/auth/decorators/role.decorator';
 import { JwtAuthGuard } from 'src/infrastructure/auth/guards/auth.guard';
 import { ActionsGuard } from 'src/infrastructure/auth/guards/actions.guard';
@@ -117,30 +117,27 @@ export class PermisosController {
   @Get('users')
   @Rol(RolEnum.ADMIN)
   @Actions('auth.permissions.read')
-  async buscarUsuarios(@Req() req: Request) {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 15;
-    const search = (req.query.search as string) || '';
+  async buscarUsuarios(
+    @Query('page') pageRaw?: string,
+    @Query('limit') limitRaw?: string,
+    @Query('search') search?: string,
+    @Query('isActive') isActiveRaw?: string,
+  ) {
+    const page = pageRaw ? parseInt(pageRaw, 10) || 1 : 1;
+    const limit = limitRaw ? parseInt(limitRaw, 10) || 15 : 15;
     const isActive =
-      req.query.isActive !== undefined
-        ? req.query.isActive === 'true'
-        : undefined;
+      isActiveRaw !== undefined ? isActiveRaw === 'true' : undefined;
 
     return this.permisosService.listarUsuariosPaginado({
       page,
       limit,
-      search,
+      search: search ?? '',
       isActive,
     });
   }
 
   @Get('me/actions')
-  async misAcciones(@Req() req: Request) {
-    const userId = (req as any).user?.id;
-    if (!userId) {
-      return [];
-    }
-
+  async misAcciones(@CurrentUserId() userId: number) {
     return this.permisosService.getAccionesEfectivasUsuario(userId);
   }
 }

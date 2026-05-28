@@ -41,7 +41,7 @@ describe('OpcionComidaOrmEntity', () => {
 
     it('debe retornar false cuando items es undefined', () => {
       const entity = new OpcionComidaOrmEntity();
-      entity.items = undefined as any;
+      (entity as { items?: ItemComidaOrmEntity[] }).items = undefined;
       expect(entity.tieneItemsReales).toBe(false);
     });
   });

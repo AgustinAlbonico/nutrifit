@@ -63,7 +63,6 @@ let ConfirmarTurnoSocioUseCase = class ConfirmarTurnoSocioUseCase {
         }
         this.validateConfirmationWindow(turno.fechaTurno, turno.horaTurno);
         turno.estadoTurno = EstadoTurno_1.EstadoTurno.PRESENTE;
-        turno.confirmedAt = new Date();
         const updatedTurno = await this.turnoRepository.save(turno);
         if (turno.socio.idPersona) {
             await this.notificacionesService.crear({

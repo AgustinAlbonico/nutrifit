@@ -2,7 +2,6 @@ import { LoginDto } from 'src/application/auth/dtos/login.dto';
 import { LoginUseCase } from 'src/application/auth/login.use-case';
 import { IAppLoggerService } from 'src/domain/services/logger.service';
 import { PermisosService } from 'src/application/permisos/permisos.service';
-import { Request } from 'express';
 import { UsuarioRepository } from 'src/domain/entities/Usuario/usuario.repository';
 export declare class AuthController {
     private readonly loginUseCase;
@@ -15,16 +14,8 @@ export declare class AuthController {
         rol: import("../../../domain/entities/Usuario/Rol").Rol;
         acciones: string[];
     }>;
-    getPermissions(req: Request): Promise<string[]>;
-    getProfile(req: Request): Promise<{
-        idUsuario: any;
-        idPersona: null;
-        email: any;
-        rol: any;
-        nombre: null;
-        apellido: null;
-        fotoPerfilUrl: null;
-    } | {
+    getPermissions(userId: number): Promise<string[]>;
+    getProfile(user: Express.AuthenticatedUserPayload): Promise<{
         idUsuario: number;
         idPersona: number | null;
         email: string;

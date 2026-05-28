@@ -1,12 +1,11 @@
+import { NutricionistaOrmEntity, SocioOrmEntity } from './persona.entity';
 import { DiaPlanOrmEntity } from './dia-plan.entity';
-import { NutricionistaEntity } from 'src/domain/entities/Persona/Nutricionista/nutricionista.entity';
-import { SocioEntity } from 'src/domain/entities/Persona/Socio/socio.entity';
 export declare class PlanAlimentacionOrmEntity {
     idPlanAlimentacion: number;
     fechaCreacion: Date;
     objetivoNutricional: string;
-    socio: SocioEntity;
-    nutricionista: NutricionistaEntity;
+    socio: SocioOrmEntity;
+    nutricionista: NutricionistaOrmEntity;
     activo: boolean;
     eliminadoEn: Date | null;
     motivoEliminacion: string | null;

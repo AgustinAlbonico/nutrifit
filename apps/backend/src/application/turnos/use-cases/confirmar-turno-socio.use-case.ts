@@ -81,7 +81,6 @@ export class ConfirmarTurnoSocioUseCase implements BaseUseCase {
     this.validateConfirmationWindow(turno.fechaTurno, turno.horaTurno);
 
     turno.estadoTurno = EstadoTurno.PRESENTE;
-    (turno as any).confirmedAt = new Date();
     const updatedTurno = await this.turnoRepository.save(turno);
 
     if (turno.socio.idPersona) {

@@ -40,9 +40,9 @@ export class ActualizarAlimentoUseCase {
             String(dto.grupoAlimenticioId),
           );
         }
-        alimento.grupoAlimenticio = [grupo] as any;
+        alimento.grupoAlimenticio = [grupo];
       } else {
-        alimento.grupoAlimenticio = [] as any;
+        alimento.grupoAlimenticio = [];
       }
     }
 

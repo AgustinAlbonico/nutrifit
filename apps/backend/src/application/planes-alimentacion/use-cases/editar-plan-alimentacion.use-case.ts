@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BaseUseCase } from 'src/application/shared/use-case.base';
 import {
@@ -35,6 +35,8 @@ import {
 
 @Injectable()
 export class EditarPlanAlimentacionUseCase implements BaseUseCase {
+  private readonly logger = new Logger(EditarPlanAlimentacionUseCase.name);
+
   constructor(
     @InjectRepository(PlanAlimentacionOrmEntity)
     private readonly planRepo: Repository<PlanAlimentacionOrmEntity>,
@@ -286,11 +288,17 @@ export class EditarPlanAlimentacionUseCase implements BaseUseCase {
 
         return mapPlanToResponse(planActualizado);
       } catch (err) {
-        console.error('[EditarPlanAlimentacionUseCase] Error in mapper:', err);
+        this.logger.error(
+          'Error en mapper de plan',
+          err instanceof Error ? err.stack : String(err),
+        );
         throw err;
       }
     } catch (error) {
-      console.error('[EditarPlan] Unexpected error:', error);
+      this.logger.error(
+        'Error inesperado al editar plan',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }

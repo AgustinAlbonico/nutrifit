@@ -1,5 +1,5 @@
 import { UnidadMedida } from 'src/domain/entities/Alimento/UnidadMedida';
-import { GrupoAlimenticio } from 'src/domain/entities/Alimento/grupo-alimenticio.entity';
+import { GrupoAlimenticioOrmEntity } from './grupo-alimenticio.entity';
 export declare class AlimentoOrmEntity {
     idAlimento: number;
     nombre: string;
@@ -10,5 +10,5 @@ export declare class AlimentoOrmEntity {
     grasas: number | null;
     hidratosDeCarbono: number | null;
     unidadMedida: UnidadMedida;
-    grupoAlimenticio: GrupoAlimenticio;
+    grupoAlimenticio: GrupoAlimenticioOrmEntity[];
 }

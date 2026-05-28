@@ -26,20 +26,22 @@ describe('AlignTurnoStates Migration Enum Alignment', () => {
   });
 
   describe('EstadoTurno enum NO tiene valores eliminados', () => {
+    const enumComoRegistro = EstadoTurno as Record<string, EstadoTurno | undefined>;
+
     it('no debe tener CONFIRMADO (eliminado)', () => {
-      expect((EstadoTurno as any).CONFIRMADO).toBeUndefined();
+      expect(enumComoRegistro.CONFIRMADO).toBeUndefined();
     });
 
     it('no debe tener REPROGRAMADO (eliminado)', () => {
-      expect((EstadoTurno as any).REPROGRAMADO).toBeUndefined();
+      expect(enumComoRegistro.REPROGRAMADO).toBeUndefined();
     });
 
     it('no debe tener BLOQUEADO (eliminado)', () => {
-      expect((EstadoTurno as any).BLOQUEADO).toBeUndefined();
+      expect(enumComoRegistro.BLOQUEADO).toBeUndefined();
     });
 
     it('no debe tener ASISTIO (renombrado a REALIZADO)', () => {
-      expect((EstadoTurno as any).ASISTIO).toBeUndefined();
+      expect(enumComoRegistro.ASISTIO).toBeUndefined();
     });
   });
 });

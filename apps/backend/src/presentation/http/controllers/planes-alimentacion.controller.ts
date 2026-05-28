@@ -8,7 +8,6 @@ import {
   ParseIntPipe,
   Post,
   Put,
-  Req,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -34,13 +33,13 @@ import {
   APP_LOGGER_SERVICE,
   IAppLoggerService,
 } from 'src/domain/services/logger.service';
+import { CurrentUserId } from 'src/infrastructure/auth/decorators/current-user.decorator';
 import { Rol } from 'src/infrastructure/auth/decorators/role.decorator';
 import { ActionsGuard } from 'src/infrastructure/auth/guards/actions.guard';
 import { JwtAuthGuard } from 'src/infrastructure/auth/guards/auth.guard';
 import { NutricionistaOwnershipGuard } from 'src/infrastructure/auth/guards/nutricionista-ownership.guard';
 import { RolesGuard } from 'src/infrastructure/auth/guards/roles.guard';
 import { SocioResourceAccessGuard } from 'src/infrastructure/auth/guards/socio-resource-access.guard';
-import { Request } from 'express';
 
 @Controller('planes-alimentacion')
 @UseGuards(JwtAuthGuard, RolesGuard, ActionsGuard)
@@ -62,10 +61,9 @@ export class PlanAlimentacionController {
   @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN)
   @UseGuards(SocioResourceAccessGuard)
   async crearPlan(
-    @Req() req: Request,
+    @CurrentUserId() nutricionistaUserId: number,
     @Body() payload: CrearPlanAlimentacionDto,
   ): Promise<PlanAlimentacionResponseDto> {
-    const nutricionistaUserId = (req as any).user?.id;
     this.logger.log(
       `Creando plan de alimentación para socio ${payload.socioId} por nutricionista ${nutricionistaUserId}.`,
     );
@@ -121,11 +119,10 @@ export class PlanAlimentacionController {
   @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN)
   @UseGuards(SocioResourceAccessGuard)
   async editarPlan(
-    @Req() req: Request,
+    @CurrentUserId() nutricionistaUserId: number,
     @Param('id', ParseIntPipe) id: number,
     @Body() payload: EditarPlanAlimentacionDto,
   ): Promise<PlanAlimentacionResponseDto> {
-    const nutricionistaUserId = (req as any).user?.id;
     this.logger.log(
       `Editando plan de alimentación ${id} por nutricionista ${nutricionistaUserId}.`,
     );
@@ -139,11 +136,10 @@ export class PlanAlimentacionController {
   @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN)
   @UseGuards(SocioResourceAccessGuard)
   async eliminarPlan(
-    @Req() req: Request,
+    @CurrentUserId() nutricionistaUserId: number,
     @Param('id', ParseIntPipe) id: number,
     @Body() payload: EliminarPlanAlimentacionDto,
   ): Promise<EliminarPlanAlimentacionResponseDto> {
-    const nutricionistaUserId = (req as any).user?.id;
     this.logger.log(
       `Eliminando plan de alimentación ${id} por nutricionista ${nutricionistaUserId}.`,
     );
@@ -157,10 +153,9 @@ export class PlanAlimentacionController {
   @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN)
   @UseGuards(SocioResourceAccessGuard)
   async vaciarContenidoPlan(
-    @Req() req: Request,
+    @CurrentUserId() nutricionistaUserId: number,
     @Param('id', ParseIntPipe) id: number,
   ): Promise<VaciarContenidoPlanResponseDto> {
-    const nutricionistaUserId = (req as any).user?.id;
     this.logger.log(
       `Vaciando contenido del plan ${id} por nutricionista ${nutricionistaUserId}.`,
     );

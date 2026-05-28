@@ -33,7 +33,9 @@ exports.AuthModule = AuthModule = __decorate([
                 inject: [environment_config_service_1.EnvironmentConfigService],
                 useFactory: (configService) => ({
                     secret: configService.getJwtSecret(),
-                    signOptions: { expiresIn: configService.getJwtExpirationTime() },
+                    signOptions: {
+                        expiresIn: configService.getJwtExpirationTime(),
+                    },
                 }),
             }),
             app_logger_module_1.AppLoggerModule,

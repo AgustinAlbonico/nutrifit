@@ -5,14 +5,13 @@ import {
   Param,
   ParseIntPipe,
   Query,
-  Req,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/infrastructure/auth/guards/auth.guard';
 import { RolesGuard } from 'src/infrastructure/auth/guards/roles.guard';
 import { ActionsGuard } from 'src/infrastructure/auth/guards/actions.guard';
+import { CurrentUserId } from 'src/infrastructure/auth/decorators/current-user.decorator';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
-import { Request } from 'express';
 import { Rol } from 'src/infrastructure/auth/decorators/role.decorator';
 import { Rol as RolEnum } from 'src/domain/entities/Usuario/Rol';
 import { EstadoNotificacion } from 'src/domain/entities/Notificacion/estado-notificacion.enum';
@@ -25,11 +24,10 @@ export class NotificacionesController {
 
   @Get('mias')
   async listar(
-    @Req() req: Request,
+    @CurrentUserId() usuarioId: number,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    const usuarioId = (req as any).user?.id;
     return this.notificacionesService.listar(
       usuarioId,
       Number(page ?? 1),
@@ -38,24 +36,21 @@ export class NotificacionesController {
   }
 
   @Get('mias/no-leidas')
-  async contarNoLeidas(@Req() req: Request) {
-    const usuarioId = (req as any).user?.id;
+  async contarNoLeidas(@CurrentUserId() usuarioId: number) {
     const total = await this.notificacionesService.contarNoLeidas(usuarioId);
     return { total };
   }
 
   @Patch(':id/leer')
   async marcarLeida(
-    @Req() req: Request,
+    @CurrentUserId() usuarioId: number,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    const usuarioId = (req as any).user?.id;
     return this.notificacionesService.marcarLeida(usuarioId, id);
   }
 
   @Patch('leer-todas')
-  async marcarTodasLeidas(@Req() req: Request) {
-    const usuarioId = (req as any).user?.id;
+  async marcarTodasLeidas(@CurrentUserId() usuarioId: number) {
     const actualizadas =
       await this.notificacionesService.marcarTodasLeidas(usuarioId);
     return { actualizadas };

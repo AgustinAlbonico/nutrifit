@@ -45,7 +45,7 @@ let EliminarPlanAlimentacionUseCase = class EliminarPlanAlimentacionUseCase {
     async execute(nutricionistaUserId, payload) {
         const plan = await this.planRepo.findOne({
             where: { idPlanAlimentacion: payload.planId },
-            relations: { nutricionista: true },
+            relations: { nutricionista: true, socio: true },
         });
         if (!plan || !plan.activo) {
             throw new custom_exceptions_1.NotFoundError('Plan de alimentación', String(payload.planId));
@@ -65,6 +65,7 @@ let EliminarPlanAlimentacionUseCase = class EliminarPlanAlimentacionUseCase {
         plan.eliminadoEn = new Date();
         plan.motivoEliminacion = payload.motivoEliminacion;
         await this.planRepo.save(plan);
+        const socioId = plan.socio?.idPersona ?? null;
         await this.auditoriaService.registrar({
             usuarioId: nutricionistaUserId,
             accion: auditoria_entity_1.AccionAuditoria.PLAN_DELETED,
@@ -72,16 +73,18 @@ let EliminarPlanAlimentacionUseCase = class EliminarPlanAlimentacionUseCase {
             entidadId: plan.idPlanAlimentacion,
             metadata: {
                 motivoEliminacion: payload.motivoEliminacion,
-                socioId: plan.socio?.idPersona,
+                socioId,
             },
         });
-        await this.notificacionesService.crear({
-            destinatarioId: plan.socio?.idPersona,
-            tipo: tipo_notificacion_enum_1.TipoNotificacion.PLAN_ELIMINADO,
-            titulo: 'Plan de alimentación eliminado',
-            mensaje: 'Tu plan de alimentación activo fue eliminado.',
-            metadata: { planId: plan.idPlanAlimentacion },
-        });
+        if (socioId !== null) {
+            await this.notificacionesService.crear({
+                destinatarioId: socioId,
+                tipo: tipo_notificacion_enum_1.TipoNotificacion.PLAN_ELIMINADO,
+                titulo: 'Plan de alimentación eliminado',
+                mensaje: 'Tu plan de alimentación activo fue eliminado.',
+                metadata: { planId: plan.idPlanAlimentacion },
+            });
+        }
         return {
             mensaje: 'Plan de alimentación eliminado correctamente.',
             planId: plan.idPlanAlimentacion,

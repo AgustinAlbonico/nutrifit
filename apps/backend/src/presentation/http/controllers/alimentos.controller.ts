@@ -11,7 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
+import { Repository, Like, FindOptionsWhere } from 'typeorm';
 import {
   AlimentosSyncService,
   EstadoSyncAlimentos,
@@ -97,7 +97,7 @@ export class AlimentosController {
   ): Promise<AlimentoResponseDto[]> {
     const take = limit ? Math.min(parseInt(limit, 10), 100) : 50;
 
-    const where: any = {};
+    const where: FindOptionsWhere<AlimentoOrmEntity> = {};
     if (search) {
       where.nombre = Like(`%${search}%`);
     }

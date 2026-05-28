@@ -67,7 +67,7 @@ export class VaciarContenidoPlanUseCase implements BaseUseCase {
 
     // Solo el nutricionista dueño o ADMIN puede vaciar
     if (usuario.rol !== Rol.ADMIN) {
-      if ((plan.nutricionista as any).idPersona !== nutricionistaUserId) {
+      if (plan.nutricionista.idPersona !== nutricionistaUserId) {
         throw new ForbiddenError(
           'Solo el nutricionista responsable del plan puede vaciarlo.',
         );
@@ -77,7 +77,7 @@ export class VaciarContenidoPlanUseCase implements BaseUseCase {
     // Contar elementos a eliminar
     const diasDelPlan = await this.diaPlanRepo.find({
       where: {
-        planAlimentacion: { idPlanAlimentacion: payload.planId } as any,
+        planAlimentacion: { idPlanAlimentacion: payload.planId },
       },
       relations: { opcionesComida: true },
     });

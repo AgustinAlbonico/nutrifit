@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var EnvironmentConfigService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EnvironmentConfigService = void 0;
 const common_1 = require("@nestjs/common");
@@ -44,8 +45,9 @@ const ORIGENES_DESARROLLO_POR_DEFECTO = [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
 ];
-let EnvironmentConfigService = class EnvironmentConfigService {
+let EnvironmentConfigService = EnvironmentConfigService_1 = class EnvironmentConfigService {
     configService;
+    logger = new common_1.Logger(EnvironmentConfigService_1.name);
     constructor(configService) {
         this.configService = configService;
     }
@@ -54,7 +56,7 @@ let EnvironmentConfigService = class EnvironmentConfigService {
             return this.configService.getOrThrow(key);
         }
         catch (error) {
-            console.log(error);
+            this.logger.warn(`Variable de entorno faltante: ${key}`, error instanceof Error ? error.stack : undefined);
             throw new environment_config_error_1.EnvironmentConfigurationError(key);
         }
     }
@@ -136,7 +138,7 @@ let EnvironmentConfigService = class EnvironmentConfigService {
     }
 };
 exports.EnvironmentConfigService = EnvironmentConfigService;
-exports.EnvironmentConfigService = EnvironmentConfigService = __decorate([
+exports.EnvironmentConfigService = EnvironmentConfigService = EnvironmentConfigService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [config_1.ConfigService])
 ], EnvironmentConfigService);

@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { GetProfesionalKpiUseCase } from './get-profesional-kpi.use-case';
 import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/turno.entity';
 import { SugerenciaIAOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/sugerencia-ia.entity';
@@ -56,7 +56,7 @@ describe('GetProfesionalKpiUseCase', () => {
     };
     jest
       .spyOn(turnoRepository, 'createQueryBuilder')
-      .mockReturnValue(mockTurnosBuilder as any);
+      .mockReturnValue(mockTurnosBuilder as unknown as SelectQueryBuilder<TurnoOrmEntity>);
 
     const mockIaBuilder = {
       select: jest.fn().mockReturnThis(),
@@ -70,7 +70,7 @@ describe('GetProfesionalKpiUseCase', () => {
     };
     jest
       .spyOn(sugerenciaIaRepository, 'createQueryBuilder')
-      .mockReturnValue(mockIaBuilder as any);
+      .mockReturnValue(mockIaBuilder as unknown as SelectQueryBuilder<SugerenciaIAOrmEntity>);
 
     const result = await useCase.execute(
       new Date('2024-01-01'),
@@ -100,7 +100,7 @@ describe('GetProfesionalKpiUseCase', () => {
     };
     jest
       .spyOn(turnoRepository, 'createQueryBuilder')
-      .mockReturnValue(mockTurnosBuilder as any);
+      .mockReturnValue(mockTurnosBuilder as unknown as SelectQueryBuilder<TurnoOrmEntity>);
 
     const mockIaBuilder = {
       select: jest.fn().mockReturnThis(),
@@ -112,7 +112,7 @@ describe('GetProfesionalKpiUseCase', () => {
     };
     jest
       .spyOn(sugerenciaIaRepository, 'createQueryBuilder')
-      .mockReturnValue(mockIaBuilder as any);
+      .mockReturnValue(mockIaBuilder as unknown as SelectQueryBuilder<SugerenciaIAOrmEntity>);
 
     const result = await useCase.execute(
       new Date('2024-01-01'),

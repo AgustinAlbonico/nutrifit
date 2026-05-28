@@ -45,7 +45,7 @@ export class CrearAlimentoUseCase {
 
     // Asignar grupos si hay
     if (grupos.length > 0) {
-      savedAlimento.grupoAlimenticio = grupos as any;
+      savedAlimento.grupoAlimenticio = grupos;
       return this.alimentoRepo.save(savedAlimento);
     }
 

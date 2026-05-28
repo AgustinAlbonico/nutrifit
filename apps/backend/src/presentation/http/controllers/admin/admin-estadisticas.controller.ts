@@ -3,6 +3,7 @@ import { JwtAuthGuard } from 'src/infrastructure/auth/guards/auth.guard';
 import { RolesGuard } from 'src/infrastructure/auth/guards/roles.guard';
 import { Rol } from 'src/infrastructure/auth/decorators/role.decorator';
 import { Rol as RolEnum } from 'src/domain/entities/Usuario/Rol';
+import { EstadoTurno } from 'src/domain/entities/Turno/EstadoTurno';
 import {
   GetTurnosKpiUseCase,
   FiltrosKpiTurnos,
@@ -19,6 +20,12 @@ import { KpiSociosDto } from 'src/application/reportes/dtos/kpi-socios.dto';
 import { KpiProfesionalDto } from 'src/application/reportes/dtos/kpi-profesional.dto';
 import { UsoIaItemDto } from 'src/application/reportes/dtos/kpi-completo.dto';
 import { KpiCompletoDto } from 'src/application/reportes/dtos/kpi-completo.dto';
+
+function parseEstadoTurno(valor: string | undefined): EstadoTurno | undefined {
+  if (!valor) return undefined;
+  const valoresValidos = Object.values(EstadoTurno) as string[];
+  return valoresValidos.includes(valor) ? (valor as EstadoTurno) : undefined;
+}
 
 @Controller('admin/estadisticas')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -43,7 +50,7 @@ export class AdminEstadisticasController {
       fechaInicio: new Date(fechaInicio),
       fechaFin: new Date(fechaFin),
       profesionalId: profesionalId ? parseInt(profesionalId, 10) : undefined,
-      estado: estado as any,
+      estado: parseEstadoTurno(estado),
     };
     return this.getTurnosKpiUseCase.execute(filtros);
   }

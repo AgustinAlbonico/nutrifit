@@ -13,8 +13,6 @@ exports.PlanAlimentacionOrmEntity = void 0;
 const typeorm_1 = require("typeorm");
 const persona_entity_1 = require("./persona.entity");
 const dia_plan_entity_1 = require("./dia-plan.entity");
-const nutricionista_entity_1 = require("../../../../domain/entities/Persona/Nutricionista/nutricionista.entity");
-const socio_entity_1 = require("../../../../domain/entities/Persona/Socio/socio.entity");
 let PlanAlimentacionOrmEntity = class PlanAlimentacionOrmEntity {
     idPlanAlimentacion;
     fechaCreacion;
@@ -46,14 +44,14 @@ __decorate([
         nullable: false,
     }),
     (0, typeorm_1.JoinColumn)({ name: 'id_socio' }),
-    __metadata("design:type", socio_entity_1.SocioEntity)
+    __metadata("design:type", persona_entity_1.SocioOrmEntity)
 ], PlanAlimentacionOrmEntity.prototype, "socio", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => persona_entity_1.NutricionistaOrmEntity, (nutricionista) => nutricionista.planesAlimentacion, {
         nullable: false,
     }),
     (0, typeorm_1.JoinColumn)({ name: 'id_nutricionista' }),
-    __metadata("design:type", nutricionista_entity_1.NutricionistaEntity)
+    __metadata("design:type", persona_entity_1.NutricionistaOrmEntity)
 ], PlanAlimentacionOrmEntity.prototype, "nutricionista", void 0);
 __decorate([
     (0, typeorm_1.Column)({ name: 'activo', type: 'boolean', default: true }),

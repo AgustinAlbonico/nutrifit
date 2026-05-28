@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var EditarPlanAlimentacionUseCase_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EditarPlanAlimentacionUseCase = void 0;
 const common_1 = require("@nestjs/common");
@@ -26,7 +27,7 @@ const plan_alimentacion_mapper_1 = require("./plan-alimentacion.mapper");
 const notificaciones_service_1 = require("../../notificaciones/notificaciones.service");
 const tipo_notificacion_enum_1 = require("../../../domain/entities/Notificacion/tipo-notificacion.enum");
 const restricciones_validator_service_1 = require("../../restricciones/restricciones-validator.service");
-let EditarPlanAlimentacionUseCase = class EditarPlanAlimentacionUseCase {
+let EditarPlanAlimentacionUseCase = EditarPlanAlimentacionUseCase_1 = class EditarPlanAlimentacionUseCase {
     planRepo;
     diaRepo;
     opcionRepo;
@@ -38,6 +39,7 @@ let EditarPlanAlimentacionUseCase = class EditarPlanAlimentacionUseCase {
     dataSource;
     notificacionesService;
     restriccionesValidator;
+    logger = new common_1.Logger(EditarPlanAlimentacionUseCase_1.name);
     constructor(planRepo, diaRepo, opcionRepo, alimentoRepo, socioRepo, nutricionistaRepo, usuarioRepo, auditoriaService, dataSource, notificacionesService, restriccionesValidator) {
         this.planRepo = planRepo;
         this.diaRepo = diaRepo;
@@ -210,18 +212,18 @@ let EditarPlanAlimentacionUseCase = class EditarPlanAlimentacionUseCase {
                 return (0, plan_alimentacion_mapper_1.mapPlanToResponse)(planActualizado);
             }
             catch (err) {
-                console.error('[EditarPlanAlimentacionUseCase] Error in mapper:', err);
+                this.logger.error('Error en mapper de plan', err instanceof Error ? err.stack : String(err));
                 throw err;
             }
         }
         catch (error) {
-            console.error('[EditarPlan] Unexpected error:', error);
+            this.logger.error('Error inesperado al editar plan', error instanceof Error ? error.stack : String(error));
             throw error;
         }
     }
 };
 exports.EditarPlanAlimentacionUseCase = EditarPlanAlimentacionUseCase;
-exports.EditarPlanAlimentacionUseCase = EditarPlanAlimentacionUseCase = __decorate([
+exports.EditarPlanAlimentacionUseCase = EditarPlanAlimentacionUseCase = EditarPlanAlimentacionUseCase_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(entities_2.PlanAlimentacionOrmEntity)),
     __param(1, (0, typeorm_1.InjectRepository)(entities_2.DiaPlanOrmEntity)),

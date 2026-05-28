@@ -6,6 +6,7 @@ import { MinioConfig } from 'src/domain/config/minio.config';
 import { SchedulerConfig } from 'src/domain/config/scheduler.config';
 export declare class EnvironmentConfigService implements DatabaseConfig, AppConfig, JWTConfig, MinioConfig, SchedulerConfig {
     private readonly configService;
+    private readonly logger;
     constructor(configService: ConfigService);
     private getEnvironmentVariable;
     getJwtSecret(): string;

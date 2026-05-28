@@ -7,7 +7,6 @@ import {
 } from 'typeorm';
 import { UnidadMedida } from 'src/domain/entities/Alimento/UnidadMedida';
 import { GrupoAlimenticioOrmEntity } from './grupo-alimenticio.entity';
-import { GrupoAlimenticio } from 'src/domain/entities/Alimento/grupo-alimenticio.entity';
 
 @Entity('alimento')
 export class AlimentoOrmEntity {
@@ -50,5 +49,5 @@ export class AlimentoOrmEntity {
       referencedColumnName: 'idGrupoAlimenticio',
     },
   })
-  grupoAlimenticio: GrupoAlimenticio;
+  grupoAlimenticio: GrupoAlimenticioOrmEntity[];
 }
