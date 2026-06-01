@@ -14,6 +14,7 @@ import {
   OpcionComidaOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
 import { Repository, DataSource } from 'typeorm';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 export class VaciarContenidoPlanDto {
   planId: number;
@@ -41,6 +42,7 @@ export class VaciarContenidoPlanUseCase implements BaseUseCase {
     @InjectRepository(OpcionComidaOrmEntity)
     private readonly opcionComidaRepo: Repository<OpcionComidaOrmEntity>,
     private readonly dataSource: DataSource,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(
@@ -48,7 +50,10 @@ export class VaciarContenidoPlanUseCase implements BaseUseCase {
     payload: VaciarContenidoPlanDto,
   ): Promise<VaciarContenidoPlanResponseDto> {
     const plan = await this.planRepo.findOne({
-      where: { idPlanAlimentacion: payload.planId },
+      where: {
+        idPlanAlimentacion: payload.planId,
+        socio: { gimnasioId: this.tenantContext.gimnasioId },
+      },
       relations: { nutricionista: true, dias: true },
     });
 

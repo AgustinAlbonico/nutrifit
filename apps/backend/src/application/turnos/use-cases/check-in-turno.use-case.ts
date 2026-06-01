@@ -6,6 +6,7 @@ import { EstadoTurno } from 'src/domain/entities/Turno/EstadoTurno';
 import { BadRequestError } from 'src/domain/exceptions/custom-exceptions';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 @Injectable()
 export class CheckInTurnoUseCase {
@@ -13,14 +14,18 @@ export class CheckInTurnoUseCase {
     @InjectRepository(TurnoOrmEntity)
     private readonly turnoRepository: Repository<TurnoOrmEntity>,
     private readonly notificacionesService: NotificacionesService,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(
     turnoId: number,
   ): Promise<{ success: boolean; estado: EstadoTurno }> {
     const turno = await this.turnoRepository.findOne({
-      where: { idTurno: turnoId },
-      relations: { socio: true },
+      where: {
+        idTurno: turnoId,
+        socio: { gimnasioId: this.tenantContext.gimnasioId },
+      },
+      relations: { socio: true, nutricionista: true },
     });
 
     if (!turno) {

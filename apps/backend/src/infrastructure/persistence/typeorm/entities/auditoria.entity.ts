@@ -8,7 +8,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { UsuarioOrmEntity } from './usuario.entity';
-import { AuditableOrmEntity } from '../common/auditable.orm-entity';
+import { GimnasioOrmEntity } from './gimnasio.entity';
 
 export enum AccionAuditoria {
   LOGIN_EXITO = 'LOGIN_EXITO',
@@ -28,7 +28,8 @@ export enum AccionAuditoria {
 @Index('idx_auditoria_timestamp', ['timestamp'])
 @Index('idx_auditoria_usuario', ['usuario'])
 @Index('idx_auditoria_accion', ['accion'])
-export class AuditoriaOrmEntity extends AuditableOrmEntity {
+@Index('idx_auditoria_gimnasio', ['gimnasioId'])
+export class AuditoriaOrmEntity {
   @PrimaryGeneratedColumn({ name: 'id_auditoria' })
   idAuditoria: number;
 
@@ -91,4 +92,15 @@ export class AuditoriaOrmEntity extends AuditableOrmEntity {
     nullable: true,
   })
   metadata: Record<string, unknown> | null;
+
+  /** ID del gimnasio/tenant asociado a esta auditoria */
+  @Column({ name: 'id_gimnasio', type: 'int', nullable: true })
+  gimnasioId: number | null;
+
+  @ManyToOne(() => GimnasioOrmEntity, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'id_gimnasio' })
+  gimnasio: GimnasioOrmEntity | null;
 }

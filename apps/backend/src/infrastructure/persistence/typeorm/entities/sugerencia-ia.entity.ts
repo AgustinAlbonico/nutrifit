@@ -2,19 +2,23 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { SugerenciaEstado } from 'src/domain/entities/SugerenciaIA/sugerencia-ia.entity';
 import { PropuestaIA } from '@nutrifit/shared';
-import { AuditableOrmEntity } from '../common/auditable.orm-entity';
+import { SocioOrmEntity } from './persona.entity';
 
 @Entity('sugerencia_ia')
-export class SugerenciaIAOrmEntity extends AuditableOrmEntity {
+export class SugerenciaIAOrmEntity {
   @PrimaryGeneratedColumn({ name: 'id_sugerencia' })
   idSugerencia: number;
 
   @Column({ name: 'id_socio', type: 'int' })
   socioId: number;
+
+  @ManyToOne(() => SocioOrmEntity, { nullable: false })
+  socio: SocioOrmEntity;
 
   @Column({ name: 'objetivo', type: 'varchar', length: 500 })
   objetivo: string;

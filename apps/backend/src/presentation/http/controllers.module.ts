@@ -48,6 +48,10 @@ import { NotificacionOrmEntity } from 'src/infrastructure/persistence/typeorm/en
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import { GimnasioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/gimnasio.entity';
 import { GimnasioRepository } from 'src/infrastructure/persistence/typeorm/repositories/gimnasio.repository';
+import { TenantContextInterceptor } from 'src/infrastructure/auth/tenant-context.interceptor';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { RepositoriesModule } from 'src/infrastructure/persistence/typeorm/repositories/repositories.module';
+import { GimnasiosModule } from './gimnasios.module';
 
 @Module({
   imports: [
@@ -57,6 +61,7 @@ import { GimnasioRepository } from 'src/infrastructure/persistence/typeorm/repos
     AuditoriaModule,
     AdjuntoClinicoModule,
     ProgresoModule,
+    GimnasiosModule,
     TypeOrmModule.forFeature([
       TurnoOrmEntity,
       PlanAlimentacionOrmEntity,
@@ -70,6 +75,7 @@ import { GimnasioRepository } from 'src/infrastructure/persistence/typeorm/repos
       NotificacionOrmEntity,
       GimnasioOrmEntity,
     ]),
+    RepositoriesModule,
   ],
   providers: [
     JwtAuthGuard,
@@ -84,7 +90,10 @@ import { GimnasioRepository } from 'src/infrastructure/persistence/typeorm/repos
     EliminarAlimentoUseCase,
     BuscarSociosConFichaUseCase,
     NotificacionesService,
-    GimnasioRepository,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: TenantContextInterceptor,
+    },
   ],
   controllers: [
     AgendaController,

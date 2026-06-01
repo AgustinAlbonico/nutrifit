@@ -41,6 +41,7 @@ import { NotificacionesService } from 'src/application/notificaciones/notificaci
 import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
 import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
 import { AccionAuditoria } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 @Injectable()
 export class ReprogramarTurnoSocioUseCase implements BaseUseCase {
@@ -59,6 +60,7 @@ export class ReprogramarTurnoSocioUseCase implements BaseUseCase {
     private readonly politicaRepository: IPoliticaOperativaRepository,
     private readonly notificacionesService: NotificacionesService,
     private readonly auditoriaService: AuditoriaService,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(
@@ -69,7 +71,10 @@ export class ReprogramarTurnoSocioUseCase implements BaseUseCase {
     const socio = await this.resolveSocioByUserId(userId);
 
     const turno = await this.turnoRepository.findOne({
-      where: { idTurno: turnoId },
+      where: {
+        idTurno: turnoId,
+        socio: { gimnasioId: this.tenantContext.gimnasioId },
+      },
       relations: {
         socio: true,
         nutricionista: true,
@@ -107,7 +112,10 @@ export class ReprogramarTurnoSocioUseCase implements BaseUseCase {
     const conflictingTurno = await this.turnoRepository.findOne({
       where: {
         idTurno: Not(turno.idTurno),
-        nutricionista: { idPersona: turno.nutricionista.idPersona ?? 0 },
+        nutricionista: {
+          idPersona: turno.nutricionista.idPersona ?? 0,
+          gimnasioId: this.tenantContext.gimnasioId,
+        },
         fechaTurno: nuevaFecha,
         horaTurno: nuevaHora,
         estadoTurno: Not(EstadoTurno.CANCELADO),
@@ -200,19 +208,6 @@ export class ReprogramarTurnoSocioUseCase implements BaseUseCase {
     return socio;
   }
 
-  private validate24hRule(fechaTurno: Date, horaTurno: string): void {
-    const scheduledDate = combineArgentinaDateAndTime(fechaTurno, horaTurno);
-    const now = new Date();
-    const hoursDiff =
-      (scheduledDate.getTime() - now.getTime()) / (1000 * 60 * 60);
-
-    if (hoursDiff < 24) {
-      throw new BadRequestError(
-        'Solo se puede reprogramar con al menos 24 horas de anticipacion.',
-      );
-    }
-  }
-
   private async validatePolicyRule(turno: TurnoOrmEntity): Promise<void> {
     const gimnasioId = turno.gimnasio?.idGimnasio ?? 1;
     const plazoHoras =
@@ -241,7 +236,10 @@ export class ReprogramarTurnoSocioUseCase implements BaseUseCase {
 
     const agendaDelDia = await this.agendaRepository.find({
       where: {
-        nutricionista: { idPersona: nutricionistaId },
+        nutricionista: {
+          idPersona: nutricionistaId,
+          gimnasioId: this.tenantContext.gimnasioId,
+        },
         dia: diaSemana,
       },
       order: { horaInicio: 'ASC' },

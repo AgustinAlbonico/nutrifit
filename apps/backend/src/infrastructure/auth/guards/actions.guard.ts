@@ -10,8 +10,17 @@ import { PermisosService } from 'src/application/permisos/permisos.service';
 import { Request } from 'express';
 import { Rol } from 'src/domain/entities/Usuario/Rol';
 
+/** Request type that must match what JwtAuthGuard actually populates */
 interface AuthenticatedRequest extends Request {
-  user: { id: number; email: string; rol: Rol };
+  user: {
+    id: number;
+    email: string;
+    rol: Rol;
+    acciones?: string[];
+    gimnasioId: number | null;
+    personaId: number | null;
+    jti: string;
+  };
 }
 
 @Injectable()
@@ -39,7 +48,9 @@ export class ActionsGuard implements CanActivate {
       throw new ForbiddenException('No autorizado');
     }
 
-    if (request.user.rol === Rol.ADMIN) {
+    // SUPERADMIN bypassea todo (es el "dueño del sistema").
+    // ADMIN, NUTRICIONISTA, RECEPCIONISTA, SOCIO deben tener permisos explícitos.
+    if (request.user.rol === Rol.SUPERADMIN) {
       return true;
     }
 

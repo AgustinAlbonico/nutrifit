@@ -1,7 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import * as supertest from 'supertest';
 import { AppModule } from 'src/app.module';
+
+const request = supertest;
 
 describe('Adjuntos Controller (e2e)', () => {
   let app: INestApplication;

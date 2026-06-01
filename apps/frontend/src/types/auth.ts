@@ -1,9 +1,7 @@
-export type Rol = 'ADMIN' | 'NUTRICIONISTA' | 'ENTRENADOR' | 'SOCIO' | 'RECEPCIONISTA' | 'SUPERADMIN';
+export type Rol = 'ADMIN' | 'SUPERADMIN' | 'NUTRICIONISTA' | 'SOCIO' | 'RECEPCIONISTA';
 
 export interface LoginResponse {
   token: string;
   rol: Rol;
   acciones: string[];
-  gimnasioId: number | null;
-  impersonatedBy: number | null;
 }

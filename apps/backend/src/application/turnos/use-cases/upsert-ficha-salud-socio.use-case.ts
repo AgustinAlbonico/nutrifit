@@ -21,6 +21,7 @@ import {
   UsuarioOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
 import { Repository } from 'typeorm';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 @Injectable()
 export class UpsertFichaSaludSocioUseCase implements BaseUseCase {
@@ -37,6 +38,7 @@ export class UpsertFichaSaludSocioUseCase implements BaseUseCase {
     private readonly patologiaRepository: Repository<PatologiaOrmEntity>,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(
@@ -137,7 +139,10 @@ export class UpsertFichaSaludSocioUseCase implements BaseUseCase {
     }
 
     const socio = await this.socioRepository.findOne({
-      where: { idPersona: personaId },
+      where: {
+        idPersona: personaId,
+        gimnasioId: this.tenantContext.gimnasioId,
+      },
       relations: {
         fichaSalud: {
           alergias: true,

@@ -4,6 +4,8 @@ import { AlertCircle, CheckCircle2, Users } from 'lucide-react';
 import { format as formatearFechaIso } from 'date-fns';
 
 import { useAuth } from '@/contexts/AuthContext';
+import { Can } from '@/components/auth/Can';
+import { ACCIONES } from '@nutrifit/shared';
 import { apiRequest, obtenerUrlFoto } from '@/lib/api';
 import {
   formatearFechaArgentinaCorta,
@@ -816,34 +818,40 @@ export function Socios() {
                             >
                               Ver
                             </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => abrirModalEdicion(socio)}
-                              disabled={!socio.activo}
-                            >
-                              Editar
-                            </Button>
+                            <Can accion={ACCIONES.SOCIOS_EDITAR}>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => abrirModalEdicion(socio)}
+                                disabled={!socio.activo}
+                              >
+                                Editar
+                              </Button>
+                            </Can>
                             {socio.activo ? (
-                              <Button
-                                type="button"
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => confirmarEliminar(socio)}
-                              >
-                                Baja
-                              </Button>
+                              <Can accion={ACCIONES.SOCIOS_ELIMINAR}>
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => confirmarEliminar(socio)}
+                                >
+                                  Baja
+                                </Button>
+                              </Can>
                             ) : (
-                              <Button
-                                type="button"
-                                variant="default"
-                                size="sm"
-                                className="bg-emerald-600 hover:bg-emerald-700"
-                                onClick={() => void reactivarSocio(socio)}
-                              >
-                                Reactivar
-                              </Button>
+                              <Can accion={ACCIONES.SOCIOS_EDITAR}>
+                                <Button
+                                  type="button"
+                                  variant="default"
+                                  size="sm"
+                                  className="bg-emerald-600 hover:bg-emerald-700"
+                                  onClick={() => void reactivarSocio(socio)}
+                                >
+                                  Reactivar
+                                </Button>
+                              </Can>
                             )}
                           </div>
                         </TableCell>

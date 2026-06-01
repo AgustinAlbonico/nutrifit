@@ -1,6 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { BaseUseCase } from 'src/application/shared/use-case.base';
-import { BadRequestError } from 'src/domain/exceptions/custom-exceptions';
+import {
+  BadRequestError,
+  NotFoundError,
+} from 'src/domain/exceptions/custom-exceptions';
 import {
   APP_LOGGER_SERVICE,
   IAppLoggerService,
@@ -19,6 +22,7 @@ import { SugerenciaIAOrmEntity } from 'src/infrastructure/persistence/typeorm/en
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SugerenciaEstado } from 'src/domain/entities/SugerenciaIA/sugerencia-ia.entity';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 const DISCLAIMER_IA =
   'Esta sugerencia es generada por IA y debe ser validada por un profesional de la salud.';
@@ -45,6 +49,7 @@ export class GenerarIdeasComidaUseCase implements BaseUseCase {
     private readonly restriccionesValidator: RestriccionesValidator,
     @InjectRepository(SugerenciaIAOrmEntity)
     private readonly sugerenciaRepo: Repository<SugerenciaIAOrmEntity>,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(
@@ -52,6 +57,17 @@ export class GenerarIdeasComidaUseCase implements BaseUseCase {
     input: GenerarIdeasComidaInputDto,
   ): Promise<{ datos: GenerarIdeasComidaOutputDto; error: string | null }> {
     try {
+      // Validar que el socio pertenece al gimnasio actual
+      const socio = await this.sugerenciaRepo.findOne({
+        where: {
+          socioId: socioId,
+        },
+        relations: { socio: true },
+      });
+      if (!socio || socio.socio.gimnasioId !== this.tenantContext.gimnasioId) {
+        throw new NotFoundError('Socio', String(socioId));
+      }
+
       const restricciones = input.restricciones ?? [];
 
       const prompt = this.construirPrompt(input);

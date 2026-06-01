@@ -20,6 +20,7 @@ import {
 } from 'src/common/utils/argentina-datetime.util';
 import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities';
 import { Repository } from 'typeorm';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 @Injectable()
 export class ListPacientesProfesionalUseCase implements BaseUseCase {
@@ -30,6 +31,7 @@ export class ListPacientesProfesionalUseCase implements BaseUseCase {
     private readonly nutricionistaRepository: NutricionistaRepository,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(
@@ -48,7 +50,12 @@ export class ListPacientesProfesionalUseCase implements BaseUseCase {
       .innerJoin('turno.nutricionista', 'nutricionista')
       .innerJoinAndSelect('turno.socio', 'socio')
       .leftJoinAndSelect('socio.fichaSalud', 'fichaSalud')
-      .where('nutricionista.idPersona = :nutricionistaId', { nutricionistaId })
+      .andWhere('nutricionista.gimnasioId = :gimnasioId', {
+        gimnasioId: this.tenantContext.gimnasioId,
+      })
+      .andWhere('nutricionista.idPersona = :nutricionistaId', {
+        nutricionistaId,
+      })
       .orderBy('turno.fechaTurno', 'DESC')
       .addOrderBy('turno.horaTurno', 'DESC');
 

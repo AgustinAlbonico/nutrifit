@@ -45,6 +45,7 @@ CREDENTIALS.md
 
 # Planning docs (local only)
 .planning/
+.worktrees/
 
 # Lock files for agents
 skills-lock.json

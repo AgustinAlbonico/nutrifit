@@ -25,6 +25,7 @@ import {
 } from 'src/common/utils/argentina-datetime.util';
 import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/turno.entity';
 import { Repository, SelectQueryBuilder } from 'typeorm';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 @Injectable()
 export class GetTurnosDelDiaUseCase implements BaseUseCase {
@@ -35,6 +36,7 @@ export class GetTurnosDelDiaUseCase implements BaseUseCase {
     private readonly nutricionistaRepository: NutricionistaRepository,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(
@@ -57,7 +59,12 @@ export class GetTurnosDelDiaUseCase implements BaseUseCase {
       .innerJoin('turno.nutricionista', 'nutricionista')
       .innerJoinAndSelect('turno.socio', 'socio')
       .leftJoinAndSelect('socio.fichaSalud', 'fichaSalud')
-      .where('nutricionista.idPersona = :nutricionistaId', { nutricionistaId })
+      .andWhere('nutricionista.gimnasioId = :gimnasioId', {
+        gimnasioId: this.tenantContext.gimnasioId,
+      })
+      .andWhere('nutricionista.idPersona = :nutricionistaId', {
+        nutricionistaId,
+      })
       .andWhere('turno.fechaTurno = :today', { today })
       .orderBy('turno.horaTurno', 'ASC');
 

@@ -28,6 +28,7 @@ import { Repository } from 'typeorm';
 import { createHash } from 'crypto';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 @Injectable()
 export class ConfirmarTurnoSocioUseCase implements BaseUseCase {
@@ -43,6 +44,7 @@ export class ConfirmarTurnoSocioUseCase implements BaseUseCase {
     private readonly notificacionesService: NotificacionesService,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(
@@ -53,7 +55,10 @@ export class ConfirmarTurnoSocioUseCase implements BaseUseCase {
     const socio = userId ? await this.resolveSocioByUserId(userId) : null;
 
     const turno = await this.turnoRepository.findOne({
-      where: { idTurno: turnoId },
+      where: {
+        idTurno: turnoId,
+        socio: { gimnasioId: this.tenantContext.gimnasioId },
+      },
       relations: {
         socio: true,
         nutricionista: true,

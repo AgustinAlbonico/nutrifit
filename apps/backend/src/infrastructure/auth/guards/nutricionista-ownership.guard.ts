@@ -30,7 +30,7 @@ export class NutricionistaOwnershipGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<RequestWithUser>();
     const user = request.user;
 
-    if (user?.rol === Rol.ADMIN) {
+    if (user?.rol === Rol.ADMIN || user?.rol === Rol.SUPERADMIN) {
       return true;
     }
 

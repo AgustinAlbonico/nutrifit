@@ -46,7 +46,7 @@ export class TurnoNutricionistaAccessGuard implements CanActivate {
       return true;
     }
 
-    if (user?.rol === Rol.ADMIN) {
+    if (user?.rol === Rol.ADMIN || user?.rol === Rol.SUPERADMIN) {
       request.resourceAccess = {
         ...request.resourceAccess,
         turnoId,

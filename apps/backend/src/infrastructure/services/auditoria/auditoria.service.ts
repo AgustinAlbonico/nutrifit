@@ -5,6 +5,7 @@ import {
   AuditoriaOrmEntity,
   AccionAuditoria,
 } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 export interface AuditoriaDto {
   usuarioId?: number | null;
@@ -14,6 +15,8 @@ export interface AuditoriaDto {
   ipOrigen?: string | null;
   userAgent?: string | null;
   metadata?: Record<string, unknown> | null;
+  /** ID del gimnasio (tenant). Si no se provee, se usa el contexto actual. */
+  gimnasioId?: number | null;
 }
 
 export interface FiltrosAuditoria {
@@ -22,6 +25,8 @@ export interface FiltrosAuditoria {
   accion?: AccionAuditoria;
   entidad?: string;
   usuarioId?: number;
+  /** Filtrar por gimnasio. Si no se provee, usa el contexto actual. */
+  gimnasioId?: number | null;
 }
 
 @Injectable()
@@ -29,9 +34,20 @@ export class AuditoriaService {
   constructor(
     @InjectRepository(AuditoriaOrmEntity)
     private readonly auditoriaRepository: Repository<AuditoriaOrmEntity>,
+    private readonly tenantContext?: TenantContextService,
   ) {}
 
   async registrar(dto: AuditoriaDto): Promise<void> {
+    // Determinar el gimnasioId: usar el proporcionado o el del contexto actual
+    let gimnasioId = dto.gimnasioId ?? null;
+    if (gimnasioId === null && this.tenantContext?.isInitialized) {
+      try {
+        gimnasioId = this.tenantContext.gimnasioId;
+      } catch {
+        // Si no hay contexto, queda null
+      }
+    }
+
     const registro = this.auditoriaRepository.create({
       usuarioId: dto.usuarioId,
       accion: dto.accion,
@@ -40,6 +56,7 @@ export class AuditoriaService {
       ipOrigen: dto.ipOrigen ?? null,
       userAgent: dto.userAgent ?? null,
       metadata: dto.metadata ?? null,
+      gimnasioId,
     });
 
     await this.auditoriaRepository.save(registro);
@@ -48,10 +65,32 @@ export class AuditoriaService {
   async listarConFiltros(
     filtros: FiltrosAuditoria,
   ): Promise<AuditoriaOrmEntity[]> {
+    // Si se provee gimnasioId, usar ese (incluye null para admin)
+    let gimnasioId = filtros.gimnasioId;
+
+    // Si NO se provee y hay contexto, usar el del contexto (comportamiento seguro para no-admin)
+    if (gimnasioId === undefined && this.tenantContext?.isInitialized) {
+      try {
+        gimnasioId = this.tenantContext.gimnasioId;
+      } catch {
+        // Sin contexto, buscar sin filtro de gimnasio
+      }
+    }
+
+    // Si gimnasioId sigue siendo undefined, no aplicar filtro de gymnasio
+    // (comportamiento legacy para backward compatibility)
+    // Si es null explícitamente, tampoco aplicar filtro
+
     const queryBuilder = this.auditoriaRepository
       .createQueryBuilder('auditoria')
       .orderBy('auditoria.timestamp', 'DESC')
       .take(500);
+
+    if (gimnasioId !== undefined && gimnasioId !== null) {
+      queryBuilder.andWhere('auditoria.gimnasioId = :gimnasioId', {
+        gimnasioId,
+      });
+    }
 
     if (filtros.fechaDesde) {
       queryBuilder.andWhere('auditoria.timestamp >= :fechaDesde', {

@@ -4,6 +4,8 @@ import { AlertCircle, CheckCircle2, Users } from 'lucide-react';
 import { format as formatearFechaIso } from 'date-fns';
 
 import { useAuth } from '@/contexts/AuthContext';
+import { Can } from '@/components/auth/Can';
+import { ACCIONES } from '@nutrifit/shared';
 import { apiRequest, obtenerUrlFoto } from '@/lib/api';
 import {
   formatearFechaArgentinaCorta,
@@ -875,34 +877,40 @@ export function Nutricionistas() {
                             >
                               Ver
                             </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => abrirModalEdicion(nutricionista)}
-                              disabled={!nutricionista.activo}
-                            >
-                              Editar
-                            </Button>
+                            <Can accion={ACCIONES.NUTRICIONISTAS_EDITAR}>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => abrirModalEdicion(nutricionista)}
+                                disabled={!nutricionista.activo}
+                              >
+                                Editar
+                              </Button>
+                            </Can>
                             {nutricionista.activo ? (
-                              <Button
-                                type="button"
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => confirmarEliminar(nutricionista)}
-                              >
-                                Baja
-                              </Button>
+                              <Can accion={ACCIONES.NUTRICIONISTAS_ELIMINAR}>
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => confirmarEliminar(nutricionista)}
+                                >
+                                  Baja
+                                </Button>
+                              </Can>
                             ) : (
-                              <Button
-                                type="button"
-                                variant="default"
-                                size="sm"
-                                className="bg-emerald-600 hover:bg-emerald-700"
-                                onClick={() => void reactivarNutricionista(nutricionista)}
-                              >
-                                Reactivar
-                              </Button>
+                              <Can accion={ACCIONES.NUTRICIONISTAS_EDITAR}>
+                                <Button
+                                  type="button"
+                                  variant="default"
+                                  size="sm"
+                                  className="bg-emerald-600 hover:bg-emerald-700"
+                                  onClick={() => void reactivarNutricionista(nutricionista)}
+                                >
+                                  Reactivar
+                                </Button>
+                              </Can>
                             )}
                           </div>
                         </TableCell>

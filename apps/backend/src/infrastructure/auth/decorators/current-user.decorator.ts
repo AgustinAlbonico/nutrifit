@@ -12,7 +12,7 @@ import { Request } from 'express';
 export const CurrentUser = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext): Express.AuthenticatedUserPayload => {
     const request = ctx.switchToHttp().getRequest<Request>();
-    const user = request.user;
+    const user = request.user as Express.AuthenticatedUserPayload | undefined;
 
     if (!user) {
       throw new UnauthorizedException('Usuario no autenticado');
@@ -29,7 +29,8 @@ export const CurrentUser = createParamDecorator(
 export const CurrentUserId = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext): number => {
     const request = ctx.switchToHttp().getRequest<Request>();
-    const id = request.user?.id;
+    const user = request.user as Express.AuthenticatedUserPayload | undefined;
+    const id = user?.id;
 
     if (!id) {
       throw new UnauthorizedException('Usuario no autenticado');

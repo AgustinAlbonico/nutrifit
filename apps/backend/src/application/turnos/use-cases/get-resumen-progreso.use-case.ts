@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { MedicionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/medicion.entity';
 import { SocioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/persona.entity';
 import { NotFoundError } from 'src/domain/exceptions/custom-exceptions';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 export type Tendencia = 'subiendo' | 'bajando' | 'estable';
 export type CategoriaIMC = 'bajo_peso' | 'normal' | 'sobrepeso' | 'obesidad';
@@ -56,6 +57,7 @@ export class GetResumenProgresoUseCase {
     private readonly medicionRepository: Repository<MedicionOrmEntity>,
     @InjectRepository(SocioOrmEntity)
     private readonly socioRepository: Repository<SocioOrmEntity>,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(socioId: number): Promise<ResumenProgresoResponse> {
@@ -73,8 +75,12 @@ export class GetResumenProgresoUseCase {
     const mediciones = await this.medicionRepository
       .createQueryBuilder('medicion')
       .innerJoin('medicion.turno', 'turno')
+      .innerJoin('turno.nutricionista', 'nutricionista')
       .innerJoin('turno.socio', 'socio')
       .where('socio.idPersona = :socioId', { socioId })
+      .andWhere('nutricionista.gimnasioId = :gimnasioId', {
+        gimnasioId: this.tenantContext.gimnasioId,
+      })
       .orderBy('medicion.createdAt', 'ASC')
       .getMany();
 

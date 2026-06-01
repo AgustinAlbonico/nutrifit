@@ -1,8 +1,8 @@
 import { Genero } from './Genero';
-import { AuditableEntity } from '../../shared/auditable.entity';
 
-export abstract class PersonaEntity extends AuditableEntity {
+export abstract class PersonaEntity {
   idPersona: number | null;
+  idPersonaNullable: number | null = null;
   nombre: string;
   apellido: string;
   fechaNacimiento: Date;
@@ -13,7 +13,9 @@ export abstract class PersonaEntity extends AuditableEntity {
   provincia: string;
   dni: string;
   email: string;
+  fechaBaja: Date | null;
   fotoPerfilKey: string | null;
+  /** ID del gimnasio al que pertenece esta persona (tenant isolation) */
   gimnasioId: number;
 
   constructor(
@@ -30,10 +32,9 @@ export abstract class PersonaEntity extends AuditableEntity {
     email: string = '',
     fotoPerfilKey: string | null = null,
     gimnasioId: number = 1,
-    fechaBaja: Date | null = null,
   ) {
-    super(fechaBaja);
     this.idPersona = idPersona;
+    this.idPersonaNullable = idPersona;
     this.nombre = nombre;
     this.apellido = apellido;
     this.fechaNacimiento = fechaNacimiento;
@@ -44,6 +45,7 @@ export abstract class PersonaEntity extends AuditableEntity {
     this.provincia = provincia;
     this.dni = dni;
     this.email = email;
+    this.fechaBaja = null;
     this.fotoPerfilKey = fotoPerfilKey;
     this.gimnasioId = gimnasioId;
   }

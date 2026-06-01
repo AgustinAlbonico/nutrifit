@@ -27,17 +27,20 @@
     "seed:grupos": "ts-node src/seed-grupos.ts",
     "seed:asignar-grupos": "ts-node src/seed-asignar-grupos.ts",
     "seed:build": "tsc -p tsconfig.json",
-    "migration:gen": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate -d src/infrastructure/config/typeorm/migration.schema.ts src/infrastructure/persistence/typeorm/migrations/GlobalSoftDelete"
+    "seed:multi-tenant": "ts-node src/seed-multi-tenant.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
     "@nestjs/jwt": "^11.0.0",
+    "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/schedule": "^6.1.1",
     "@nestjs/swagger": "^11.2.0",
     "@nutrifit/shared": "^1.0.0",
+    "@types/passport-jwt": "^4.0.1",
+    "@types/passport-local": "^1.0.38",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
@@ -50,6 +53,9 @@
     "mysql2": "^3.14.2",
     "nodemailer": "^8.0.7",
     "openai": "^6.24.0",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
+    "passport-local": "^1.0.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "typeorm": "^0.3.25"
@@ -80,7 +86,6 @@
     "supertest": "^7.0.0",
     "ts-jest": "^29.2.5",
     "ts-loader": "^9.5.2",
-    "ts-morph": "^26.0.0",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",
@@ -98,8 +103,12 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "moduleNameMapper": {
-      "src/(.*)": "<rootDir>/$1"
+      "src/(.*)": "<rootDir>/$1",
+      "^@nutrifit/shared$": "<rootDir>/../../../packages/shared/src/index.ts"
     },
+    "transformIgnorePatterns": [
+      "/node_modules/(?!(@nutrifit/shared)/)"
+    ],
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],

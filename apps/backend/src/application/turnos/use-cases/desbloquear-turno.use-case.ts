@@ -18,6 +18,7 @@ import {
 } from 'src/common/utils/argentina-datetime.util';
 import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities';
 import { Repository } from 'typeorm';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 @Injectable()
 export class DesbloquearTurnoUseCase implements BaseUseCase {
@@ -26,6 +27,7 @@ export class DesbloquearTurnoUseCase implements BaseUseCase {
     private readonly turnoRepository: Repository<TurnoOrmEntity>,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(
@@ -33,7 +35,10 @@ export class DesbloquearTurnoUseCase implements BaseUseCase {
     turnoId: number,
   ): Promise<TurnoOperacionResponseDto> {
     const turno = await this.turnoRepository.findOne({
-      where: { idTurno: turnoId },
+      where: {
+        idTurno: turnoId,
+        nutricionista: { gimnasioId: this.tenantContext.gimnasioId },
+      },
       relations: { nutricionista: true, socio: true },
     });
 
