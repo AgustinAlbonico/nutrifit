@@ -19,6 +19,7 @@ const custom_exceptions_1 = require("../../domain/exceptions/custom-exceptions")
 const password_encrypter_service_1 = require("../../domain/services/password-encrypter.service");
 const jwt_service_1 = require("../../domain/services/jwt.service");
 const logger_service_1 = require("../../domain/services/logger.service");
+const crypto_1 = require("crypto");
 let LoginUseCase = class LoginUseCase {
     userRepository;
     passwordEncrypter;
@@ -44,11 +45,24 @@ let LoginUseCase = class LoginUseCase {
         if (persona?.fechaBaja) {
             throw new custom_exceptions_1.UnauthorizedError('La cuenta está inactiva');
         }
+        let gimnasioId;
+        if (persona?.gimnasioId !== undefined && persona.gimnasioId !== null) {
+            gimnasioId = persona.gimnasioId;
+        }
+        else {
+            this.loggerService.warn(`LoginUseCase: Usuario ${email} tiene persona sin gimnasioId, usando fallback a 1 (legacy data)`);
+            gimnasioId = 1;
+        }
+        const personaId = persona?.idPersona ?? null;
+        const jti = (0, crypto_1.randomUUID)();
         const jwtPayload = {
             id: user.idUsuario,
             email: user.email,
             rol: user.rol,
             acciones: user.getAccionesEfectivas(),
+            personaId,
+            gimnasioId,
+            jti,
         };
         const token = this.jwtService.sign(jwtPayload);
         this.loggerService.log('LoginUseCase: Login exitoso para el usuario: ' + user.email);

@@ -44,8 +44,3 @@ export declare class NutricionistaOrmEntity extends PersonaOrmEntity {
     planesAlimentacion: PlanAlimentacionOrmEntity[] | PlanAlimentacionEntity[] | null;
     turnos: TurnoOrmEntity[] | TurnoEntity[] | null;
 }
-export declare class EntrenadorOrmEntity extends PersonaOrmEntity {
-    especialidad: string;
-    fechaBaja: Date | null;
-    turnos: TurnoOrmEntity[] | TurnoEntity[];
-}

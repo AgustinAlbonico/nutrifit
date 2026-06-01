@@ -143,14 +143,6 @@ let ReprogramarTurnoSocioUseCase = class ReprogramarTurnoSocioUseCase {
         }
         return socio;
     }
-    validate24hRule(fechaTurno, horaTurno) {
-        const scheduledDate = (0, argentina_datetime_util_1.combineArgentinaDateAndTime)(fechaTurno, horaTurno);
-        const now = new Date();
-        const hoursDiff = (scheduledDate.getTime() - now.getTime()) / (1000 * 60 * 60);
-        if (hoursDiff < 24) {
-            throw new custom_exceptions_1.BadRequestError('Solo se puede reprogramar con al menos 24 horas de anticipacion.');
-        }
-    }
     async validatePolicyRule(turno) {
         const gimnasioId = turno.gimnasio?.idGimnasio ?? 1;
         const plazoHoras = await this.politicaRepository.getPlazoReprogramacion(gimnasioId);

@@ -5,8 +5,12 @@ export interface IJwtService {
     verify<T extends object>(token: string): T;
 }
 export interface JwtPayload {
-    id: number;
+    id: number | null;
     email: string;
     rol: Rol;
     acciones?: string[];
+    personaId: number | null;
+    gimnasioId: number;
+    jti: string;
+    exp?: number;
 }

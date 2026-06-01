@@ -18,7 +18,6 @@ export declare class ReprogramarTurnoSocioUseCase implements BaseUseCase {
     constructor(usuarioRepository: Repository<UsuarioOrmEntity>, socioRepository: Repository<SocioOrmEntity>, turnoRepository: Repository<TurnoOrmEntity>, agendaRepository: Repository<AgendaOrmEntity>, logger: IAppLoggerService, politicaRepository: IPoliticaOperativaRepository, notificacionesService: NotificacionesService, auditoriaService: AuditoriaService);
     execute(userId: number, turnoId: number, payload: ReprogramarTurnoSocioDto): Promise<TurnoOperacionResponseDto>;
     private resolveSocioByUserId;
-    private validate24hRule;
     private validatePolicyRule;
     private validateAgendaAvailability;
     private validateDateTimeNotInPast;

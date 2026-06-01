@@ -18,21 +18,35 @@ const typeorm_1 = require("typeorm");
 const typeorm_2 = require("@nestjs/typeorm");
 const persona_entity_1 = require("../entities/persona.entity");
 const nutricionista_entity_1 = require("../../../../domain/entities/Persona/Nutricionista/nutricionista.entity");
+const tenant_context_service_1 = require("../../../auth/tenant-context.service");
+function obtenerGimnasioIdActual(tenantContext) {
+    if (!tenantContext?.isInitialized) {
+        throw new Error('Tenant context not initialized — cannot perform tenant-scoped operation');
+    }
+    return tenantContext.gimnasioId;
+}
 let NutricionistaRepositoryImplementation = class NutricionistaRepositoryImplementation {
     nutricionistaRepository;
-    constructor(nutricionistaRepository) {
+    tenantContext;
+    constructor(nutricionistaRepository, tenantContext) {
         this.nutricionistaRepository = nutricionistaRepository;
+        this.tenantContext = tenantContext;
+    }
+    get gimnasioIdActual() {
+        return obtenerGimnasioIdActual(this.tenantContext);
     }
     async save(entity) {
-        const nutricionistaCreado = await this.nutricionistaRepository.save(this.toOrmEntity(entity));
+        const gimnasioId = entity.gimnasioId ?? this.gimnasioIdActual;
+        const nutricionistaCreado = await this.nutricionistaRepository.save(this.toOrmEntity(entity, gimnasioId));
         return this.toDomainEntity(nutricionistaCreado);
     }
     async update(id, entity) {
-        const existing = await this.nutricionistaRepository.findOneBy({
-            idPersona: id,
+        const gimnasioId = this.gimnasioIdActual;
+        const existing = await this.nutricionistaRepository.findOne({
+            where: { idPersona: id, gimnasioId },
         });
         if (!existing) {
-            throw new Error(`Nutricionista with id ${id} not found`);
+            throw new Error(`Nutricionista with id ${id} not found in this gym`);
         }
         existing.nombre = entity.nombre;
         existing.apellido = entity.apellido;
@@ -52,10 +66,19 @@ let NutricionistaRepositoryImplementation = class NutricionistaRepositoryImpleme
         return this.toDomainEntity(updated);
     }
     async delete(id) {
-        await this.nutricionistaRepository.delete(id);
+        const gimnasioId = this.gimnasioIdActual;
+        const resultado = await this.nutricionistaRepository.delete({
+            idPersona: id,
+            gimnasioId,
+        });
+        if (resultado.affected === 0) {
+            throw new Error(`Nutricionista with id ${id} not found in this gym`);
+        }
     }
     async findAll() {
+        const gimnasioId = this.gimnasioIdActual;
         const nutricionistas = await this.nutricionistaRepository.find({
+            where: { gimnasioId },
             relations: {
                 usuario: true,
                 agenda: true,
@@ -66,8 +89,9 @@ let NutricionistaRepositoryImplementation = class NutricionistaRepositoryImpleme
         return nutricionistas.map((nut) => this.toDomainEntity(nut));
     }
     async findById(id) {
+        const gimnasioId = this.gimnasioIdActual;
         const nutricionista = await this.nutricionistaRepository.findOne({
-            where: { idPersona: id },
+            where: { idPersona: id, gimnasioId },
             relations: {
                 usuario: true,
                 agenda: true,
@@ -83,8 +107,9 @@ let NutricionistaRepositoryImplementation = class NutricionistaRepositoryImpleme
         return null;
     }
     async findByDni(dni) {
+        const gimnasioId = this.gimnasioIdActual;
         const nutricionista = await this.nutricionistaRepository.findOne({
-            where: { dni },
+            where: { dni, gimnasioId },
             relations: {
                 usuario: true,
                 agenda: true,
@@ -97,8 +122,9 @@ let NutricionistaRepositoryImplementation = class NutricionistaRepositoryImpleme
         return this.toDomainEntity(nutricionista);
     }
     async findByMatricula(matricula) {
+        const gimnasioId = this.gimnasioIdActual;
         const nutricionista = await this.nutricionistaRepository.findOne({
-            where: { matricula },
+            where: { matricula, gimnasioId },
             relations: {
                 usuario: true,
                 agenda: true,
@@ -110,7 +136,7 @@ let NutricionistaRepositoryImplementation = class NutricionistaRepositoryImpleme
             return null;
         return this.toDomainEntity(nutricionista);
     }
-    toOrmEntity(nutricionista) {
+    toOrmEntity(nutricionista, gimnasioId) {
         return {
             idPersona: nutricionista.idPersona ?? null,
             nombre: nutricionista.nombre,
@@ -129,10 +155,12 @@ let NutricionistaRepositoryImplementation = class NutricionistaRepositoryImpleme
             formacionAcademica: nutricionista.formacionAcademica || [],
             turnos: nutricionista.turnos || [],
             fechaBaja: nutricionista.fechaBaja,
+            gimnasioId,
         };
     }
     toDomainEntity(orm) {
         const entity = new nutricionista_entity_1.NutricionistaEntity(orm.idPersona, orm.nombre, orm.apellido, orm.fechaNacimiento, orm.telefono, orm.genero, orm.direccion, orm.ciudad, orm.provincia, orm.dni ?? '', orm.añosExperiencia, orm.tarifaSesion, orm.agenda || [], [], [], orm.fechaBaja, orm.usuario?.email ?? '');
+        entity.gimnasioId = orm.gimnasioId;
         if (orm.fotoPerfilKey) {
             entity.fotoPerfilKey = orm.fotoPerfilKey;
         }
@@ -143,6 +171,9 @@ exports.NutricionistaRepositoryImplementation = NutricionistaRepositoryImplement
 exports.NutricionistaRepositoryImplementation = NutricionistaRepositoryImplementation = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_2.InjectRepository)(persona_entity_1.NutricionistaOrmEntity)),
-    __metadata("design:paramtypes", [typeorm_1.Repository])
+    __param(1, (0, common_1.Inject)(tenant_context_service_1.TenantContextService)),
+    __param(1, (0, common_1.Optional)()),
+    __metadata("design:paramtypes", [typeorm_1.Repository,
+        tenant_context_service_1.TenantContextService])
 ], NutricionistaRepositoryImplementation);
 //# sourceMappingURL=nutricionista.repository.js.map

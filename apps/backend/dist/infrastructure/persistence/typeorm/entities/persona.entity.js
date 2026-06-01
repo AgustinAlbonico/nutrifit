@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.EntrenadorOrmEntity = exports.NutricionistaOrmEntity = exports.AsistenteOrmEntity = exports.SocioOrmEntity = exports.PersonaOrmEntity = void 0;
+exports.NutricionistaOrmEntity = exports.AsistenteOrmEntity = exports.SocioOrmEntity = exports.PersonaOrmEntity = void 0;
 const class_transformer_1 = require("class-transformer");
 const typeorm_1 = require("typeorm");
 const Genero_1 = require("../../../../domain/entities/Persona/Genero");
@@ -208,29 +208,4 @@ __decorate([
 exports.NutricionistaOrmEntity = NutricionistaOrmEntity = __decorate([
     (0, typeorm_1.ChildEntity)()
 ], NutricionistaOrmEntity);
-let EntrenadorOrmEntity = class EntrenadorOrmEntity extends PersonaOrmEntity {
-    especialidad;
-    fechaBaja;
-    turnos;
-};
-exports.EntrenadorOrmEntity = EntrenadorOrmEntity;
-__decorate([
-    (0, typeorm_1.Column)({ name: 'especialidad', type: 'varchar', length: 100 }),
-    __metadata("design:type", String)
-], EntrenadorOrmEntity.prototype, "especialidad", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'fecha_baja', type: 'datetime', nullable: true }),
-    (0, class_transformer_1.Type)(() => Date),
-    __metadata("design:type", Object)
-], EntrenadorOrmEntity.prototype, "fechaBaja", void 0);
-__decorate([
-    (0, typeorm_1.OneToMany)(() => turno_entity_1.TurnoOrmEntity, (turno) => turno.entrenador, {
-        eager: false,
-        nullable: true,
-    }),
-    __metadata("design:type", Array)
-], EntrenadorOrmEntity.prototype, "turnos", void 0);
-exports.EntrenadorOrmEntity = EntrenadorOrmEntity = __decorate([
-    (0, typeorm_1.ChildEntity)()
-], EntrenadorOrmEntity);
 //# sourceMappingURL=persona.entity.js.map

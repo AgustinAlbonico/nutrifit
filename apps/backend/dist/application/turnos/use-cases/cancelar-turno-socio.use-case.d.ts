@@ -19,7 +19,6 @@ export declare class CancelarTurnoSocioUseCase implements BaseUseCase {
     execute(userId: number | null, turnoId: number, tokenConfirmacion?: string, dto?: CancelarTurnoSocioDto): Promise<TurnoOperacionResponseDto>;
     private validarTokenConfirmacion;
     private resolveSocioByUserId;
-    private validate24hRule;
     private validatePolicyRule;
     private toResponseDto;
 }

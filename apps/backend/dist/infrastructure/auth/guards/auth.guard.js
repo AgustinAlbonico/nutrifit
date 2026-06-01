@@ -17,7 +17,6 @@ const common_1 = require("@nestjs/common");
 const common_2 = require("@nestjs/common");
 const core_1 = require("@nestjs/core");
 const jwt_service_1 = require("../../../domain/services/jwt.service");
-const public_decorator_1 = require("../decorators/public.decorator");
 let JwtAuthGuard = class JwtAuthGuard {
     jwtService;
     reflector;
@@ -26,7 +25,7 @@ let JwtAuthGuard = class JwtAuthGuard {
         this.reflector = reflector;
     }
     canActivate(context) {
-        const isPublic = this.reflector.getAllAndOverride(public_decorator_1.IS_PUBLIC_KEY, [
+        const isPublic = this.reflector.getAllAndOverride('isPublic', [
             context.getHandler(),
             context.getClass(),
         ]);
@@ -42,10 +41,16 @@ let JwtAuthGuard = class JwtAuthGuard {
             throw new common_1.UnauthorizedException('Formato de token invalido');
         }
         try {
-            req.user = this.jwtService.verify(token);
+            const payload = this.jwtService.verify(token);
+            if (payload.gimnasioId === undefined || payload.gimnasioId === null) {
+                throw new common_1.UnauthorizedException('Token sin contexto de tenant');
+            }
+            req.user = payload;
             return true;
         }
-        catch {
+        catch (error) {
+            if (error instanceof common_1.HttpException)
+                throw error;
             throw new common_1.UnauthorizedException('Token inválido');
         }
     }

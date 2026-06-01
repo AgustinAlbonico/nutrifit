@@ -24,7 +24,7 @@ let NutricionistaOwnershipGuard = class NutricionistaOwnershipGuard {
     async canActivate(context) {
         const request = context.switchToHttp().getRequest();
         const user = request.user;
-        if (user?.rol === Rol_1.Rol.ADMIN) {
+        if (user?.rol === Rol_1.Rol.ADMIN || user?.rol === Rol_1.Rol.SUPERADMIN) {
             return true;
         }
         const nutricionistaIdParam = request.params?.nutricionistaId;

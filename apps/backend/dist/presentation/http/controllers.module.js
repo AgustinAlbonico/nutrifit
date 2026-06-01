@@ -40,6 +40,9 @@ const notificacion_entity_1 = require("../../infrastructure/persistence/typeorm/
 const notificaciones_service_1 = require("../../application/notificaciones/notificaciones.service");
 const gimnasio_entity_1 = require("../../infrastructure/persistence/typeorm/entities/gimnasio.entity");
 const gimnasio_repository_1 = require("../../infrastructure/persistence/typeorm/repositories/gimnasio.repository");
+const tenant_context_interceptor_1 = require("../../infrastructure/auth/tenant-context.interceptor");
+const core_1 = require("@nestjs/core");
+const repositories_module_1 = require("../../infrastructure/persistence/typeorm/repositories/repositories.module");
 let ControllersModule = class ControllersModule {
 };
 exports.ControllersModule = ControllersModule;
@@ -65,6 +68,7 @@ exports.ControllersModule = ControllersModule = __decorate([
                 notificacion_entity_1.NotificacionOrmEntity,
                 gimnasio_entity_1.GimnasioOrmEntity,
             ]),
+            repositories_module_1.RepositoriesModule,
         ],
         providers: [
             auth_guard_1.JwtAuthGuard,
@@ -80,6 +84,10 @@ exports.ControllersModule = ControllersModule = __decorate([
             buscar_socios_con_ficha_use_case_1.BuscarSociosConFichaUseCase,
             notificaciones_service_1.NotificacionesService,
             gimnasio_repository_1.GimnasioRepository,
+            {
+                provide: core_1.APP_INTERCEPTOR,
+                useClass: tenant_context_interceptor_1.TenantContextInterceptor,
+            },
         ],
         controllers: [
             controllers_1.AgendaController,

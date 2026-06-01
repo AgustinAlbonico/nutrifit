@@ -13,6 +13,7 @@ const infrastructure_module_1 = require("./infrastructure/infrastructure.module"
 const config_1 = require("@nestjs/config");
 const app_logger_module_1 = require("./infrastructure/common/logger/app-logger.module");
 const schedule_1 = require("@nestjs/schedule");
+const tenant_context_module_1 = require("./infrastructure/auth/tenant-context.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -28,6 +29,7 @@ exports.AppModule = AppModule = __decorate([
                 envFilePath: ['.env'],
                 cache: true,
             }),
+            tenant_context_module_1.TenantContextModule,
         ],
     })
 ], AppModule);

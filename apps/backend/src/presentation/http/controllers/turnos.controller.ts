@@ -88,11 +88,9 @@ import { RolesGuard } from 'src/infrastructure/auth/guards/roles.guard';
 import { SocioResourceAccessGuard } from 'src/infrastructure/auth/guards/socio-resource-access.guard';
 import { TurnoNutricionistaAccessGuard } from 'src/infrastructure/auth/guards/turno-nutricionista-access.guard';
 import { AdjuntoClinicoService } from 'src/infrastructure/services/adjunto-clinico/adjunto-clinico.service';
-import { ConsentimientoGuard } from 'src/infrastructure/auth/guards/consentimiento/consentimiento.guard';
-import { RequiereConsentimientoIa } from 'src/infrastructure/auth/guards/consentimiento/requiere-consentimiento-ia.decorator';
 
 @Controller('turnos')
-@UseGuards(JwtAuthGuard, RolesGuard, ActionsGuard, ConsentimientoGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, ActionsGuard)
 export class TurnosController {
   constructor(
     private readonly getTurnosDelDiaUseCase: GetTurnosDelDiaUseCase,
@@ -237,7 +235,6 @@ export class TurnosController {
   @Get('profesional/:nutricionistaId/pacientes/:socioId/ficha-salud')
   @Rol(RolEnum.NUTRICIONISTA)
   @UseGuards(NutricionistaOwnershipGuard)
-  @RequiereConsentimientoIa()
   async getFichaSaludPaciente(
     @Param('nutricionistaId', ParseIntPipe) nutricionistaId: number,
     @Param('socioId', ParseIntPipe) socioId: number,
@@ -252,7 +249,6 @@ export class TurnosController {
   @Get('profesional/:nutricionistaId/pacientes/:socioId/historial-consultas')
   @Rol(RolEnum.NUTRICIONISTA)
   @UseGuards(NutricionistaOwnershipGuard)
-  @RequiereConsentimientoIa()
   async getHistorialConsultasPaciente(
     @Param('nutricionistaId', ParseIntPipe) nutricionistaId: number,
     @Param('socioId', ParseIntPipe) socioId: number,
@@ -281,7 +277,6 @@ export class TurnosController {
 
   @Put('socio/ficha-salud')
   @Rol(RolEnum.SOCIO)
-  @RequiereConsentimientoIa()
   async upsertFichaSaludSocio(
     @CurrentUserId() userId: number,
     @Body() payload: UpsertFichaSaludSocioDto,
@@ -295,7 +290,6 @@ export class TurnosController {
 
   @Get('socio/ficha-salud')
   @Rol(RolEnum.SOCIO)
-  @RequiereConsentimientoIa()
   async getFichaSaludSocio(
     @CurrentUserId() userId: number,
   ): Promise<FichaSaludSocioResponseDto | null> {
@@ -511,7 +505,6 @@ export class TurnosController {
   @Get('profesional/:nutricionistaId/pacientes/:socioId/historial-mediciones')
   @Rol(RolEnum.NUTRICIONISTA)
   @UseGuards(NutricionistaOwnershipGuard, SocioResourceAccessGuard)
-  @RequiereConsentimientoIa()
   async getHistorialMedicionesPaciente(
     @Param('nutricionistaId', ParseIntPipe) nutricionistaId: number,
     @Param('socioId', ParseIntPipe) socioId: number,
@@ -526,7 +519,6 @@ export class TurnosController {
   @Get('profesional/:nutricionistaId/pacientes/:socioId/progreso')
   @Rol(RolEnum.NUTRICIONISTA)
   @UseGuards(NutricionistaOwnershipGuard, SocioResourceAccessGuard)
-  @RequiereConsentimientoIa()
   async getResumenProgresoPaciente(
     @Param('nutricionistaId', ParseIntPipe) nutricionistaId: number,
     @Param('socioId', ParseIntPipe) socioId: number,

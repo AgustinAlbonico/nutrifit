@@ -2,9 +2,12 @@ import { Repository } from 'typeorm';
 import { SocioOrmEntity } from '../entities/persona.entity';
 import { SocioEntity } from 'src/domain/entities/Persona/Socio/socio.entity';
 import { SocioRepository } from 'src/domain/entities/Persona/Socio/socio.repository';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 export declare class SocioRepositoryImplementation implements SocioRepository {
     private readonly socioRepository;
-    constructor(socioRepository: Repository<SocioOrmEntity>);
+    private readonly tenantContext?;
+    constructor(socioRepository: Repository<SocioOrmEntity>, tenantContext?: TenantContextService | undefined);
+    private get gimnasioIdActual();
     save(entity: SocioEntity): Promise<SocioEntity>;
     update(id: number, entity: SocioEntity): Promise<SocioEntity>;
     delete(id: number): Promise<void>;

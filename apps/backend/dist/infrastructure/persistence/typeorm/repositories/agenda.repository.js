@@ -19,16 +19,28 @@ const agenda_entity_1 = require("../../../../domain/entities/Agenda/agenda.entit
 const typeorm_2 = require("typeorm");
 const agenda_entity_2 = require("../entities/agenda.entity");
 const persona_entity_1 = require("../entities/persona.entity");
+const tenant_context_service_1 = require("../../../auth/tenant-context.service");
+const custom_exceptions_1 = require("../../../../domain/exceptions/custom-exceptions");
 let AgendaRepositoryImplementation = class AgendaRepositoryImplementation {
     agendaRepository;
-    constructor(agendaRepository) {
+    nutricionistaRepository;
+    tenantContext;
+    constructor(agendaRepository, nutricionistaRepository, tenantContext) {
         this.agendaRepository = agendaRepository;
+        this.nutricionistaRepository = nutricionistaRepository;
+        this.tenantContext = tenantContext;
     }
     async findByNutricionistaId(nutricionistaId) {
-        const agendas = await this.agendaRepository.find({
+        const gimnasioIdActual = this.tenantContext?.isInitialized
+            ? this.tenantContext.gimnasioId
+            : undefined;
+        const relaciones = await this.agendaRepository.find({
             where: {
                 nutricionista: {
                     idPersona: nutricionistaId,
+                    ...(gimnasioIdActual !== undefined && {
+                        gimnasioId: gimnasioIdActual,
+                    }),
                 },
             },
             order: {
@@ -36,9 +48,24 @@ let AgendaRepositoryImplementation = class AgendaRepositoryImplementation {
                 horaInicio: 'ASC',
             },
         });
-        return agendas.map((agenda) => this.toDomainEntity(agenda));
+        return relaciones.map((agenda) => this.toDomainEntity(agenda));
     }
     async replaceByNutricionistaId(nutricionistaId, agendas) {
+        const gimnasioIdActual = this.tenantContext?.isInitialized
+            ? this.tenantContext.gimnasioId
+            : undefined;
+        if (gimnasioIdActual !== undefined) {
+            const ownerNutri = await this.nutricionistaRepository.findOne({
+                where: { idPersona: nutricionistaId },
+                select: ['idPersona', 'gimnasioId'],
+            });
+            if (!ownerNutri) {
+                throw new custom_exceptions_1.BadRequestError('Nutricionista no encontrado');
+            }
+            if (ownerNutri.gimnasioId !== gimnasioIdActual) {
+                throw new custom_exceptions_1.BadRequestError('No tienes permiso para modificar la agenda de este nutricionista');
+            }
+        }
         await this.agendaRepository
             .createQueryBuilder()
             .delete()
@@ -68,6 +95,9 @@ exports.AgendaRepositoryImplementation = AgendaRepositoryImplementation;
 exports.AgendaRepositoryImplementation = AgendaRepositoryImplementation = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(agenda_entity_2.AgendaOrmEntity)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __param(1, (0, typeorm_1.InjectRepository)(persona_entity_1.NutricionistaOrmEntity)),
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
+        tenant_context_service_1.TenantContextService])
 ], AgendaRepositoryImplementation);
 //# sourceMappingURL=agenda.repository.js.map

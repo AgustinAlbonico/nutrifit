@@ -1,6 +1,7 @@
 import { Genero } from './Genero';
 export declare abstract class PersonaEntity {
     idPersona: number | null;
+    idPersonaNullable: number | null;
     nombre: string;
     apellido: string;
     fechaNacimiento: Date;
@@ -13,5 +14,6 @@ export declare abstract class PersonaEntity {
     email: string;
     fechaBaja: Date | null;
     fotoPerfilKey: string | null;
-    constructor(idPersona: number | null | undefined, nombre: string, apellido: string, fechaNacimiento: Date, telefono: string, genero: Genero, direccion: string, ciudad: string, provincia: string, dni: string, email?: string, fotoPerfilKey?: string | null);
+    gimnasioId: number;
+    constructor(idPersona: number | null | undefined, nombre: string, apellido: string, fechaNacimiento: Date, telefono: string, genero: Genero, direccion: string, ciudad: string, provincia: string, dni: string, email?: string, fotoPerfilKey?: string | null, gimnasioId?: number);
 }

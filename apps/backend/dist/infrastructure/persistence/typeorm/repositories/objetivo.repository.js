@@ -17,23 +17,37 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const objetivo_entity_1 = require("../entities/objetivo.entity");
+const tenant_context_service_1 = require("../../../auth/tenant-context.service");
 const ESTADO_ACTIVO = 'ACTIVO';
 const ESTADOS_CERRADOS = ['COMPLETADO', 'ABANDONADO'];
+function obtenerGimnasioIdActual(tenantContext) {
+    if (!tenantContext?.isInitialized) {
+        throw new Error('Tenant context not initialized — cannot perform tenant-scoped operation');
+    }
+    return tenantContext.gimnasioId;
+}
 let ObjetivoRepository = class ObjetivoRepository {
     objetivoRepository;
-    constructor(objetivoRepository) {
+    tenantContext;
+    constructor(objetivoRepository, tenantContext) {
         this.objetivoRepository = objetivoRepository;
+        this.tenantContext = tenantContext;
+    }
+    get gimnasioIdActual() {
+        return obtenerGimnasioIdActual(this.tenantContext);
     }
     async findById(idObjetivo) {
+        const gimnasioId = this.gimnasioIdActual;
         return this.objetivoRepository.findOne({
-            where: { idObjetivo },
+            where: { idObjetivo, socio: { gimnasioId } },
             relations: { socio: true },
         });
     }
     async findActivosBySocioId(socioId) {
+        const gimnasioId = this.gimnasioIdActual;
         return this.objetivoRepository.find({
             where: {
-                socio: { idPersona: socioId },
+                socio: { idPersona: socioId, gimnasioId },
                 estado: ESTADO_ACTIVO,
             },
             relations: { socio: true },
@@ -41,9 +55,10 @@ let ObjetivoRepository = class ObjetivoRepository {
         });
     }
     async findCompletadosBySocioId(socioId) {
+        const gimnasioId = this.gimnasioIdActual;
         return this.objetivoRepository.find({
             where: {
-                socio: { idPersona: socioId },
+                socio: { idPersona: socioId, gimnasioId },
                 estado: (0, typeorm_2.In)(ESTADOS_CERRADOS),
             },
             relations: { socio: true },
@@ -51,9 +66,10 @@ let ObjetivoRepository = class ObjetivoRepository {
         });
     }
     async findActivoByTipo(socioId, tipoMetrica) {
+        const gimnasioId = this.gimnasioIdActual;
         return this.objetivoRepository.findOne({
             where: {
-                socio: { idPersona: socioId },
+                socio: { idPersona: socioId, gimnasioId },
                 tipoMetrica,
                 estado: ESTADO_ACTIVO,
             },
@@ -61,10 +77,23 @@ let ObjetivoRepository = class ObjetivoRepository {
         });
     }
     async save(entity) {
+        const gimnasioId = this.gimnasioIdActual;
+        if (entity.socio) {
+            if (entity.socio.gimnasioId !== gimnasioId) {
+                throw new Error('Socio no pertenece al gimnasio actual');
+            }
+        }
         const objetivo = this.objetivoRepository.create(entity);
         return this.objetivoRepository.save(objetivo);
     }
     async updateEstado(idObjetivo, estado) {
+        const gimnasioId = this.gimnasioIdActual;
+        const objetivo = await this.objetivoRepository.findOne({
+            where: { idObjetivo, socio: { gimnasioId } },
+        });
+        if (!objetivo) {
+            throw new Error(`Objetivo with id ${idObjetivo} not found in this gym`);
+        }
         await this.objetivoRepository.update(idObjetivo, {
             estado,
             updatedAt: new Date(),
@@ -75,6 +104,9 @@ exports.ObjetivoRepository = ObjetivoRepository;
 exports.ObjetivoRepository = ObjetivoRepository = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(objetivo_entity_1.ObjetivoOrmEntity)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __param(1, (0, common_1.Inject)(tenant_context_service_1.TenantContextService)),
+    __param(1, (0, common_1.Optional)()),
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        tenant_context_service_1.TenantContextService])
 ], ObjetivoRepository);
 //# sourceMappingURL=objetivo.repository.js.map

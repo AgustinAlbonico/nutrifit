@@ -1,9 +1,12 @@
 import { Repository } from 'typeorm';
 import { TipoFoto } from 'src/domain/entities/FotoProgreso/tipo-foto.enum';
 import { FotoProgresoOrmEntity } from '../entities/foto-progreso.entity';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 export declare class FotoProgresoRepository {
     private readonly fotoProgresoOrmRepository;
-    constructor(fotoProgresoOrmRepository: Repository<FotoProgresoOrmEntity>);
+    private readonly tenantContext?;
+    constructor(fotoProgresoOrmRepository: Repository<FotoProgresoOrmEntity>, tenantContext?: TenantContextService | undefined);
+    private get gimnasioIdActual();
     findBySocioId(socioId: number): Promise<FotoProgresoOrmEntity[]>;
     findBySocioIdAndTipo(socioId: number, tipoFoto: TipoFoto): Promise<FotoProgresoOrmEntity[]>;
     findLatestBySocioId(socioId: number): Promise<FotoProgresoOrmEntity[]>;

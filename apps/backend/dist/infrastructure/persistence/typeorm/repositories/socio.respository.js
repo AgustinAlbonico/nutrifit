@@ -18,16 +18,37 @@ const typeorm_1 = require("typeorm");
 const typeorm_2 = require("@nestjs/typeorm");
 const persona_entity_1 = require("../entities/persona.entity");
 const socio_entity_1 = require("../../../../domain/entities/Persona/Socio/socio.entity");
+const tenant_context_service_1 = require("../../../auth/tenant-context.service");
+function obtenerGimnasioIdActual(tenantContext) {
+    if (!tenantContext?.isInitialized) {
+        throw new Error('Tenant context not initialized — cannot perform tenant-scoped operation');
+    }
+    return tenantContext.gimnasioId;
+}
 let SocioRepositoryImplementation = class SocioRepositoryImplementation {
     socioRepository;
-    constructor(socioRepository) {
+    tenantContext;
+    constructor(socioRepository, tenantContext) {
         this.socioRepository = socioRepository;
+        this.tenantContext = tenantContext;
+    }
+    get gimnasioIdActual() {
+        return obtenerGimnasioIdActual(this.tenantContext);
     }
     async save(entity) {
-        const socioCreado = await this.socioRepository.save(this.toOrmEntity(entity));
+        const gimnasioId = entity.gimnasioId ?? this.gimnasioIdActual;
+        const socioCreado = await this.socioRepository.save(this.toOrmEntity(entity, gimnasioId));
         return this.toEntity(socioCreado);
     }
     async update(id, entity) {
+        const gimnasioId = this.gimnasioIdActual;
+        const existente = await this.socioRepository.findOne({
+            where: { idPersona: id, gimnasioId },
+            relations: ['usuario'],
+        });
+        if (!existente) {
+            throw new Error(`Socio con id ${id} no encontrado en este gimnasio`);
+        }
         await this.socioRepository.update(id, {
             nombre: entity.nombre,
             apellido: entity.apellido,
@@ -41,7 +62,7 @@ let SocioRepositoryImplementation = class SocioRepositoryImplementation {
             fotoPerfilKey: entity.fotoPerfilKey,
         });
         const socioActualizado = await this.socioRepository.findOne({
-            where: { idPersona: id },
+            where: { idPersona: id, gimnasioId },
             relations: ['usuario'],
         });
         if (!socioActualizado) {
@@ -50,25 +71,36 @@ let SocioRepositoryImplementation = class SocioRepositoryImplementation {
         return this.toEntity(socioActualizado);
     }
     async delete(id) {
-        await this.socioRepository.update(id, { fechaBaja: new Date() });
+        const gimnasioId = this.gimnasioIdActual;
+        const resultado = await this.socioRepository.update({ idPersona: id, gimnasioId }, { fechaBaja: new Date() });
+        if (resultado.affected === 0) {
+            throw new Error(`Socio con id ${id} no encontrado en este gimnasio`);
+        }
     }
     async reactivar(id) {
-        await this.socioRepository.update(id, { fechaBaja: null });
+        const gimnasioId = this.gimnasioIdActual;
+        const resultado = await this.socioRepository.update({ idPersona: id, gimnasioId }, { fechaBaja: null });
+        if (resultado.affected === 0) {
+            throw new Error(`Socio con id ${id} no encontrado en este gimnasio`);
+        }
     }
     async findAll() {
+        const gimnasioId = this.gimnasioIdActual;
         const socios = await this.socioRepository.find({
+            where: { gimnasioId },
             relations: ['usuario'],
             order: { idPersona: 'ASC' },
         });
         return socios.map((socio) => this.toEntity(socio));
     }
     async findById(id) {
+        const gimnasioId = this.gimnasioIdActual;
         const socio = await this.socioRepository.findOne({
-            where: { idPersona: id },
+            where: { idPersona: id, gimnasioId },
         });
         return socio ? this.toEntity(socio) : null;
     }
-    toOrmEntity(socio) {
+    toOrmEntity(socio, gimnasioId) {
         const orm = new persona_entity_1.SocioOrmEntity();
         orm.idPersona = socio.idPersona;
         orm.nombre = socio.nombre;
@@ -85,10 +117,11 @@ let SocioRepositoryImplementation = class SocioRepositoryImplementation {
         orm.fichaSalud = null;
         orm.planesAlimentacion = [];
         orm.turnos = [];
+        orm.gimnasioId = gimnasioId;
         return orm;
     }
     toEntity(orm) {
-        const entity = new socio_entity_1.SocioEntity(orm.idPersona, orm.nombre, orm.apellido, orm.fechaNacimiento, orm.telefono, orm.genero, orm.direccion, orm.ciudad, orm.provincia, orm.dni ?? '', [], null, []);
+        const entity = new socio_entity_1.SocioEntity(orm.idPersona, orm.nombre, orm.apellido, orm.fechaNacimiento, orm.telefono, orm.genero, orm.direccion, orm.ciudad, orm.provincia, orm.dni ?? '', [], null, [], orm.gimnasioId);
         if (orm.fechaBaja) {
             entity.fechaBaja = orm.fechaBaja;
         }
@@ -105,6 +138,9 @@ exports.SocioRepositoryImplementation = SocioRepositoryImplementation;
 exports.SocioRepositoryImplementation = SocioRepositoryImplementation = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_2.InjectRepository)(persona_entity_1.SocioOrmEntity)),
-    __metadata("design:paramtypes", [typeorm_1.Repository])
+    __param(1, (0, common_1.Inject)(tenant_context_service_1.TenantContextService)),
+    __param(1, (0, common_1.Optional)()),
+    __metadata("design:paramtypes", [typeorm_1.Repository,
+        tenant_context_service_1.TenantContextService])
 ], SocioRepositoryImplementation);
 //# sourceMappingURL=socio.respository.js.map

@@ -34,7 +34,6 @@ let TurnoOrmEntity = class TurnoOrmEntity {
     adjuntos;
     socio;
     nutricionista;
-    entrenador;
     gimnasio;
 };
 exports.TurnoOrmEntity = TurnoOrmEntity;
@@ -123,13 +122,6 @@ __decorate([
     (0, typeorm_1.JoinColumn)({ name: 'id_nutricionista' }),
     __metadata("design:type", persona_entity_1.NutricionistaOrmEntity)
 ], TurnoOrmEntity.prototype, "nutricionista", void 0);
-__decorate([
-    (0, typeorm_1.ManyToOne)(() => persona_entity_1.EntrenadorOrmEntity, (entrenador) => entrenador.turnos, {
-        nullable: true,
-    }),
-    (0, typeorm_1.JoinColumn)({ name: 'id_entrenador' }),
-    __metadata("design:type", persona_entity_1.EntrenadorOrmEntity)
-], TurnoOrmEntity.prototype, "entrenador", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => gimnasio_entity_1.GimnasioOrmEntity, (gimnasio) => gimnasio.turnos, {
         nullable: true,

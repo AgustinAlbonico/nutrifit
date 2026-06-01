@@ -2,7 +2,7 @@ import { EstadoTurno } from 'src/domain/entities/Turno/EstadoTurno';
 import { GimnasioOrmEntity } from './gimnasio.entity';
 import { ObservacionClinicaOrmEntity } from './observacion-clinica.entity';
 import { MedicionOrmEntity } from './medicion.entity';
-import { EntrenadorOrmEntity, NutricionistaOrmEntity, SocioOrmEntity } from './persona.entity';
+import { NutricionistaOrmEntity, SocioOrmEntity } from './persona.entity';
 import { AdjuntoClinicoOrmEntity } from './adjunto-clinico.entity';
 export declare class TurnoOrmEntity {
     idTurno: number;
@@ -21,6 +21,5 @@ export declare class TurnoOrmEntity {
     adjuntos: AdjuntoClinicoOrmEntity[];
     socio: SocioOrmEntity;
     nutricionista: NutricionistaOrmEntity;
-    entrenador?: EntrenadorOrmEntity;
     gimnasio: GimnasioOrmEntity;
 }

@@ -29,6 +29,7 @@ let UsuarioRepositoryImplementation = class UsuarioRepositoryImplementation {
         const user = await this.userRepository.findOne({
             where: { email },
             relations: {
+                persona: true,
                 acciones: true,
                 grupos: {
                     acciones: true,
@@ -42,7 +43,28 @@ let UsuarioRepositoryImplementation = class UsuarioRepositoryImplementation {
             return null;
         const { idUsuario, contraseña, rol } = user;
         const mapGrupo = (group) => new grupo_permiso_entity_1.GrupoPermisoEntity(group.id, group.clave, group.nombre, group.descripcion, (group.acciones ?? []).map((action) => new accion_permiso_entity_1.AccionPermisoEntity(action.id, action.clave, action.nombre, action.descripcion)), (group.hijos ?? []).map((child) => new grupo_permiso_entity_1.GrupoPermisoEntity(child.id, child.clave, child.nombre, child.descripcion, (child.acciones ?? []).map((action) => new accion_permiso_entity_1.AccionPermisoEntity(action.id, action.clave, action.nombre, action.descripcion)))));
-        const formatedUser = new usuario_entity_2.UsuarioEntity(idUsuario, email, contraseña, null, rol, (user.grupos ?? []).map(mapGrupo), (user.acciones ?? []).map((action) => new accion_permiso_entity_1.AccionPermisoEntity(action.id, action.clave, action.nombre, action.descripcion)));
+        let formatedPersona = null;
+        if (user.persona) {
+            const personaOrm = user.persona;
+            formatedPersona = {
+                idPersona: user.persona.idPersona ?? null,
+                idPersonaNullable: user.persona.idPersona ?? null,
+                nombre: user.persona.nombre,
+                apellido: user.persona.apellido,
+                fechaNacimiento: user.persona.fechaNacimiento,
+                telefono: user.persona.telefono,
+                genero: user.persona.genero,
+                direccion: user.persona.direccion,
+                ciudad: user.persona.ciudad,
+                provincia: user.persona.provincia,
+                dni: user.persona.dni ?? '',
+                email: user.persona.usuario?.email ?? '',
+                fotoPerfilKey: user.persona.fotoPerfilKey,
+                gimnasioId: user.persona.gimnasioId ?? 1,
+                fechaBaja: personaOrm.fechaBaja ?? null,
+            };
+        }
+        const formatedUser = new usuario_entity_2.UsuarioEntity(idUsuario, email, contraseña, formatedPersona, rol, (user.grupos ?? []).map(mapGrupo), (user.acciones ?? []).map((action) => new accion_permiso_entity_1.AccionPermisoEntity(action.id, action.clave, action.nombre, action.descripcion)));
         return formatedUser;
     }
     async findPersonaIdByUserId(userId) {
