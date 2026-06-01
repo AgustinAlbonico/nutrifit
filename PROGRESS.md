@@ -13,7 +13,7 @@
 | 1 | Auth + Login + SUPERADMIN relaxation | ✅ Completo | 100% | 11 tasks TDD completadas. Commits `982e0d2`..`79aad51` |
 | 2 | Seed multi-tenant (3 gyms) | ✅ Completo | 100% | 3 gimnasios + usuarios por tenant creados |
 | 3 | Aislamiento use-cases de Turnos | ✅ Completo | 100% | 25 use-cases modificados + 12 tests de integración |
-| 4 | Aislamiento repos resto (Plan/Ficha/etc.) | ⏳ Pendiente | 0% | |
+| 4 | Aislamiento use-cases de PlanAlimentacion/AI | ✅ Completo | 100% | 11 use-cases modificados + 10 tests de integración |
 | 5 | CRUD Gimnasios + Impersonación | ⏳ Pendiente | 0% | |
 | 6 | Frontend: AuthContext + TenantSwitcher | ⏳ Pendiente | 0% | |
 | 7 | Frontend: Gestión + Wizard | ⏳ Pendiente | 0% | |
@@ -224,14 +224,47 @@ git status
 - `SocioOrmEntity` — 9 use-cases (vía joins)
 - `NutricionistaOrmEntity` — 3 use-cases (vía joins)
 
-## Próximos pasos (sesión 4+)
+## Plan 4 completado (2026-06-01)
 
-1. **Plan 4:** Aislamiento en use-cases de PlanAlimentacion, FichaSalud, ObservacionClinica, SugerenciaIA
-2. **Plan 5:** CRUD Gimnasios + endpoint `POST /gimnasios/:id/impersonar` (usa `impersonatedBy` de Plan 1)
-3. **Plan 6:** Frontend AuthContext + TenantSwitcher
+**11 use-cases de PlanAlimentacion y AI modificados con aislamiento multi-tenant:**
+
+**Task 1: Identificación**
+- ✅ Análisis de use-cases en `planes-alimentacion` (8) y `ai` (6)
+- ✅ 11 requieren modificación (usan `@InjectRepository` directamente)
+- ✅ 3 no requieren cambios (no usan repos)
+
+**Task 2: Use-cases de planes-alimentacion (8)**
+- ✅ crear-plan-alimentacion, editar-plan-alimentacion, eliminar-plan-alimentacion, obtener-plan-por-id
+- ✅ obtener-plan-activo-socio, listar-planes-socio, listar-planes-nutricionista, vaciar-contenido-plan
+- Commits: `42682f2`, `08cf893`, `1e9a239`, `382ee62`, `f73677c`, `0845ad3`, `11b7c20`, `791ae08`
+
+**Task 3: Use-cases de ai/sugerencia-ia (3)**
+- ✅ analizar-plan-nutricional, generar-ideas-comida, preparar-contexto-paciente
+- Commits: `6ba5997`, `d484841`, `55668ba`
+- Cambio adicional: `sugerencia-ia.entity.ts` (agregada relación con SocioOrmEntity para filtrado)
+
+**Task 4: Tests de integración**
+- ✅ 3 suites de tests creadas (10 tests totales)
+- Commit: `b92002d`
+
+**Patrón aplicado:**
+- Inyección de `TenantContextService` en constructor
+- Filtro `gimnasioId` en queries de `PlanAlimentacionOrmEntity`, `SugerenciaIAOrmEntity`, `SocioOrmEntity`
+- Verificación: typecheck pasa (errores pre-existentes en e2e tests no relacionados)
+
+**Entidades aisladas:**
+- `PlanAlimentacionOrmEntity` — 8 use-cases
+- `SugerenciaIAOrmEntity` — 1 use-case
+- `SocioOrmEntity` — 2 use-cases
+
+## Próximos pasos (sesión 5+)
+
+1. **Plan 5:** CRUD Gimnasios + endpoint `POST /gimnasios/:id/impersonar` (usa `impersonatedBy` de Plan 1)
+2. **Plan 6:** Frontend AuthContext + TenantSwitcher
+3. **Plan 7:** Frontend Gestión + Wizard
 
 **Nota:** Los 4 test failures pre-existentes y los errores de typecheck/lint NO son blockers para Plan 1. Son deuda técnica que se puede abordar en un plan separado de "tech debt cleanup".
 
 ---
 *Generado por: opencode (sesión `multi-tenant-admin-2026-06-01`)*
-*Última actualización: Plan 3 completado 2026-06-01*
+*Última actualización: Plan 4 completado 2026-06-01*
