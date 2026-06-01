@@ -22,6 +22,7 @@ import {
   NutricionistaOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
 import { Not, Repository } from 'typeorm';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 @Injectable()
 export class GetAgendaDiariaUseCase implements BaseUseCase {
@@ -32,6 +33,7 @@ export class GetAgendaDiariaUseCase implements BaseUseCase {
     private readonly turnoRepository: Repository<TurnoOrmEntity>,
     @InjectRepository(NutricionistaOrmEntity)
     private readonly nutricionistaRepository: Repository<NutricionistaOrmEntity>,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(
@@ -52,7 +54,7 @@ export class GetAgendaDiariaUseCase implements BaseUseCase {
     // 1. Obtener configuracion de agenda para ese dia
     const agendas = await this.agendaRepository.find({
       where: {
-        nutricionista: { idPersona: nutricionistaId },
+        nutricionista: { idPersona: nutricionistaId, gimnasioId: this.tenantContext.gimnasioId },
         dia: diaSemana,
       },
       order: { horaInicio: 'ASC' },
@@ -65,7 +67,7 @@ export class GetAgendaDiariaUseCase implements BaseUseCase {
     // 2. Obtener turnos existentes para ese dia
     const turnos = await this.turnoRepository.find({
       where: {
-        nutricionista: { idPersona: nutricionistaId },
+        nutricionista: { idPersona: nutricionistaId, gimnasioId: this.tenantContext.gimnasioId },
         fechaTurno: fecha,
         estadoTurno: Not(EstadoTurno.CANCELADO),
       },
