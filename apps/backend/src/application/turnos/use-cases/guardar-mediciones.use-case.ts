@@ -9,6 +9,7 @@ import {
   NotFoundError,
 } from 'src/domain/exceptions/custom-exceptions';
 import { GuardarMedicionesDto } from '../dtos/guardar-mediciones.dto';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 export interface GuardarMedicionesResponse {
   success: boolean;
@@ -23,6 +24,7 @@ export class GuardarMedicionesUseCase {
     private readonly turnoRepository: Repository<TurnoOrmEntity>,
     @InjectRepository(MedicionOrmEntity)
     private readonly medicionRepository: Repository<MedicionOrmEntity>,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(
@@ -30,8 +32,11 @@ export class GuardarMedicionesUseCase {
     dto: GuardarMedicionesDto,
   ): Promise<GuardarMedicionesResponse> {
     const turno = await this.turnoRepository.findOne({
-      where: { idTurno: turnoId },
-      relations: ['socio', 'socio.fichaSalud'],
+      where: {
+        idTurno: turnoId,
+        nutricionista: { gimnasioId: this.tenantContext.gimnasioId },
+      },
+      relations: ['socio', 'socio.fichaSalud', 'nutricionista'],
     });
 
     if (!turno) {
@@ -57,8 +62,12 @@ export class GuardarMedicionesUseCase {
       const ultimaMedicion = await this.medicionRepository
         .createQueryBuilder('medicion')
         .innerJoin('medicion.turno', 'turno')
+        .innerJoin('turno.nutricionista', 'nutricionista')
         .innerJoin('turno.socio', 'socio')
         .where('socio.idPersona = :socioId', { socioId: turno.socio.idPersona })
+        .andWhere('nutricionista.gimnasioId = :gimnasioId', {
+          gimnasioId: this.tenantContext.gimnasioId,
+        })
         .orderBy('medicion.createdAt', 'DESC')
         .getOne();
       if (ultimaMedicion) {
