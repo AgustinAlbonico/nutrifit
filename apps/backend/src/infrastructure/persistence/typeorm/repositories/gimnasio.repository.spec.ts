@@ -27,6 +27,7 @@ describe('GimnasioRepositoryImplementation', () => {
     umbralAusenteMinutos: 15,
     emailNotificaciones: null,
     emailHabilitado: true,
+    fechaBaja: null,
     turnos: [],
     ...overrides,
   });

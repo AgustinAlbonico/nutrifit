@@ -17,6 +17,7 @@ describe('PermisosService', () => {
     clave,
     nombre: '',
     descripcion: null,
+    fechaBaja: null,
     grupos: [],
     usuarios: [],
   });

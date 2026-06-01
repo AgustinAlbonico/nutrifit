@@ -37,10 +37,10 @@ export class EntrenadorEntity extends PersonaEntity {
       email,
       null,
       1,
-      fechaBaja,
     );
     this.especialidad = especialidad;
     this.turnos = turnos;
+    this.fechaBaja = fechaBaja;
     this.fotoPerfilKey = null;
   }
 }

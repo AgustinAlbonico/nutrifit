@@ -47,13 +47,13 @@ export class NutricionistaEntity extends PersonaEntity {
       email,
       null,
       1,
-      fechaBaja,
     );
     this.tarifaSesion = tarifaSesion;
     this.añosExperiencia = experiencia;
     this.agendas = agendas;
     this.formacionAcademica = formacionAcademica;
     this.turnos = turnos;
+    this.fechaBaja = fechaBaja;
     this.fotoPerfilKey = null;
   }
 }

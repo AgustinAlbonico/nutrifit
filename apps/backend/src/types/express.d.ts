@@ -12,8 +12,8 @@ declare global {
       email: string;
       rol: Rol;
       acciones?: string[];
-      /** ID del gimnasio al que pertenece el usuario (tenant isolation) */
-      gimnasioId: number;
+      /** ID del gimnasio al que pertenece el usuario (null para SUPERADMIN cross-tenant) */
+      gimnasioId: number | null;
       /** ID de la persona asociada (puede ser null para admins) */
       personaId: number | null;
       /** Identificador único del token (para revocación) */

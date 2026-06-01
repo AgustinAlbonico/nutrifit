@@ -23,10 +23,11 @@ import { UsuarioOrmEntity } from './usuario.entity';
 import { TurnoOrmEntity } from './turno.entity';
 import { TurnoEntity } from 'src/domain/entities/Turno/turno.entity';
 import { GimnasioOrmEntity } from './gimnasio.entity';
+import { AuditableOrmEntity } from '../common/auditable.orm-entity';
 
 @Entity('persona')
 @TableInheritance({ column: { type: 'varchar', name: 'tipo_persona' } })
-export abstract class PersonaOrmEntity {
+export abstract class PersonaOrmEntity extends AuditableOrmEntity {
   @PrimaryGeneratedColumn({ name: 'id_persona' })
   idPersona: number | null;
 
@@ -81,10 +82,6 @@ export class SocioOrmEntity extends PersonaOrmEntity {
   @Type(() => Date)
   fechaAlta: Date;
 
-  @Column({ name: 'fecha_baja', type: 'datetime', nullable: true })
-  @Type(() => Date)
-  fechaBaja: Date | null;
-
   @OneToOne(() => FichaSaludOrmEntity, {
     eager: false,
     nullable: true,
@@ -107,7 +104,7 @@ export class SocioOrmEntity extends PersonaOrmEntity {
 }
 
 @ChildEntity()
-export class AsistenteOrmEntity extends PersonaOrmEntity {}
+export class RecepcionistaOrmEntity extends PersonaOrmEntity {}
 
 @ChildEntity()
 export class NutricionistaOrmEntity extends PersonaOrmEntity {
@@ -119,10 +116,6 @@ export class NutricionistaOrmEntity extends PersonaOrmEntity {
 
   @Column({ name: 'tarifa_sesion', type: 'decimal', precision: 10, scale: 2 })
   tarifaSesion: number;
-
-  @Column({ name: 'fecha_baja', type: 'datetime', nullable: true })
-  @Type(() => Date)
-  fechaBaja: Date | null;
 
   @OneToMany(() => AgendaOrmEntity, (agenda) => agenda.nutricionista, {
     eager: false,

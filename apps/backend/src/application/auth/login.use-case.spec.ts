@@ -54,6 +54,7 @@ describe('LoginUseCase - fechaBaja blocking', () => {
     email: 'juan@test.com',
     contraseña: 'hashedPassword123',
     fechaHoraAlta: new Date(),
+    fechaBaja: null,
     rol: 'SOCIO' as Rol,
     persona: mockPersonaActiva as PersonaEntity,
     grupos: [],
@@ -66,6 +67,7 @@ describe('LoginUseCase - fechaBaja blocking', () => {
     email: 'maria@test.com',
     contraseña: 'hashedPassword123',
     fechaHoraAlta: new Date(),
+    fechaBaja: null,
     rol: 'SOCIO' as Rol,
     persona: mockPersonaInactiva as PersonaEntity,
     grupos: [],
@@ -197,6 +199,7 @@ describe('SUPERADMIN without persona', () => {
     email: 'super@nutrifit.com',
     contraseña: 'hashed',
     fechaHoraAlta: new Date(),
+    fechaBaja: null,
     rol: 'SUPERADMIN' as Rol,
     persona: null, // SUPERADMIN no tiene persona
     grupos: [],
@@ -284,6 +287,7 @@ describe('LoginUseCase - non-SUPERADMIN without gimnasioId should fail', () => {
     email: 'nogym@test.com',
     contraseña: 'hashed',
     fechaHoraAlta: new Date(),
+    fechaBaja: null,
     rol: 'SOCIO' as Rol,
     persona: {
       idPersona: 5,

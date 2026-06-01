@@ -30,7 +30,7 @@ export class RecepcionistaEntity extends PersonaEntity {
       '',
       null,
       1,
-      fechaBaja,
     );
+    this.fechaBaja = fechaBaja;
   }
 }
