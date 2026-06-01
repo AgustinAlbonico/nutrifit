@@ -202,5 +202,45 @@ describe('JwtAuthGuard', () => {
       );
       expect((mockRequest as any).user).toBeUndefined();
     });
+
+    it('should allow SUPERADMIN with null gimnasioId (cross-tenant admin)', () => {
+      jest.spyOn(guard['reflector'], 'getAllAndOverride').mockReturnValue(false);
+
+      const superadminPayload = {
+        id: 1,
+        email: 'superadmin@nutrifit.com',
+        rol: 'SUPERADMIN' as Rol,
+        personaId: null,  // SUPERADMIN no tiene persona
+        gimnasioId: null,  // explícitamente null
+        jti: 'jti-super',
+      };
+
+      jest.spyOn(jwtService, 'verify').mockReturnValue(superadminPayload as any);
+
+      const result = guard.canActivate(createMockContext('Bearer superadmin-token'));
+
+      expect(result).toBe(true);
+      expect((mockRequest as any).user).toEqual(superadminPayload);
+    });
+
+    it('should still reject SOCIO with null gimnasioId', () => {
+      jest.spyOn(guard['reflector'], 'getAllAndOverride').mockReturnValue(false);
+
+      const socioPayload = {
+        id: 2,
+        email: 'socio@test.com',
+        rol: 'SOCIO' as Rol,
+        personaId: 5,
+        gimnasioId: null,
+        jti: 'jti-socio',
+      };
+
+      jest.spyOn(jwtService, 'verify').mockReturnValue(socioPayload as any);
+
+      const context = createMockContext('Bearer socio-tenantless-token');
+
+      expect(() => guard.canActivate(context)).toThrow(UnauthorizedException);
+      expect(() => guard.canActivate(context)).toThrow('Token sin contexto de tenant');
+    });
   });
 });
