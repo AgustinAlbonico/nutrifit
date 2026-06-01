@@ -17,7 +17,7 @@ interface AuthenticatedRequest extends Request {
     email: string;
     rol: Rol;
     acciones?: string[];
-    gimnasioId: number;
+    gimnasioId: number | null;
     personaId: number | null;
     jti: string;
   };
