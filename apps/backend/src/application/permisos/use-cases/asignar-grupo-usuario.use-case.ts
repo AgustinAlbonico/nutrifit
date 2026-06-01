@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UsuarioGrupoPermisoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/usuario-grupo-permiso.entity';
@@ -8,6 +12,7 @@ import { GrupoPermisoOrmEntity } from 'src/infrastructure/persistence/typeorm/en
 export interface AsignarGrupoUsuarioInput {
   usuarioId: number;
   grupoPermisoId: number;
+  gimnasioId: number | null; // null = aplica a todos los gimnasios
 }
 
 @Injectable()
@@ -21,13 +26,17 @@ export class AsignarGrupoUsuarioUseCase {
     private readonly grupoRepo: Repository<GrupoPermisoOrmEntity>,
   ) {}
 
-  async execute(input: AsignarGrupoUsuarioInput): Promise<UsuarioGrupoPermisoOrmEntity> {
+  async execute(
+    input: AsignarGrupoUsuarioInput,
+  ): Promise<UsuarioGrupoPermisoOrmEntity> {
     // Validar que el usuario existe
     const usuario = await this.usuarioRepo.findOne({
       where: { idUsuario: input.usuarioId },
     });
     if (!usuario) {
-      throw new NotFoundException(`Usuario con ID ${input.usuarioId} no encontrado`);
+      throw new NotFoundException(
+        `Usuario con ID ${input.usuarioId} no encontrado`,
+      );
     }
 
     // Validar que el grupo existe
@@ -35,24 +44,35 @@ export class AsignarGrupoUsuarioUseCase {
       where: { id: input.grupoPermisoId },
     });
     if (!grupo) {
-      throw new NotFoundException(`Grupo de permiso con ID ${input.grupoPermisoId} no encontrado`);
+      throw new NotFoundException(
+        `Grupo de permiso con ID ${input.grupoPermisoId} no encontrado`,
+      );
     }
 
-    // Validar que no tiene ya ese grupo asignado
+    // Validar que no tiene ya ese grupo asignado (mismo grupo + mismo gimnasio)
+    const whereClause: Record<string, unknown> = {
+      usuario: { idUsuario: input.usuarioId },
+      grupoPermiso: { id: input.grupoPermisoId },
+    };
+    if (input.gimnasioId !== null) {
+      whereClause.gimnasioId = input.gimnasioId;
+    } else {
+      whereClause.gimnasioId = null;
+    }
     const asignacionExistente = await this.usuarioGrupoRepo.findOne({
-      where: {
-        usuario: { idUsuario: input.usuarioId },
-        grupoPermiso: { id: input.grupoPermisoId },
-      },
+      where: whereClause,
     });
     if (asignacionExistente) {
-      throw new ConflictException('El usuario ya tiene asignado este grupo de permisos');
+      throw new ConflictException(
+        'El usuario ya tiene asignado este grupo de permisos',
+      );
     }
 
     // Crear la asignacion
     const asignacion = this.usuarioGrupoRepo.create({
       usuario,
       grupoPermiso: grupo,
+      gimnasioId: input.gimnasioId,
     });
     return this.usuarioGrupoRepo.save(asignacion);
   }

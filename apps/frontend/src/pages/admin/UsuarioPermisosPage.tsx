@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 import { useParams, useNavigate } from '@tanstack/react-router';
 import {
@@ -10,6 +10,10 @@ import {
   CheckCircle2,
   Users,
   KeyRound,
+  Search,
+  ChevronDown,
+  ChevronRight,
+  Info,
 } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,6 +34,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
 
 interface GrupoAsignado {
   grupo: GroupDto;
@@ -53,6 +58,51 @@ export function UsuarioPermisosPage() {
   const [, setTodasLasAcciones] = useState<ActionDto[]>([]);
 
   const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
+
+  // Estados para UI de acciones por categoria
+  const [categoriasExpandidas, setCategoriasExpandidas] = useState<Set<string>>(new Set());
+  const [busquedaAccion, setBusquedaAccion] = useState('');
+
+  // Metadata de acciones para descripciones
+  const metadataAcciones = useMemo(() => permisosService.obtenerMetadataAcciones(), []);
+  const accionesPorCategoria = useMemo(() => permisosService.obtenerAccionesPorCategoria(), []);
+
+  // Toggle de categoria expandida/colapsada
+  const toggleCategoria = (categoria: string) => {
+    setCategoriasExpandidas((prev) => {
+      const next = new Set(prev);
+      if (next.has(categoria)) {
+        next.delete(categoria);
+      } else {
+        next.add(categoria);
+      }
+      return next;
+    });
+  };
+
+  // Filtrar acciones por busqueda
+  const accionesFiltradasPorCategoria = useMemo(() => {
+    if (!busquedaAccion.trim()) {
+      return accionesPorCategoria;
+    }
+    const busqueda = busquedaAccion.toLowerCase();
+    const resultado: Record<string, string[]> = {};
+    for (const [categoria, acciones] of Object.entries(accionesPorCategoria)) {
+      const filtradas = acciones.filter((codigo) => {
+        const meta = metadataAcciones[codigo];
+        if (!meta) return codigo.toLowerCase().includes(busqueda);
+        return (
+          codigo.toLowerCase().includes(busqueda) ||
+          meta.descripcion.toLowerCase().includes(busqueda) ||
+          meta.categoria.toLowerCase().includes(busqueda)
+        );
+      });
+      if (filtradas.length > 0) {
+        resultado[categoria] = filtradas;
+      }
+    }
+    return resultado;
+  }, [accionesPorCategoria, busquedaAccion, metadataAcciones]);
 
   // Cargar grupos disponibles y permisos actuales del usuario
   const cargarDatos = useCallback(async () => {
@@ -295,6 +345,15 @@ export function UsuarioPermisosPage() {
               <CardDescription>
                 Vista previa de las acciones que tendra el usuario
               </CardDescription>
+              <div className="relative mt-2">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar acciones..."
+                  value={busquedaAccion}
+                  onChange={(e) => setBusquedaAccion(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
             </CardHeader>
             <CardContent>
               {cargandoUsuario ? (
@@ -309,26 +368,82 @@ export function UsuarioPermisosPage() {
                     </p>
                   ) : (
                     <>
-                      <div className="flex flex-wrap gap-1">
-                        {accionesResultantes().map((accion) => (
-                          <Badge
-                            key={accion}
-                            variant="default"
-                            className="bg-emerald-600"
-                          >
-                            {accion}
-                          </Badge>
-                        ))}
+                      {/* Lista de acciones por categoria */}
+                      <div className="space-y-3">
+                        {Object.entries(accionesFiltradasPorCategoria).map(([categoria, codigosAccion]) => {
+                          const estaExpandida = categoriasExpandidas.has(categoria) || !busquedaAccion;
+                          const accionesDelGrupo = accionesResultantes().filter((a) =>
+                            codigosAccion.includes(a)
+                          );
+                          if (accionesDelGrupo.length === 0) return null;
+
+                          return (
+                            <div key={categoria} className="border rounded-lg overflow-hidden">
+                              <button
+                                onClick={() => toggleCategoria(categoria)}
+                                className="w-full flex items-center justify-between p-3 bg-muted/50 hover:bg-muted transition-colors"
+                              >
+                                <span className="font-medium text-sm">{categoria}</span>
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="secondary" className="text-xs">
+                                    {accionesDelGrupo.length}
+                                  </Badge>
+                                  {estaExpandida ? (
+                                    <ChevronDown className="h-4 w-4" />
+                                  ) : (
+                                    <ChevronRight className="h-4 w-4" />
+                                  )}
+                                </div>
+                              </button>
+                              {estaExpandida && (
+                                <div className="p-3 space-y-2">
+                                  {accionesDelGrupo.map((codigo) => {
+                                    const meta = metadataAcciones[codigo];
+                                    return (
+                                      <div
+                                        key={codigo}
+                                        className="flex items-start gap-2 text-sm"
+                                      >
+                                        <Badge variant="default" className="bg-emerald-600 shrink-0">
+                                          {codigo}
+                                        </Badge>
+                                        <span className="text-muted-foreground text-xs">
+                                          {meta?.descripcion ?? 'Sin descripcion'}
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                       <Separator />
-                      <div className="text-sm text-muted-foreground">
-                        <p>{accionesResultantes().length} acciones en total</p>
-                        <p>{gruposSeleccionados().length} grupos seleccionados</p>
+                      <div className="text-sm text-muted-foreground flex justify-between">
+                        <span>{accionesResultantes().length} acciones en total</span>
+                        <span>{gruposSeleccionados().length} grupos seleccionados</span>
                       </div>
                     </>
                   )}
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Info className="h-5 w-5" />
+                Help
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground">
+                Usa los grupos para asignar permisos a usuarios. Cada grupo contiene acciones
+                relacionadas que un usuario puede realizar. Los wildcards (como <code className="bg-muted px-1 rounded">socios.*</code>)
+                indican todas las acciones de ese prefijo.
+              </p>
             </CardContent>
           </Card>
 

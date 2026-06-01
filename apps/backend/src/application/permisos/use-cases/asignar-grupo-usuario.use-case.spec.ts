@@ -13,8 +13,16 @@ describe('AsignarGrupoUsuarioUseCase', () => {
   let usuarioRepo: jest.Mocked<Repository<UsuarioOrmEntity>>;
   let grupoRepo: jest.Mocked<Repository<GrupoPermisoOrmEntity>>;
 
-  const mockUsuario = { idUsuario: 1, email: 'test@test.com', rol: 'ADMIN' } as UsuarioOrmEntity;
-  const mockGrupo = { id: 1, clave: 'ADMIN', nombre: 'Administrador' } as GrupoPermisoOrmEntity;
+  const mockUsuario = {
+    idUsuario: 1,
+    email: 'test@test.com',
+    rol: 'ADMIN',
+  } as UsuarioOrmEntity;
+  const mockGrupo = {
+    id: 1,
+    clave: 'ADMIN',
+    nombre: 'Administrador',
+  } as GrupoPermisoOrmEntity;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -43,8 +51,12 @@ describe('AsignarGrupoUsuarioUseCase', () => {
       ],
     }).compile();
 
-    useCase = module.get<AsignarGrupoUsuarioUseCase>(AsignarGrupoUsuarioUseCase);
-    usuarioGrupoRepo = module.get(getRepositoryToken(UsuarioGrupoPermisoOrmEntity));
+    useCase = module.get<AsignarGrupoUsuarioUseCase>(
+      AsignarGrupoUsuarioUseCase,
+    );
+    usuarioGrupoRepo = module.get(
+      getRepositoryToken(UsuarioGrupoPermisoOrmEntity),
+    );
     usuarioRepo = module.get(getRepositoryToken(UsuarioOrmEntity));
     grupoRepo = module.get(getRepositoryToken(GrupoPermisoOrmEntity));
   });
@@ -53,33 +65,62 @@ describe('AsignarGrupoUsuarioUseCase', () => {
     jest.spyOn(usuarioRepo, 'findOne').mockResolvedValue(mockUsuario);
     jest.spyOn(grupoRepo, 'findOne').mockResolvedValue(mockGrupo);
     jest.spyOn(usuarioGrupoRepo, 'findOne').mockResolvedValue(null);
-    jest.spyOn(usuarioGrupoRepo, 'create').mockReturnValue({ id: 1, usuario: mockUsuario, grupoPermiso: mockGrupo, fechaAsignacion: new Date() });
-    jest.spyOn(usuarioGrupoRepo, 'save').mockResolvedValue({ id: 1, usuario: mockUsuario, grupoPermiso: mockGrupo, fechaAsignacion: new Date() });
+    jest.spyOn(usuarioGrupoRepo, 'create').mockReturnValue({
+      id: 1,
+      usuario: mockUsuario,
+      grupoPermiso: mockGrupo,
+      gimnasioId: null,
+      fechaAsignacion: new Date(),
+    });
+    jest.spyOn(usuarioGrupoRepo, 'save').mockResolvedValue({
+      id: 1,
+      usuario: mockUsuario,
+      grupoPermiso: mockGrupo,
+      gimnasioId: null,
+      fechaAsignacion: new Date(),
+    });
 
-    const result = await useCase.execute({ usuarioId: 1, grupoPermisoId: 1 });
+    const result = await useCase.execute({
+      usuarioId: 1,
+      grupoPermisoId: 1,
+      gimnasioId: null,
+    });
 
     expect(result.id).toBe(1);
-    expect(usuarioGrupoRepo.create).toHaveBeenCalledWith({ usuario: mockUsuario, grupoPermiso: mockGrupo });
+    expect(usuarioGrupoRepo.create).toHaveBeenCalledWith({
+      usuario: mockUsuario,
+      grupoPermiso: mockGrupo,
+      gimnasioId: null,
+    });
   });
 
   it('debe lanzar NotFoundException si usuario no existe', async () => {
     jest.spyOn(usuarioRepo, 'findOne').mockResolvedValue(null);
 
-    await expect(useCase.execute({ usuarioId: 999, grupoPermisoId: 1 })).rejects.toThrow(NotFoundException);
+    await expect(
+      useCase.execute({ usuarioId: 999, grupoPermisoId: 1, gimnasioId: null }),
+    ).rejects.toThrow(NotFoundException);
   });
 
   it('debe lanzar NotFoundException si grupo no existe', async () => {
     jest.spyOn(usuarioRepo, 'findOne').mockResolvedValue(mockUsuario);
     jest.spyOn(grupoRepo, 'findOne').mockResolvedValue(null);
 
-    await expect(useCase.execute({ usuarioId: 1, grupoPermisoId: 999 })).rejects.toThrow(NotFoundException);
+    await expect(
+      useCase.execute({ usuarioId: 1, grupoPermisoId: 999, gimnasioId: null }),
+    ).rejects.toThrow(NotFoundException);
   });
 
   it('debe lanzar ConflictException si grupo ya esta asignado', async () => {
     jest.spyOn(usuarioRepo, 'findOne').mockResolvedValue(mockUsuario);
     jest.spyOn(grupoRepo, 'findOne').mockResolvedValue(mockGrupo);
-    jest.spyOn(usuarioGrupoRepo, 'findOne').mockResolvedValue({ id: 1 } as UsuarioGrupoPermisoOrmEntity);
+    jest.spyOn(usuarioGrupoRepo, 'findOne').mockResolvedValue({
+      id: 1,
+      gimnasioId: null,
+    } as UsuarioGrupoPermisoOrmEntity);
 
-    await expect(useCase.execute({ usuarioId: 1, grupoPermisoId: 1 })).rejects.toThrow(ConflictException);
+    await expect(
+      useCase.execute({ usuarioId: 1, grupoPermisoId: 1, gimnasioId: null }),
+    ).rejects.toThrow(ConflictException);
   });
 });

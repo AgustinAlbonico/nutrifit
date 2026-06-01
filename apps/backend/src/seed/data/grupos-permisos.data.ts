@@ -21,19 +21,13 @@ export const GRUPOS_PERMISOS: Record<string, GrupoPermisoData> = {
   RECEPCIONISTA: {
     clave: 'RECEPCIONISTA',
     nombre: 'Recepcionista',
-    descripcion: 'Gestión de socios, nutricionistas y turnos',
+    descripcion: 'Gestion de socios, nutricionistas y turnos',
     acciones: [
-      ACCIONES.SOCIOS_CREAR,
-      ACCIONES.SOCIOS_EDITAR,
-      ACCIONES.SOCIOS_ELIMINAR,
-      ACCIONES.SOCIOS_VER,
+      'socios.*', // todas las acciones de socios
       ACCIONES.NUTRICIONISTAS_CREAR,
       ACCIONES.NUTRICIONISTAS_EDITAR,
       ACCIONES.NUTRICIONISTAS_VER,
-      ACCIONES.TURNOS_CREAR,
-      ACCIONES.TURNOS_EDITAR,
-      ACCIONES.TURNOS_CANCELAR,
-      ACCIONES.TURNOS_VER,
+      'turnos.*', // todas las acciones de turnos
       ACCIONES.RECEPCIONISTAS_VER,
     ],
   },

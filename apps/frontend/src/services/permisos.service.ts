@@ -1,3 +1,5 @@
+import { ACCIONES_METADATA, getCategoriasAcciones, getAccionesPorCategoria } from '@nutrifit/shared';
+import type { AccionDescripcion } from '@nutrifit/shared';
 import { apiRequest } from '@/lib/api';
 import type { GroupDto, ActionDto } from '@/types/permissions';
 
@@ -29,7 +31,7 @@ export const permisosService = {
   },
 
   /**
-   * Obtiene los permisos (grupos y acciones) de un usuario específico.
+   * Obtiene los permisos (grupos y acciones) de un usuario especifico.
    */
   async obtenerPermisosUsuario(usuarioId: number): Promise<{
     grupos: GroupDto[];
@@ -40,6 +42,27 @@ export const permisosService = {
       acciones: string[];
     }>>(`/permisos/usuarios/${usuarioId}`);
     return response.data ?? { grupos: [], acciones: [] };
+  },
+
+  /**
+   * Obtiene metadata de acciones (descripciones y categorias).
+   */
+  obtenerMetadataAcciones(): Record<string, AccionDescripcion> {
+    return ACCIONES_METADATA;
+  },
+
+  /**
+   * Obtiene las categorias disponibles.
+   */
+  obtenerCategorias(): string[] {
+    return getCategoriasAcciones();
+  },
+
+  /**
+   * Obtiene acciones agrupadas por categoria.
+   */
+  obtenerAccionesPorCategoria(): Record<string, string[]> {
+    return getAccionesPorCategoria();
   },
 
   /**

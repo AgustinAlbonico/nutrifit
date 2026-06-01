@@ -4,9 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { In } from 'typeorm';
-import { Not } from 'typeorm';
+import { Repository, IsNull, In, Not } from 'typeorm';
 import { AccionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/accion.entity';
 import { GrupoPermisoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/grupo-permiso.entity';
 import { UsuarioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/usuario.entity';
@@ -31,6 +29,7 @@ export class PermisosService {
 
   /**
    * Obtiene todas las acciones efectivas de un usuario (union de grupos).
+   * Incluye expansion de wildcards (ej: 'socios.*' se expande a todas las acciones 'socios.*')
    */
   async getUserActions(usuarioId: number): Promise<string[]> {
     const grupos = await this.getUserGroups(usuarioId);
@@ -44,7 +43,43 @@ export class PermisosService {
   }
 
   /**
+   * Expande un wildcard a todas las acciones posibles.
+   * Ej: 'socios.*' -> ['socios.crear', 'socios.editar', 'socios.eliminar', 'socios.ver']
+   */
+  private expandirWildcard(
+    wildcard: string,
+    todasLasAcciones: string[],
+  ): string[] {
+    if (!wildcard.endsWith('.*')) {
+      return [wildcard];
+    }
+    const prefijo = wildcard.slice(0, -2); // 'socios.*' -> 'socios'
+    // Filtrar acciones que matcheen con el prefijo (ej: 'socios.crear'.startsWith('socios.'))
+    return todasLasAcciones.filter((a) => a.startsWith(prefijo + '.'));
+  }
+
+  /**
+   * Obtiene todas las acciones disponibles en el sistema.
+   * Se usa para expandir wildcards.
+   */
+  private getAllSystemActions(): string[] {
+    // Lista de todas las acciones conocidas del sistema
+    return [
+      'socios.crear', 'socios.editar', 'socios.eliminar', 'socios.ver',
+      'nutricionistas.crear', 'nutricionistas.editar', 'nutricionistas.eliminar', 'nutricionistas.ver',
+      'recepcionistas.crear', 'recepcionistas.editar', 'recepcionistas.eliminar', 'recepcionistas.ver',
+      'turnos.crear', 'turnos.editar', 'turnos.cancelar', 'turnos.ver', 'turnos.reservar',
+      'fichas.ver', 'fichas.editar', 'mi-ficha.ver',
+      'planes.crear', 'planes.editar', 'planes.ver', 'mis-planes.ver',
+      'pacientes.ver',
+      'reportes.generar', 'reportes.ver',
+      'gimnasios.crear', 'gimnasios.editar', 'gimnasios.eliminar', 'gimnasios.ver', 'gimnasios.impersonar',
+    ];
+  }
+
+  /**
    * Verifica si el usuario tiene TODAS las acciones requeridas.
+   * Soporta wildcards (ej: 'socios.*' cubre cualquier accion 'socios.X')
    */
   async hasAllActions(
     usuarioId: number,
@@ -54,31 +89,76 @@ export class PermisosService {
       return true;
     }
     const userActions = await this.getUserActions(usuarioId);
-    const set = new Set(userActions);
-    return requiredActions.every((action) => set.has(action));
+    const systemActions = this.getAllSystemActions();
+    // Expandir wildcards del usuario
+    const expandedUserActions = new Set<string>();
+    for (const action of userActions) {
+      if (action.endsWith('.*')) {
+        const expanded = this.expandirWildcard(action, systemActions);
+        for (const e of expanded) {
+          expandedUserActions.add(e);
+        }
+      } else {
+        expandedUserActions.add(action);
+      }
+    }
+    // Verificar exact match
+    return requiredActions.every((action) => expandedUserActions.has(action));
   }
 
   /**
    * Verifica si el usuario tiene AL MENOS UNA de las acciones especificadas.
+   * Soporta wildcards.
    */
-  async hasAnyAction(
-    usuarioId: number,
-    actions: string[],
-  ): Promise<boolean> {
+  async hasAnyAction(usuarioId: number, actions: string[]): Promise<boolean> {
     if (!actions.length) {
       return true;
     }
     const userActions = await this.getUserActions(usuarioId);
-    const set = new Set(userActions);
-    return actions.some((action) => set.has(action));
+    const systemActions = this.getAllSystemActions();
+    // Expandir wildcards del usuario
+    const expandedUserActions = new Set<string>();
+    for (const action of userActions) {
+      if (action.endsWith('.*')) {
+        const expanded = this.expandirWildcard(action, systemActions);
+        for (const e of expanded) {
+          expandedUserActions.add(e);
+        }
+      } else {
+        expandedUserActions.add(action);
+      }
+    }
+    return actions.some((action) => expandedUserActions.has(action));
   }
 
   /**
    * Obtiene los grupos de permisos de un usuario.
+   * Si gimnasioId esta definido, filtra por gimnasio (null = aplica a todos).
    */
-  async getUserGroups(usuarioId: number): Promise<GrupoPermisoOrmEntity[]> {
+  async getUserGroups(
+    usuarioId: number,
+    gimnasioId?: number | null,
+  ): Promise<GrupoPermisoOrmEntity[]> {
+    const where: Record<string, unknown> = {
+      usuario: { idUsuario: usuarioId },
+    };
+
+    if (gimnasioId !== undefined) {
+      // Include global (gimnasioId=null) and specific gym using OR
+      const qb = this.usuarioGrupoRepo.createQueryBuilder('ugp');
+      qb.leftJoinAndSelect('ugp.grupoPermiso', 'grupoPermiso')
+        .leftJoinAndSelect('grupoPermiso.acciones', 'accion')
+        .where('ugp.usuario_id_usuario = :usuarioId', { usuarioId })
+        .andWhere(
+          '(ugp.id_gimnasio IS NULL OR ugp.id_gimnasio = :gimnasioId)',
+          { gimnasioId },
+        );
+      const asignaciones = await qb.getMany();
+      return asignaciones.map((a) => a.grupoPermiso);
+    }
+
     const asignaciones = await this.usuarioGrupoRepo.find({
-      where: { usuario: { idUsuario: usuarioId } },
+      where,
       relations: ['grupoPermiso', 'grupoPermiso.acciones'],
     });
     return asignaciones.map((a) => a.grupoPermiso);
@@ -312,7 +392,9 @@ export class PermisosService {
 
     return this.usuarioRepository.findOne({
       where: { idUsuario: userId },
-      relations: { usuariosGruposPermisos: { grupoPermiso: { acciones: true } } },
+      relations: {
+        usuariosGruposPermisos: { grupoPermiso: { acciones: true } },
+      },
     }) as Promise<UsuarioOrmEntity>;
   }
 

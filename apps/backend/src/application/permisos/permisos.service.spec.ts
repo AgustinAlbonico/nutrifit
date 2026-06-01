@@ -21,7 +21,10 @@ describe('PermisosService', () => {
     usuarios: [],
   });
 
-  const mockGrupo = (clave: string, acciones: AccionOrmEntity[]): GrupoPermisoOrmEntity => ({
+  const mockGrupo = (
+    clave: string,
+    acciones: AccionOrmEntity[],
+  ): GrupoPermisoOrmEntity => ({
     id: Math.random(),
     clave,
     nombre: '',
@@ -30,6 +33,25 @@ describe('PermisosService', () => {
     usuariosGruposPermisos: [],
     hijos: [],
   });
+
+  const mockUsuarioGrupoPermiso = (
+    id: number,
+    grupo: GrupoPermisoOrmEntity,
+    gimnasioId: number | null = null,
+  ) => ({
+    id,
+    usuario: null as any,
+    grupoPermiso: grupo,
+    gimnasioId,
+    fechaAsignacion: new Date(),
+  });
+
+  const mockCreateQueryBuilder = jest.fn(() => ({
+    leftJoinAndSelect: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    getMany: jest.fn().mockResolvedValue([]),
+  }));
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -40,6 +62,7 @@ describe('PermisosService', () => {
           useValue: {
             find: jest.fn(),
             findOne: jest.fn(),
+            createQueryBuilder: mockCreateQueryBuilder,
           },
         },
         {
@@ -68,7 +91,9 @@ describe('PermisosService', () => {
     }).compile();
 
     service = module.get<PermisosService>(PermisosService);
-    usuarioGrupoRepo = module.get(getRepositoryToken(UsuarioGrupoPermisoOrmEntity));
+    usuarioGrupoRepo = module.get(
+      getRepositoryToken(UsuarioGrupoPermisoOrmEntity),
+    );
     grupoRepo = module.get(getRepositoryToken(GrupoPermisoOrmEntity));
   });
 
@@ -82,10 +107,13 @@ describe('PermisosService', () => {
     });
 
     it('debe retornar acciones del grupo cuando usuario tiene un grupo', async () => {
-      const grupo = mockGrupo('ADMIN', [mockAccion('socios.ver'), mockAccion('socios.crear')]);
-      jest.spyOn(usuarioGrupoRepo, 'find').mockResolvedValue([
-        { id: 1, usuario: null as any, grupoPermiso: grupo, fechaAsignacion: new Date() },
+      const grupo = mockGrupo('ADMIN', [
+        mockAccion('socios.ver'),
+        mockAccion('socios.crear'),
       ]);
+      jest
+        .spyOn(usuarioGrupoRepo, 'find')
+        .mockResolvedValue([mockUsuarioGrupoPermiso(1, grupo)]);
 
       const result = await service.getUserActions(1);
 
@@ -95,12 +123,20 @@ describe('PermisosService', () => {
     });
 
     it('debe retornar union de acciones cuando usuario tiene multiples grupos', async () => {
-      const grupo1 = mockGrupo('ADMIN', [mockAccion('socios.ver'), mockAccion('socios.crear')]);
-      const grupo2 = mockGrupo('RECEPCIONISTA', [mockAccion('socios.ver'), mockAccion('turnos.ver')]);
-      jest.spyOn(usuarioGrupoRepo, 'find').mockResolvedValue([
-        { id: 1, usuario: null as any, grupoPermiso: grupo1, fechaAsignacion: new Date() },
-        { id: 2, usuario: null as any, grupoPermiso: grupo2, fechaAsignacion: new Date() },
+      const grupo1 = mockGrupo('ADMIN', [
+        mockAccion('socios.ver'),
+        mockAccion('socios.crear'),
       ]);
+      const grupo2 = mockGrupo('RECEPCIONISTA', [
+        mockAccion('socios.ver'),
+        mockAccion('turnos.ver'),
+      ]);
+      jest
+        .spyOn(usuarioGrupoRepo, 'find')
+        .mockResolvedValue([
+          mockUsuarioGrupoPermiso(1, grupo1),
+          mockUsuarioGrupoPermiso(2, grupo2),
+        ]);
 
       const result = await service.getUserActions(1);
 
@@ -113,23 +149,32 @@ describe('PermisosService', () => {
 
   describe('hasAllActions', () => {
     it('debe retornar true cuando usuario tiene todas las acciones requeridas', async () => {
-      const grupo = mockGrupo('ADMIN', [mockAccion('socios.ver'), mockAccion('socios.crear')]);
-      jest.spyOn(usuarioGrupoRepo, 'find').mockResolvedValue([
-        { id: 1, usuario: null as any, grupoPermiso: grupo, fechaAsignacion: new Date() },
+      const grupo = mockGrupo('ADMIN', [
+        mockAccion('socios.ver'),
+        mockAccion('socios.crear'),
       ]);
+      jest
+        .spyOn(usuarioGrupoRepo, 'find')
+        .mockResolvedValue([mockUsuarioGrupoPermiso(1, grupo)]);
 
-      const result = await service.hasAllActions(1, ['socios.ver', 'socios.crear']);
+      const result = await service.hasAllActions(1, [
+        'socios.ver',
+        'socios.crear',
+      ]);
 
       expect(result).toBe(true);
     });
 
     it('debe retornar false cuando usuario tiene alguna accion faltante', async () => {
       const grupo = mockGrupo('ADMIN', [mockAccion('socios.ver')]);
-      jest.spyOn(usuarioGrupoRepo, 'find').mockResolvedValue([
-        { id: 1, usuario: null as any, grupoPermiso: grupo, fechaAsignacion: new Date() },
-      ]);
+      jest
+        .spyOn(usuarioGrupoRepo, 'find')
+        .mockResolvedValue([mockUsuarioGrupoPermiso(1, grupo)]);
 
-      const result = await service.hasAllActions(1, ['socios.ver', 'socios.crear']);
+      const result = await service.hasAllActions(1, [
+        'socios.ver',
+        'socios.crear',
+      ]);
 
       expect(result).toBe(false);
     });
@@ -146,22 +191,28 @@ describe('PermisosService', () => {
   describe('hasAnyAction', () => {
     it('debe retornar true cuando usuario tiene al menos una de las acciones', async () => {
       const grupo = mockGrupo('ADMIN', [mockAccion('socios.ver')]);
-      jest.spyOn(usuarioGrupoRepo, 'find').mockResolvedValue([
-        { id: 1, usuario: null as any, grupoPermiso: grupo, fechaAsignacion: new Date() },
-      ]);
+      jest
+        .spyOn(usuarioGrupoRepo, 'find')
+        .mockResolvedValue([mockUsuarioGrupoPermiso(1, grupo)]);
 
-      const result = await service.hasAnyAction(1, ['socios.ver', 'socios.crear']);
+      const result = await service.hasAnyAction(1, [
+        'socios.ver',
+        'socios.crear',
+      ]);
 
       expect(result).toBe(true);
     });
 
     it('debe retornar false cuando usuario no tiene ninguna de las acciones', async () => {
       const grupo = mockGrupo('ADMIN', [mockAccion('turnos.ver')]);
-      jest.spyOn(usuarioGrupoRepo, 'find').mockResolvedValue([
-        { id: 1, usuario: null as any, grupoPermiso: grupo, fechaAsignacion: new Date() },
-      ]);
+      jest
+        .spyOn(usuarioGrupoRepo, 'find')
+        .mockResolvedValue([mockUsuarioGrupoPermiso(1, grupo)]);
 
-      const result = await service.hasAnyAction(1, ['socios.ver', 'socios.crear']);
+      const result = await service.hasAnyAction(1, [
+        'socios.ver',
+        'socios.crear',
+      ]);
 
       expect(result).toBe(false);
     });
@@ -179,10 +230,12 @@ describe('PermisosService', () => {
     it('debe retornar grupos del usuario', async () => {
       const grupo1 = mockGrupo('ADMIN', []);
       const grupo2 = mockGrupo('RECEPCIONISTA', []);
-      jest.spyOn(usuarioGrupoRepo, 'find').mockResolvedValue([
-        { id: 1, usuario: null as any, grupoPermiso: grupo1, fechaAsignacion: new Date() },
-        { id: 2, usuario: null as any, grupoPermiso: grupo2, fechaAsignacion: new Date() },
-      ]);
+      jest
+        .spyOn(usuarioGrupoRepo, 'find')
+        .mockResolvedValue([
+          mockUsuarioGrupoPermiso(1, grupo1, null),
+          mockUsuarioGrupoPermiso(2, grupo2, null),
+        ]);
 
       const result = await service.getUserGroups(1);
 
@@ -197,6 +250,182 @@ describe('PermisosService', () => {
       const result = await service.getUserGroups(1);
 
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('wildcard support in hasAllActions', () => {
+    it('debe retornar true cuando usuario tiene wildcard socios.* y requiere socios.crear', async () => {
+      const grupo = mockGrupo('RECEPCIONISTA', [
+        mockAccion('socios.*'), // wildcard
+        mockAccion('turnos.ver'),
+      ]);
+      jest
+        .spyOn(usuarioGrupoRepo, 'find')
+        .mockResolvedValue([mockUsuarioGrupoPermiso(1, grupo)]);
+
+      const result = await service.hasAllActions(1, ['socios.crear']);
+
+      expect(result).toBe(true);
+    });
+
+    it('debe retornar true cuando usuario tiene wildcard socios.* y requiere socios.eliminar', async () => {
+      const grupo = mockGrupo('RECEPCIONISTA', [
+        mockAccion('socios.*'), // wildcard
+        mockAccion('turnos.ver'),
+      ]);
+      jest
+        .spyOn(usuarioGrupoRepo, 'find')
+        .mockResolvedValue([mockUsuarioGrupoPermiso(1, grupo)]);
+
+      const result = await service.hasAllActions(1, ['socios.eliminar']);
+
+      expect(result).toBe(true);
+    });
+
+    it('debe retornar false cuando usuario solo tiene socios.crear y requiere socios.eliminar', async () => {
+      const grupo = mockGrupo('RECEPCIONISTA', [mockAccion('socios.crear')]);
+      jest
+        .spyOn(usuarioGrupoRepo, 'find')
+        .mockResolvedValue([mockUsuarioGrupoPermiso(1, grupo)]);
+
+      const result = await service.hasAllActions(1, ['socios.eliminar']);
+
+      expect(result).toBe(false);
+    });
+
+    it('debe verificar mix de exacta y wildcard', async () => {
+      const grupo = mockGrupo('RECEPCIONISTA', [
+        mockAccion('socios.*'),
+        mockAccion('turnos.ver'),
+      ]);
+      jest
+        .spyOn(usuarioGrupoRepo, 'find')
+        .mockResolvedValue([mockUsuarioGrupoPermiso(1, grupo)]);
+
+      const result = await service.hasAllActions(1, [
+        'socios.crear',
+        'socios.eliminar',
+        'turnos.ver',
+      ]);
+
+      expect(result).toBe(true);
+    });
+
+    it('debe retornar false cuando falta alguna accion aunque tiene wildcard para otras', async () => {
+      const grupo = mockGrupo('RECEPCIONISTA', [
+        mockAccion('socios.*'), // cubre socios.crear, socios.eliminar, etc
+        mockAccion('turnos.ver'),
+      ]);
+      jest
+        .spyOn(usuarioGrupoRepo, 'find')
+        .mockResolvedValue([mockUsuarioGrupoPermiso(1, grupo)]);
+
+      const result = await service.hasAllActions(1, [
+        'socios.crear',
+        'nutricionistas.ver', // no tiene esta accion
+      ]);
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('wildcard support in hasAnyAction', () => {
+    it('debe retornar true cuando usuario tiene wildcard socios.* y requiere socios.crear', async () => {
+      const grupo = mockGrupo('RECEPCIONISTA', [
+        mockAccion('socios.*'),
+        mockAccion('turnos.ver'),
+      ]);
+      jest
+        .spyOn(usuarioGrupoRepo, 'find')
+        .mockResolvedValue([mockUsuarioGrupoPermiso(1, grupo)]);
+
+      const result = await service.hasAnyAction(1, [
+        'socios.crear',
+        'nutricionistas.ver',
+      ]);
+
+      expect(result).toBe(true);
+    });
+
+    it('debe retornar false cuando ninguna accion coincide con wildcard', async () => {
+      const grupo = mockGrupo('RECEPCIONISTA', [mockAccion('socios.*')]);
+      jest
+        .spyOn(usuarioGrupoRepo, 'find')
+        .mockResolvedValue([mockUsuarioGrupoPermiso(1, grupo)]);
+
+      const result = await service.hasAnyAction(1, [
+        'turnos.ver',
+        'nutricionistas.ver',
+      ]);
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('per-gimnasio permissions in getUserGroups', () => {
+    it('debe retornar grupos con gimnasioId null (aplica a todos)', async () => {
+      const grupo = mockGrupo('ADMIN', [mockAccion('socios.ver')]);
+      mockCreateQueryBuilder.mockReturnValueOnce({
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest
+          .fn()
+          .mockResolvedValue([mockUsuarioGrupoPermiso(1, grupo, null)]),
+      });
+
+      const result = await service.getUserGroups(1, 5);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].clave).toBe('ADMIN');
+    });
+
+    it('debe retornar grupos con gimnasioId especifico que coincide', async () => {
+      const grupo1 = mockGrupo('ADMIN', [mockAccion('socios.ver')]);
+      const grupo2 = mockGrupo('NUTRICIONISTA', [mockAccion('turnos.ver')]);
+      mockCreateQueryBuilder.mockReturnValueOnce({
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest
+          .fn()
+          .mockResolvedValue([
+            mockUsuarioGrupoPermiso(1, grupo1, 5),
+            mockUsuarioGrupoPermiso(2, grupo2, null),
+          ]),
+      });
+
+      const result = await service.getUserGroups(1, 5);
+
+      expect(result).toHaveLength(2);
+    });
+
+    it('debe retornar array vacio cuando no hay grupos para ese gimnasio', async () => {
+      mockCreateQueryBuilder.mockReturnValueOnce({
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      });
+
+      const result = await service.getUserGroups(1, 99);
+
+      expect(result).toEqual([]);
+    });
+
+    it('debe retornar grupos sin filtro cuando gimnasioId es undefined', async () => {
+      const grupo1 = mockGrupo('ADMIN', []);
+      const grupo2 = mockGrupo('RECEPCIONISTA', []);
+      jest
+        .spyOn(usuarioGrupoRepo, 'find')
+        .mockResolvedValue([
+          mockUsuarioGrupoPermiso(1, grupo1, 1),
+          mockUsuarioGrupoPermiso(2, grupo2, 2),
+        ]);
+
+      const result = await service.getUserGroups(1);
+
+      expect(result).toHaveLength(2);
     });
   });
 });

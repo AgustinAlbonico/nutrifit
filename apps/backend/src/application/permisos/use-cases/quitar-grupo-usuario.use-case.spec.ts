@@ -24,13 +24,25 @@ describe('QuitarGrupoUsuarioUseCase', () => {
     }).compile();
 
     useCase = module.get<QuitarGrupoUsuarioUseCase>(QuitarGrupoUsuarioUseCase);
-    usuarioGrupoRepo = module.get(getRepositoryToken(UsuarioGrupoPermisoOrmEntity));
+    usuarioGrupoRepo = module.get(
+      getRepositoryToken(UsuarioGrupoPermisoOrmEntity),
+    );
   });
 
   it('debe quitar grupo de usuario exitosamente', async () => {
-    const mockAsignacion = { id: 1, usuario: null as any, grupoPermiso: null as any, fechaAsignacion: new Date() };
-    jest.spyOn(usuarioGrupoRepo, 'findOne').mockResolvedValue(mockAsignacion);
-    jest.spyOn(usuarioGrupoRepo, 'remove').mockResolvedValue(mockAsignacion);
+    const mockAsignacion = {
+      id: 1,
+      usuario: null as any,
+      grupoPermiso: null as any,
+      gimnasioId: null,
+      fechaAsignacion: new Date(),
+    };
+    jest
+      .spyOn(usuarioGrupoRepo, 'findOne')
+      .mockResolvedValue(mockAsignacion as any);
+    jest
+      .spyOn(usuarioGrupoRepo, 'remove')
+      .mockResolvedValue(mockAsignacion as any);
 
     await useCase.execute({ usuarioId: 1, grupoPermisoId: 1 });
 
@@ -40,6 +52,8 @@ describe('QuitarGrupoUsuarioUseCase', () => {
   it('debe lanzar NotFoundException si asignacion no existe', async () => {
     jest.spyOn(usuarioGrupoRepo, 'findOne').mockResolvedValue(null);
 
-    await expect(useCase.execute({ usuarioId: 1, grupoPermisoId: 999 })).rejects.toThrow(NotFoundException);
+    await expect(
+      useCase.execute({ usuarioId: 1, grupoPermisoId: 999 }),
+    ).rejects.toThrow(NotFoundException);
   });
 });

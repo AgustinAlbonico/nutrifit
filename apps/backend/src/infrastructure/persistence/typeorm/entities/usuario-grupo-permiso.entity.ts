@@ -1,4 +1,5 @@
 import {
+  Column,
   CreateDateColumn,
   Entity,
   ManyToOne,
@@ -12,14 +13,25 @@ export class UsuarioGrupoPermisoOrmEntity {
   @PrimaryGeneratedColumn({ name: 'id_usuario_grupo_permiso' })
   id: number;
 
-  @ManyToOne(() => UsuarioOrmEntity, (usuario) => usuario.usuariosGruposPermisos, {
-    onDelete: 'CASCADE',
-  })
+  @Column({ name: 'id_gimnasio', type: 'int', nullable: true })
+  gimnasioId: number | null;
+
+  @ManyToOne(
+    () => UsuarioOrmEntity,
+    (usuario) => usuario.usuariosGruposPermisos,
+    {
+      onDelete: 'CASCADE',
+    },
+  )
   usuario: UsuarioOrmEntity;
 
-  @ManyToOne(() => GrupoPermisoOrmEntity, (grupo) => grupo.usuariosGruposPermisos, {
-    onDelete: 'CASCADE',
-  })
+  @ManyToOne(
+    () => GrupoPermisoOrmEntity,
+    (grupo) => grupo.usuariosGruposPermisos,
+    {
+      onDelete: 'CASCADE',
+    },
+  )
   grupoPermiso: GrupoPermisoOrmEntity;
 
   @CreateDateColumn({ name: 'fecha_asignacion' })
