@@ -15,10 +15,12 @@ export interface JwtPayload {
   acciones?: string[];
   /** ID de la persona associada al usuario (desde persona.idPersona) */
   personaId: number | null;
-  /** ID del gimnasio/tenant al que pertenece el usuario */
-  gimnasioId: number;
+  /** ID del gimnasio/tenant. null solo para SUPERADMIN sin impersonar. */
+  gimnasioId: number | null;
   /** JWT ID — identificador unico del token para revocacion */
   jti: string;
   /** Tiempo de expiracion */
   exp?: number;
+  /** ID del SUPERADMIN que inició la sesión de impersonación (null si no impersona) */
+  impersonatedBy?: number | null;
 }
