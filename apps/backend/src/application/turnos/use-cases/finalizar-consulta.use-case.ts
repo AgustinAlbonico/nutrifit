@@ -8,6 +8,7 @@ import { NotificacionesService } from 'src/application/notificaciones/notificaci
 import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
 import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
 import { AccionAuditoria } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 @Injectable()
 export class FinalizarConsultaUseCase {
@@ -16,14 +17,18 @@ export class FinalizarConsultaUseCase {
     private readonly turnoRepository: Repository<TurnoOrmEntity>,
     private readonly notificacionesService: NotificacionesService,
     private readonly auditoriaService: AuditoriaService,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(
     turnoId: number,
   ): Promise<{ success: boolean; estado: EstadoTurno }> {
     const turno = await this.turnoRepository.findOne({
-      where: { idTurno: turnoId },
-      relations: { socio: true },
+      where: {
+        idTurno: turnoId,
+        socio: { gimnasioId: this.tenantContext.gimnasioId },
+      },
+      relations: { socio: true, nutricionista: true },
     });
 
     if (!turno) {
