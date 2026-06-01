@@ -23,10 +23,12 @@
     "lint:backend": "npm run lint --workspace=apps/backend",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "clean": "npm run clean --workspaces --if-present && rimraf node_modules",
+    "test:e2e": "playwright test",
     "db:migrate": "npm run migration:run --workspace=apps/backend",
     "db:seed": "npm run seed --workspace=apps/backend"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "concurrently": "^9.1.2",
     "rimraf": "^6.0.1",
     "typescript": "^5.7.3"
