@@ -19,6 +19,7 @@ import {
   TurnoOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
 import { Repository } from 'typeorm';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 @Injectable()
 export class GetFichaSaludPacienteUseCase implements BaseUseCase {
@@ -31,6 +32,7 @@ export class GetFichaSaludPacienteUseCase implements BaseUseCase {
     private readonly nutricionistaRepository: NutricionistaRepository,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(
@@ -45,7 +47,7 @@ export class GetFichaSaludPacienteUseCase implements BaseUseCase {
     }
 
     const socio = await this.socioRepository.findOne({
-      where: { idPersona: socioId },
+      where: { idPersona: socioId, gimnasioId: this.tenantContext.gimnasioId },
       relations: {
         fichaSalud: {
           alergias: true,
@@ -100,6 +102,7 @@ export class GetFichaSaludPacienteUseCase implements BaseUseCase {
       where: {
         nutricionista: {
           idPersona: nutricionistaId,
+          gimnasioId: this.tenantContext.gimnasioId,
         },
         socio: {
           idPersona: socioId,
