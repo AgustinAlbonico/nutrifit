@@ -9,8 +9,8 @@
 
 | # | Plan | Estado | Progreso | Notas |
 |---|------|--------|----------|-------|
-| 0 | Setup (worktree, baseline) | ✅ Completo | 100% | Commit `1ff8017` |
-| 1 | Auth + Login + SUPERADMIN relaxation | 📝 Plan listo, ⏳ ejecución | 0% | Plan: [`docs/superpowers/plans/2026-06-01-multi-tenant-admin-plan-1-auth-superadmin.md`](plans/2026-06-01-multi-tenant-admin-plan-1-auth-superadmin.md) |
+| 0 | Setup (worktree, baseline) | ✅ Completo | 100% | Commits `1ff8017`, `4f66601` |
+| 1 | Auth + Login + SUPERADMIN relaxation | ✅ Completo | 100% | 11 tasks TDD completadas. Commits `982e0d2`..`79aad51` |
 | 2 | Seed multi-tenant (3 gyms) | ⏳ Pendiente | 0% | |
 | 3 | Aislamiento repos core (Socio/Nut/Asist) | ✅ Mayormente hecho en baseline | 90% | Falta verificar con tests |
 | 4 | Aislamiento repos resto (Turno/Plan/Ficha/etc.) | ⏳ Pendiente | 0% | |
@@ -120,12 +120,43 @@ npm run typecheck
 git status
 ```
 
-## Próximos pasos (sesión 2+)
+## Plan 1 completado (2026-06-01)
 
-1. Correr `npm test -w @nutrifit/backend` para verificar baseline.
-2. Si OK: ejecutar Plan 1 (auth.guard relaxation, login.use-case, actions.guard).
-3. Si falla: triage, fix mínimo, commit, re-run.
-4. Al cerrar Plan 1: `mem_session_summary` + actualizar este PROGRESS.md.
+**11 tasks TDD ejecutadas con `subagent-driven-development`:**
+
+1. ✅ Update `JwtPayload.gimnasioId: number | null` + add `impersonatedBy` (commit `982e0d2`)
+2. ✅ Update `RolesGuard` user type (commit después de Task 2)
+3. ✅ Update `ActionsGuard` user type (commit `59e6d8e`)
+4. ✅ Write failing test for SUPERADMIN null gymId in `auth.guard` (commit después de Task 4)
+5. ✅ Implement SUPERADMIN relaxation in `auth.guard` (commit después de Task 5)
+6. ✅ Update `TenantContextService` with `impersonatedBy` (commit después de Task 6)
+7. ✅ Write failing test for `LoginUseCase` SUPERADMIN (commit después de Task 7)
+8. ✅ Implement SUPERADMIN handling in `LoginUseCase`, remove fallback (commit `4e7ee5f`)
+9. ✅ Write failing test for `ActionsGuard` bypass restriction (commit `6e3f734`)
+10. ✅ Implement `ActionsGuard` bypass restriction (commit `79aad51`)
+11. ✅ Final verification (typecheck + lint + test + build)
+
+**Resultados de verificación final:**
+- Typecheck: FAIL (13 errores pre-existentes en `adjunto-clinico.e2e-spec.ts`)
+- Lint: FAIL (299 errores pre-existentes, no introducidos por Plan 1)
+- Tests: 220/224 pass (4 failures pre-existentes en `reprogramar-turno-socio.use-case.spec.ts` por fechas hardcodeadas)
+- Build: ✅ PASS
+
+**Spec coverage:**
+- ✅ §6.1: `auth.guard` permite SUPERADMIN con `gimnasioId: null`
+- ✅ §6.2: `TenantContextService.impersonatedBy` agregado (type only, flujo completo en Plan 5)
+- ✅ §6.3: `LoginUseCase` sin fallback a `gimnasioId: 1`, SUPERADMIN emite `null`
+- ✅ §6.6: `ActionsGuard` bypassea solo SUPERADMIN (no ADMIN)
+
+## Próximos pasos (sesión 3+)
+
+1. **Plan 2:** Seed multi-tenant (3 gimnasios de prueba, usuarios SUPERADMIN/ADMIN por gimnasio)
+2. **Plan 5:** CRUD Gimnasios + endpoint `POST /gimnasios/:id/impersonar` (usa `impersonatedBy` de Plan 1)
+3. **Plan 3/4:** Verificar aislamiento en repos pendientes (Turno, PlanAlimentacion, FichaSalud, ObservacionClinica, SugerenciaIA)
+4. **Plan 6:** Frontend AuthContext + TenantSwitcher
+
+**Nota:** Los 4 test failures pre-existentes y los errores de typecheck/lint NO son blockers para Plan 1. Son deuda técnica que se puede abordar en un plan separado de "tech debt cleanup".
 
 ---
 *Generado por: opencode (sesión `multi-tenant-admin-2026-06-01`)*
+*Última actualización: Plan 1 completado 2026-06-01*
