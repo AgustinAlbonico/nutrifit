@@ -1,8 +1,0 @@
-export declare enum EstadoTurno {
-    PROGRAMADO = "PROGRAMADO",
-    PRESENTE = "PRESENTE",
-    EN_CURSO = "EN_CURSO",
-    REALIZADO = "REALIZADO",
-    CANCELADO = "CANCELADO",
-    AUSENTE = "AUSENTE"
-}
