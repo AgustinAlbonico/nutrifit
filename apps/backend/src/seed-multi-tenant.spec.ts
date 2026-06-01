@@ -103,6 +103,71 @@ describe('Seed Multi-Tenant', () => {
     });
   });
 
+  describe('NUTRICIONISTA por gimnasio', () => {
+    it('debe crear 3 NUTRICIONISTAs (uno por gimnasio)', async () => {
+      const resultado: unknown = await dataSource.query(
+        `SELECT COUNT(*) as total
+         FROM usuario u
+         WHERE u.rol = 'NUTRICIONISTA'
+         AND u.email LIKE 'nutri-%@nutrifit.com'`,
+      );
+
+      const fila = (resultado as any[])[0];
+      expect(Number(fila.total)).toBe(3);
+    });
+
+    it('cada NUTRICIONISTA debe tener gimnasioId correcto', async () => {
+      const resultado: unknown = await dataSource.query(
+        `SELECT u.email, g.nombre as gimnasio_nombre
+         FROM usuario u
+         INNER JOIN persona p ON u.id_persona = p.id_persona
+         INNER JOIN gimnasio g ON p.gimnasio_id = g.id_gimnasio
+         WHERE u.rol = 'NUTRICIONISTA'
+         AND u.email LIKE 'nutri-%@nutrifit.com'
+         ORDER BY u.email`,
+      );
+
+      const filas = resultado as any[];
+      expect(filas.length).toBe(3);
+      expect(filas[0].gimnasio_nombre).toBe('Gym Central');
+      expect(filas[1].gimnasio_nombre).toBe('Gym Norte');
+      expect(filas[2].gimnasio_nombre).toBe('Gym Sur');
+    });
+  });
+
+  describe('SOCIO por gimnasio', () => {
+    it('debe crear 9 SOCIOs (3 por gimnasio)', async () => {
+      const resultado: unknown = await dataSource.query(
+        `SELECT COUNT(*) as total
+         FROM usuario u
+         WHERE u.rol = 'SOCIO'
+         AND u.email LIKE 'socio%@nutrifit.com'`,
+      );
+
+      const fila = (resultado as any[])[0];
+      expect(Number(fila.total)).toBe(9);
+    });
+
+    it('cada gimnasio debe tener exactamente 3 socios', async () => {
+      const resultado: unknown = await dataSource.query(
+        `SELECT g.nombre as gimnasio_nombre, COUNT(*) as total
+         FROM usuario u
+         INNER JOIN persona p ON u.id_persona = p.id_persona
+         INNER JOIN gimnasio g ON p.gimnasio_id = g.id_gimnasio
+         WHERE u.rol = 'SOCIO'
+         AND u.email LIKE 'socio%@nutrifit.com'
+         GROUP BY g.nombre
+         ORDER BY g.nombre`,
+      );
+
+      const filas = resultado as any[];
+      expect(filas.length).toBe(3);
+      expect(Number(filas[0].total)).toBe(3);
+      expect(Number(filas[1].total)).toBe(3);
+      expect(Number(filas[2].total)).toBe(3);
+    });
+  });
+
   describe('Aislamiento de datos', () => {
     it('ADMIN de Gym Central solo debe ver socios de su gimnasio', async () => {
       const gimnasio: unknown = await dataSource.query(
