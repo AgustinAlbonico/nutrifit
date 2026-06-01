@@ -2,10 +2,12 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { SugerenciaEstado } from 'src/domain/entities/SugerenciaIA/sugerencia-ia.entity';
 import { PropuestaIA } from '@nutrifit/shared';
+import { SocioOrmEntity } from './persona.entity';
 
 @Entity('sugerencia_ia')
 export class SugerenciaIAOrmEntity {
@@ -14,6 +16,9 @@ export class SugerenciaIAOrmEntity {
 
   @Column({ name: 'id_socio', type: 'int' })
   socioId: number;
+
+  @ManyToOne(() => SocioOrmEntity, { nullable: false })
+  socio: SocioOrmEntity;
 
   @Column({ name: 'objetivo', type: 'varchar', length: 500 })
   objetivo: string;
