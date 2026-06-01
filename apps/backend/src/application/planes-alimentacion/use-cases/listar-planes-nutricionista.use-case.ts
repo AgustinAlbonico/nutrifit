@@ -5,19 +5,26 @@ import { PlanAlimentacionOrmEntity } from 'src/infrastructure/persistence/typeor
 import { Repository } from 'typeorm';
 import { PlanAlimentacionResponseDto } from '../dtos';
 import { mapPlanToResponse } from './plan-alimentacion.mapper';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 @Injectable()
 export class ListarPlanesNutricionistaUseCase implements BaseUseCase {
   constructor(
     @InjectRepository(PlanAlimentacionOrmEntity)
     private readonly planRepo: Repository<PlanAlimentacionOrmEntity>,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(
     nutricionistaId: number,
   ): Promise<PlanAlimentacionResponseDto[]> {
     const planes = await this.planRepo.find({
-      where: { nutricionista: { idPersona: nutricionistaId } },
+      where: {
+        nutricionista: {
+          idPersona: nutricionistaId,
+          gimnasioId: this.tenantContext.gimnasioId,
+        },
+      },
       relations: {
         socio: true,
         nutricionista: true,
