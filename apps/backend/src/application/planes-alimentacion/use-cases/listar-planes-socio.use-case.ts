@@ -9,6 +9,7 @@ import {
 import { Repository } from 'typeorm';
 import { PlanAlimentacionResponseDto } from '../dtos';
 import { mapPlanToResponse } from './plan-alimentacion.mapper';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 @Injectable()
 export class ListarPlanesSocioUseCase implements BaseUseCase {
@@ -17,11 +18,12 @@ export class ListarPlanesSocioUseCase implements BaseUseCase {
     private readonly planRepo: Repository<PlanAlimentacionOrmEntity>,
     @InjectRepository(SocioOrmEntity)
     private readonly socioRepo: Repository<SocioOrmEntity>,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(socioId: number): Promise<PlanAlimentacionResponseDto[]> {
     const socio = await this.socioRepo.findOne({
-      where: { idPersona: socioId },
+      where: { idPersona: socioId, gimnasioId: this.tenantContext.gimnasioId },
     });
     if (!socio) {
       throw new NotFoundError('Socio', String(socioId));
@@ -29,7 +31,7 @@ export class ListarPlanesSocioUseCase implements BaseUseCase {
 
     const planes = await this.planRepo.find({
       where: {
-        socio: { idPersona: socioId },
+        socio: { idPersona: socioId, gimnasioId: this.tenantContext.gimnasioId },
       },
       relations: {
         dias: { opcionesComida: { items: { alimento: true } } },
