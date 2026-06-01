@@ -35,6 +35,27 @@ interface SocioData extends AdminData {
   dni: string;
 }
 
+const gimnasios: GimnasioData[] = [
+  {
+    nombre: 'Gym Central',
+    direccion: 'Av. Central 1234',
+    telefono: '341-555-0001',
+    email: 'central@gym.com',
+  },
+  {
+    nombre: 'Gym Norte',
+    direccion: 'Av. Norte 5678',
+    telefono: '341-555-0002',
+    email: 'norte@gym.com',
+  },
+  {
+    nombre: 'Gym Sur',
+    direccion: 'Av. Sur 9012',
+    telefono: '341-555-0003',
+    email: 'sur@gym.com',
+  },
+];
+
 async function runSeedMultiTenant() {
   console.log('Iniciando seed multi-tenant...');
 
@@ -55,7 +76,28 @@ async function runSeedMultiTenant() {
     await dataSource.initialize();
     console.log('Conexión a base de datos establecida');
 
-    // TODO: Implementar creación de gimnasios
+    const crearGimnasios = async (): Promise<Map<string, number>> => {
+      const gimnasioIds = new Map<string, number>();
+
+      for (const gimnasio of gimnasios) {
+        const resultado: unknown = await dataSource.query(
+          `INSERT INTO gimnasio (nombre, direccion, telefono, email, activo, fecha_creacion)
+           VALUES (?, ?, ?, ?, TRUE, NOW())
+           ON DUPLICATE KEY UPDATE id_gimnasio = LAST_INSERT_ID(id_gimnasio)`,
+          [gimnasio.nombre, gimnasio.direccion, gimnasio.telefono, gimnasio.email],
+        );
+
+        const fila = resultado as { insertId: number };
+        const idGimnasio = fila.insertId;
+        gimnasioIds.set(gimnasio.nombre, idGimnasio);
+        console.log(`Gimnasio creado: ${gimnasio.nombre} (ID: ${idGimnasio})`);
+      }
+
+      return gimnasioIds;
+    };
+
+    const gimnasioIds = await crearGimnasios();
+
     // TODO: Implementar creación de SUPERADMIN
     // TODO: Implementar creación de ADMIN por gimnasio
     // TODO: Implementar creación de NUTRICIONISTA por gimnasio
