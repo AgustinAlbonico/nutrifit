@@ -56,6 +56,69 @@ const gimnasios: GimnasioData[] = [
   },
 ];
 
+const superAdmin: SuperAdminData = {
+  email: 'superadmin@nutrifit.com',
+  nombre: 'Super',
+  apellido: 'Admin',
+};
+
+const admins: AdminData[] = [
+  {
+    email: 'admin-central@nutrifit.com',
+    nombre: 'Admin',
+    apellido: 'Central',
+    gimnasioNombre: 'Gym Central',
+  },
+  {
+    email: 'admin-norte@nutrifit.com',
+    nombre: 'Admin',
+    apellido: 'Norte',
+    gimnasioNombre: 'Gym Norte',
+  },
+  {
+    email: 'admin-sur@nutrifit.com',
+    nombre: 'Admin',
+    apellido: 'Sur',
+    gimnasioNombre: 'Gym Sur',
+  },
+];
+
+const nutricionistas: NutricionistaData[] = [
+  {
+    email: 'nutri-central@nutrifit.com',
+    nombre: 'Nutri',
+    apellido: 'Central',
+    gimnasioNombre: 'Gym Central',
+    matricula: 'MN-2001',
+  },
+  {
+    email: 'nutri-norte@nutrifit.com',
+    nombre: 'Nutri',
+    apellido: 'Norte',
+    gimnasioNombre: 'Gym Norte',
+    matricula: 'MN-2002',
+  },
+  {
+    email: 'nutri-sur@nutrifit.com',
+    nombre: 'Nutri',
+    apellido: 'Sur',
+    gimnasioNombre: 'Gym Sur',
+    matricula: 'MN-2003',
+  },
+];
+
+const socios: SocioData[] = [
+  { email: 'socio1-central@nutrifit.com', nombre: 'Socio1', apellido: 'Central', gimnasioNombre: 'Gym Central', dni: '50001001' },
+  { email: 'socio2-central@nutrifit.com', nombre: 'Socio2', apellido: 'Central', gimnasioNombre: 'Gym Central', dni: '50001002' },
+  { email: 'socio3-central@nutrifit.com', nombre: 'Socio3', apellido: 'Central', gimnasioNombre: 'Gym Central', dni: '50001003' },
+  { email: 'socio1-norte@nutrifit.com', nombre: 'Socio1', apellido: 'Norte', gimnasioNombre: 'Gym Norte', dni: '50002001' },
+  { email: 'socio2-norte@nutrifit.com', nombre: 'Socio2', apellido: 'Norte', gimnasioNombre: 'Gym Norte', dni: '50002002' },
+  { email: 'socio3-norte@nutrifit.com', nombre: 'Socio3', apellido: 'Norte', gimnasioNombre: 'Gym Norte', dni: '50002003' },
+  { email: 'socio1-sur@nutrifit.com', nombre: 'Socio1', apellido: 'Sur', gimnasioNombre: 'Gym Sur', dni: '50003001' },
+  { email: 'socio2-sur@nutrifit.com', nombre: 'Socio2', apellido: 'Sur', gimnasioNombre: 'Gym Sur', dni: '50003002' },
+  { email: 'socio3-sur@nutrifit.com', nombre: 'Socio3', apellido: 'Sur', gimnasioNombre: 'Gym Sur', dni: '50003003' },
+];
+
 async function runSeedMultiTenant() {
   console.log('Iniciando seed multi-tenant...');
 
@@ -98,10 +161,136 @@ async function runSeedMultiTenant() {
 
     const gimnasioIds = await crearGimnasios();
 
-    // TODO: Implementar creación de SUPERADMIN
-    // TODO: Implementar creación de ADMIN por gimnasio
-    // TODO: Implementar creación de NUTRICIONISTA por gimnasio
-    // TODO: Implementar creación de SOCIO por gimnasio
+    const crearSuperAdmin = async (): Promise<number> => {
+      const contraseniaHash = await bcrypt.hash('123456', 10);
+
+      const resultadoPersona: unknown = await dataSource.query(
+        `INSERT INTO persona (nombre, apellido, tipo_persona)
+         VALUES (?, ?, 'AsistenteOrmEntity')
+         ON DUPLICATE KEY UPDATE id_persona = LAST_INSERT_ID(id_persona)`,
+        [superAdmin.nombre, superAdmin.apellido],
+      );
+
+      const filaPersona = resultadoPersona as { insertId: number };
+      const idPersona = filaPersona.insertId;
+
+      const resultadoUsuario: unknown = await dataSource.query(
+        `INSERT INTO usuario (email, contrasenia, rol, id_persona)
+         VALUES (?, ?, 'SUPERADMIN', ?)
+         ON DUPLICATE KEY UPDATE id_usuario = LAST_INSERT_ID(id_usuario)`,
+        [superAdmin.email, contraseniaHash, idPersona],
+      );
+
+      const filaUsuario = resultadoUsuario as { insertId: number };
+      const idUsuario = filaUsuario.insertId;
+
+      console.log(`SUPERADMIN creado: ${superAdmin.email} (ID: ${idUsuario})`);
+      return idUsuario;
+    };
+
+    const idSuperAdmin = await crearSuperAdmin();
+
+    const crearAdmins = async (gimnasioIds: Map<string, number>): Promise<void> => {
+      const contraseniaHash = await bcrypt.hash('123456', 10);
+
+      for (const admin of admins) {
+        const idGimnasio = gimnasioIds.get(admin.gimnasioNombre);
+        if (!idGimnasio) {
+          console.error(`Gimnasio no encontrado: ${admin.gimnasioNombre}`);
+          continue;
+        }
+
+        const resultadoPersona: unknown = await dataSource.query(
+          `INSERT INTO persona (nombre, apellido, gimnasio_id, tipo_persona)
+           VALUES (?, ?, ?, 'AsistenteOrmEntity')
+           ON DUPLICATE KEY UPDATE id_persona = LAST_INSERT_ID(id_persona)`,
+          [admin.nombre, admin.apellido, idGimnasio],
+        );
+
+        const filaPersona = resultadoPersona as { insertId: number };
+        const idPersona = filaPersona.insertId;
+
+        const resultadoUsuario: unknown = await dataSource.query(
+          `INSERT INTO usuario (email, contrasenia, rol, id_persona)
+           VALUES (?, ?, 'ADMIN', ?)
+           ON DUPLICATE KEY UPDATE id_usuario = LAST_INSERT_ID(id_usuario)`,
+          [admin.email, contraseniaHash, idPersona],
+        );
+
+        const filaUsuario = resultadoUsuario as { insertId: number };
+        console.log(`ADMIN creado: ${admin.email} (Gimnasio: ${admin.gimnasioNombre}, ID: ${filaUsuario.insertId})`);
+      }
+    };
+
+    await crearAdmins(gimnasioIds);
+
+    const crearNutricionistas = async (gimnasioIds: Map<string, number>): Promise<void> => {
+      const contraseniaHash = await bcrypt.hash('123456', 10);
+
+      for (const nutri of nutricionistas) {
+        const idGimnasio = gimnasioIds.get(nutri.gimnasioNombre);
+        if (!idGimnasio) {
+          console.error(`Gimnasio no encontrado: ${nutri.gimnasioNombre}`);
+          continue;
+        }
+
+        const resultadoPersona: unknown = await dataSource.query(
+          `INSERT INTO persona (nombre, apellido, gimnasio_id, matricula, tipo_persona)
+           VALUES (?, ?, ?, ?, 'NutricionistaOrmEntity')
+           ON DUPLICATE KEY UPDATE id_persona = LAST_INSERT_ID(id_persona)`,
+          [nutri.nombre, nutri.apellido, idGimnasio, nutri.matricula],
+        );
+
+        const filaPersona = resultadoPersona as { insertId: number };
+        const idPersona = filaPersona.insertId;
+
+        const resultadoUsuario: unknown = await dataSource.query(
+          `INSERT INTO usuario (email, contrasenia, rol, id_persona)
+           VALUES (?, ?, 'NUTRICIONISTA', ?)
+           ON DUPLICATE KEY UPDATE id_usuario = LAST_INSERT_ID(id_usuario)`,
+          [nutri.email, contraseniaHash, idPersona],
+        );
+
+        const filaUsuario = resultadoUsuario as { insertId: number };
+        console.log(`NUTRICIONISTA creado: ${nutri.email} (Gimnasio: ${nutri.gimnasioNombre}, ID: ${filaUsuario.insertId})`);
+      }
+    };
+
+    await crearNutricionistas(gimnasioIds);
+
+    const crearSocios = async (gimnasioIds: Map<string, number>): Promise<void> => {
+      const contraseniaHash = await bcrypt.hash('123456', 10);
+
+      for (const socio of socios) {
+        const idGimnasio = gimnasioIds.get(socio.gimnasioNombre);
+        if (!idGimnasio) {
+          console.error(`Gimnasio no encontrado: ${socio.gimnasioNombre}`);
+          continue;
+        }
+
+        const resultadoPersona: unknown = await dataSource.query(
+          `INSERT INTO persona (nombre, apellido, gimnasio_id, dni, fecha_alta, tipo_persona)
+           VALUES (?, ?, ?, ?, NOW(), 'SocioOrmEntity')
+           ON DUPLICATE KEY UPDATE id_persona = LAST_INSERT_ID(id_persona)`,
+          [socio.nombre, socio.apellido, idGimnasio, socio.dni],
+        );
+
+        const filaPersona = resultadoPersona as { insertId: number };
+        const idPersona = filaPersona.insertId;
+
+        const resultadoUsuario: unknown = await dataSource.query(
+          `INSERT INTO usuario (email, contrasenia, rol, id_persona)
+           VALUES (?, ?, 'SOCIO', ?)
+           ON DUPLICATE KEY UPDATE id_usuario = LAST_INSERT_ID(id_usuario)`,
+          [socio.email, contraseniaHash, idPersona],
+        );
+
+        const filaUsuario = resultadoUsuario as { insertId: number };
+        console.log(`SOCIO creado: ${socio.email} (Gimnasio: ${socio.gimnasioNombre}, ID: ${filaUsuario.insertId})`);
+      }
+    };
+
+    await crearSocios(gimnasioIds);
 
     console.log('Seed multi-tenant completado');
   } catch (error) {
