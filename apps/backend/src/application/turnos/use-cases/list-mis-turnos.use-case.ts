@@ -24,6 +24,7 @@ import {
   UsuarioOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
 import { Repository } from 'typeorm';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 @Injectable()
 export class ListMisTurnosUseCase implements BaseUseCase {
@@ -36,6 +37,7 @@ export class ListMisTurnosUseCase implements BaseUseCase {
     private readonly turnoRepository: Repository<TurnoOrmEntity>,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(
@@ -54,8 +56,11 @@ export class ListMisTurnosUseCase implements BaseUseCase {
     const queryBuilder = this.turnoRepository
       .createQueryBuilder('turno')
       .innerJoinAndSelect('turno.nutricionista', 'nutricionista')
-      .where('turno.id_socio = :socioId', {
+      .andWhere('turno.id_socio = :socioId', {
         socioId: socio.idPersona,
+      })
+      .andWhere('nutricionista.gimnasioId = :gimnasioId', {
+        gimnasioId: this.tenantContext.gimnasioId,
       })
       .orderBy('turno.fechaTurno', 'DESC')
       .addOrderBy('turno.horaTurno', 'DESC');
