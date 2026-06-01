@@ -26,7 +26,8 @@
     "seed:completo": "ts-node src/seed-completo.ts",
     "seed:grupos": "ts-node src/seed-grupos.ts",
     "seed:asignar-grupos": "ts-node src/seed-asignar-grupos.ts",
-    "seed:build": "tsc -p tsconfig.json"
+    "seed:build": "tsc -p tsconfig.json",
+    "seed:multi-tenant": "ts-node src/seed-multi-tenant.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
