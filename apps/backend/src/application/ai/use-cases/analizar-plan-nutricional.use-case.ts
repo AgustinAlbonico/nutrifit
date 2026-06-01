@@ -12,6 +12,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { PlanAlimentacionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities';
 import { Repository } from 'typeorm';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 import {
   AnalisisNutricional,
   RespuestaIA,
@@ -28,6 +29,7 @@ export class AnalizarPlanNutricionalUseCase implements BaseUseCase {
     private readonly planRepository: Repository<PlanAlimentacionOrmEntity>,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(
@@ -35,12 +37,16 @@ export class AnalizarPlanNutricionalUseCase implements BaseUseCase {
   ): Promise<RespuestaIA<AnalisisNutricional>> {
     try {
       const plan = await this.planRepository.findOne({
-        where: { idPlanAlimentacion: solicitud.planId },
+        where: {
+          idPlanAlimentacion: solicitud.planId,
+          socio: { gimnasioId: this.tenantContext.gimnasioId },
+        },
         relations: [
           'dias',
           'dias.opcionesComida',
           'dias.opcionesComida.items',
           'dias.opcionesComida.items.alimento',
+          'socio',
         ],
       });
 
