@@ -8,11 +8,8 @@ import {
 } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import {
-  IJwtService,
-  JWT_SERVICE,
-  JwtPayload,
-} from 'src/domain/services/jwt.service';
+import { IJwtService, JWT_SERVICE, JwtPayload } from 'src/domain/services/jwt.service';
+import { Rol } from 'src/domain/entities/Usuario/Rol';
 import { Request } from 'express';
 
 @Injectable()
@@ -44,8 +41,12 @@ export class JwtAuthGuard implements CanActivate {
     try {
       const payload = this.jwtService.verify<JwtPayload>(token);
 
-      // Validar que el token tenga los campos requeridos para tenant isolation
-      if (payload.gimnasioId === undefined || payload.gimnasioId === null) {
+      // Validar que el token tenga los campos requeridos para tenant isolation.
+      // SUPERADMIN puede no tener gimnasioId (operar cross-tenant).
+      if (
+        payload.rol !== Rol.SUPERADMIN &&
+        (payload.gimnasioId === undefined || payload.gimnasioId === null)
+      ) {
         throw new UnauthorizedException('Token sin contexto de tenant');
       }
 
