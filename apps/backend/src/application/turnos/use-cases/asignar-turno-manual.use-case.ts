@@ -34,6 +34,7 @@ import {
   TurnoOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
 import { Not, Repository } from 'typeorm';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 @Injectable()
 export class AsignarTurnoManualUseCase implements BaseUseCase {
@@ -51,6 +52,7 @@ export class AsignarTurnoManualUseCase implements BaseUseCase {
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
     private readonly notificacionesService: NotificacionesService,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(
@@ -98,7 +100,7 @@ export class AsignarTurnoManualUseCase implements BaseUseCase {
 
     const conflictingTurno = await this.turnoRepository.findOne({
       where: {
-        nutricionista: { idPersona: nutricionistaId },
+        nutricionista: { idPersona: nutricionistaId, gimnasioId: this.tenantContext.gimnasioId },
         fechaTurno,
         horaTurno,
         estadoTurno: Not(EstadoTurno.CANCELADO),
@@ -154,7 +156,7 @@ export class AsignarTurnoManualUseCase implements BaseUseCase {
 
     const agendaDelDia = await this.agendaRepository.find({
       where: {
-        nutricionista: { idPersona: nutricionistaId },
+        nutricionista: { idPersona: nutricionistaId, gimnasioId: this.tenantContext.gimnasioId },
         dia: diaSemana,
       },
       order: { horaInicio: 'ASC' },
