@@ -26,7 +26,10 @@ describe('AlignTurnoStates Migration Enum Alignment', () => {
   });
 
   describe('EstadoTurno enum NO tiene valores eliminados', () => {
-    const enumComoRegistro = EstadoTurno as Record<string, EstadoTurno | undefined>;
+    const enumComoRegistro = EstadoTurno as Record<
+      string,
+      EstadoTurno | undefined
+    >;
 
     it('no debe tener CONFIRMADO (eliminado)', () => {
       expect(enumComoRegistro.CONFIRMADO).toBeUndefined();

@@ -1,4 +1,10 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Query,
+  UseGuards,
+  BadRequestException,
+} from '@nestjs/common';
 import { Rol as RolEnum } from 'src/domain/entities/Usuario/Rol';
 import { AccionAuditoria } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
 import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
@@ -12,6 +18,8 @@ interface FiltrosAuditoriaDto {
   accion?: AccionAuditoria;
   entidad?: string;
   usuarioId?: number;
+  /** ID del gimnasio a filtrar. Requerido para admins. */
+  gimnasioId?: number;
 }
 
 interface RegistroAuditoria {
@@ -36,12 +44,20 @@ export class AdminAuditoriaController {
   async listarAuditoria(
     @Query() filtros: FiltrosAuditoriaDto,
   ): Promise<RegistroAuditoria[]> {
+    // Admin audit listing REQUIRES explicit gimnasioId to prevent data leaks
+    if (filtros.gimnasioId === undefined) {
+      throw new BadRequestException(
+        'Para listar auditoria como admin debes especificar el parametro gimnasioId',
+      );
+    }
+
     return this.auditoriaService.listarConFiltros({
       fechaDesde: filtros.fechaDesde ? new Date(filtros.fechaDesde) : undefined,
       fechaHasta: filtros.fechaHasta ? new Date(filtros.fechaHasta) : undefined,
       accion: filtros.accion,
       entidad: filtros.entidad,
       usuarioId: filtros.usuarioId,
+      gimnasioId: filtros.gimnasioId,
     });
   }
 }

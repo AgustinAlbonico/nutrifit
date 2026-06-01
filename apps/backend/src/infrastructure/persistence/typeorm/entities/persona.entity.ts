@@ -157,19 +157,3 @@ export class NutricionistaOrmEntity extends PersonaOrmEntity {
   })
   turnos: TurnoOrmEntity[] | TurnoEntity[] | null;
 }
-
-@ChildEntity()
-export class EntrenadorOrmEntity extends PersonaOrmEntity {
-  @Column({ name: 'especialidad', type: 'varchar', length: 100 })
-  especialidad: string;
-
-  @Column({ name: 'fecha_baja', type: 'datetime', nullable: true })
-  @Type(() => Date)
-  fechaBaja: Date | null;
-
-  @OneToMany(() => TurnoOrmEntity, (turno) => turno.entrenador, {
-    eager: false,
-    nullable: true,
-  })
-  turnos: TurnoOrmEntity[] | TurnoEntity[];
-}

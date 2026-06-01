@@ -9,14 +9,18 @@ import {
   IPasswordEncrypterService,
   PASSWORD_ENCRYPTER_SERVICE,
 } from 'src/domain/services/password-encrypter.service';
-import { IJwtService, JWT_SERVICE } from 'src/domain/services/jwt.service';
-import { JwtPayload } from 'jsonwebtoken';
+import {
+  IJwtService,
+  JWT_SERVICE,
+  JwtPayload,
+} from 'src/domain/services/jwt.service';
 import {
   APP_LOGGER_SERVICE,
   IAppLoggerService,
 } from 'src/domain/services/logger.service';
 import { LoginDto } from './dtos/login.dto';
 import { Rol } from 'src/domain/entities/Usuario/Rol';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class LoginUseCase implements BaseUseCase {
@@ -55,11 +59,29 @@ export class LoginUseCase implements BaseUseCase {
       throw new UnauthorizedError('La cuenta está inactiva');
     }
 
+    // Extraer gimnasioId desde la persona asociada (tenant isolation)
+    // Si la persona no tiene gimnasio asignado, es un estado inválido que no debería
+    // permitirse en producción — el fallback a 1 solo aplica para datos legacy/malos
+    let gimnasioId: number;
+    if (persona?.gimnasioId !== undefined && persona.gimnasioId !== null) {
+      gimnasioId = persona.gimnasioId;
+    } else {
+      this.loggerService.warn(
+        `LoginUseCase: Usuario ${email} tiene persona sin gimnasioId, usando fallback a 1 (legacy data)`,
+      );
+      gimnasioId = 1;
+    }
+    const personaId = persona?.idPersona ?? null;
+    const jti = randomUUID();
+
     const jwtPayload: JwtPayload = {
       id: user.idUsuario,
       email: user.email,
       rol: user.rol,
       acciones: user.getAccionesEfectivas(),
+      personaId,
+      gimnasioId,
+      jti,
     };
 
     const token = this.jwtService.sign(jwtPayload);

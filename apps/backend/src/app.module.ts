@@ -4,6 +4,7 @@ import { InfrastructureModule } from './infrastructure/infrastructure.module';
 import { ConfigModule } from '@nestjs/config';
 import { AppLoggerModule } from './infrastructure/common/logger/app-logger.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { TenantContextModule } from './infrastructure/auth/tenant-context.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { ScheduleModule } from '@nestjs/schedule';
       envFilePath: ['.env'], // Podés cambiarlo por .env.dev, etc.
       cache: true,
     }),
+    TenantContextModule,
   ],
 })
 export class AppModule {}

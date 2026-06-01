@@ -68,103 +68,6 @@ nutrifit/
 └── package.json
 ```
 
-## Critical Rules
-
-**Dev servers MUST run in background** (terminal blocks otherwise):
-- Backend: `npm run dev:backend` launches via `nest start --watch`
-- Frontend: `npm run dev:frontend` launches via `vite` on port 5173
-- Both together: `npm run dev` uses `concurrently`
-
-**Shared package must be built before use**: `npm run build:shared` before `build:frontend` if shared types changed.
-
-## Node / Tool Versions
-
-- Node >= 20.0.0, npm >= 10.0.0
-- Frontend: TypeScript ~5.9.3 (pinned minor)
-- Backend: TypeScript ^5.7.3
-
-## Development Commands
-
-### Root (monorepo)
-
-```bash
-npm run dev              # Both frontend + backend concurrently
-npm run dev:frontend     # Frontend only
-npm run dev:backend     # Backend only
-npm run build           # All workspaces
-npm run build:frontend
-npm run build:backend
-npm run build:shared
-npm run test            # All workspaces
-npm run test:frontend
-npm run test:backend
-npm run lint            # All workspaces
-npm run lint:frontend
-npm run lint:backend
-npm run typecheck       # All workspaces (runs tsc -b on each)
-npm run db:migrate       # typeorm migration:run (needs dist/ built first)
-npm run db:seed         # ts-node src/seed-simple.ts
-npm run clean           # clean dist + node_modules
-```
-
-### Backend (Jest)
-
-```bash
-# From apps/backend/
-npm test                 # All tests
-npx jest --watch        # Watch mode
-npx jest --coverage     # Coverage
-
-# Single test (recommended for local debugging)
-npx jest src/application/turnos/use-cases/reservar-turno-socio.use-case.spec.ts --runInBand
-npx jest --runInBand -t "debe reservar"  # By name pattern
-
-# E2E
-npm run test:e2e
-
-# Seeding
-npm run seed:completo   # Full seed with test data
-npm run seed:alimentos:ar  # Argentine food database seed
-
-# Migrations
-npm run migration:generate <name>
-npm run migration:run
-npm run migration:revert
-```
-
-> **Jest quirk**: `rootDir` is `src` (configured in `apps/backend/package.json`). Module name mapper maps `src/(.*)` → `<rootDir>/$1`.
-> **Backend uses `nest build`**, not `tsc`. Build output is `dist/`.
-
-### Frontend (Vitest)
-
-```bash
-# From apps/frontend/
-npm run build          # tsc -b && vite build
-npm run typecheck     # tsc -b only
-npm run lint          # eslint .
-npm test              # vitest run --passWithNoTests
-npm run test:watch   # vitest --passWithNoTests
-npm run test:coverage
-```
-
-> **Frontend uses Tailwind CSS v4** (not v3). Styling conventions in `DESIGN_SYSTEM.md`.
-
-## Build & Verification Order
-
-1. Backend changes: `npm run lint:backend && npm run build:backend`
-2. Frontend changes: `npm run typecheck && npm run lint:frontend && npm run build:frontend`
-3. Cross-cutting: `npm run build && npm run lint`
-4. **Never finish with failing checks** unless explicitly requested
-5. If `migration:run` fails, run `build:backend` first
-
-## Shared Package (@nutrifit/shared)
-
-```typescript
-// Backend/Frontend
-import { Rol, EstadoTurno, CODIGOS_ERROR } from '@nutrifit/shared';
-import type { TokenPayload, RespuestaAutenticacion } from '@nutrifit/shared';
-```
-
 Contents: `types/rol.ts`, `types/auth.ts`, `types/turno.ts`, `constants/error-codes.ts`.
 
 ## Import Conventions
@@ -217,17 +120,6 @@ PORT=3000
 NODE_ENV=dev
 ```
 
-## Test Credentials (seed data)
-
-All test users share password: `123456`
-
-| Email | Rol |
-|-------|-----|
-| `admin@nutrifit.com` | ADMIN |
-| `nutri@nutrifit.com` | NUTRICIONISTA |
-| `socio@nutrifit.com` | SOCIO |
-
-Run `npm run seed:completo` (from `apps/backend`) to populate all test data.
 
 ## Local Skills
 
@@ -240,15 +132,7 @@ Project-local skills exist in `.agents/skills/` — these override generic skill
 - `.agents/skills/` and `C:\Users\agust\.config\opencode\skills\` contain project and user skill definitions
 - `ARCHITECTURE_PATTERNS.md` at root covers frontend patterns (sidebar, modals, error handling, state management, design tokens)
 
-## Clavix
 
-This project uses **Clavix** for prompt improvement and PRD generation. Reference `CLAUDE.md` for the full command set (`/clavix:improve`, `/clavix:prd`, `/clavix:plan`, `/clavix:implement`, etc.). Skill registry at `.atl/skill-registry.md` auto-indexes all installed skills.
-
-## Formatting
-
-- Backend: ESLint + Prettier plugin integration
-- Frontend: flat ESLint config with React Hooks, TanStack Query/Router, JSX A11y plugins — **no standalone Prettier config**
-- Do not introduce formatting styles that conflict with existing lint rules
 ### Auto-invoke Skills
 
 When performing these actions, ALWAYS invoke the corresponding skill FIRST:

@@ -5,12 +5,19 @@ declare global {
     /**
      * Datos del usuario autenticado, poblados por `JwtAuthGuard`
      * con el contenido del JWT verificado.
+     * Incluye campos de tenant para aislamiento multi-gimnasio.
      */
     interface AuthenticatedUserPayload {
       id: number;
       email: string;
       rol: Rol;
       acciones?: string[];
+      /** ID del gimnasio al que pertenece el usuario (tenant isolation) */
+      gimnasioId: number;
+      /** ID de la persona asociada (puede ser null para admins) */
+      personaId: number | null;
+      /** Identificador único del token (para revocación) */
+      jti: string;
     }
 
     /**

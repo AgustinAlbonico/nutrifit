@@ -11,11 +11,7 @@ import {
 import { GimnasioOrmEntity } from './gimnasio.entity';
 import { ObservacionClinicaOrmEntity } from './observacion-clinica.entity';
 import { MedicionOrmEntity } from './medicion.entity';
-import {
-  EntrenadorOrmEntity,
-  NutricionistaOrmEntity,
-  SocioOrmEntity,
-} from './persona.entity';
+import { NutricionistaOrmEntity, SocioOrmEntity } from './persona.entity';
 import { AdjuntoClinicoOrmEntity } from './adjunto-clinico.entity';
 
 @Entity('turno')
@@ -96,12 +92,6 @@ export class TurnoOrmEntity {
   )
   @JoinColumn({ name: 'id_nutricionista' })
   nutricionista: NutricionistaOrmEntity;
-
-  @ManyToOne(() => EntrenadorOrmEntity, (entrenador) => entrenador.turnos, {
-    nullable: true,
-  })
-  @JoinColumn({ name: 'id_entrenador' })
-  entrenador?: EntrenadorOrmEntity;
 
   @ManyToOne(() => GimnasioOrmEntity, (gimnasio) => gimnasio.turnos, {
     nullable: true,

@@ -7,7 +7,12 @@ import {
   PerfilUsuario,
   UsuarioRepository,
 } from 'src/domain/entities/Usuario/usuario.repository';
-import { PersonaOrmEntity } from '../entities/persona.entity';
+import { PersonaEntity } from 'src/domain/entities/Persona/persona.entity';
+import {
+  PersonaOrmEntity,
+  SocioOrmEntity,
+  NutricionistaOrmEntity,
+} from '../entities/persona.entity';
 import { GrupoPermisoEntity } from 'src/domain/entities/Usuario/grupo-permiso.entity';
 import { AccionPermisoEntity } from 'src/domain/entities/Usuario/accion-permiso.entity';
 import { GrupoPermisoOrmEntity } from '../entities/grupo-permiso.entity';
@@ -24,6 +29,9 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
     const user = await this.userRepository.findOne({
       where: { email },
       relations: {
+        // persona.gimnasioId es una columna directa en PersonaOrmEntity (id_gimnasio)
+        // No requiere eager-loading de la relacion gimnasio.
+        persona: true,
         acciones: true,
         grupos: {
           acciones: true,
@@ -96,11 +104,40 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
         ),
       );
 
+    // Construir PersonaEntity con gimnasioId para tenant isolation.
+    // PersonaEntity es abstracta; usamos un objeto plano que satisface la interfaz
+    // y lo casteamos. fechaBaja existe en SocioOrmEntity y NutricionistaOrmEntity
+    // (no en la base PersonaOrmEntity), por eso se usa type assertion.
+    let formatedPersona: PersonaEntity | null = null;
+    if (user.persona) {
+      const personaOrm = user.persona as
+        | SocioOrmEntity
+        | NutricionistaOrmEntity;
+
+      formatedPersona = {
+        idPersona: user.persona.idPersona ?? null,
+        idPersonaNullable: user.persona.idPersona ?? null,
+        nombre: user.persona.nombre,
+        apellido: user.persona.apellido,
+        fechaNacimiento: user.persona.fechaNacimiento,
+        telefono: user.persona.telefono,
+        genero: user.persona.genero,
+        direccion: user.persona.direccion,
+        ciudad: user.persona.ciudad,
+        provincia: user.persona.provincia,
+        dni: user.persona.dni ?? '',
+        email: user.persona.usuario?.email ?? '',
+        fotoPerfilKey: user.persona.fotoPerfilKey,
+        gimnasioId: user.persona.gimnasioId ?? 1,
+        fechaBaja: personaOrm.fechaBaja ?? null,
+      } as PersonaEntity;
+    }
+
     const formatedUser = new UsuarioEntity(
       idUsuario,
       email,
       contraseña,
-      null,
+      formatedPersona,
       rol,
       (user.grupos ?? []).map(mapGrupo),
       (user.acciones ?? []).map(

@@ -66,7 +66,9 @@ describe('AusenciaTurnoScheduler', () => {
 
     jest
       .spyOn(turnoRepository, 'createQueryBuilder')
-      .mockReturnValue(queryBuilder as unknown as SelectQueryBuilder<TurnoOrmEntity>);
+      .mockReturnValue(
+        queryBuilder as unknown as SelectQueryBuilder<TurnoOrmEntity>,
+      );
 
     jest.useFakeTimers();
     jest.setSystemTime(ahora);
@@ -109,7 +111,9 @@ describe('AusenciaTurnoScheduler', () => {
 
     jest
       .spyOn(turnoRepository, 'createQueryBuilder')
-      .mockReturnValue(queryBuilder as unknown as SelectQueryBuilder<TurnoOrmEntity>);
+      .mockReturnValue(
+        queryBuilder as unknown as SelectQueryBuilder<TurnoOrmEntity>,
+      );
 
     jest.useFakeTimers();
     jest.setSystemTime(ahora);

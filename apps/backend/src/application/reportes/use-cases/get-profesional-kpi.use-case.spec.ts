@@ -56,7 +56,9 @@ describe('GetProfesionalKpiUseCase', () => {
     };
     jest
       .spyOn(turnoRepository, 'createQueryBuilder')
-      .mockReturnValue(mockTurnosBuilder as unknown as SelectQueryBuilder<TurnoOrmEntity>);
+      .mockReturnValue(
+        mockTurnosBuilder as unknown as SelectQueryBuilder<TurnoOrmEntity>,
+      );
 
     const mockIaBuilder = {
       select: jest.fn().mockReturnThis(),
@@ -70,7 +72,9 @@ describe('GetProfesionalKpiUseCase', () => {
     };
     jest
       .spyOn(sugerenciaIaRepository, 'createQueryBuilder')
-      .mockReturnValue(mockIaBuilder as unknown as SelectQueryBuilder<SugerenciaIAOrmEntity>);
+      .mockReturnValue(
+        mockIaBuilder as unknown as SelectQueryBuilder<SugerenciaIAOrmEntity>,
+      );
 
     const result = await useCase.execute(
       new Date('2024-01-01'),
@@ -100,7 +104,9 @@ describe('GetProfesionalKpiUseCase', () => {
     };
     jest
       .spyOn(turnoRepository, 'createQueryBuilder')
-      .mockReturnValue(mockTurnosBuilder as unknown as SelectQueryBuilder<TurnoOrmEntity>);
+      .mockReturnValue(
+        mockTurnosBuilder as unknown as SelectQueryBuilder<TurnoOrmEntity>,
+      );
 
     const mockIaBuilder = {
       select: jest.fn().mockReturnThis(),
@@ -112,7 +118,9 @@ describe('GetProfesionalKpiUseCase', () => {
     };
     jest
       .spyOn(sugerenciaIaRepository, 'createQueryBuilder')
-      .mockReturnValue(mockIaBuilder as unknown as SelectQueryBuilder<SugerenciaIAOrmEntity>);
+      .mockReturnValue(
+        mockIaBuilder as unknown as SelectQueryBuilder<SugerenciaIAOrmEntity>,
+      );
 
     const result = await useCase.execute(
       new Date('2024-01-01'),

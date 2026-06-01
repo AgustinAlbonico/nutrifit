@@ -2,6 +2,7 @@
 import {
   CanActivate,
   ExecutionContext,
+  HttpException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -13,11 +14,6 @@ import {
   JwtPayload,
 } from 'src/domain/services/jwt.service';
 import { Request } from 'express';
-import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
-
-interface AuthenticatedRequest extends Request {
-  user: JwtPayload;
-}
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -27,7 +23,7 @@ export class JwtAuthGuard implements CanActivate {
   ) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+    const isPublic = this.reflector.getAllAndOverride<boolean>('isPublic', [
       context.getHandler(),
       context.getClass(),
     ]);
@@ -36,7 +32,7 @@ export class JwtAuthGuard implements CanActivate {
       return true;
     }
 
-    const req = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    const req = context.switchToHttp().getRequest<Request>();
     const authHeader = req.headers['authorization'] as string;
     if (!authHeader) throw new UnauthorizedException('No token proporcionado');
 
@@ -46,9 +42,19 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     try {
-      req.user = this.jwtService.verify<JwtPayload>(token);
+      const payload = this.jwtService.verify<JwtPayload>(token);
+
+      // Validar que el token tenga los campos requeridos para tenant isolation
+      if (payload.gimnasioId === undefined || payload.gimnasioId === null) {
+        throw new UnauthorizedException('Token sin contexto de tenant');
+      }
+
+      // Attach user to request — use bracket notation to avoid type conflict with Request.user
+      (req as any).user = payload;
       return true;
-    } catch {
+    } catch (error) {
+      // Let NestJS HTTP exceptions (like tenant validation) pass through unchanged
+      if (error instanceof HttpException) throw error;
       throw new UnauthorizedException('Token inválido');
     }
   }

@@ -21,7 +21,9 @@ export interface SocioResponseSource {
   fotoPerfilKey?: string | null;
 }
 
-function formatearFecha(fecha: Date | string | null | undefined): string | null {
+function formatearFecha(
+  fecha: Date | string | null | undefined,
+): string | null {
   if (fecha === null || fecha === undefined) {
     return null;
   }

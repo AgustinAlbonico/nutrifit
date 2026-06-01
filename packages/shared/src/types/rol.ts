@@ -1,5 +1,5 @@
 // Roles del sistema
-export type Rol = 'SOCIO' | 'NUTRICIONISTA' | 'ENTRENADOR' | 'RECEPCIONISTA' | 'ADMIN';
+export type Rol = 'SOCIO' | 'NUTRICIONISTA' | 'RECEPCIONISTA' | 'ADMIN' | 'SUPERADMIN';
 
 export interface InfoRol {
   rol: Rol;
@@ -10,7 +10,7 @@ export interface InfoRol {
 export const ROLES: InfoRol[] = [
   { rol: 'SOCIO', nombre: 'Socio', descripcion: 'Usuario cliente del gimnasio' },
   { rol: 'NUTRICIONISTA', nombre: 'Nutricionista', descripcion: 'Profesional de la nutrición' },
-  { rol: 'ENTRENADOR', nombre: 'Entrenador', descripcion: 'Entrenador personal del gimnasio' },
   { rol: 'RECEPCIONISTA', nombre: 'Recepcionista', descripcion: 'Personal administrativo' },
-  { rol: 'ADMIN', nombre: 'Administrador', descripcion: 'Administrador del sistema' },
+  { rol: 'ADMIN', nombre: 'Administrador de Gimnasio', descripcion: 'Administrador interno del gimnasio' },
+  { rol: 'SUPERADMIN', nombre: 'Super Administrador', descripcion: 'Administrador global del sistema' },
 ];

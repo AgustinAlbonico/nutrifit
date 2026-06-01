@@ -125,7 +125,9 @@ describe('GuardarObservacionesUseCase', () => {
 
     jest
       .spyOn(turnoRepository, 'createQueryBuilder')
-      .mockReturnValue(queryBuilder as unknown as SelectQueryBuilder<TurnoOrmEntity>);
+      .mockReturnValue(
+        queryBuilder as unknown as SelectQueryBuilder<TurnoOrmEntity>,
+      );
 
     const nuevaObservacion = {
       idObservacion: 2,
@@ -204,7 +206,9 @@ describe('GuardarObservacionesUseCase', () => {
 
     jest
       .spyOn(turnoRepository, 'createQueryBuilder')
-      .mockReturnValue(queryBuilder as unknown as SelectQueryBuilder<TurnoOrmEntity>);
+      .mockReturnValue(
+        queryBuilder as unknown as SelectQueryBuilder<TurnoOrmEntity>,
+      );
 
     const dto: GuardarObservacionesDto = {
       comentario: 'Test',

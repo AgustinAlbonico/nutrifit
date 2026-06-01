@@ -10,10 +10,7 @@ import { Request } from 'express';
  * Lanza UnauthorizedException si no hay usuario en la request.
  */
 export const CurrentUser = createParamDecorator(
-  (
-    _data: unknown,
-    ctx: ExecutionContext,
-  ): Express.AuthenticatedUserPayload => {
+  (_data: unknown, ctx: ExecutionContext): Express.AuthenticatedUserPayload => {
     const request = ctx.switchToHttp().getRequest<Request>();
     const user = request.user;
 

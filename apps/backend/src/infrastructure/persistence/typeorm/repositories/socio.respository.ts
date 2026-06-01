@@ -1,26 +1,59 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, Optional } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SocioOrmEntity } from '../entities/persona.entity';
 import { SocioEntity } from 'src/domain/entities/Persona/Socio/socio.entity';
 import { SocioRepository } from 'src/domain/entities/Persona/Socio/socio.repository';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
+
+/**
+ * Obtiene el gimnasioId actual del tenant context.
+ * @throws Error si el contexto no está inicializado (requiere request scope activo)
+ */
+function obtenerGimnasioIdActual(
+  tenantContext: TenantContextService | undefined,
+): number {
+  if (!tenantContext?.isInitialized) {
+    throw new Error(
+      'Tenant context not initialized — cannot perform tenant-scoped operation',
+    );
+  }
+  return tenantContext.gimnasioId;
+}
 
 @Injectable()
 export class SocioRepositoryImplementation implements SocioRepository {
   constructor(
     @InjectRepository(SocioOrmEntity)
     private readonly socioRepository: Repository<SocioOrmEntity>,
+    @Inject(TenantContextService)
+    @Optional()
+    private readonly tenantContext?: TenantContextService,
   ) {}
 
-  async save(entity: SocioEntity): Promise<SocioEntity> {
-    const socioCreado = await this.socioRepository.save(
-      this.toOrmEntity(entity),
-    );
+  private get gimnasioIdActual(): number {
+    return obtenerGimnasioIdActual(this.tenantContext);
+  }
 
+  async save(entity: SocioEntity): Promise<SocioEntity> {
+    const gimnasioId = entity.gimnasioId ?? this.gimnasioIdActual;
+    const socioCreado = await this.socioRepository.save(
+      this.toOrmEntity(entity, gimnasioId),
+    );
     return this.toEntity(socioCreado);
   }
 
   async update(id: number, entity: SocioEntity): Promise<SocioEntity> {
+    // Verificar que el socio pertenece al gimnasio actual antes de actualizar
+    const gimnasioId = this.gimnasioIdActual;
+    const existente = await this.socioRepository.findOne({
+      where: { idPersona: id, gimnasioId },
+      relations: ['usuario'],
+    });
+    if (!existente) {
+      throw new Error(`Socio con id ${id} no encontrado en este gimnasio`);
+    }
+
     // Solo actualizar los campos de datos personales, no las relaciones ni fechaAlta
     await this.socioRepository.update(id, {
       nombre: entity.nombre,
@@ -36,7 +69,7 @@ export class SocioRepositoryImplementation implements SocioRepository {
     });
 
     const socioActualizado = await this.socioRepository.findOne({
-      where: { idPersona: id },
+      where: { idPersona: id, gimnasioId },
       relations: ['usuario'],
     });
 
@@ -48,33 +81,46 @@ export class SocioRepositoryImplementation implements SocioRepository {
   }
 
   async delete(id: number): Promise<void> {
-    // Baja lógica: marcar fechaBaja
-    await this.socioRepository.update(id, { fechaBaja: new Date() });
+    const gimnasioId = this.gimnasioIdActual;
+    const resultado = await this.socioRepository.update(
+      { idPersona: id, gimnasioId },
+      { fechaBaja: new Date() },
+    );
+    if (resultado.affected === 0) {
+      throw new Error(`Socio con id ${id} no encontrado en este gimnasio`);
+    }
   }
 
   async reactivar(id: number): Promise<void> {
-    // Reactivar: limpiar fechaBaja
-    await this.socioRepository.update(id, { fechaBaja: null });
+    const gimnasioId = this.gimnasioIdActual;
+    const resultado = await this.socioRepository.update(
+      { idPersona: id, gimnasioId },
+      { fechaBaja: null },
+    );
+    if (resultado.affected === 0) {
+      throw new Error(`Socio con id ${id} no encontrado en este gimnasio`);
+    }
   }
 
   async findAll(): Promise<SocioEntity[]> {
+    const gimnasioId = this.gimnasioIdActual;
     const socios = await this.socioRepository.find({
+      where: { gimnasioId },
       relations: ['usuario'],
       order: { idPersona: 'ASC' },
     });
-
     return socios.map((socio) => this.toEntity(socio));
   }
 
   async findById(id: number): Promise<SocioEntity | null> {
+    const gimnasioId = this.gimnasioIdActual;
     const socio = await this.socioRepository.findOne({
-      where: { idPersona: id },
+      where: { idPersona: id, gimnasioId },
     });
-
     return socio ? this.toEntity(socio) : null;
   }
 
-  private toOrmEntity(socio: SocioEntity): SocioOrmEntity {
+  private toOrmEntity(socio: SocioEntity, gimnasioId: number): SocioOrmEntity {
     const orm = new SocioOrmEntity();
     orm.idPersona = socio.idPersona;
     orm.nombre = socio.nombre;
@@ -91,10 +137,12 @@ export class SocioRepositoryImplementation implements SocioRepository {
     orm.fichaSalud = null;
     orm.planesAlimentacion = [];
     orm.turnos = [];
+    orm.gimnasioId = gimnasioId;
     return orm;
   }
 
   private toEntity(orm: SocioOrmEntity): SocioEntity {
+    // Pasar el gimnnasioId del ORM al entity (SocioEntity lo necesita para tenant isolation)
     const entity = new SocioEntity(
       orm.idPersona,
       orm.nombre,
@@ -109,6 +157,7 @@ export class SocioRepositoryImplementation implements SocioRepository {
       [],
       null,
       [],
+      orm.gimnasioId,
     );
 
     // PersonaEntity expone email, fechaBaja y fotoPerfilKey en sus props.

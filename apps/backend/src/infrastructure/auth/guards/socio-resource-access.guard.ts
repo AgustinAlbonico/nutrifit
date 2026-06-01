@@ -55,7 +55,7 @@ export class SocioResourceAccessGuard implements CanActivate {
       throw new ForbiddenException('No autorizado');
     }
 
-    if (user.rol === Rol.ADMIN) {
+    if (user.rol === Rol.ADMIN || user.rol === Rol.SUPERADMIN) {
       const socioId = await this.resolveTargetSocioId(request);
       this.attachAccessContext(request, null, socioId);
       return true;
@@ -70,12 +70,6 @@ export class SocioResourceAccessGuard implements CanActivate {
     if (user.rol === Rol.RECEPCIONISTA) {
       throw new ForbiddenException(
         'Recepción no puede acceder a contenido clínico o de progreso.',
-      );
-    }
-
-    if (user.rol === Rol.ENTRENADOR) {
-      throw new ForbiddenException(
-        'Entrenador no tiene acceso a este recurso clínico.',
       );
     }
 

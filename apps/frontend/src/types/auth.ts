@@ -1,4 +1,4 @@
-export type Rol = 'ADMIN' | 'NUTRICIONISTA' | 'ENTRENADOR' | 'SOCIO' | 'RECEPCIONISTA';
+export type Rol = 'ADMIN' | 'SUPERADMIN' | 'NUTRICIONISTA' | 'SOCIO' | 'RECEPCIONISTA';
 
 export interface LoginResponse {
   token: string;

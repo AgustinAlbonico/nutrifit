@@ -96,8 +96,12 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "moduleNameMapper": {
-      "src/(.*)": "<rootDir>/$1"
+      "src/(.*)": "<rootDir>/$1",
+      "^@nutrifit/shared$": "<rootDir>/../../../packages/shared/src/index.ts"
     },
+    "transformIgnorePatterns": [
+      "/node_modules/(?!(@nutrifit/shared)/)"
+    ],
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],

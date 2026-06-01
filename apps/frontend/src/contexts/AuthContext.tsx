@@ -180,7 +180,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<AuthContextValue>(() => {
-    const esAdmin = auth?.rol === 'ADMIN';
+    const esAdmin = auth?.rol === 'ADMIN' || auth?.rol === 'SUPERADMIN';
     const permissionsSet = new Set(auth?.permissions ?? []);
 
     return {

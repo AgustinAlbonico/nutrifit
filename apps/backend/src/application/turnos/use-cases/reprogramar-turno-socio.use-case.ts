@@ -200,19 +200,6 @@ export class ReprogramarTurnoSocioUseCase implements BaseUseCase {
     return socio;
   }
 
-  private validate24hRule(fechaTurno: Date, horaTurno: string): void {
-    const scheduledDate = combineArgentinaDateAndTime(fechaTurno, horaTurno);
-    const now = new Date();
-    const hoursDiff =
-      (scheduledDate.getTime() - now.getTime()) / (1000 * 60 * 60);
-
-    if (hoursDiff < 24) {
-      throw new BadRequestError(
-        'Solo se puede reprogramar con al menos 24 horas de anticipacion.',
-      );
-    }
-  }
-
   private async validatePolicyRule(turno: TurnoOrmEntity): Promise<void> {
     const gimnasioId = turno.gimnasio?.idGimnasio ?? 1;
     const plazoHoras =

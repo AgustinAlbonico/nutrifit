@@ -1,11 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Inject,
-  UseGuards,
-  Post,
-} from '@nestjs/common';
+import { Body, Controller, Get, Inject, UseGuards, Post } from '@nestjs/common';
 import { LoginDto } from 'src/application/auth/dtos/login.dto';
 import { LoginUseCase } from 'src/application/auth/login.use-case';
 import {

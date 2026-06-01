@@ -2,6 +2,7 @@ import { Genero } from './Genero';
 
 export abstract class PersonaEntity {
   idPersona: number | null;
+  idPersonaNullable: number | null = null;
   nombre: string;
   apellido: string;
   fechaNacimiento: Date;
@@ -14,6 +15,8 @@ export abstract class PersonaEntity {
   email: string;
   fechaBaja: Date | null;
   fotoPerfilKey: string | null;
+  /** ID del gimnasio al que pertenece esta persona (tenant isolation) */
+  gimnasioId: number;
 
   constructor(
     idPersona: number | null = null,
@@ -28,8 +31,10 @@ export abstract class PersonaEntity {
     dni: string,
     email: string = '',
     fotoPerfilKey: string | null = null,
+    gimnasioId: number = 1,
   ) {
     this.idPersona = idPersona;
+    this.idPersonaNullable = idPersona;
     this.nombre = nombre;
     this.apellido = apellido;
     this.fechaNacimiento = fechaNacimiento;
@@ -42,5 +47,6 @@ export abstract class PersonaEntity {
     this.email = email;
     this.fechaBaja = null;
     this.fotoPerfilKey = fotoPerfilKey;
+    this.gimnasioId = gimnasioId;
   }
 }

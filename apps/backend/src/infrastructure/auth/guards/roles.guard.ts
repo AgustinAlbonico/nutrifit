@@ -5,7 +5,14 @@ import { ROLE_KEY } from '../decorators/role.decorator';
 import { Request } from 'express';
 
 interface RequestWithUser extends Request {
-  user: { id: number; email: string; rol: Rol };
+  user: {
+    id: number;
+    email: string;
+    rol: Rol;
+    gimnasioId: number;
+    personaId: number | null;
+    jti: string;
+  };
 }
 
 @Injectable()

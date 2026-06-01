@@ -16,6 +16,7 @@ import {
   AdminEstadisticasController,
   AdminReportesController,
   ConfiguracionController,
+  ConsentimientoController,
 } from './controllers';
 import { ProgresoModule } from 'src/application/progreso/progreso.module';
 import { ApplicationModule } from 'src/application/application.module';
@@ -29,6 +30,7 @@ import { NutricionistaOwnershipGuard } from 'src/infrastructure/auth/guards/nutr
 import { RolesGuard } from 'src/infrastructure/auth/guards/roles.guard';
 import { SocioResourceAccessGuard } from 'src/infrastructure/auth/guards/socio-resource-access.guard';
 import { TurnoNutricionistaAccessGuard } from 'src/infrastructure/auth/guards/turno-nutricionista-access.guard';
+import { ConsentimientoGuard } from 'src/infrastructure/auth/guards/consentimiento';
 import { AlimentosSyncService } from 'src/infrastructure/alimentos/alimentos-sync.service';
 import { CrearAlimentoUseCase } from 'src/application/alimentos/use-cases/crear-alimento.use-case';
 import { ActualizarAlimentoUseCase } from 'src/application/alimentos/use-cases/actualizar-alimento.use-case';
@@ -47,6 +49,19 @@ import { NotificacionOrmEntity } from 'src/infrastructure/persistence/typeorm/en
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import { GimnasioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/gimnasio.entity';
 import { GimnasioRepository } from 'src/infrastructure/persistence/typeorm/repositories/gimnasio.repository';
+import { TenantContextInterceptor } from 'src/infrastructure/auth/tenant-context.interceptor';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { RepositoriesModule } from 'src/infrastructure/persistence/typeorm/repositories/repositories.module';
+import {
+  TerminoConsentimientoOrmEntity,
+  ConsentimientoUsuarioOrmEntity,
+  PreferenciasPrivacidadOrmEntity,
+} from 'src/infrastructure/persistence/typeorm/entities';
+import {
+  ObtenerTerminosPendientesUseCase,
+  AceptarTerminoUseCase,
+  ActualizarPreferenciasPrivacidadUseCase,
+} from 'src/application/consentimiento/use-cases';
 
 @Module({
   imports: [
@@ -68,7 +83,11 @@ import { GimnasioRepository } from 'src/infrastructure/persistence/typeorm/repos
       AuditoriaOrmEntity,
       NotificacionOrmEntity,
       GimnasioOrmEntity,
+      TerminoConsentimientoOrmEntity,
+      ConsentimientoUsuarioOrmEntity,
+      PreferenciasPrivacidadOrmEntity,
     ]),
+    RepositoriesModule,
   ],
   providers: [
     JwtAuthGuard,
@@ -77,6 +96,7 @@ import { GimnasioRepository } from 'src/infrastructure/persistence/typeorm/repos
     NutricionistaOwnershipGuard,
     SocioResourceAccessGuard,
     TurnoNutricionistaAccessGuard,
+    ConsentimientoGuard,
     AlimentosSyncService,
     CrearAlimentoUseCase,
     ActualizarAlimentoUseCase,
@@ -84,6 +104,13 @@ import { GimnasioRepository } from 'src/infrastructure/persistence/typeorm/repos
     BuscarSociosConFichaUseCase,
     NotificacionesService,
     GimnasioRepository,
+    ObtenerTerminosPendientesUseCase,
+    AceptarTerminoUseCase,
+    ActualizarPreferenciasPrivacidadUseCase,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: TenantContextInterceptor,
+    },
   ],
   controllers: [
     AgendaController,
@@ -101,6 +128,7 @@ import { GimnasioRepository } from 'src/infrastructure/persistence/typeorm/repos
     AdminEstadisticasController,
     AdminReportesController,
     ConfiguracionController,
+    ConsentimientoController,
   ],
 })
 export class ControllersModule {}

@@ -25,6 +25,7 @@ export class SocioEntity extends PersonaEntity {
     turnos: TurnoEntity[] = [],
     fichaSalud: FichaSaludEntity | null = null,
     planesAlimentacion: PlanAlimentacionEntity[] = [],
+    gimnasioId: number = 1,
   ) {
     super(
       idPersona,
@@ -37,11 +38,15 @@ export class SocioEntity extends PersonaEntity {
       ciudad,
       provincia,
       dni,
+      '',
+      null,
+      gimnasioId,
     );
     this.fechaAlta = new Date();
     this.turnos = turnos;
     this.fichaSalud = fichaSalud;
     this.planesAlimentacion = planesAlimentacion;
     this.fotoPerfilKey = null;
+    this.gimnasioId = gimnasioId;
   }
 }
