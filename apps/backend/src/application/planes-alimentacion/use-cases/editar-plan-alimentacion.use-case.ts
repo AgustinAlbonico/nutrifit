@@ -32,6 +32,7 @@ import {
   formatearIncidenciasRestriccion,
   RestriccionesValidator,
 } from 'src/application/restricciones/restricciones-validator.service';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 @Injectable()
 export class EditarPlanAlimentacionUseCase implements BaseUseCase {
@@ -56,6 +57,7 @@ export class EditarPlanAlimentacionUseCase implements BaseUseCase {
     private readonly dataSource: DataSource,
     private readonly notificacionesService: NotificacionesService,
     private readonly restriccionesValidator: RestriccionesValidator,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(
@@ -64,7 +66,10 @@ export class EditarPlanAlimentacionUseCase implements BaseUseCase {
   ): Promise<PlanAlimentacionResponseDto> {
     try {
       const plan = await this.planRepo.findOne({
-        where: { idPlanAlimentacion: payload.planId },
+        where: {
+          idPlanAlimentacion: payload.planId,
+          socio: { gimnasioId: this.tenantContext.gimnasioId },
+        },
         relations: {
           nutricionista: true,
           socio: { fichaSalud: true },
