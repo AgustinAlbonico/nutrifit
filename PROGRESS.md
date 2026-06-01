@@ -18,6 +18,7 @@
 | 6 | Frontend: AuthContext + TenantSwitcher | ✅ Completo | 100% | 26 tests pasando (AuthContext, TenantSwitcher, ImpersonationIndicator) |
 | 7 | Frontend: Gestión + Wizard | ✅ Completo | 100% | Páginas: lista, detalle, wizard de creación |
 | 8 | E2E + Docs | ✅ Completo | 100% | E2E multi-tenant + auditoría |
+| 9 | Permisos Granulares | ✅ Completo | 100% | Sistema de acciones + grupos + UI dinámica |
 
 ## Baseline (commit `1ff8017`)
 
@@ -479,8 +480,104 @@ git status
 2. Documentación completa (architecture/deployment/admin guides)
 3. Frontend tests para páginas de gestión
 4. Migración de datos existentes a multi-tenant
-5. Permisos granulares para ADMIN (ActionsGuard refinement)
+5. Permisos granulares para ADMIN (ActionsGuard refinement) → **COMPLETADO en Plan 9**
+
+---
+
+## Plan 9 completado (2026-06-01)
+
+**Sistema de Permisos Granulares end-to-end:**
+
+**Task 1: Enum de Acciones**
+- ✅ `packages/shared/src/types/acciones.ts` con 30+ acciones
+- ✅ Acciones: socios.*, nutricionistas.*, recepcionistas.*, turnos.*, fichas.*, planes.*, pacientes.*, reportes.*, gimnasios.*
+- Commit: `013b069 feat(shared): add ACCIONES enum with all system actions`
+
+**Task 2: Entidad UsuarioGrupoPermiso**
+- ✅ Tabla intermedia `usuario_grupo_permiso` (OneToMany reemplazó ManyToMany)
+- ✅ Migración `1735689601000-AddUsuarioGrupoPermiso`
+- ✅ Relaciones en `usuario.entity.ts` y `grupo-permiso.entity.ts`
+
+**Task 3: PermisosService**
+- ✅ `getUserActions(usuarioId)` — devuelve array de códigos de acciones
+- ✅ `hasAllActions(usuarioId, requiredActions)` — valida todas
+- ✅ `hasAnyAction(usuarioId, actions)` — valida alguna
+- ✅ `getUserGroups(usuarioId)` — devuelve grupos asignados
+- ✅ 11 tests pasando
+
+**Task 4: Use-Cases de Permisos (5)**
+- ✅ `AsignarGrupoUsuarioUseCase` — con validaciones
+- ✅ `QuitarGrupoUsuarioUseCase` — con validaciones
+- ✅ `ObtenerPermisosUsuarioUseCase` — devuelve usuario + grupos + acciones
+- ✅ `ListarGruposPermisosUseCase` — todos los grupos
+- ✅ `ListarAccionesUseCase` — todas las acciones (para UI)
+- Tests unitarios por cada uno
+
+**Task 5: ActionsGuard**
+- ✅ Refactorizado para consultar permisos reales del usuario
+- ✅ SUPERADMIN bypass (sin cambios)
+- ✅ Inyecta PermisosService
+
+**Task 6: Validación de Creación por Rol**
+- ✅ Reglas: SUPERADMIN crea cualquiera, ADMIN crea RECEPC/NUTRI/SOCIO, RECEPC crea NUTRI/SOCIO, NUTRI/SOCIO no crean
+- ✅ Validator compartido inyectable
+
+**Task 7: Controller /permisos**
+- ✅ 5 endpoints: GET acciones, GET grupos, GET usuario/:id, POST asignar, DELETE quitar
+- ✅ Guard: ADMIN o SUPERADMIN
+
+**Task 8: Seed Multi-Tenant**
+- ✅ `grupos-permisos.data.ts` con 4 grupos base (Admin wildcard, Recepcionista, Nutricionista, Socio)
+- ✅ Seed inserta todas las acciones del enum
+- ✅ Seed crea grupos
+- ✅ Seed asigna grupo base a cada usuario según rol
+- ✅ Idempotente (puede correr múltiples veces)
+
+**Tasks 9-12: Frontend**
+- ✅ `usePermissions` hook con 12 tests pasando
+- ✅ `<Can>` component con 7 tests pasando
+- ✅ Página `/admin/usuarios/:id/permisos` con gestión de grupos
+- ✅ Aplicado `<Can>` en páginas de Socios y Nutricionistas (botones editar/eliminar)
+- ✅ `permisos.service.ts` con métodos CRUD
+- ✅ 31 tests frontend pasando total
+
+**Verificación final:**
+- Build backend: ✅ PASS
+- Build frontend: ✅ PASS
+- Typecheck: ✅ PASS (frontend)
+- Tests backend: ✅ 26 permisos tests pasando
+- Tests frontend: ✅ 31 tests pasando
+
+**Commits Plan 9:**
+- `013b069 feat(shared): add ACCIONES enum with all system actions`
+- `774339b feat(permisos): add granular permissions system (Tasks 2-8)`
+
+---
+
+## Estado Final del Spec Completo (Planes 1-9)
+
+**Status:** ✅ **COMPLETO** — Multi-tenant + SUPERADMIN + Impersonación + Permisos Granulares
+
+**Resumen total:**
+- 9 planes ejecutados
+- ~50 use-cases con aislamiento multi-tenant
+- CRUD completo de gimnasios
+- Impersonación funcional end-to-end
+- **Sistema de permisos granulares con acciones hardcoded + grupos + UI dinámica**
+- 4 grupos de permisos base (Admin wildcard, Recepcionista, Nutricionista, Socio)
+- 30+ acciones definidas en enum compartido
+- 60+ tests nuevos
+- Frontend con `<Can>` component y `usePermissions` hook
+- Página de gestión de permisos por usuario
+
+**Próximos pasos (futuro):**
+1. Tech debt cleanup (typecheck, lint pre-existing)
+2. Documentación completa (architecture/deployment/admin guides)
+3. Frontend E2E tests con Playwright
+4. Migración de datos existentes
+5. Refinamiento de `ActionsGuard` para wildcards
+6. UI de gestión de acciones por gimnasio (futuro feature)
 
 ---
 *Generado por: opencode (sesión `multi-tenant-admin-2026-06-01`)*
-*Última actualización: Plan 6 completado 2026-06-01*
+*Última actualización: Plan 9 completado 2026-06-01*
