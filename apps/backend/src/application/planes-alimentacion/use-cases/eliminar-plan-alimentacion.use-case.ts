@@ -17,6 +17,7 @@ import { Repository } from 'typeorm';
 import { EliminarPlanAlimentacionDto } from '../dtos';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 export class EliminarPlanAlimentacionResponseDto {
   mensaje: string;
@@ -35,6 +36,7 @@ export class EliminarPlanAlimentacionUseCase implements BaseUseCase {
     private readonly usuarioRepo: Repository<UsuarioOrmEntity>,
     private readonly auditoriaService: AuditoriaService,
     private readonly notificacionesService: NotificacionesService,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(
@@ -42,7 +44,10 @@ export class EliminarPlanAlimentacionUseCase implements BaseUseCase {
     payload: EliminarPlanAlimentacionDto,
   ): Promise<EliminarPlanAlimentacionResponseDto> {
     const plan = await this.planRepo.findOne({
-      where: { idPlanAlimentacion: payload.planId },
+      where: {
+        idPlanAlimentacion: payload.planId,
+        socio: { gimnasioId: this.tenantContext.gimnasioId },
+      },
       relations: { nutricionista: true, socio: true },
     });
 
