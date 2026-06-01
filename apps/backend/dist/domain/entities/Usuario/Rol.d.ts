@@ -1,7 +1,0 @@
-export declare enum Rol {
-    ADMIN = "ADMIN",
-    SUPERADMIN = "SUPERADMIN",
-    NUTRICIONISTA = "NUTRICIONISTA",
-    RECEPCIONISTA = "RECEPCIONISTA",
-    SOCIO = "SOCIO"
-}
