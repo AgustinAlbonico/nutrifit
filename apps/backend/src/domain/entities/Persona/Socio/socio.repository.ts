@@ -1,6 +1,5 @@
 import { BaseRepository } from 'src/domain/shared/base.repository';
 import { SocioEntity } from './socio.entity';
-
 export const SOCIO_REPOSITORY = Symbol('SocioRepository');
 
 export abstract class SocioRepository implements BaseRepository<SocioEntity> {

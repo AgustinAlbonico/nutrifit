@@ -11,9 +11,10 @@ import { PersonaOrmEntity } from './persona.entity';
 import { Rol } from 'src/domain/entities/Usuario/Rol';
 import { GrupoPermisoOrmEntity } from './grupo-permiso.entity';
 import { AccionOrmEntity } from './accion.entity';
+import { AuditableOrmEntity } from '../common/auditable.orm-entity';
 
 @Entity('usuario')
-export class UsuarioOrmEntity {
+export class UsuarioOrmEntity extends AuditableOrmEntity {
   @PrimaryGeneratedColumn({ name: 'id_usuario' })
   idUsuario: number | null;
 

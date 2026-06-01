@@ -4,3 +4,6 @@ export * from './socio.respository';
 export * from './usuario.repository';
 export * from './nutricionista.repository';
 export * from './foto-progreso.repository';
+export * from './objetivo.repository';
+export * from './gimnasio.repository';
+export * from './recepcionista.repository.impl';

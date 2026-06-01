@@ -28,5 +28,6 @@ __exportStar(require("./notificaciones.controller"), exports);
 __exportStar(require("./admin/admin-estadisticas.controller"), exports);
 __exportStar(require("./admin/admin-reportes.controller"), exports);
 __exportStar(require("./admin/configuracion.controller"), exports);
+__exportStar(require("./recepcionistas.controller"), exports);
 __exportStar(require("./ai.controller"), exports);
 //# sourceMappingURL=index.js.map

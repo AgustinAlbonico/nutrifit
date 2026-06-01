@@ -11,9 +11,10 @@ import { EstadoNotificacion } from 'src/domain/entities/Notificacion/estado-noti
 import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
 import type { NotificacionMetaData } from 'src/domain/entities/Notificacion/notificacion-metadata.interface';
 import { UsuarioOrmEntity } from './usuario.entity';
+import { AuditableOrmEntity } from '../common/auditable.orm-entity';
 
 @Entity('notificacion')
-export class NotificacionOrmEntity {
+export class NotificacionOrmEntity extends AuditableOrmEntity {
   @PrimaryGeneratedColumn({ name: 'id_notificacion' })
   idNotificacion: number;
 

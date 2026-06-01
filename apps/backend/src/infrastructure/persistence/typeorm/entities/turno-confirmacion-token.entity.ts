@@ -7,9 +7,10 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { TurnoOrmEntity } from './turno.entity';
+import { AuditableOrmEntity } from '../common/auditable.orm-entity';
 
 @Entity('turno_confirmacion_token')
-export class TurnoConfirmacionTokenOrmEntity {
+export class TurnoConfirmacionTokenOrmEntity extends AuditableOrmEntity {
   @PrimaryGeneratedColumn({ name: 'id_turno_confirmacion_token' })
   idTurnoConfirmacionToken: number;
 

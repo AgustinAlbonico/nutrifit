@@ -17,9 +17,10 @@ import {
   SocioOrmEntity,
 } from './persona.entity';
 import { AdjuntoClinicoOrmEntity } from './adjunto-clinico.entity';
+import { AuditableOrmEntity } from '../common/auditable.orm-entity';
 
 @Entity('turno')
-export class TurnoOrmEntity {
+export class TurnoOrmEntity extends AuditableOrmEntity {
   @PrimaryGeneratedColumn({ name: 'id_turno' })
   idTurno: number;
 

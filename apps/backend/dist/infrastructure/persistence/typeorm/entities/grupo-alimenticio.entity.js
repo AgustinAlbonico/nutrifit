@@ -11,7 +11,8 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GrupoAlimenticioOrmEntity = void 0;
 const typeorm_1 = require("typeorm");
-let GrupoAlimenticioOrmEntity = class GrupoAlimenticioOrmEntity {
+const auditable_orm_entity_1 = require("../common/auditable.orm-entity");
+let GrupoAlimenticioOrmEntity = class GrupoAlimenticioOrmEntity extends auditable_orm_entity_1.AuditableOrmEntity {
     idGrupoAlimenticio;
     descripcion;
 };

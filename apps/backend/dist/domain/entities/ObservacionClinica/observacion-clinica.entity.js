@@ -1,7 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ObservacionClinicaEntity = void 0;
-class ObservacionClinicaEntity {
+const auditable_entity_1 = require("../../shared/auditable.entity");
+class ObservacionClinicaEntity extends auditable_entity_1.AuditableEntity {
     idObservacion;
     comentario;
     peso;
@@ -11,7 +12,8 @@ class ObservacionClinicaEntity {
     sugerencias;
     habitosSocio;
     circunferenciaCintura;
-    constructor(idObservacion = null, comentario, peso, altura, imc, objetivosSocio, sugerencias = null, habitosSocio = null, circunferenciaCintura) {
+    constructor(idObservacion = null, comentario, peso, altura, imc, objetivosSocio, sugerencias = null, habitosSocio = null, circunferenciaCintura, fechaBaja = null) {
+        super(fechaBaja);
         this.idObservacion = idObservacion;
         this.comentario = comentario;
         this.peso = peso;

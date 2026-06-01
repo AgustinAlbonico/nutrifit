@@ -191,7 +191,7 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
   }
 
   async delete(id: number): Promise<void> {
-    await this.userRepository.delete(id);
+    await this.userRepository.softDelete(id);
   }
 
   async findAll(): Promise<UsuarioEntity[]> {

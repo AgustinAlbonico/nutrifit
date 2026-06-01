@@ -1,6 +1,7 @@
 import { DiaSemana } from './dia-semana';
+import { AuditableEntity } from '../../shared/auditable.entity';
 
-export class AgendaEntity {
+export class AgendaEntity extends AuditableEntity {
   idAgenda: number | null;
   dia: DiaSemana;
   horaInicio: string;
@@ -13,7 +14,9 @@ export class AgendaEntity {
     horaInicio: string,
     horaFin: string,
     duracionTurno: number,
+    fechaBaja: Date | null = null,
   ) {
+    super(fechaBaja);
     this.idAgenda = idAgenda;
     this.dia = dia;
     this.horaInicio = horaInicio;

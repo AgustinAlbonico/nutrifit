@@ -4,7 +4,8 @@ import { ObservacionClinicaOrmEntity } from './observacion-clinica.entity';
 import { MedicionOrmEntity } from './medicion.entity';
 import { EntrenadorOrmEntity, NutricionistaOrmEntity, SocioOrmEntity } from './persona.entity';
 import { AdjuntoClinicoOrmEntity } from './adjunto-clinico.entity';
-export declare class TurnoOrmEntity {
+import { AuditableOrmEntity } from '../common/auditable.orm-entity';
+export declare class TurnoOrmEntity extends AuditableOrmEntity {
     idTurno: number;
     fechaTurno: Date;
     horaTurno: string;

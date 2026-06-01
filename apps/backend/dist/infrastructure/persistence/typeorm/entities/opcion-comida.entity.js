@@ -14,7 +14,8 @@ const typeorm_1 = require("typeorm");
 const TipoComida_1 = require("../../../../domain/entities/OpcionComida/TipoComida");
 const dia_plan_entity_1 = require("./dia-plan.entity");
 const item_comida_entity_1 = require("./item-comida.entity");
-let OpcionComidaOrmEntity = class OpcionComidaOrmEntity {
+const auditable_orm_entity_1 = require("../common/auditable.orm-entity");
+let OpcionComidaOrmEntity = class OpcionComidaOrmEntity extends auditable_orm_entity_1.AuditableOrmEntity {
     idOpcionComida;
     comentarios;
     tipoComida;

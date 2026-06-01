@@ -13,7 +13,8 @@ exports.GrupoPermisoOrmEntity = void 0;
 const typeorm_1 = require("typeorm");
 const accion_entity_1 = require("./accion.entity");
 const usuario_entity_1 = require("./usuario.entity");
-let GrupoPermisoOrmEntity = class GrupoPermisoOrmEntity {
+const auditable_orm_entity_1 = require("../common/auditable.orm-entity");
+let GrupoPermisoOrmEntity = class GrupoPermisoOrmEntity extends auditable_orm_entity_1.AuditableOrmEntity {
     id;
     clave;
     nombre;

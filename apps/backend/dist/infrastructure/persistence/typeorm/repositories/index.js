@@ -20,4 +20,7 @@ __exportStar(require("./socio.respository"), exports);
 __exportStar(require("./usuario.repository"), exports);
 __exportStar(require("./nutricionista.repository"), exports);
 __exportStar(require("./foto-progreso.repository"), exports);
+__exportStar(require("./objetivo.repository"), exports);
+__exportStar(require("./gimnasio.repository"), exports);
+__exportStar(require("./recepcionista.repository.impl"), exports);
 //# sourceMappingURL=index.js.map

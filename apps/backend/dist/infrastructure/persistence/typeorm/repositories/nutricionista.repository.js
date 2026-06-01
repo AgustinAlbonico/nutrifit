@@ -52,7 +52,7 @@ let NutricionistaRepositoryImplementation = class NutricionistaRepositoryImpleme
         return this.toDomainEntity(updated);
     }
     async delete(id) {
-        await this.nutricionistaRepository.delete(id);
+        await this.nutricionistaRepository.softDelete(id);
     }
     async findAll() {
         const nutricionistas = await this.nutricionistaRepository.find({

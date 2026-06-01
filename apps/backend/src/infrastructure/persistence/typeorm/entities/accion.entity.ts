@@ -1,9 +1,10 @@
 import { Column, Entity, ManyToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { GrupoPermisoOrmEntity } from './grupo-permiso.entity';
 import { UsuarioOrmEntity } from './usuario.entity';
+import { AuditableOrmEntity } from '../common/auditable.orm-entity';
 
 @Entity('accion')
-export class AccionOrmEntity {
+export class AccionOrmEntity extends AuditableOrmEntity {
   @PrimaryGeneratedColumn({ name: 'id_accion' })
   id: number;
 

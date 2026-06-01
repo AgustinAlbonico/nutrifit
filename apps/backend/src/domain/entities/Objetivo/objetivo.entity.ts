@@ -1,3 +1,5 @@
+import { AuditableEntity } from '../../shared/auditable.entity';
+
 export type TipoMetrica =
   | 'PESO'
   | 'CINTURA'
@@ -8,7 +10,7 @@ export type TipoMetrica =
 
 export type EstadoObjetivo = 'ACTIVO' | 'COMPLETADO' | 'ABANDONADO';
 
-export class ObjetivoEntity {
+export class ObjetivoEntity extends AuditableEntity {
   idObjetivo: number | null;
   socioId: number;
   tipoMetrica: TipoMetrica;
@@ -33,7 +35,9 @@ export class ObjetivoEntity {
     fechaObjetivo: Date | null = null,
     createdAt: Date = new Date(),
     updatedAt: Date = new Date(),
+    fechaBaja: Date | null = null,
   ) {
+    super(fechaBaja);
     this.idObjetivo = idObjetivo;
     this.socioId = socioId;
     this.tipoMetrica = tipoMetrica;

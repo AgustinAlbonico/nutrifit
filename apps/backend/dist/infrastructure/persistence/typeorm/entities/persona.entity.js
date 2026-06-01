@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.EntrenadorOrmEntity = exports.NutricionistaOrmEntity = exports.AsistenteOrmEntity = exports.SocioOrmEntity = exports.PersonaOrmEntity = void 0;
+exports.EntrenadorOrmEntity = exports.NutricionistaOrmEntity = exports.RecepcionistaOrmEntity = exports.SocioOrmEntity = exports.PersonaOrmEntity = void 0;
 const class_transformer_1 = require("class-transformer");
 const typeorm_1 = require("typeorm");
 const Genero_1 = require("../../../../domain/entities/Persona/Genero");
@@ -19,7 +19,8 @@ const ficha_salud_entity_1 = require("./ficha-salud.entity");
 const plan_alimentacion_entity_1 = require("./plan-alimentacion.entity");
 const usuario_entity_1 = require("./usuario.entity");
 const turno_entity_1 = require("./turno.entity");
-let PersonaOrmEntity = class PersonaOrmEntity {
+const auditable_orm_entity_1 = require("../common/auditable.orm-entity");
+let PersonaOrmEntity = class PersonaOrmEntity extends auditable_orm_entity_1.AuditableOrmEntity {
     idPersona;
     nombre;
     apellido;
@@ -101,7 +102,6 @@ exports.PersonaOrmEntity = PersonaOrmEntity = __decorate([
 ], PersonaOrmEntity);
 let SocioOrmEntity = class SocioOrmEntity extends PersonaOrmEntity {
     fechaAlta;
-    fechaBaja;
     fichaSalud;
     planesAlimentacion;
     turnos;
@@ -112,11 +112,6 @@ __decorate([
     (0, class_transformer_1.Type)(() => Date),
     __metadata("design:type", Date)
 ], SocioOrmEntity.prototype, "fechaAlta", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'fecha_baja', type: 'datetime', nullable: true }),
-    (0, class_transformer_1.Type)(() => Date),
-    __metadata("design:type", Object)
-], SocioOrmEntity.prototype, "fechaBaja", void 0);
 __decorate([
     (0, typeorm_1.OneToOne)(() => ficha_salud_entity_1.FichaSaludOrmEntity, {
         eager: false,
@@ -143,17 +138,16 @@ __decorate([
 exports.SocioOrmEntity = SocioOrmEntity = __decorate([
     (0, typeorm_1.ChildEntity)()
 ], SocioOrmEntity);
-let AsistenteOrmEntity = class AsistenteOrmEntity extends PersonaOrmEntity {
+let RecepcionistaOrmEntity = class RecepcionistaOrmEntity extends PersonaOrmEntity {
 };
-exports.AsistenteOrmEntity = AsistenteOrmEntity;
-exports.AsistenteOrmEntity = AsistenteOrmEntity = __decorate([
+exports.RecepcionistaOrmEntity = RecepcionistaOrmEntity;
+exports.RecepcionistaOrmEntity = RecepcionistaOrmEntity = __decorate([
     (0, typeorm_1.ChildEntity)()
-], AsistenteOrmEntity);
+], RecepcionistaOrmEntity);
 let NutricionistaOrmEntity = class NutricionistaOrmEntity extends PersonaOrmEntity {
     matricula;
     añosExperiencia;
     tarifaSesion;
-    fechaBaja;
     agenda;
     formacionAcademica;
     planesAlimentacion;
@@ -172,11 +166,6 @@ __decorate([
     (0, typeorm_1.Column)({ name: 'tarifa_sesion', type: 'decimal', precision: 10, scale: 2 }),
     __metadata("design:type", Number)
 ], NutricionistaOrmEntity.prototype, "tarifaSesion", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'fecha_baja', type: 'datetime', nullable: true }),
-    (0, class_transformer_1.Type)(() => Date),
-    __metadata("design:type", Object)
-], NutricionistaOrmEntity.prototype, "fechaBaja", void 0);
 __decorate([
     (0, typeorm_1.OneToMany)(() => agenda_entity_1.AgendaOrmEntity, (agenda) => agenda.nutricionista, {
         eager: false,
@@ -210,7 +199,6 @@ exports.NutricionistaOrmEntity = NutricionistaOrmEntity = __decorate([
 ], NutricionistaOrmEntity);
 let EntrenadorOrmEntity = class EntrenadorOrmEntity extends PersonaOrmEntity {
     especialidad;
-    fechaBaja;
     turnos;
 };
 exports.EntrenadorOrmEntity = EntrenadorOrmEntity;
@@ -218,11 +206,6 @@ __decorate([
     (0, typeorm_1.Column)({ name: 'especialidad', type: 'varchar', length: 100 }),
     __metadata("design:type", String)
 ], EntrenadorOrmEntity.prototype, "especialidad", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'fecha_baja', type: 'datetime', nullable: true }),
-    (0, class_transformer_1.Type)(() => Date),
-    __metadata("design:type", Object)
-], EntrenadorOrmEntity.prototype, "fechaBaja", void 0);
 __decorate([
     (0, typeorm_1.OneToMany)(() => turno_entity_1.TurnoOrmEntity, (turno) => turno.entrenador, {
         eager: false,

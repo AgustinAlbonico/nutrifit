@@ -4,6 +4,7 @@ import { AuthModule } from './auth/auth.module';
 import { SociosModule } from './socios/socios.module';
 import { PermisosModule } from './permisos/permisos.module';
 import { ProfesionalesModule } from './profesionales/profesionales.module';
+import { RecepcionistasModule } from './recepcionistas/recepcionistas.module';
 import { AgendaModule } from './agenda/agenda.module';
 import { TurnosModule } from './turnos/turnos.module';
 import { PlanesAlimentacionModule } from './planes-alimentacion/planes-alimentacion.module';
@@ -17,6 +18,7 @@ import { ReportesModule } from './reportes/reportes.module';
     ScheduleModule.forRoot(),
     PermisosModule,
     ProfesionalesModule,
+    RecepcionistasModule,
     AgendaModule,
     TurnosModule,
     PlanesAlimentacionModule,
@@ -28,6 +30,7 @@ import { ReportesModule } from './reportes/reportes.module';
     SociosModule,
     PermisosModule,
     ProfesionalesModule,
+    RecepcionistasModule,
     AgendaModule,
     TurnosModule,
     PlanesAlimentacionModule,

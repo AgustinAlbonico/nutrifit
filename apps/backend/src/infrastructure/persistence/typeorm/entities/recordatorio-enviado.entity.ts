@@ -5,6 +5,7 @@ import {
   Index,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { AuditableOrmEntity } from '../common/auditable.orm-entity';
 
 export enum TipoRecordatorio {
   REMINDER_24H = 'REMINDER_24H',
@@ -15,7 +16,7 @@ export enum TipoRecordatorio {
 @Index('uq_recordatorio_turno_tipo', ['turnoId', 'tipoRecordatorio'], {
   unique: true,
 })
-export class RecordatorioEnviadoOrmEntity {
+export class RecordatorioEnviadoOrmEntity extends AuditableOrmEntity {
   @PrimaryGeneratedColumn({ name: 'id_recordatorio_enviado' })
   idRecordatorioEnviado: number;
 

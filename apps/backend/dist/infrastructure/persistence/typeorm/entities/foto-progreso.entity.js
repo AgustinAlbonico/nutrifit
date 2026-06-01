@@ -13,7 +13,8 @@ exports.FotoProgresoOrmEntity = void 0;
 const typeorm_1 = require("typeorm");
 const persona_entity_1 = require("./persona.entity");
 const tipo_foto_enum_1 = require("../../../../domain/entities/FotoProgreso/tipo-foto.enum");
-let FotoProgresoOrmEntity = class FotoProgresoOrmEntity {
+const auditable_orm_entity_1 = require("../common/auditable.orm-entity");
+let FotoProgresoOrmEntity = class FotoProgresoOrmEntity extends auditable_orm_entity_1.AuditableOrmEntity {
     idFoto;
     socio;
     tipoFoto;

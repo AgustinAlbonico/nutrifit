@@ -1,6 +1,7 @@
 import { AccionPermisoEntity } from './accion-permiso.entity';
+import { AuditableEntity } from '../../shared/auditable.entity';
 
-export class GrupoPermisoEntity {
+export class GrupoPermisoEntity extends AuditableEntity {
   id: number;
   clave: string;
   nombre: string;
@@ -15,7 +16,9 @@ export class GrupoPermisoEntity {
     descripcion: string | null = null,
     acciones: AccionPermisoEntity[] = [],
     hijos: GrupoPermisoEntity[] = [],
+    fechaBaja: Date | null = null,
   ) {
+    super(fechaBaja);
     this.id = id;
     this.clave = clave;
     this.nombre = nombre;

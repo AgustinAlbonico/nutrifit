@@ -34,9 +34,10 @@ import {
 } from '@/components/ui/tooltip';
 import { obtenerUrlFoto } from '@/lib/api';
 import { NotificationCenter } from '@/features/notificaciones/components/NotificationCenter';
+import { TenantSwitcher } from '@/components/admin/TenantSwitcher';
 
 export function Sidebar() {
-  const { rol, email, nombre, apellido, fotoPerfilUrl, logout } = useAuth();
+  const { rol, email, nombre, apellido, fotoPerfilUrl, logout, esSuperadmin } = useAuth();
   const [expandido, establecerExpandido] = useState(false);
 
   const nombreCompleto = [nombre, apellido].filter(Boolean).join(' ').trim();
@@ -216,7 +217,11 @@ export function Sidebar() {
             </div>
           </div>
           {expandido && <NotificationCenter />}
-
+          {expandido && esSuperadmin && (
+            <div className="ml-2">
+              <TenantSwitcher />
+            </div>
+          )}
         </div>
 
         <Separator className="opacity-50" />

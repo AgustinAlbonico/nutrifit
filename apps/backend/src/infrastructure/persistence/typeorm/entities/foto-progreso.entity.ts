@@ -8,9 +8,10 @@ import {
 } from 'typeorm';
 import { SocioOrmEntity } from './persona.entity';
 import { TipoFoto } from 'src/domain/entities/FotoProgreso/tipo-foto.enum';
+import { AuditableOrmEntity } from '../common/auditable.orm-entity';
 
 @Entity('foto_progreso')
-export class FotoProgresoOrmEntity {
+export class FotoProgresoOrmEntity extends AuditableOrmEntity {
   @PrimaryGeneratedColumn({ name: 'id_foto' })
   idFoto: number;
 

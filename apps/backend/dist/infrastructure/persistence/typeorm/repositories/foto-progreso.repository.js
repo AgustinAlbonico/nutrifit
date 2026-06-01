@@ -55,7 +55,7 @@ let FotoProgresoRepository = class FotoProgresoRepository {
         return this.fotoProgresoOrmRepository.save(foto);
     }
     async delete(idFoto) {
-        await this.fotoProgresoOrmRepository.delete(idFoto);
+        await this.fotoProgresoOrmRepository.softDelete(idFoto);
     }
 };
 exports.FotoProgresoRepository = FotoProgresoRepository;

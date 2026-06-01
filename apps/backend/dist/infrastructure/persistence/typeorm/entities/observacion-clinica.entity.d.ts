@@ -1,5 +1,6 @@
 import { TurnoOrmEntity } from './turno.entity';
-export declare class ObservacionClinicaOrmEntity {
+import { AuditableOrmEntity } from "../common/auditable.orm-entity";
+export declare class ObservacionClinicaOrmEntity extends AuditableOrmEntity {
     idObservacion: number;
     comentario: string;
     peso: number;

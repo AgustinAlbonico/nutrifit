@@ -1,7 +1,8 @@
 import { GrupoAlimenticio } from './grupo-alimenticio.entity';
 import { UnidadMedida } from './UnidadMedida';
+import { AuditableEntity } from '../../shared/auditable.entity';
 
-export class Alimento {
+export class Alimento extends AuditableEntity {
   idAlimento: number | null;
   nombre: string;
   cantidad: number;
@@ -22,7 +23,9 @@ export class Alimento {
     carbohidratos: number | null = null,
     grasas: number | null = null,
     hidratosDeCarbono: number | null = null,
+    fechaBaja: Date | null = null,
   ) {
+    super(fechaBaja);
     this.idAlimento = idAlimento;
     this.nombre = nombre;
     this.cantidad = cantidad;

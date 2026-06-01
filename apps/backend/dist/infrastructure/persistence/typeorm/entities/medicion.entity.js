@@ -12,7 +12,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MedicionOrmEntity = void 0;
 const typeorm_1 = require("typeorm");
 const turno_entity_1 = require("./turno.entity");
-let MedicionOrmEntity = class MedicionOrmEntity {
+const auditable_orm_entity_1 = require("../common/auditable.orm-entity");
+let MedicionOrmEntity = class MedicionOrmEntity extends auditable_orm_entity_1.AuditableOrmEntity {
     idMedicion;
     peso;
     altura;

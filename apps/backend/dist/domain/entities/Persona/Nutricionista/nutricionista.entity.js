@@ -9,16 +9,14 @@ class NutricionistaEntity extends persona_entity_1.PersonaEntity {
     agendas;
     formacionAcademica;
     turnos;
-    fechaBaja;
     fotoPerfilKey;
     constructor(idPersona = null, nombre, apellido, fechaNacimiento, telefono, genero, direccion, ciudad, provincia, dni, experiencia, tarifaSesion, agendas = [], formacionAcademica = [], turnos = [], fechaBaja = null, email = '') {
-        super(idPersona, nombre, apellido, fechaNacimiento, telefono, genero, direccion, ciudad, provincia, dni, email);
+        super(idPersona, nombre, apellido, fechaNacimiento, telefono, genero, direccion, ciudad, provincia, dni, email, null, 1, fechaBaja);
         this.tarifaSesion = tarifaSesion;
         this.añosExperiencia = experiencia;
         this.agendas = agendas;
         this.formacionAcademica = formacionAcademica;
         this.turnos = turnos;
-        this.fechaBaja = fechaBaja;
         this.fotoPerfilKey = null;
     }
 }

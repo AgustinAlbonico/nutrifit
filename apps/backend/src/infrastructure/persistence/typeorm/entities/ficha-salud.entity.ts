@@ -14,9 +14,10 @@ import { PatologiaEntity } from 'src/domain/entities/FichaSalud/patologia.entity
 import { AlergiaEntity } from 'src/domain/entities/FichaSalud/alergia.entity';
 import { SocioOrmEntity } from './persona.entity';
 import { SocioEntity } from 'src/domain/entities/Persona/Socio/socio.entity';
+import { AuditableOrmEntity } from '../common/auditable.orm-entity';
 
 @Entity('ficha_salud')
-export class FichaSaludOrmEntity {
+export class FichaSaludOrmEntity extends AuditableOrmEntity {
   @PrimaryGeneratedColumn({ name: 'id_ficha_salud' })
   idFichaSalud: number;
 
@@ -182,7 +183,7 @@ export class FichaSaludOrmEntity {
 }
 
 @Entity('patologia')
-export class PatologiaOrmEntity {
+export class PatologiaOrmEntity extends AuditableOrmEntity {
   @PrimaryGeneratedColumn({ name: 'id_patologia' })
   idPatologia: number;
 
@@ -191,7 +192,7 @@ export class PatologiaOrmEntity {
 }
 
 @Entity('alergia')
-export class AlergiaOrmEntity {
+export class AlergiaOrmEntity extends AuditableOrmEntity {
   @PrimaryGeneratedColumn({ name: 'id_alergia' })
   idAlergia: number;
 

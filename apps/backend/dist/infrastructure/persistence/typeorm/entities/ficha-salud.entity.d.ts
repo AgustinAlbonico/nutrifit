@@ -4,7 +4,8 @@ import { ConsumoAlcohol } from 'src/domain/entities/FichaSalud/ConsumoAlcohol';
 import { PatologiaEntity } from 'src/domain/entities/FichaSalud/patologia.entity';
 import { AlergiaEntity } from 'src/domain/entities/FichaSalud/alergia.entity';
 import { SocioEntity } from 'src/domain/entities/Persona/Socio/socio.entity';
-export declare class FichaSaludOrmEntity {
+import { AuditableOrmEntity } from '../common/auditable.orm-entity';
+export declare class FichaSaludOrmEntity extends AuditableOrmEntity {
     idFichaSalud: number;
     altura: number;
     peso: number;
@@ -27,11 +28,11 @@ export declare class FichaSaludOrmEntity {
     patologias: PatologiaEntity[];
     alergias: AlergiaEntity[];
 }
-export declare class PatologiaOrmEntity {
+export declare class PatologiaOrmEntity extends AuditableOrmEntity {
     idPatologia: number;
     nombre: string;
 }
-export declare class AlergiaOrmEntity {
+export declare class AlergiaOrmEntity extends AuditableOrmEntity {
     idAlergia: number;
     nombre: string;
 }

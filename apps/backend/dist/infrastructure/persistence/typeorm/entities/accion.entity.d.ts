@@ -1,6 +1,7 @@
 import { GrupoPermisoOrmEntity } from './grupo-permiso.entity';
 import { UsuarioOrmEntity } from './usuario.entity';
-export declare class AccionOrmEntity {
+import { AuditableOrmEntity } from "../common/auditable.orm-entity";
+export declare class AccionOrmEntity extends AuditableOrmEntity {
     id: number;
     clave: string;
     nombre: string;

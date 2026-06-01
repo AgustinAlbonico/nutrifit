@@ -1,7 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TurnoEntity = void 0;
-class TurnoEntity {
+const auditable_entity_1 = require("../../shared/auditable.entity");
+class TurnoEntity extends auditable_entity_1.AuditableEntity {
     idTurno;
     fechaTurno;
     horaTurno;
@@ -14,7 +15,8 @@ class TurnoEntity {
     motivoCancelacion;
     fechaOriginal;
     gimnasioId;
-    constructor(idTurno = null, fechaTurno, horaTurno, estadoTurno, checkInAt = null, consultaIniciadaAt = null, consultaFinalizadaAt = null, ausenteAt = null, observacionClinica = null, motivoCancelacion = null, fechaOriginal = null, gimnasioId = null) {
+    constructor(idTurno = null, fechaTurno, horaTurno, estadoTurno, checkInAt = null, consultaIniciadaAt = null, consultaFinalizadaAt = null, ausenteAt = null, observacionClinica = null, motivoCancelacion = null, fechaOriginal = null, gimnasioId = null, fechaBaja = null) {
+        super(fechaBaja);
         this.idTurno = idTurno;
         this.fechaTurno = fechaTurno;
         this.horaTurno = horaTurno;

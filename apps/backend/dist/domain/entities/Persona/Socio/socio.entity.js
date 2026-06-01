@@ -8,8 +8,8 @@ class SocioEntity extends persona_entity_1.PersonaEntity {
     fichaSalud;
     planesAlimentacion;
     fotoPerfilKey;
-    constructor(idPersona = null, nombre, apellido, fechaNacimiento, telefono, genero, direccion, ciudad, provincia, dni, turnos = [], fichaSalud = null, planesAlimentacion = []) {
-        super(idPersona, nombre, apellido, fechaNacimiento, telefono, genero, direccion, ciudad, provincia, dni);
+    constructor(idPersona = null, nombre, apellido, fechaNacimiento, telefono, genero, direccion, ciudad, provincia, dni, turnos = [], fichaSalud = null, planesAlimentacion = [], fechaBaja = null) {
+        super(idPersona, nombre, apellido, fechaNacimiento, telefono, genero, direccion, ciudad, provincia, dni, '', null, 1, fechaBaja);
         this.fechaAlta = new Date();
         this.turnos = turnos;
         this.fichaSalud = fichaSalud;

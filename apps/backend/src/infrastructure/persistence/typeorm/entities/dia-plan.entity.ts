@@ -9,9 +9,10 @@ import {
 import { DiaSemana } from 'src/domain/entities/DiaPlan/DiaSemana';
 import { PlanAlimentacionOrmEntity } from './plan-alimentacion.entity';
 import { OpcionComidaOrmEntity } from './opcion-comida.entity';
+import { AuditableOrmEntity } from '../common/auditable.orm-entity';
 
 @Entity('dia_plan')
-export class DiaPlanOrmEntity {
+export class DiaPlanOrmEntity extends AuditableOrmEntity {
   @PrimaryGeneratedColumn({ name: 'id_dia_plan' })
   idDiaPlan: number;
 

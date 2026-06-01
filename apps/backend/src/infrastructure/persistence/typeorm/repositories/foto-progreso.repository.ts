@@ -57,6 +57,6 @@ export class FotoProgresoRepository {
   }
 
   async delete(idFoto: number): Promise<void> {
-    await this.fotoProgresoOrmRepository.delete(idFoto);
+    await this.fotoProgresoOrmRepository.softDelete(idFoto);
   }
 }

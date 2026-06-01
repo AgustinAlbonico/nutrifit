@@ -7,9 +7,10 @@ import {
 } from 'typeorm';
 import { AccionOrmEntity } from './accion.entity';
 import { UsuarioOrmEntity } from './usuario.entity';
+import { AuditableOrmEntity } from '../common/auditable.orm-entity';
 
 @Entity('grupo_permiso')
-export class GrupoPermisoOrmEntity {
+export class GrupoPermisoOrmEntity extends AuditableOrmEntity {
   @PrimaryGeneratedColumn({ name: 'id_grupo_permiso' })
   id: number;
 

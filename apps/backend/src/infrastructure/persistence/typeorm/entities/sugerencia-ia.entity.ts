@@ -6,9 +6,10 @@ import {
 } from 'typeorm';
 import { SugerenciaEstado } from 'src/domain/entities/SugerenciaIA/sugerencia-ia.entity';
 import { PropuestaIA } from '@nutrifit/shared';
+import { AuditableOrmEntity } from '../common/auditable.orm-entity';
 
 @Entity('sugerencia_ia')
-export class SugerenciaIAOrmEntity {
+export class SugerenciaIAOrmEntity extends AuditableOrmEntity {
   @PrimaryGeneratedColumn({ name: 'id_sugerencia' })
   idSugerencia: number;
 

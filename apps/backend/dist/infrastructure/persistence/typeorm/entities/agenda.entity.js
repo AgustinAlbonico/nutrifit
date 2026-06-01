@@ -13,7 +13,8 @@ exports.AgendaOrmEntity = void 0;
 const dia_semana_1 = require("../../../../domain/entities/Agenda/dia-semana");
 const typeorm_1 = require("typeorm");
 const persona_entity_1 = require("./persona.entity");
-let AgendaOrmEntity = class AgendaOrmEntity {
+const auditable_orm_entity_1 = require("../common/auditable.orm-entity");
+let AgendaOrmEntity = class AgendaOrmEntity extends auditable_orm_entity_1.AuditableOrmEntity {
     idAgenda;
     dia;
     horaInicio;

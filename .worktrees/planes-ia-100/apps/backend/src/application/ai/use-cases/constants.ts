@@ -1,0 +1,13 @@
+export const CALORIAS_MINIMAS_DIARIAS = 1200;
+export const CALORIAS_MAXIMAS_DIARIAS = 3000;
+export const MARGEN_KCAL_SUMA_COMIDAS = 100;
+export const COMIDAS_POR_DIA = 5;
+export const TIPOS_COMIDA_REQUERIDOS = [
+  'DESAYUNO',
+  'ALMUERZO',
+  'MERIENDA',
+  'CENA',
+  'COLACION',
+] as const;
+
+export const MAX_REINTENTOS_GENERACION = 3;

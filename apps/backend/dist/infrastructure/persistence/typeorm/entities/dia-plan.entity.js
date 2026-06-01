@@ -14,7 +14,8 @@ const typeorm_1 = require("typeorm");
 const DiaSemana_1 = require("../../../../domain/entities/DiaPlan/DiaSemana");
 const plan_alimentacion_entity_1 = require("./plan-alimentacion.entity");
 const opcion_comida_entity_1 = require("./opcion-comida.entity");
-let DiaPlanOrmEntity = class DiaPlanOrmEntity {
+const auditable_orm_entity_1 = require("../common/auditable.orm-entity");
+let DiaPlanOrmEntity = class DiaPlanOrmEntity extends auditable_orm_entity_1.AuditableOrmEntity {
     idDiaPlan;
     dia;
     orden;

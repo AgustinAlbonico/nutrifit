@@ -40,7 +40,7 @@ const AppDataSource = (config) => ({
         ficha_salud_entity_1.AlergiaOrmEntity,
         persona_entity_1.PersonaOrmEntity,
         usuario_entity_1.UsuarioOrmEntity,
-        persona_entity_1.AsistenteOrmEntity,
+        persona_entity_1.RecepcionistaOrmEntity,
         ficha_salud_entity_1.PatologiaOrmEntity,
         ficha_salud_entity_1.FichaSaludOrmEntity,
         item_comida_entity_1.ItemComidaOrmEntity,

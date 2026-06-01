@@ -9,10 +9,11 @@ import {
 } from 'typeorm';
 import { TurnoOrmEntity } from './turno.entity';
 import { UsuarioOrmEntity } from './usuario.entity';
+import { AuditableOrmEntity } from '../common/auditable.orm-entity';
 
 @Entity('adjunto_clinico')
 @Index('idx_adjunto_clinico_turno', ['turno'])
-export class AdjuntoClinicoOrmEntity {
+export class AdjuntoClinicoOrmEntity extends AuditableOrmEntity {
   @PrimaryGeneratedColumn({ name: 'id_adjunto' })
   idAdjunto: number;
 

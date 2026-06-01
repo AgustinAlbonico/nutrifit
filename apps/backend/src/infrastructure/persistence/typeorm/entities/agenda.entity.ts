@@ -7,9 +7,10 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { NutricionistaOrmEntity } from './persona.entity';
+import { AuditableOrmEntity } from '../common/auditable.orm-entity';
 
 @Entity('agenda')
-export class AgendaOrmEntity {
+export class AgendaOrmEntity extends AuditableOrmEntity {
   @PrimaryGeneratedColumn({ name: 'id_agenda' })
   idAgenda: number;
 

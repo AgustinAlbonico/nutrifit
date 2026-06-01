@@ -9,5 +9,5 @@ export declare class SocioEntity extends PersonaEntity {
     fichaSalud: FichaSaludEntity | null;
     planesAlimentacion: PlanAlimentacionEntity[];
     fotoPerfilKey: string | null;
-    constructor(idPersona: number | null | undefined, nombre: string, apellido: string, fechaNacimiento: Date, telefono: string, genero: Genero, direccion: string, ciudad: string, provincia: string, dni: string, turnos?: TurnoEntity[], fichaSalud?: FichaSaludEntity | null, planesAlimentacion?: PlanAlimentacionEntity[]);
+    constructor(idPersona: number | null | undefined, nombre: string, apellido: string, fechaNacimiento: Date, telefono: string, genero: Genero, direccion: string, ciudad: string, provincia: string, dni: string, turnos?: TurnoEntity[], fichaSalud?: FichaSaludEntity | null, planesAlimentacion?: PlanAlimentacionEntity[], fechaBaja?: Date | null);
 }

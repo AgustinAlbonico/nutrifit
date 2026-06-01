@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { AgendaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/agenda.entity';
 import { AlimentoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/alimento.entity';
 import {
-  AsistenteOrmEntity,
+  RecepcionistaOrmEntity,
   NutricionistaOrmEntity,
   PersonaOrmEntity,
   SocioOrmEntity,
@@ -51,7 +51,7 @@ export const AppDataSource = (
     AlergiaOrmEntity,
     PersonaOrmEntity,
     UsuarioOrmEntity,
-    AsistenteOrmEntity,
+    RecepcionistaOrmEntity,
     PatologiaOrmEntity,
     FichaSaludOrmEntity,
     ItemComidaOrmEntity,

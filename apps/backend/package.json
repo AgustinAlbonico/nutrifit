@@ -26,7 +26,8 @@
     "seed:completo": "ts-node src/seed-completo.ts",
     "seed:grupos": "ts-node src/seed-grupos.ts",
     "seed:asignar-grupos": "ts-node src/seed-asignar-grupos.ts",
-    "seed:build": "tsc -p tsconfig.json"
+    "seed:build": "tsc -p tsconfig.json",
+    "migration:gen": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate -d src/infrastructure/config/typeorm/migration.schema.ts src/infrastructure/persistence/typeorm/migrations/GlobalSoftDelete"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -79,6 +80,7 @@
     "supertest": "^7.0.0",
     "ts-jest": "^29.2.5",
     "ts-loader": "^9.5.2",
+    "ts-morph": "^26.0.0",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",

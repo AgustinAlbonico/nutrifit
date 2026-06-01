@@ -8,6 +8,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { UsuarioOrmEntity } from './usuario.entity';
+import { AuditableOrmEntity } from '../common/auditable.orm-entity';
 
 export enum AccionAuditoria {
   LOGIN_EXITO = 'LOGIN_EXITO',
@@ -27,7 +28,7 @@ export enum AccionAuditoria {
 @Index('idx_auditoria_timestamp', ['timestamp'])
 @Index('idx_auditoria_usuario', ['usuario'])
 @Index('idx_auditoria_accion', ['accion'])
-export class AuditoriaOrmEntity {
+export class AuditoriaOrmEntity extends AuditableOrmEntity {
   @PrimaryGeneratedColumn({ name: 'id_auditoria' })
   idAuditoria: number;
 

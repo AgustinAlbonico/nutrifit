@@ -52,7 +52,7 @@ export class NutricionistaRepositoryImplementation implements NutricionistaRepos
   }
 
   async delete(id: number): Promise<void> {
-    await this.nutricionistaRepository.delete(id);
+    await this.nutricionistaRepository.softDelete(id);
   }
 
   async findAll(): Promise<NutricionistaEntity[]> {

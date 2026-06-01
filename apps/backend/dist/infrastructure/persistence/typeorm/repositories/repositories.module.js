@@ -15,6 +15,7 @@ const entities_1 = require("../entities/");
 const socio_repository_1 = require("../../../../domain/entities/Persona/Socio/socio.repository");
 const usuario_repository_1 = require("../../../../domain/entities/Usuario/usuario.repository");
 const nutricionista_repository_1 = require("../../../../domain/entities/Persona/Nutricionista/nutricionista.repository");
+const recepcionista_repository_1 = require("../../../../domain/entities/Persona/Recepcionista/recepcionista.repository");
 const politica_operativa_repository_1 = require("../../../../application/politicas/politica-operativa.repository");
 const politica_operativa_repository_impl_1 = require("../../../politicas/politica-operativa.repository.impl");
 let RepositoriesModule = class RepositoriesModule {
@@ -29,7 +30,7 @@ exports.RepositoriesModule = RepositoriesModule = __decorate([
                 entities_1.AgendaOrmEntity,
                 entities_1.AlergiaOrmEntity,
                 entities_1.AlimentoOrmEntity,
-                entities_1.AsistenteOrmEntity,
+                entities_1.RecepcionistaOrmEntity,
                 entities_1.FichaSaludOrmEntity,
                 entities_1.FormacionAcademicaOrmEntity,
                 entities_1.GrupoAlimenticioOrmEntity,
@@ -52,6 +53,10 @@ exports.RepositoriesModule = RepositoriesModule = __decorate([
                 useClass: _1.NutricionistaRepositoryImplementation,
             },
             {
+                provide: recepcionista_repository_1.RECEPCIONISTA_REPOSITORY,
+                useClass: _1.RecepcionistaRepositoryImplementation,
+            },
+            {
                 provide: politica_operativa_repository_1.POLITICA_OPERATIVA_REPOSITORY,
                 useClass: politica_operativa_repository_impl_1.PoliticaOperativaRepositoryImpl,
             },
@@ -60,6 +65,7 @@ exports.RepositoriesModule = RepositoriesModule = __decorate([
             usuario_repository_1.USUARIO_REPOSITORY,
             socio_repository_1.SOCIO_REPOSITORY,
             nutricionista_repository_1.NUTRICIONISTA_REPOSITORY,
+            recepcionista_repository_1.RECEPCIONISTA_REPOSITORY,
             politica_operativa_repository_1.POLITICA_OPERATIVA_REPOSITORY,
         ],
     })

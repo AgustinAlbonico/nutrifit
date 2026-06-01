@@ -16,6 +16,7 @@ import {
   AdminEstadisticasController,
   AdminReportesController,
   ConfiguracionController,
+  RecepcionistasController,
 } from './controllers';
 import { ProgresoModule } from 'src/application/progreso/progreso.module';
 import { ApplicationModule } from 'src/application/application.module';
@@ -101,6 +102,7 @@ import { GimnasioRepository } from 'src/infrastructure/persistence/typeorm/repos
     AdminEstadisticasController,
     AdminReportesController,
     ConfiguracionController,
+    RecepcionistasController,
   ],
 })
 export class ControllersModule {}

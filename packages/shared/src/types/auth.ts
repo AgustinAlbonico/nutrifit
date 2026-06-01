@@ -13,6 +13,8 @@ export interface RespuestaAutenticacion {
   personaId: number;
   correo: string;
   acciones: string[];
+  gimnasioId: number | null;
+  impersonatedBy: number | null;
 }
 
 export interface SesionUsuario {

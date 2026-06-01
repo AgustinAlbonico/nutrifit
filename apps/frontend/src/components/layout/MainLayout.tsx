@@ -1,5 +1,6 @@
 import { Outlet } from '@tanstack/react-router';
 import { Sidebar } from './Sidebar';
+import { ImpersonationIndicator } from '@/components/admin/ImpersonationIndicator';
 
 export function MainLayout() {
   return (
@@ -7,7 +8,10 @@ export function MainLayout() {
       <Sidebar />
       <main className="flex-1 overflow-y-auto bg-muted/10 p-4 lg:p-6">
         <div className="w-full">
-          <Outlet />
+          <ImpersonationIndicator />
+          <div className="mt-4">
+            <Outlet />
+          </div>
         </div>
       </main>
     </div>

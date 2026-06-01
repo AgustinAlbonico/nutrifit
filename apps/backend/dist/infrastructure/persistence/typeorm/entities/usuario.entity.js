@@ -15,7 +15,8 @@ const persona_entity_1 = require("./persona.entity");
 const Rol_1 = require("../../../../domain/entities/Usuario/Rol");
 const grupo_permiso_entity_1 = require("./grupo-permiso.entity");
 const accion_entity_1 = require("./accion.entity");
-let UsuarioOrmEntity = class UsuarioOrmEntity {
+const auditable_orm_entity_1 = require("../common/auditable.orm-entity");
+let UsuarioOrmEntity = class UsuarioOrmEntity extends auditable_orm_entity_1.AuditableOrmEntity {
     idUsuario;
     email;
     contraseña;

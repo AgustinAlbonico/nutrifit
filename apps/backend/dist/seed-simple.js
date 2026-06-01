@@ -455,7 +455,7 @@ async function runSeed() {
            SET nombre = ?, apellido = ?, fecha_nacimiento = ?, genero = ?,
                telefono = ?, direccion = ?, ciudad = ?, provincia = ?, dni = ?,
                fecha_alta = NULL, matricula = NULL, anios_experiencia = NULL,
-               tarifa_sesion = NULL, fecha_baja = NULL, tipo_persona = 'AsistenteOrmEntity'
+               tarifa_sesion = NULL, fecha_baja = NULL, tipo_persona = 'RecepcionistaOrmEntity'
            WHERE id_persona = ?`, [
                     admin.nombre,
                     admin.apellido,
@@ -474,7 +474,7 @@ async function runSeed() {
                 const resultadoPersona = await dataSource.query(`INSERT INTO persona (
             nombre, apellido, fecha_nacimiento, genero, telefono, direccion,
             ciudad, provincia, dni, tipo_persona
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'AsistenteOrmEntity')`, [
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'RecepcionistaOrmEntity')`, [
                     admin.nombre,
                     admin.apellido,
                     admin.fechaNacimiento,

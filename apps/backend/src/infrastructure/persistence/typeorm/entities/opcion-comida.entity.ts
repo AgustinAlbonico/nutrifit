@@ -10,9 +10,10 @@ import { TipoComida } from 'src/domain/entities/OpcionComida/TipoComida';
 import { DiaPlanOrmEntity } from './dia-plan.entity';
 import { ItemComidaOrmEntity } from './item-comida.entity';
 import { AlimentoOrmEntity } from './alimento.entity';
+import { AuditableOrmEntity } from '../common/auditable.orm-entity';
 
 @Entity('opcion_comida')
-export class OpcionComidaOrmEntity {
+export class OpcionComidaOrmEntity extends AuditableOrmEntity {
   @PrimaryGeneratedColumn({ name: 'id_opcion_comida' })
   idOpcionComida: number;
 

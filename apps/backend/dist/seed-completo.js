@@ -1829,7 +1829,7 @@ async function runSeed() {
             if (fila?.id_persona) {
                 idPersona = parsearNumero(fila.id_persona) ?? 0;
                 await dataSource.query(`UPDATE persona SET nombre = ?, apellido = ?, fecha_nacimiento = ?, genero = ?,
-           telefono = ?, direccion = ?, ciudad = ?, provincia = ?, dni = ?, tipo_persona = 'AsistenteOrmEntity'
+           telefono = ?, direccion = ?, ciudad = ?, provincia = ?, dni = ?, tipo_persona = 'RecepcionistaOrmEntity'
            WHERE id_persona = ?`, [
                     admin.nombre,
                     admin.apellido,
@@ -1846,7 +1846,7 @@ async function runSeed() {
             }
             else {
                 const resultPersona = await dataSource.query(`INSERT INTO persona (nombre, apellido, fecha_nacimiento, genero, telefono, direccion, ciudad, provincia, dni, tipo_persona)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'AsistenteOrmEntity')`, [
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'RecepcionistaOrmEntity')`, [
                     admin.nombre,
                     admin.apellido,
                     admin.fechaNacimiento,

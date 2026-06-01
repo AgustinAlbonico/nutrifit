@@ -1,6 +1,5 @@
 import { BaseRepository } from 'src/domain/shared/base.repository';
 import { NutricionistaEntity } from './nutricionista.entity';
-
 export const NUTRICIONISTA_REPOSITORY = Symbol('NutricionistaRepository');
 
 export abstract class NutricionistaRepository implements BaseRepository<NutricionistaEntity> {

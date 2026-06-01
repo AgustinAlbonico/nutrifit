@@ -1,6 +1,7 @@
 import { UnidadMedida } from 'src/domain/entities/Alimento/UnidadMedida';
 import { GrupoAlimenticioOrmEntity } from './grupo-alimenticio.entity';
-export declare class AlimentoOrmEntity {
+import { AuditableOrmEntity } from '../common/auditable.orm-entity';
+export declare class AlimentoOrmEntity extends AuditableOrmEntity {
     idAlimento: number;
     nombre: string;
     cantidad: number;

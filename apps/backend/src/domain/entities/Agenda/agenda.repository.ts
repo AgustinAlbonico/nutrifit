@@ -1,5 +1,4 @@
 import { AgendaEntity } from './agenda.entity';
-
 export const AGENDA_REPOSITORY = Symbol('AgendaRepository');
 
 export abstract class IAgendaRepository {

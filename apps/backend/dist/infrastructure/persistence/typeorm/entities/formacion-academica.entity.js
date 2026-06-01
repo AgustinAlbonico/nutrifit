@@ -13,7 +13,8 @@ exports.FormacionAcademicaOrmEntity = void 0;
 const typeorm_1 = require("typeorm");
 const persona_entity_1 = require("./persona.entity");
 const nutricionista_entity_1 = require("../../../../domain/entities/Persona/Nutricionista/nutricionista.entity");
-let FormacionAcademicaOrmEntity = class FormacionAcademicaOrmEntity {
+const auditable_orm_entity_1 = require("../common/auditable.orm-entity");
+let FormacionAcademicaOrmEntity = class FormacionAcademicaOrmEntity extends auditable_orm_entity_1.AuditableOrmEntity {
     idFormacionAcademica;
     titulo;
     institucion;

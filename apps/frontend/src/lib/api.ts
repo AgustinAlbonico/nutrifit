@@ -1,6 +1,32 @@
 export const API_BASE_URL =
   import.meta.env.VITE_API_URL?.trim() || 'http://localhost:3000';
 
+// Claves de storage
+const AUTH_STORAGE_KEY = 'nutrifit.auth';
+
+interface StoredAuth {
+  token: string;
+  gimnasioId: number | null;
+  impersonatedBy: number | null;
+}
+
+function obtenerAuthAlmacenado(): StoredAuth | null {
+  const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed.token) return null;
+    return {
+      token: parsed.token,
+      gimnasioId: parsed.gimnasioId ?? null,
+      impersonatedBy: parsed.impersonatedBy ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Obtiene la URL completa de la foto de perfil.
  * Si la URL es relativa (empieza con /), le agrega la base URL del API.
@@ -24,6 +50,7 @@ interface RequestOptions {
   token?: string | null;
   body?: unknown;
   formData?: FormData;
+  gimnasioId?: number | null;
 }
 
 interface ErrorResponse {
@@ -52,7 +79,11 @@ function obtenerMensajeLegible(
   }
 
   if (status === 403) {
-    return 'No tenés permisos para realizar esta acción.';
+    // Error de tenant - el usuario no tiene acceso a este gimnasio
+    return (
+      errorBody?.message ||
+      'No tenés permisos para este espacio de trabajo.'
+    );
   }
 
   if (status === 404) {
@@ -87,8 +118,30 @@ export async function apiRequest<T>(
     headers['Content-Type'] = 'application/json';
   }
 
-  if (!isAuthEndpoint && options.token) {
-    headers.Authorization = `Bearer ${options.token}`;
+  // Obtener token y contexto de tenant
+  let token = options.token;
+  let gimnasioId = options.gimnasioId;
+
+  // Si no se pasó token, obtener del storage
+  if (!token) {
+    const auth = obtenerAuthAlmacenado();
+    if (auth) {
+      token = auth.token;
+      // Usar el gimnasioId solo si no se pasó explícitamente
+      if (gimnasioId === undefined) {
+        gimnasioId = auth.gimnasioId;
+      }
+    }
+  }
+
+  // Agregar header de autorización si hay token y no es endpoint de auth
+  if (!isAuthEndpoint && token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  // Agregar header de contexto de tenant si estamos impersonando
+  if (gimnasioId && !isAuthEndpoint) {
+    headers['X-Gimnasio-Id'] = String(gimnasioId);
   }
 
   let body: BodyInit | undefined;
@@ -114,9 +167,19 @@ export async function apiRequest<T>(
     }
 
     if (response.status === 401 && !isAuthEndpoint) {
-      localStorage.removeItem('nutrifit.auth');
+      localStorage.removeItem(AUTH_STORAGE_KEY);
       if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
         window.location.assign('/login');
+      }
+    }
+
+    if (response.status === 403 && !isAuthEndpoint) {
+      // Error de tenant - redirigir a dashboard con mensaje
+      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        const mensaje = encodeURIComponent(
+          obtenerMensajeLegible(response, errorBody, isAuthEndpoint),
+        );
+        window.location.assign(`/login?error=${mensaje}`);
       }
     }
 

@@ -3,6 +3,7 @@ import { FormacionAcademicaEntity } from '../../FormacionAcademica/formacion-aca
 import { TurnoEntity } from '../../Turno/turno.entity';
 import { Genero } from '../Genero';
 import { PersonaEntity } from '../persona.entity';
+import { AuditableEntity } from '../../../shared/auditable.entity';
 
 export class NutricionistaEntity extends PersonaEntity {
   matricula: string;
@@ -11,7 +12,6 @@ export class NutricionistaEntity extends PersonaEntity {
   agendas: AgendaEntity[];
   formacionAcademica: FormacionAcademicaEntity[];
   turnos: TurnoEntity[];
-  fechaBaja: Date | null;
   fotoPerfilKey: string | null;
 
   constructor(
@@ -45,13 +45,15 @@ export class NutricionistaEntity extends PersonaEntity {
       provincia,
       dni,
       email,
+      null,
+      1,
+      fechaBaja,
     );
     this.tarifaSesion = tarifaSesion;
     this.añosExperiencia = experiencia;
     this.agendas = agendas;
     this.formacionAcademica = formacionAcademica;
     this.turnos = turnos;
-    this.fechaBaja = fechaBaja;
     this.fotoPerfilKey = null;
   }
 }

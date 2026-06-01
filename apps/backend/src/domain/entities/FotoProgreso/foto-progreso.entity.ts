@@ -1,6 +1,8 @@
+import { AuditableEntity } from '../../shared/auditable.entity';
+
 export type TipoFoto = 'FRENTE' | 'PERFIL' | 'ESPALDA';
 
-export class FotoProgresoEntity {
+export class FotoProgresoEntity extends AuditableEntity {
   idFoto: number | null;
   socioId: number;
   tipoFoto: TipoFoto;
@@ -17,7 +19,9 @@ export class FotoProgresoEntity {
     objectKey: string,
     notas: string | null = null,
     createdAt: Date = new Date(),
+    fechaBaja: Date | null = null,
   ) {
+    super(fechaBaja);
     this.idFoto = idFoto;
     this.socioId = socioId;
     this.tipoFoto = tipoFoto;

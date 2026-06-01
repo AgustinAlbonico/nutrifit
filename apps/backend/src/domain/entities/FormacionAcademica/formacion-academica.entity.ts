@@ -1,4 +1,6 @@
-export class FormacionAcademicaEntity {
+import { AuditableEntity } from '../../shared/auditable.entity';
+
+export class FormacionAcademicaEntity extends AuditableEntity {
   idFormacionAcademica: number | null;
   titulo: string;
   institucion: string;
@@ -13,7 +15,9 @@ export class FormacionAcademicaEntity {
     añoComienzo: number,
     añoFin: number,
     nivel: string,
+    fechaBaja: Date | null = null,
   ) {
+    super(fechaBaja);
     this.idFormacionAcademica = idFormacionAcademica;
     this.titulo = titulo;
     this.institucion = institucion;

@@ -17,7 +17,8 @@ const observacion_clinica_entity_1 = require("./observacion-clinica.entity");
 const medicion_entity_1 = require("./medicion.entity");
 const persona_entity_1 = require("./persona.entity");
 const adjunto_clinico_entity_1 = require("./adjunto-clinico.entity");
-let TurnoOrmEntity = class TurnoOrmEntity {
+const auditable_orm_entity_1 = require("../common/auditable.orm-entity");
+let TurnoOrmEntity = class TurnoOrmEntity extends auditable_orm_entity_1.AuditableOrmEntity {
     idTurno;
     fechaTurno;
     horaTurno;

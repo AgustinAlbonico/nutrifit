@@ -12,9 +12,10 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { SocioOrmEntity } from './persona.entity';
+import { AuditableOrmEntity } from '../common/auditable.orm-entity';
 
 @Entity('objetivo')
-export class ObjetivoOrmEntity {
+export class ObjetivoOrmEntity extends AuditableOrmEntity {
   @PrimaryGeneratedColumn({ name: 'id_objetivo' })
   idObjetivo: number;
 

@@ -1,8 +1,9 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { TurnoOrmEntity } from './turno.entity';
+import { AuditableOrmEntity } from '../common/auditable.orm-entity';
 
 @Entity('gimnasio')
-export class GimnasioOrmEntity {
+export class GimnasioOrmEntity extends AuditableOrmEntity {
   @PrimaryGeneratedColumn({ name: 'id_gimnasio' })
   idGimnasio: number;
 

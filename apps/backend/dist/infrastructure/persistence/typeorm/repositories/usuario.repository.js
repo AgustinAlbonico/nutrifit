@@ -95,7 +95,7 @@ let UsuarioRepositoryImplementation = class UsuarioRepositoryImplementation {
         return entity;
     }
     async delete(id) {
-        await this.userRepository.delete(id);
+        await this.userRepository.softDelete(id);
     }
     async findAll() {
         const users = await this.userRepository.find({

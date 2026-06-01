@@ -97,6 +97,7 @@ exports.ControllersModule = ControllersModule = __decorate([
             controllers_1.AdminEstadisticasController,
             controllers_1.AdminReportesController,
             controllers_1.ConfiguracionController,
+            controllers_1.RecepcionistasController,
         ],
     })
 ], ControllersModule);

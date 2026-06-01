@@ -41,7 +41,7 @@ let AgendaRepositoryImplementation = class AgendaRepositoryImplementation {
     async replaceByNutricionistaId(nutricionistaId, agendas) {
         await this.agendaRepository
             .createQueryBuilder()
-            .delete()
+            .softDelete()
             .from(agenda_entity_2.AgendaOrmEntity)
             .where('id_nutricionista = :nutricionistaId', { nutricionistaId })
             .execute();

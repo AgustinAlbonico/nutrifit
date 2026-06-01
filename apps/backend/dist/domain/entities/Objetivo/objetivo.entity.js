@@ -1,7 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ObjetivoEntity = void 0;
-class ObjetivoEntity {
+const auditable_entity_1 = require("../../shared/auditable.entity");
+class ObjetivoEntity extends auditable_entity_1.AuditableEntity {
     idObjetivo;
     socioId;
     tipoMetrica;
@@ -13,7 +14,8 @@ class ObjetivoEntity {
     fechaObjetivo;
     createdAt;
     updatedAt;
-    constructor(idObjetivo = null, socioId, tipoMetrica, valorInicial, valorObjetivo, valorActual, estado, fechaInicio, fechaObjetivo = null, createdAt = new Date(), updatedAt = new Date()) {
+    constructor(idObjetivo = null, socioId, tipoMetrica, valorInicial, valorObjetivo, valorActual, estado, fechaInicio, fechaObjetivo = null, createdAt = new Date(), updatedAt = new Date(), fechaBaja = null) {
+        super(fechaBaja);
         this.idObjetivo = idObjetivo;
         this.socioId = socioId;
         this.tipoMetrica = tipoMetrica;

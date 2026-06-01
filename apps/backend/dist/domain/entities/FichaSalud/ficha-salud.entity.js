@@ -1,7 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.FichaSaludEntity = void 0;
-class FichaSaludEntity {
+const auditable_entity_1 = require("../../shared/auditable.entity");
+class FichaSaludEntity extends auditable_entity_1.AuditableEntity {
     idFichaSalud;
     fechaCreacion;
     nivelActividadFisica;
@@ -22,7 +23,8 @@ class FichaSaludEntity {
     horasSueno;
     contactoEmergenciaNombre;
     contactoEmergenciaTelefono;
-    constructor(idFichaSalud = null, nivelActividadFisica, peso, altura, fechaCreacion = new Date(), patologias = [], alergias = [], objetivoPersonal, medicacionActual = null, suplementosActuales = null, cirugiasPrevias = null, antecedentesFamiliares = null, frecuenciaComidas = null, consumoAguaDiario = null, restriccionesAlimentarias = null, consumoAlcohol = null, fumaTabaco = false, horasSueno = null, contactoEmergenciaNombre = null, contactoEmergenciaTelefono = null) {
+    constructor(idFichaSalud = null, nivelActividadFisica, peso, altura, fechaCreacion = new Date(), patologias = [], alergias = [], objetivoPersonal, medicacionActual = null, suplementosActuales = null, cirugiasPrevias = null, antecedentesFamiliares = null, frecuenciaComidas = null, consumoAguaDiario = null, restriccionesAlimentarias = null, consumoAlcohol = null, fumaTabaco = false, horasSueno = null, contactoEmergenciaNombre = null, contactoEmergenciaTelefono = null, fechaBaja = null) {
+        super(fechaBaja);
         this.idFichaSalud = idFichaSalud;
         this.fechaCreacion = fechaCreacion;
         this.nivelActividadFisica = nivelActividadFisica;

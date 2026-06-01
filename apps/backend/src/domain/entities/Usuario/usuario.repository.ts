@@ -1,6 +1,5 @@
 import { BaseRepository } from 'src/domain/shared/base.repository';
 import { UsuarioEntity } from './usuario.entity';
-
 export const USUARIO_REPOSITORY = Symbol('UsuarioRepository');
 
 export interface PerfilUsuario {

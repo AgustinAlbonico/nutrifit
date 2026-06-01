@@ -2,7 +2,8 @@ import { PersonaEntity } from '../Persona/persona.entity';
 import { Rol } from './Rol';
 import { GrupoPermisoEntity } from './grupo-permiso.entity';
 import { AccionPermisoEntity } from './accion-permiso.entity';
-export declare class UsuarioEntity {
+import { AuditableEntity } from "../../shared/auditable.entity";
+export declare class UsuarioEntity extends AuditableEntity {
     idUsuario: number | null;
     email: string;
     contraseña: string;
@@ -11,6 +12,6 @@ export declare class UsuarioEntity {
     rol: Rol;
     grupos: GrupoPermisoEntity[];
     acciones: AccionPermisoEntity[];
-    constructor(idUsuario: number | null | undefined, email: string, contraseña: string, persona: (PersonaEntity | null) | undefined, rol: Rol, grupos?: GrupoPermisoEntity[], acciones?: AccionPermisoEntity[]);
+    constructor(idUsuario: number | null | undefined, email: string, contraseña: string, persona: (PersonaEntity | null) | undefined, rol: Rol, grupos?: GrupoPermisoEntity[], acciones?: AccionPermisoEntity[], fechaBaja?: Date | null);
     getAccionesEfectivas(): string[];
 }

@@ -1,6 +1,7 @@
 import { SocioOrmEntity } from './persona.entity';
 import { TipoFoto } from 'src/domain/entities/FotoProgreso/tipo-foto.enum';
-export declare class FotoProgresoOrmEntity {
+import { AuditableOrmEntity } from "../common/auditable.orm-entity";
+export declare class FotoProgresoOrmEntity extends AuditableOrmEntity {
     idFoto: number;
     socio: SocioOrmEntity;
     tipoFoto: TipoFoto;

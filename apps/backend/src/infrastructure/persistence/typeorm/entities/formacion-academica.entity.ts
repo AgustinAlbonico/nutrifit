@@ -7,9 +7,10 @@ import {
 } from 'typeorm';
 import { NutricionistaOrmEntity } from './persona.entity';
 import { NutricionistaEntity } from 'src/domain/entities/Persona/Nutricionista/nutricionista.entity';
+import { AuditableOrmEntity } from '../common/auditable.orm-entity';
 
 @Entity('formacion_academica')
-export class FormacionAcademicaOrmEntity {
+export class FormacionAcademicaOrmEntity extends AuditableOrmEntity {
   @PrimaryGeneratedColumn({ name: 'id_formacion_academica' })
   idFormacionAcademica: number;
 

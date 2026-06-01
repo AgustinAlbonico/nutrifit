@@ -1,4 +1,5 @@
 import { PropuestaIA } from '@nutrifit/shared';
+import { AuditableEntity } from '../../shared/auditable.entity';
 
 export enum SugerenciaEstado {
   GENERADA = 'GENERADA',
@@ -19,7 +20,7 @@ export interface SugerenciaIAEntityProps {
   usadaEn: Date | null;
 }
 
-export class SugerenciaIAEntity {
+export class SugerenciaIAEntity extends AuditableEntity {
   idSugerencia: number | null;
   socioId: number;
   objetivo: string;
@@ -30,7 +31,8 @@ export class SugerenciaIAEntity {
   creadaEn: Date;
   usadaEn: Date | null;
 
-  constructor(props: SugerenciaIAEntityProps) {
+  constructor(props: SugerenciaIAEntityProps, fechaBaja: Date | null = null) {
+    super(fechaBaja);
     this.idSugerencia = props.idSugerencia;
     this.socioId = props.socioId;
     this.objetivo = props.objetivo;

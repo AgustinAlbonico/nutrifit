@@ -5,13 +5,14 @@ import {
   UsuarioRepositoryImplementation,
   SocioRepositoryImplementation,
   NutricionistaRepositoryImplementation,
+  RecepcionistaRepositoryImplementation,
 } from './';
 import {
   SocioOrmEntity,
   AgendaOrmEntity,
   AlergiaOrmEntity,
   AlimentoOrmEntity,
-  AsistenteOrmEntity,
+  RecepcionistaOrmEntity,
   FichaSaludOrmEntity,
   FormacionAcademicaOrmEntity,
   GrupoAlimenticioOrmEntity,
@@ -28,6 +29,7 @@ import {
 import { SOCIO_REPOSITORY } from 'src/domain/entities/Persona/Socio/socio.repository';
 import { USUARIO_REPOSITORY } from 'src/domain/entities/Usuario/usuario.repository';
 import { NUTRICIONISTA_REPOSITORY } from 'src/domain/entities/Persona/Nutricionista/nutricionista.repository';
+import { RECEPCIONISTA_REPOSITORY } from 'src/domain/entities/Persona/Recepcionista/recepcionista.repository';
 import { POLITICA_OPERATIVA_REPOSITORY } from 'src/application/politicas/politica-operativa.repository';
 import { PoliticaOperativaRepositoryImpl } from 'src/infrastructure/politicas/politica-operativa.repository.impl';
 
@@ -41,7 +43,7 @@ import { PoliticaOperativaRepositoryImpl } from 'src/infrastructure/politicas/po
       AgendaOrmEntity,
       AlergiaOrmEntity,
       AlimentoOrmEntity,
-      AsistenteOrmEntity,
+      RecepcionistaOrmEntity,
       FichaSaludOrmEntity,
       FormacionAcademicaOrmEntity,
       GrupoAlimenticioOrmEntity,
@@ -64,6 +66,10 @@ import { PoliticaOperativaRepositoryImpl } from 'src/infrastructure/politicas/po
       useClass: NutricionistaRepositoryImplementation,
     },
     {
+      provide: RECEPCIONISTA_REPOSITORY,
+      useClass: RecepcionistaRepositoryImplementation,
+    },
+    {
       provide: POLITICA_OPERATIVA_REPOSITORY,
       useClass: PoliticaOperativaRepositoryImpl,
     },
@@ -72,6 +78,7 @@ import { PoliticaOperativaRepositoryImpl } from 'src/infrastructure/politicas/po
     USUARIO_REPOSITORY,
     SOCIO_REPOSITORY,
     NUTRICIONISTA_REPOSITORY,
+    RECEPCIONISTA_REPOSITORY,
     POLITICA_OPERATIVA_REPOSITORY,
   ],
 })

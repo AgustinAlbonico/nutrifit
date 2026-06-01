@@ -1,5 +1,6 @@
 import { NutricionistaEntity } from 'src/domain/entities/Persona/Nutricionista/nutricionista.entity';
-export declare class FormacionAcademicaOrmEntity {
+import { AuditableOrmEntity } from "../common/auditable.orm-entity";
+export declare class FormacionAcademicaOrmEntity extends AuditableOrmEntity {
     idFormacionAcademica: number;
     titulo: string;
     institucion: string;

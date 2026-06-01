@@ -1,6 +1,7 @@
 import { EstadoObjetivo, TipoMetrica } from 'src/domain/entities/Objetivo/objetivo.entity';
 import { SocioOrmEntity } from './persona.entity';
-export declare class ObjetivoOrmEntity {
+import { AuditableOrmEntity } from "../common/auditable.orm-entity";
+export declare class ObjetivoOrmEntity extends AuditableOrmEntity {
     idObjetivo: number;
     socioId: number;
     tipoMetrica: TipoMetrica;

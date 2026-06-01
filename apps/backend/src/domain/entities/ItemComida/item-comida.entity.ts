@@ -1,4 +1,5 @@
 import { UnidadMedida } from '../Alimento/UnidadMedida';
+import { AuditableEntity } from '../../shared/auditable.entity';
 
 export interface ItemComidaEntityProps {
   idItemComida: number | null;
@@ -14,7 +15,7 @@ export interface ItemComidaEntityProps {
   grasas: number | null;
 }
 
-export class ItemComidaEntity {
+export class ItemComidaEntity extends AuditableEntity {
   idItemComida: number | null;
   opcionComidaId: number | null;
   alimentoId: number;
@@ -27,7 +28,8 @@ export class ItemComidaEntity {
   carbohidratos: number | null;
   grasas: number | null;
 
-  constructor(props: ItemComidaEntityProps) {
+  constructor(props: ItemComidaEntityProps, fechaBaja: Date | null = null) {
+    super(fechaBaja);
     this.idItemComida = props.idItemComida;
     this.opcionComidaId = props.opcionComidaId;
     this.alimentoId = props.alimentoId;

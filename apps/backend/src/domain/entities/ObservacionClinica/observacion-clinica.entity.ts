@@ -1,4 +1,6 @@
-export class ObservacionClinicaEntity {
+import { AuditableEntity } from '../../shared/auditable.entity';
+
+export class ObservacionClinicaEntity extends AuditableEntity {
   idObservacion: number | null;
   comentario: string;
   peso: number;
@@ -19,7 +21,9 @@ export class ObservacionClinicaEntity {
     sugerencias: string | null = null,
     habitosSocio: string | null = null,
     circunferenciaCintura: number,
+    fechaBaja: Date | null = null,
   ) {
+    super(fechaBaja);
     this.idObservacion = idObservacion;
     this.comentario = comentario;
     this.peso = peso;

@@ -1,5 +1,6 @@
-export declare class GrupoAlimenticio {
+import { AuditableEntity } from "../../shared/auditable.entity";
+export declare class GrupoAlimenticio extends AuditableEntity {
     idGrupoAlimenticio: number | null;
     descripcion: string;
-    constructor(idGrupoAlimenticio: number | null | undefined, descripcion: string);
+    constructor(idGrupoAlimenticio: number | null | undefined, descripcion: string, fechaBaja?: Date | null);
 }

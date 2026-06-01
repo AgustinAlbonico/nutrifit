@@ -1,7 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UsuarioEntity = void 0;
-class UsuarioEntity {
+const auditable_entity_1 = require("../../shared/auditable.entity");
+class UsuarioEntity extends auditable_entity_1.AuditableEntity {
     idUsuario;
     email;
     contraseña;
@@ -10,7 +11,8 @@ class UsuarioEntity {
     rol;
     grupos;
     acciones;
-    constructor(idUsuario = null, email, contraseña, persona = null, rol, grupos = [], acciones = []) {
+    constructor(idUsuario = null, email, contraseña, persona = null, rol, grupos = [], acciones = [], fechaBaja = null) {
+        super(fechaBaja);
         this.idUsuario = idUsuario;
         this.email = email;
         this.contraseña = contraseña;

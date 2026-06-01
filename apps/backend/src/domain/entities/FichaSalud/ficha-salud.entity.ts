@@ -3,8 +3,9 @@ import { NivelActividadFisica } from './NivelActividadFisica';
 import { FrecuenciaComidas } from './FrecuenciaComidas';
 import { ConsumoAlcohol } from './ConsumoAlcohol';
 import { PatologiaEntity } from './patologia.entity';
+import { AuditableEntity } from '../../shared/auditable.entity';
 
-export class FichaSaludEntity {
+export class FichaSaludEntity extends AuditableEntity {
   idFichaSalud: number | null;
   fechaCreacion: Date;
   nivelActividadFisica: NivelActividadFisica;
@@ -52,7 +53,9 @@ export class FichaSaludEntity {
     horasSueno: number | null = null,
     contactoEmergenciaNombre: string | null = null,
     contactoEmergenciaTelefono: string | null = null,
+    fechaBaja: Date | null = null,
   ) {
+    super(fechaBaja);
     this.idFichaSalud = idFichaSalud;
     this.fechaCreacion = fechaCreacion;
     this.nivelActividadFisica = nivelActividadFisica;

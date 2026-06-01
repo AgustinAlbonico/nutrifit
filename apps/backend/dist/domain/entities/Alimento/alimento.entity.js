@@ -1,7 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Alimento = void 0;
-class Alimento {
+const auditable_entity_1 = require("../../shared/auditable.entity");
+class Alimento extends auditable_entity_1.AuditableEntity {
     idAlimento;
     nombre;
     cantidad;
@@ -12,7 +13,8 @@ class Alimento {
     carbohidratos;
     grasas;
     hidratosDeCarbono;
-    constructor(idAlimento = null, nombre, cantidad, unidadMedida, calorias = null, proteinas = null, carbohidratos = null, grasas = null, hidratosDeCarbono = null) {
+    constructor(idAlimento = null, nombre, cantidad, unidadMedida, calorias = null, proteinas = null, carbohidratos = null, grasas = null, hidratosDeCarbono = null, fechaBaja = null) {
+        super(fechaBaja);
         this.idAlimento = idAlimento;
         this.nombre = nombre;
         this.cantidad = cantidad;

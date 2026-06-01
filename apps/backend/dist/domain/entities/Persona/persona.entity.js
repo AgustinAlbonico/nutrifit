@@ -1,7 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PersonaEntity = void 0;
-class PersonaEntity {
+const auditable_entity_1 = require("../../shared/auditable.entity");
+class PersonaEntity extends auditable_entity_1.AuditableEntity {
     idPersona;
     nombre;
     apellido;
@@ -13,9 +14,10 @@ class PersonaEntity {
     provincia;
     dni;
     email;
-    fechaBaja;
     fotoPerfilKey;
-    constructor(idPersona = null, nombre, apellido, fechaNacimiento, telefono, genero, direccion, ciudad, provincia, dni, email = '', fotoPerfilKey = null) {
+    gimnasioId;
+    constructor(idPersona = null, nombre, apellido, fechaNacimiento, telefono, genero, direccion, ciudad, provincia, dni, email = '', fotoPerfilKey = null, gimnasioId = 1, fechaBaja = null) {
+        super(fechaBaja);
         this.idPersona = idPersona;
         this.nombre = nombre;
         this.apellido = apellido;
@@ -27,8 +29,8 @@ class PersonaEntity {
         this.provincia = provincia;
         this.dni = dni;
         this.email = email;
-        this.fechaBaja = null;
         this.fotoPerfilKey = fotoPerfilKey;
+        this.gimnasioId = gimnasioId;
     }
 }
 exports.PersonaEntity = PersonaEntity;

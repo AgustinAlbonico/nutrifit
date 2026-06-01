@@ -1,7 +1,8 @@
 import { ObservacionClinicaEntity } from '../ObservacionClinica/observacion-clinica.entity';
 import { EstadoTurno } from './EstadoTurno';
+import { AuditableEntity } from '../../shared/auditable.entity';
 
-export class TurnoEntity {
+export class TurnoEntity extends AuditableEntity {
   idTurno: number | null;
   fechaTurno: Date;
   horaTurno: string;
@@ -28,7 +29,9 @@ export class TurnoEntity {
     motivoCancelacion: string | null = null,
     fechaOriginal: Date | null = null,
     gimnasioId: number | null = null,
+    fechaBaja: Date | null = null,
   ) {
+    super(fechaBaja);
     this.idTurno = idTurno;
     this.fechaTurno = fechaTurno;
     this.horaTurno = horaTurno;

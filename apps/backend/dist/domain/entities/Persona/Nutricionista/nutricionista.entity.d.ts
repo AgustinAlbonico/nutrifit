@@ -10,7 +10,6 @@ export declare class NutricionistaEntity extends PersonaEntity {
     agendas: AgendaEntity[];
     formacionAcademica: FormacionAcademicaEntity[];
     turnos: TurnoEntity[];
-    fechaBaja: Date | null;
     fotoPerfilKey: string | null;
     constructor(idPersona: number | null | undefined, nombre: string, apellido: string, fechaNacimiento: Date, telefono: string, genero: Genero, direccion: string, ciudad: string, provincia: string, dni: string, experiencia: number, tarifaSesion: number, agendas?: AgendaEntity[], formacionAcademica?: FormacionAcademicaEntity[], turnos?: TurnoEntity[], fechaBaja?: Date | null, email?: string);
 }

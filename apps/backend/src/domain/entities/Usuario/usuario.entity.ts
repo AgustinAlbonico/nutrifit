@@ -2,8 +2,9 @@ import { PersonaEntity } from '../Persona/persona.entity';
 import { Rol } from './Rol';
 import { GrupoPermisoEntity } from './grupo-permiso.entity';
 import { AccionPermisoEntity } from './accion-permiso.entity';
+import { AuditableEntity } from '../../shared/auditable.entity';
 
-export class UsuarioEntity {
+export class UsuarioEntity extends AuditableEntity {
   idUsuario: number | null;
   email: string;
   contraseña: string;
@@ -21,7 +22,9 @@ export class UsuarioEntity {
     rol: Rol,
     grupos: GrupoPermisoEntity[] = [],
     acciones: AccionPermisoEntity[] = [],
+    fechaBaja: Date | null = null,
   ) {
+    super(fechaBaja);
     this.idUsuario = idUsuario;
     this.email = email;
     this.contraseña = contraseña;

@@ -12,7 +12,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ObjetivoOrmEntity = void 0;
 const typeorm_1 = require("typeorm");
 const persona_entity_1 = require("./persona.entity");
-let ObjetivoOrmEntity = class ObjetivoOrmEntity {
+const auditable_orm_entity_1 = require("../common/auditable.orm-entity");
+let ObjetivoOrmEntity = class ObjetivoOrmEntity extends auditable_orm_entity_1.AuditableOrmEntity {
     idObjetivo;
     socioId;
     tipoMetrica;

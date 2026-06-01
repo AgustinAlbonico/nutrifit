@@ -13,6 +13,7 @@ const auth_module_1 = require("./auth/auth.module");
 const socios_module_1 = require("./socios/socios.module");
 const permisos_module_1 = require("./permisos/permisos.module");
 const profesionales_module_1 = require("./profesionales/profesionales.module");
+const recepcionistas_module_1 = require("./recepcionistas/recepcionistas.module");
 const agenda_module_1 = require("./agenda/agenda.module");
 const turnos_module_1 = require("./turnos/turnos.module");
 const planes_alimentacion_module_1 = require("./planes-alimentacion/planes-alimentacion.module");
@@ -29,6 +30,7 @@ exports.ApplicationModule = ApplicationModule = __decorate([
             schedule_1.ScheduleModule.forRoot(),
             permisos_module_1.PermisosModule,
             profesionales_module_1.ProfesionalesModule,
+            recepcionistas_module_1.RecepcionistasModule,
             agenda_module_1.AgendaModule,
             turnos_module_1.TurnosModule,
             planes_alimentacion_module_1.PlanesAlimentacionModule,
@@ -40,6 +42,7 @@ exports.ApplicationModule = ApplicationModule = __decorate([
             socios_module_1.SociosModule,
             permisos_module_1.PermisosModule,
             profesionales_module_1.ProfesionalesModule,
+            recepcionistas_module_1.RecepcionistasModule,
             agenda_module_1.AgendaModule,
             turnos_module_1.TurnosModule,
             planes_alimentacion_module_1.PlanesAlimentacionModule,

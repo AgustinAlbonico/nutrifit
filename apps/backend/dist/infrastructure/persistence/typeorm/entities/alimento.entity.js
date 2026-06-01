@@ -13,7 +13,8 @@ exports.AlimentoOrmEntity = void 0;
 const typeorm_1 = require("typeorm");
 const UnidadMedida_1 = require("../../../../domain/entities/Alimento/UnidadMedida");
 const grupo_alimenticio_entity_1 = require("./grupo-alimenticio.entity");
-let AlimentoOrmEntity = class AlimentoOrmEntity {
+const auditable_orm_entity_1 = require("../common/auditable.orm-entity");
+let AlimentoOrmEntity = class AlimentoOrmEntity extends auditable_orm_entity_1.AuditableOrmEntity {
     idAlimento;
     nombre;
     cantidad;

@@ -8,9 +8,10 @@ import {
 import { UnidadMedida } from 'src/domain/entities/Alimento/UnidadMedida';
 import { OpcionComidaOrmEntity } from './opcion-comida.entity';
 import { AlimentoOrmEntity } from './alimento.entity';
+import { AuditableOrmEntity } from '../common/auditable.orm-entity';
 
 @Entity('item_comida')
-export class ItemComidaOrmEntity {
+export class ItemComidaOrmEntity extends AuditableOrmEntity {
   @PrimaryGeneratedColumn({ name: 'id_item_comida' })
   idItemComida: number;
 

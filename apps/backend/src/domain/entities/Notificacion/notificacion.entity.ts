@@ -1,8 +1,9 @@
 import { EstadoNotificacion } from './estado-notificacion.enum';
 import { TipoNotificacion } from './tipo-notificacion.enum';
 import type { NotificacionMetaData } from './notificacion-metadata.interface';
+import { AuditableEntity } from '../../shared/auditable.entity';
 
-export class NotificacionEntity {
+export class NotificacionEntity extends AuditableEntity {
   constructor(
     public readonly id: number,
     public readonly destinatarioId: number,
@@ -14,5 +15,8 @@ export class NotificacionEntity {
     public leidaEn: Date | null,
     public readonly createdAt: Date,
     public readonly updatedAt: Date,
-  ) {}
+    fechaBaja: Date | null = null,
+  ) {
+    super(fechaBaja);
+  }
 }

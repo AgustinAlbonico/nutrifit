@@ -16,7 +16,8 @@ const ConsumoAlcohol_1 = require("../../../../domain/entities/FichaSalud/Consumo
 const typeorm_1 = require("typeorm");
 const persona_entity_1 = require("./persona.entity");
 const socio_entity_1 = require("../../../../domain/entities/Persona/Socio/socio.entity");
-let FichaSaludOrmEntity = class FichaSaludOrmEntity {
+const auditable_orm_entity_1 = require("../common/auditable.orm-entity");
+let FichaSaludOrmEntity = class FichaSaludOrmEntity extends auditable_orm_entity_1.AuditableOrmEntity {
     idFichaSalud;
     altura;
     peso;
@@ -222,7 +223,7 @@ __decorate([
 exports.FichaSaludOrmEntity = FichaSaludOrmEntity = __decorate([
     (0, typeorm_1.Entity)('ficha_salud')
 ], FichaSaludOrmEntity);
-let PatologiaOrmEntity = class PatologiaOrmEntity {
+let PatologiaOrmEntity = class PatologiaOrmEntity extends auditable_orm_entity_1.AuditableOrmEntity {
     idPatologia;
     nombre;
 };
@@ -238,7 +239,7 @@ __decorate([
 exports.PatologiaOrmEntity = PatologiaOrmEntity = __decorate([
     (0, typeorm_1.Entity)('patologia')
 ], PatologiaOrmEntity);
-let AlergiaOrmEntity = class AlergiaOrmEntity {
+let AlergiaOrmEntity = class AlergiaOrmEntity extends auditable_orm_entity_1.AuditableOrmEntity {
     idAlergia;
     nombre;
 };

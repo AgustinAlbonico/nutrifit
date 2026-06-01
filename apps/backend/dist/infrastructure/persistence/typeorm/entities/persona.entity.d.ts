@@ -10,7 +10,8 @@ import { PlanAlimentacionEntity } from 'src/domain/entities/PlanAlimentacion/pla
 import { UsuarioOrmEntity } from './usuario.entity';
 import { TurnoOrmEntity } from './turno.entity';
 import { TurnoEntity } from 'src/domain/entities/Turno/turno.entity';
-export declare abstract class PersonaOrmEntity {
+import { AuditableOrmEntity } from "../common/auditable.orm-entity";
+export declare abstract class PersonaOrmEntity extends AuditableOrmEntity {
     idPersona: number | null;
     nombre: string;
     apellido: string;
@@ -27,18 +28,16 @@ export declare abstract class PersonaOrmEntity {
 }
 export declare class SocioOrmEntity extends PersonaOrmEntity {
     fechaAlta: Date;
-    fechaBaja: Date | null;
     fichaSalud: FichaSaludOrmEntity | FichaSaludEntity | null;
     planesAlimentacion: PlanAlimentacionOrmEntity[] | PlanAlimentacionEntity[];
     turnos: TurnoOrmEntity[] | TurnoEntity[];
 }
-export declare class AsistenteOrmEntity extends PersonaOrmEntity {
+export declare class RecepcionistaOrmEntity extends PersonaOrmEntity {
 }
 export declare class NutricionistaOrmEntity extends PersonaOrmEntity {
     matricula: string;
     añosExperiencia: number;
     tarifaSesion: number;
-    fechaBaja: Date | null;
     agenda?: AgendaOrmEntity[] | AgendaEntity[];
     formacionAcademica: FormacionAcademicaOrmEntity[] | FormacionAcademicaEntity[];
     planesAlimentacion: PlanAlimentacionOrmEntity[] | PlanAlimentacionEntity[] | null;
@@ -46,6 +45,5 @@ export declare class NutricionistaOrmEntity extends PersonaOrmEntity {
 }
 export declare class EntrenadorOrmEntity extends PersonaOrmEntity {
     especialidad: string;
-    fechaBaja: Date | null;
     turnos: TurnoOrmEntity[] | TurnoEntity[];
 }
