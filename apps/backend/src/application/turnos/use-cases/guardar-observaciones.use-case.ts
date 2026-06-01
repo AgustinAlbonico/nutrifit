@@ -6,6 +6,7 @@ import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/
 import { ObservacionClinicaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/observacion-clinica.entity';
 import { BadRequestError } from 'src/domain/exceptions/custom-exceptions';
 import { GuardarObservacionesDto } from '../dtos/guardar-observaciones.dto';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 export type GuardarObservacionesInput = GuardarObservacionesDto;
 
@@ -16,6 +17,7 @@ export class GuardarObservacionesUseCase {
     private readonly turnoRepository: Repository<TurnoOrmEntity>,
     @InjectRepository(ObservacionClinicaOrmEntity)
     private readonly observacionRepository: Repository<ObservacionClinicaOrmEntity>,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(
@@ -23,7 +25,10 @@ export class GuardarObservacionesUseCase {
     dto: GuardarObservacionesDto,
   ): Promise<{ success: boolean }> {
     const turno = await this.turnoRepository.findOne({
-      where: { idTurno: turnoId },
+      where: { 
+        idTurno: turnoId,
+        socio: { gimnasioId: this.tenantContext.gimnasioId },
+      },
       relations: ['observacionClinica'],
     });
 
