@@ -48,7 +48,9 @@ export class ActionsGuard implements CanActivate {
       throw new ForbiddenException('No autorizado');
     }
 
-    if (request.user.rol === Rol.ADMIN || request.user.rol === Rol.SUPERADMIN) {
+    // SUPERADMIN bypassea todo (es el "dueño del sistema").
+    // ADMIN, NUTRICIONISTA, RECEPCIONISTA, SOCIO deben tener permisos explícitos.
+    if (request.user.rol === Rol.SUPERADMIN) {
       return true;
     }
 
