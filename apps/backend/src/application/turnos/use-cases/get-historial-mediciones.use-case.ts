@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { MedicionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/medicion.entity';
 import { SocioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/persona.entity';
 import { NotFoundError } from 'src/domain/exceptions/custom-exceptions';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 export interface MedicionHistorial {
   idMedicion: number;
@@ -47,6 +48,7 @@ export class GetHistorialMedicionesUseCase {
     private readonly medicionRepository: Repository<MedicionOrmEntity>,
     @InjectRepository(SocioOrmEntity)
     private readonly socioRepository: Repository<SocioOrmEntity>,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(socioId: number): Promise<HistorialMedicionesResponse> {
@@ -67,6 +69,9 @@ export class GetHistorialMedicionesUseCase {
       .innerJoinAndSelect('turno.nutricionista', 'nutricionista')
       .innerJoin('turno.socio', 'socio')
       .where('socio.idPersona = :socioId', { socioId })
+      .andWhere('nutricionista.gimnasioId = :gimnasioId', {
+        gimnasioId: this.tenantContext.gimnasioId,
+      })
       .orderBy('medicion.createdAt', 'DESC')
       .getMany();
 
