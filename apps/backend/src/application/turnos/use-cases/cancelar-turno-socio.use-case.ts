@@ -36,6 +36,7 @@ import { NotificacionesService } from 'src/application/notificaciones/notificaci
 import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
 import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
 import { AccionAuditoria } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 @Injectable()
 export class CancelarTurnoSocioUseCase implements BaseUseCase {
@@ -54,6 +55,7 @@ export class CancelarTurnoSocioUseCase implements BaseUseCase {
     @Inject(POLITICA_OPERATIVA_REPOSITORY)
     private readonly politicaRepository: IPoliticaOperativaRepository,
     private readonly auditoriaService: AuditoriaService,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(
@@ -65,7 +67,10 @@ export class CancelarTurnoSocioUseCase implements BaseUseCase {
     const socio = userId ? await this.resolveSocioByUserId(userId) : null;
 
     const turno = await this.turnoRepository.findOne({
-      where: { idTurno: turnoId },
+      where: {
+        idTurno: turnoId,
+        socio: { gimnasioId: this.tenantContext.gimnasioId },
+      },
       relations: {
         socio: true,
         nutricionista: true,
