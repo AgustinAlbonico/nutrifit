@@ -25,7 +25,7 @@
     "clean": "npm run clean --workspaces --if-present && rimraf node_modules",
     "test:e2e": "playwright test",
     "db:migrate": "npm run migration:run --workspace=apps/backend",
-    "db:seed": "npm run seed --workspace=apps/backend"
+    "db:seed": "npm run seed:multi-tenant --workspace=apps/backend"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
