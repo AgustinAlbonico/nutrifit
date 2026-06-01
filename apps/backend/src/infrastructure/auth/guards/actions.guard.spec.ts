@@ -10,13 +10,14 @@ describe('ActionsGuard', () => {
   let guard: ActionsGuard;
   let permisosService: PermisosService;
 
-  const mockRequest = (user: any) => ({ user } as Request);
+  const mockRequest = (user: any) => ({ user }) as Request;
 
-  const createMockContext = (user: any): ExecutionContext => ({
-    switchToHttp: () => ({ getRequest: () => mockRequest(user) }),
-    getHandler: () => ({}),
-    getClass: () => ({}),
-  } as unknown as ExecutionContext);
+  const createMockContext = (user: any): ExecutionContext =>
+    ({
+      switchToHttp: () => ({ getRequest: () => mockRequest(user) }),
+      getHandler: () => ({}),
+      getClass: () => ({}),
+    }) as unknown as ExecutionContext;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -38,8 +39,14 @@ describe('ActionsGuard', () => {
   });
 
   it('debe bypassear SUPERADMIN sin chequear permisos', async () => {
-    jest.spyOn(guard['reflector'], 'getAllAndOverride').mockReturnValue(['gimnasios.crear']);
-    const superUser = { id: 1, email: 'super@nutrifit.com', rol: Rol.SUPERADMIN };
+    jest
+      .spyOn(guard['reflector'], 'getAllAndOverride')
+      .mockReturnValue(['gimnasios.crear']);
+    const superUser = {
+      id: 1,
+      email: 'super@nutrifit.com',
+      rol: Rol.SUPERADMIN,
+    };
 
     const result = await guard.canActivate(createMockContext(superUser));
 
@@ -48,7 +55,9 @@ describe('ActionsGuard', () => {
   });
 
   it('NO debe bypassear ADMIN - debe chequear permisos explicitos', async () => {
-    jest.spyOn(guard['reflector'], 'getAllAndOverride').mockReturnValue(['gimnasios.crear']);
+    jest
+      .spyOn(guard['reflector'], 'getAllAndOverride')
+      .mockReturnValue(['gimnasios.crear']);
     const adminUser = { id: 2, email: 'admin@nutrifit.com', rol: Rol.ADMIN };
 
     jest.spyOn(permisosService, 'hasAllActions').mockResolvedValue(false);
@@ -57,11 +66,15 @@ describe('ActionsGuard', () => {
       guard.canActivate(createMockContext(adminUser)),
     ).rejects.toThrow(ForbiddenException);
 
-    expect(permisosService.hasAllActions).toHaveBeenCalledWith(2, ['gimnasios.crear']);
+    expect(permisosService.hasAllActions).toHaveBeenCalledWith(2, [
+      'gimnasios.crear',
+    ]);
   });
 
   it('ADMIN con permisos explicitos debe pasar', async () => {
-    jest.spyOn(guard['reflector'], 'getAllAndOverride').mockReturnValue(['socios.ver']);
+    jest
+      .spyOn(guard['reflector'], 'getAllAndOverride')
+      .mockReturnValue(['socios.ver']);
     const adminUser = { id: 2, email: 'admin@nutrifit.com', rol: Rol.ADMIN };
 
     jest.spyOn(permisosService, 'hasAllActions').mockResolvedValue(true);

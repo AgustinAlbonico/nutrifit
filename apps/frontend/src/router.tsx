@@ -31,6 +31,9 @@ import { GestionPlanesPage } from '@/pages/GestionPlanesPage';
 import { GestionAlimentosPage } from '@/pages/GestionAlimentosPage';
 import { AdminAuditoriaPage } from '@/pages/AdminAuditoriaPage';
 import { NotificacionesPage } from '@/features/notificaciones/pages/NotificacionesPage';
+import { GimnasiosListPage } from '@/pages/admin/GimnasiosListPage';
+import { GimnasioWizardPage } from '@/pages/admin/GimnasioWizardPage';
+import { GimnasioDetailPage } from '@/pages/admin/GimnasioDetailPage';
 
 // Definir el tipo del context del router
 declare module '@tanstack/react-router' {
@@ -258,6 +261,25 @@ const notificacionesRoute = createRoute({
   component: NotificacionesPage,
 });
 
+// Gimnasios routes (solo SUPERADMIN)
+const gimnasiosListRoute = createRoute({
+  getParentRoute: () => authLayoutRoute,
+  path: '/admin/gimnasios',
+  component: GimnasiosListPage,
+});
+
+const gimnasioNuevoRoute = createRoute({
+  getParentRoute: () => authLayoutRoute,
+  path: '/admin/gimnasios/nuevo',
+  component: GimnasioWizardPage,
+});
+
+const gimnasioDetalleRoute = createRoute({
+  getParentRoute: () => authLayoutRoute,
+  path: '/admin/gimnasios/$id',
+  component: GimnasioDetailPage,
+});
+
 // Default redirect to dashboard or login
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -297,6 +319,9 @@ const routeTree = rootRoute.addChildren([
     alimentosRoute,
     auditoriaRoute,
     notificacionesRoute,
+    gimnasiosListRoute,
+    gimnasioNuevoRoute,
+    gimnasioDetalleRoute,
   ]),
 ]);
 

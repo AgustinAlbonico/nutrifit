@@ -9,7 +9,7 @@ interface RequestWithUser extends Request {
     id: number;
     email: string;
     rol: Rol;
-    gimnasioId: number;
+    gimnasioId: number | null;
     personaId: number | null;
     jti: string;
   };

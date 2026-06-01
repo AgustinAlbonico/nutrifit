@@ -247,9 +247,7 @@ describe('SUPERADMIN without persona', () => {
 
   it('debe emitir JWT con gimnasioId null para SUPERADMIN sin persona', async () => {
     jest.spyOn(userRepository, 'findByEmail').mockResolvedValue(mockSuperAdmin);
-    jest
-      .spyOn(passwordEncrypter, 'comparePasswords')
-      .mockResolvedValue(true);
+    jest.spyOn(passwordEncrypter, 'comparePasswords').mockResolvedValue(true);
 
     let capturedPayload: JwtPayload | null = null;
     jest.spyOn(jwtService, 'sign').mockImplementation((payload) => {
@@ -338,12 +336,8 @@ describe('LoginUseCase - non-SUPERADMIN without gimnasioId should fail', () => {
   });
 
   it('debe rechazar SOCIO con gimnasioId null (estado inconsistente)', async () => {
-    jest
-      .spyOn(userRepository, 'findByEmail')
-      .mockResolvedValue(mockUserNoGym);
-    jest
-      .spyOn(passwordEncrypter, 'comparePasswords')
-      .mockResolvedValue(true);
+    jest.spyOn(userRepository, 'findByEmail').mockResolvedValue(mockUserNoGym);
+    jest.spyOn(passwordEncrypter, 'comparePasswords').mockResolvedValue(true);
 
     await expect(
       useCase.execute({ email: 'nogym@test.com', contrasena: 'password' }),

@@ -50,6 +50,7 @@ import { GimnasioRepository } from 'src/infrastructure/persistence/typeorm/repos
 import { TenantContextInterceptor } from 'src/infrastructure/auth/tenant-context.interceptor';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { RepositoriesModule } from 'src/infrastructure/persistence/typeorm/repositories/repositories.module';
+import { GimnasiosModule } from './gimnasios.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { RepositoriesModule } from 'src/infrastructure/persistence/typeorm/repos
     AuditoriaModule,
     AdjuntoClinicoModule,
     ProgresoModule,
+    GimnasiosModule,
     TypeOrmModule.forFeature([
       TurnoOrmEntity,
       PlanAlimentacionOrmEntity,
@@ -87,7 +89,6 @@ import { RepositoriesModule } from 'src/infrastructure/persistence/typeorm/repos
     EliminarAlimentoUseCase,
     BuscarSociosConFichaUseCase,
     NotificacionesService,
-    GimnasioRepository,
     {
       provide: APP_INTERCEPTOR,
       useClass: TenantContextInterceptor,

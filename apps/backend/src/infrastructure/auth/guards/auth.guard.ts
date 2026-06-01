@@ -8,7 +8,11 @@ import {
 } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { IJwtService, JWT_SERVICE, JwtPayload } from 'src/domain/services/jwt.service';
+import {
+  IJwtService,
+  JWT_SERVICE,
+  JwtPayload,
+} from 'src/domain/services/jwt.service';
 import { Rol } from 'src/domain/entities/Usuario/Rol';
 import { Request } from 'express';
 

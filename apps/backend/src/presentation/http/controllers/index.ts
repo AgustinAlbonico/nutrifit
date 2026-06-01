@@ -12,5 +12,6 @@ export * from './notificaciones.controller';
 export * from './admin/admin-estadisticas.controller';
 export * from './admin/admin-reportes.controller';
 export * from './admin/configuracion.controller';
+export * from './gimnasios.controller';
 
 export * from './ai.controller';

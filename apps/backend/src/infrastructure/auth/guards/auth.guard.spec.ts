@@ -204,27 +204,35 @@ describe('JwtAuthGuard', () => {
     });
 
     it('should allow SUPERADMIN with null gimnasioId (cross-tenant admin)', () => {
-      jest.spyOn(guard['reflector'], 'getAllAndOverride').mockReturnValue(false);
+      jest
+        .spyOn(guard['reflector'], 'getAllAndOverride')
+        .mockReturnValue(false);
 
       const superadminPayload = {
         id: 1,
         email: 'superadmin@nutrifit.com',
         rol: 'SUPERADMIN' as Rol,
-        personaId: null,  // SUPERADMIN no tiene persona
-        gimnasioId: null,  // explícitamente null
+        personaId: null, // SUPERADMIN no tiene persona
+        gimnasioId: null, // explícitamente null
         jti: 'jti-super',
       };
 
-      jest.spyOn(jwtService, 'verify').mockReturnValue(superadminPayload as any);
+      jest
+        .spyOn(jwtService, 'verify')
+        .mockReturnValue(superadminPayload as any);
 
-      const result = guard.canActivate(createMockContext('Bearer superadmin-token'));
+      const result = guard.canActivate(
+        createMockContext('Bearer superadmin-token'),
+      );
 
       expect(result).toBe(true);
       expect((mockRequest as any).user).toEqual(superadminPayload);
     });
 
     it('should still reject SOCIO with null gimnasioId', () => {
-      jest.spyOn(guard['reflector'], 'getAllAndOverride').mockReturnValue(false);
+      jest
+        .spyOn(guard['reflector'], 'getAllAndOverride')
+        .mockReturnValue(false);
 
       const socioPayload = {
         id: 2,
@@ -240,7 +248,9 @@ describe('JwtAuthGuard', () => {
       const context = createMockContext('Bearer socio-tenantless-token');
 
       expect(() => guard.canActivate(context)).toThrow(UnauthorizedException);
-      expect(() => guard.canActivate(context)).toThrow('Token sin contexto de tenant');
+      expect(() => guard.canActivate(context)).toThrow(
+        'Token sin contexto de tenant',
+      );
     });
   });
 });

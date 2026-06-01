@@ -16,6 +16,7 @@ import {
   ChevronRight,
   Shield,
   Bell,
+  Building2,
 } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -128,6 +129,12 @@ export function Sidebar() {
       label: 'Auditoría',
       icon: Shield,
       roles: ['ADMIN'],
+    },
+    {
+      to: '/admin/gimnasios',
+      label: 'Gimnasios',
+      icon: Building2,
+      roles: ['SUPERADMIN'],
     },
     {
       to: '/recepcion/turnos',
