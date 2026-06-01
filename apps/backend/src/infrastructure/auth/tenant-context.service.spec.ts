@@ -13,6 +13,7 @@ describe('TenantContextService', () => {
       gimnasioId: 5,
       personaId: 10,
       jti: 'jti-abc-123',
+      impersonatedBy: null,
     };
     const service = new TenantContextService(mockRequest(user));
 
@@ -40,6 +41,10 @@ describe('TenantContextService', () => {
       expect(service.rol).toBe('SOCIO');
     });
 
+    it('should return null for impersonatedBy', () => {
+      expect(service.impersonatedBy).toBeNull();
+    });
+
     it('should serialize to correct JSON', () => {
       const json = service.toJSON();
       expect(json.gimnasioId).toBe(5);
@@ -47,6 +52,7 @@ describe('TenantContextService', () => {
       expect(json.usuarioId).toBe(1);
       expect(json.jti).toBe('jti-abc-123');
       expect(json.rol).toBe('SOCIO');
+      expect(json.impersonatedBy).toBeNull();
     });
   });
 
@@ -78,6 +84,30 @@ describe('TenantContextService', () => {
     it('should return null for rol', () => {
       expect(service.rol).toBeNull();
     });
+
+    it('should return null for impersonatedBy', () => {
+      expect(service.impersonatedBy).toBeNull();
+    });
+  });
+
+  describe('impersonatedBy', () => {
+    it('should default to null when not set', () => {
+      const service = new TenantContextService(mockRequest(undefined));
+      expect(service.impersonatedBy).toBeNull();
+    });
+
+    it('should read impersonatedBy from request user', () => {
+      const user = {
+        id: 1,
+        email: 'super@nutrifit.com',
+        rol: 'SUPERADMIN' as Rol,
+        gimnasioId: 3,
+        impersonatedBy: 1,
+        jti: 'jti-imp',
+      };
+      const service = new TenantContextService(mockRequest(user));
+      expect(service.impersonatedBy).toBe(1);
+    });
   });
 
   describe('when initialized with user missing optional fields', () => {
@@ -104,6 +134,7 @@ describe('TenantContextService', () => {
         gimnasioId: 8,
         personaId: 20,
         jti: 'jti-xyz',
+        impersonatedBy: 5,
       };
 
       service.setFromPayload(payload as any);
@@ -114,6 +145,7 @@ describe('TenantContextService', () => {
       expect(service.usuarioId).toBe(2);
       expect(service.jti).toBe('jti-xyz');
       expect(service.rol).toBe('NUTRICIONISTA');
+      expect(service.impersonatedBy).toBe(5);
     });
 
     it('should handle null values in payload', () => {
@@ -131,6 +163,7 @@ describe('TenantContextService', () => {
 
       expect(service.isInitialized).toBe(false);
       expect(service.personaId).toBeNull();
+      expect(service.impersonatedBy).toBeNull();
     });
   });
 });

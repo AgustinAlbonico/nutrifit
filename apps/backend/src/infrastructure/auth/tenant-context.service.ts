@@ -4,11 +4,12 @@ import { Request } from 'express';
 import { JwtPayload } from 'src/domain/services/jwt.service';
 
 export interface TenantContext {
-  gimnasioId: number;
+  gimnasioId: number | null; // null for SUPERADMIN
   personaId: number | null;
   usuarioId: number;
   jti: string;
   rol: string;
+  impersonatedBy: number | null;
 }
 
 export const TENANT_CONTEXT = Symbol('ITenantContext');
@@ -20,6 +21,7 @@ export class TenantContextService {
   private _usuarioId: number | null = null;
   private _jti: string | null = null;
   private _rol: string | null = null;
+  private _impersonatedBy: number | null = null;
 
   constructor(@Inject(REQUEST) @Optional() private readonly request?: Request) {
     if (request?.user) {
@@ -29,6 +31,7 @@ export class TenantContextService {
       this._usuarioId = user.id ?? null;
       this._jti = user.jti ?? null;
       this._rol = user.rol ?? null;
+      this._impersonatedBy = user.impersonatedBy ?? null;
     }
   }
 
@@ -60,6 +63,10 @@ export class TenantContextService {
     return this._rol;
   }
 
+  get impersonatedBy(): number | null {
+    return this._impersonatedBy;
+  }
+
   get isInitialized(): boolean {
     return this._gimnasioId !== null;
   }
@@ -70,6 +77,7 @@ export class TenantContextService {
     this._usuarioId = payload.id ?? null;
     this._jti = payload.jti ?? null;
     this._rol = payload.rol ?? null;
+    this._impersonatedBy = payload.impersonatedBy ?? null;
   }
 
   toJSON(): TenantContext {
@@ -79,6 +87,7 @@ export class TenantContextService {
       usuarioId: this.usuarioId,
       jti: this.jti ?? '',
       rol: this.rol ?? '',
+      impersonatedBy: this.impersonatedBy,
     };
   }
 }
