@@ -59,17 +59,21 @@ export class LoginUseCase implements BaseUseCase {
       throw new UnauthorizedError('La cuenta está inactiva');
     }
 
-    // Extraer gimnasioId desde la persona asociada (tenant isolation)
-    // Si la persona no tiene gimnasio asignado, es un estado inválido que no debería
-    // permitirse en producción — el fallback a 1 solo aplica para datos legacy/malos
-    let gimnasioId: number;
-    if (persona?.gimnasioId !== undefined && persona.gimnasioId !== null) {
-      gimnasioId = persona.gimnasioId;
+    // Extraer gimnasioId según el rol:
+    // - SUPERADMIN sin persona: null (operar cross-tenant)
+    // - Cualquier otro rol: requerido, sino error (estado inconsistente)
+    let gimnasioId: number | null;
+
+    if (user.rol === Rol.SUPERADMIN) {
+      gimnasioId = persona?.gimnasioId ?? null;
     } else {
-      this.loggerService.warn(
-        `LoginUseCase: Usuario ${email} tiene persona sin gimnasioId, usando fallback a 1 (legacy data)`,
-      );
-      gimnasioId = 1;
+      if (persona?.gimnasioId === undefined || persona?.gimnasioId === null) {
+        this.loggerService.error(
+          `LoginUseCase: Usuario ${email} (rol ${user.rol}) no tiene gimnasioId — estado inconsistente`,
+        );
+        throw new UnauthorizedError('La cuenta no tiene gimnasio asignado');
+      }
+      gimnasioId = persona.gimnasioId;
     }
     const personaId = persona?.idPersona ?? null;
     const jti = randomUUID();
