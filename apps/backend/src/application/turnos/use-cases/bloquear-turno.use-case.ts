@@ -27,6 +27,7 @@ import {
   TurnoOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
 import { Not, Repository } from 'typeorm';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 @Injectable()
 export class BloquearTurnoUseCase implements BaseUseCase {
@@ -39,6 +40,7 @@ export class BloquearTurnoUseCase implements BaseUseCase {
     private readonly turnoRepository: Repository<TurnoOrmEntity>,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(
@@ -67,7 +69,7 @@ export class BloquearTurnoUseCase implements BaseUseCase {
     // 2. Verificar si ya existe un turno en ese horario (activo o bloqueado)
     const existingTurno = await this.turnoRepository.findOne({
       where: {
-        nutricionista: { idPersona: nutricionistaId },
+        nutricionista: { idPersona: nutricionistaId, gimnasioId: this.tenantContext.gimnasioId },
         fechaTurno,
         horaTurno,
         estadoTurno: Not(EstadoTurno.CANCELADO),
@@ -114,7 +116,7 @@ export class BloquearTurnoUseCase implements BaseUseCase {
 
     const agendaDelDia = await this.agendaRepository.find({
       where: {
-        nutricionista: { idPersona: nutricionistaId },
+        nutricionista: { idPersona: nutricionistaId, gimnasioId: this.tenantContext.gimnasioId },
         dia: diaSemana,
       },
       order: { horaInicio: 'ASC' },
