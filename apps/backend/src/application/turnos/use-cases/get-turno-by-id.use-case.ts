@@ -20,6 +20,7 @@ import {
   FichaSaludOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
 import { Repository } from 'typeorm';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 @Injectable()
 export class GetTurnoByIdUseCase implements BaseUseCase {
@@ -31,6 +32,7 @@ export class GetTurnoByIdUseCase implements BaseUseCase {
     private readonly nutricionistaRepository: Repository<NutricionistaOrmEntity>,
     @InjectRepository(FichaSaludOrmEntity)
     private readonly fichaSaludRepository: Repository<FichaSaludOrmEntity>,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(
@@ -39,7 +41,10 @@ export class GetTurnoByIdUseCase implements BaseUseCase {
   ): Promise<DatosTurnoResponseDto> {
     // 1. Buscar el turno con todas las relaciones necesarias
     const turno = await this.turnoRepository.findOne({
-      where: { idTurno: turnoId },
+      where: {
+        idTurno: turnoId,
+        nutricionista: { gimnasioId: this.tenantContext.gimnasioId },
+      },
       relations: ['socio', 'nutricionista', 'observacionClinica'],
     });
 
