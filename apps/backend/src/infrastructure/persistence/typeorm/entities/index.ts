@@ -23,3 +23,4 @@ export * from './recordatorio-enviado.entity';
 export * from './turno-confirmacion-token.entity';
 export * from './usuario.entity';
 export * from './gimnasio.entity';
+export * from './usuario-grupo-permiso.entity';

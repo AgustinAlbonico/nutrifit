@@ -7,6 +7,19 @@ import * as bcrypt from 'bcrypt';
 
 dotenv.config({ path: '.env' });
 
+// Importar grupos de permisos data
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const gruposPermisosData = require('./seed/data/grupos-permisos.data') as {
+  GRUPOS_PERMISOS: Record<string, { clave: string; nombre: string; descripcion: string; acciones: string[] }>;
+  getGrupoBasePorRol: (rol: string) => { clave: string; nombre: string; descripcion: string; acciones: string[] } | undefined;
+};
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const shared = require('@nutrifit/shared') as { TODAS_LAS_ACCIONES: string[] };
+
+const GRUPOS_PERMISOS = gruposPermisosData.GRUPOS_PERMISOS;
+const getGrupoBasePorRol = gruposPermisosData.getGrupoBasePorRol;
+const TODAS_LAS_ACCIONES = shared.TODAS_LAS_ACCIONES;
+
 interface GimnasioData {
   nombre: string;
   direccion: string;
@@ -137,7 +150,7 @@ async function runSeedMultiTenant() {
 
   try {
     await dataSource.initialize();
-    console.log('Conexión a base de datos establecida');
+    console.log('Conexion a base de datos establecida');
 
     const crearGimnasios = async (): Promise<Map<string, number>> => {
       const gimnasioIds = new Map<string, number>();
@@ -146,7 +159,7 @@ async function runSeedMultiTenant() {
         const resultado: unknown = await dataSource.query(
           `INSERT INTO gimnasio (nombre, direccion, telefono, email, activo, fecha_creacion)
            VALUES (?, ?, ?, ?, TRUE, NOW())
-           ON DUPLICATE KEY UPDATE id_gimnasio = LAST_INSERT_ID(id_gimnasio)`,
+           ON DUPLICATE_KEY UPDATE id_gimnasio = LAST_INSERT_ID(id_gimnasio)`,
           [gimnasio.nombre, gimnasio.direccion, gimnasio.telefono, gimnasio.email],
         );
 
@@ -160,6 +173,106 @@ async function runSeedMultiTenant() {
     };
 
     const gimnasioIds = await crearGimnasios();
+
+    // Insertar acciones desde el enum ACCIONES
+    const insertarAcciones = async (): Promise<Map<string, number>> => {
+      const accionIds = new Map<string, number>();
+
+      for (const claveAccion of TODAS_LAS_ACCIONES) {
+        const nombreAccion = claveAccion.split('.')[1]?.replace(/-/g, ' ') || claveAccion;
+        const resultado: unknown = await dataSource.query(
+          `INSERT INTO accion (clave, nombre, descripcion)
+           VALUES (?, ?, ?)
+           ON DUPLICATE KEY UPDATE id_accion = LAST_INSERT_ID(id_accion)`,
+          [claveAccion, nombreAccion.charAt(0).toUpperCase() + nombreAccion.slice(1), `Accion ${claveAccion}`],
+        );
+
+        const fila = resultado as { insertId: number };
+        accionIds.set(claveAccion, fila.insertId);
+      }
+
+      console.log(`Acciones insertadas: ${accionIds.size}`);
+      return accionIds;
+    };
+
+    const accionIds = await insertarAcciones();
+
+    // Crear grupos de permisos y asignar acciones
+    const crearGruposPermisos = async (): Promise<Map<string, number>> => {
+      const grupoIds = new Map<string, number>();
+
+      for (const [clave, grupo] of Object.entries(GRUPOS_PERMISOS)) {
+        // Crear grupo
+        const resultadoGrupo: unknown = await dataSource.query(
+          `INSERT INTO grupo_permiso (clave, nombre, descripcion)
+           VALUES (?, ?, ?)
+           ON DUPLICATE KEY UPDATE id_grupo_permiso = LAST_INSERT_ID(id_grupo_permiso)`,
+          [grupo.clave, grupo.nombre, grupo.descripcion],
+        );
+
+        const filaGrupo = resultadoGrupo as { insertId: number };
+        const idGrupo = filaGrupo.insertId;
+        grupoIds.set(clave, idGrupo);
+
+        // Asignar acciones al grupo
+        for (const claveAccion of grupo.acciones) {
+          const idAccion = accionIds.get(claveAccion);
+          if (idAccion) {
+            await dataSource.query(
+              `INSERT INTO grupo_permiso_accion (id_grupo_permiso, id_accion)
+               VALUES (?, ?)
+               ON DUPLICATE KEY UPDATE id_grupo_permiso = id_grupo_permiso`,
+              [idGrupo, idAccion],
+            );
+          }
+        }
+
+        console.log(`Grupo creado: ${grupo.nombre} (ID: ${idGrupo}) con ${grupo.acciones.length} acciones`);
+      }
+
+      return grupoIds;
+    };
+
+    const grupoIds = await crearGruposPermisos();
+
+    // Asignar grupo a usuario por rol
+    const asignarGruposAUsuario = async (email: string, rol: string): Promise<void> => {
+      const grupoBase = getGrupoBasePorRol(rol);
+      if (!grupoBase) {
+        console.log(`No hay grupo base para rol: ${rol}`);
+        return;
+      }
+
+      const idGrupo = grupoIds.get(grupoBase.clave);
+      if (!idGrupo) {
+        console.log(`Grupo no encontrado: ${grupoBase.clave}`);
+        return;
+      }
+
+      // Obtener ID del usuario
+      const usuarios: unknown = await dataSource.query(
+        'SELECT id_usuario FROM usuario WHERE email = ?',
+        [email],
+      );
+
+      const filas = usuarios as { id_usuario: number }[];
+      if (filas.length === 0) {
+        console.log(`Usuario no encontrado: ${email}`);
+        return;
+      }
+
+      const idUsuario = filas[0].id_usuario;
+
+      // Asignar grupo
+      await dataSource.query(
+        `INSERT INTO usuario_grupo_permiso (id_usuario, id_grupo_permiso, fecha_asignacion)
+         VALUES (?, ?, NOW())
+         ON DUPLICATE KEY UPDATE id_usuario = id_usuario`,
+        [idUsuario, idGrupo],
+      );
+
+      console.log(`Grupo ${grupoBase.clave} asignado a ${email}`);
+    };
 
     const crearSuperAdmin = async (): Promise<number> => {
       const contraseniaHash = await bcrypt.hash('123456', 10);
@@ -190,7 +303,10 @@ async function runSeedMultiTenant() {
 
     const idSuperAdmin = await crearSuperAdmin();
 
-    const crearAdmins = async (gimnasioIds: Map<string, number>): Promise<void> => {
+    // Asignar grupo ADMIN al SUPERADMIN
+    await asignarGruposAUsuario(superAdmin.email, 'SUPERADMIN');
+
+    const crearAdmins = async (): Promise<void> => {
       const contraseniaHash = await bcrypt.hash('123456', 10);
 
       for (const admin of admins) {
@@ -219,12 +335,15 @@ async function runSeedMultiTenant() {
 
         const filaUsuario = resultadoUsuario as { insertId: number };
         console.log(`ADMIN creado: ${admin.email} (Gimnasio: ${admin.gimnasioNombre}, ID: ${filaUsuario.insertId})`);
+
+        // Asignar grupo ADMIN
+        await asignarGruposAUsuario(admin.email, 'ADMIN');
       }
     };
 
-    await crearAdmins(gimnasioIds);
+    await crearAdmins();
 
-    const crearNutricionistas = async (gimnasioIds: Map<string, number>): Promise<void> => {
+    const crearNutricionistas = async (): Promise<void> => {
       const contraseniaHash = await bcrypt.hash('123456', 10);
 
       for (const nutri of nutricionistas) {
@@ -253,12 +372,15 @@ async function runSeedMultiTenant() {
 
         const filaUsuario = resultadoUsuario as { insertId: number };
         console.log(`NUTRICIONISTA creado: ${nutri.email} (Gimnasio: ${nutri.gimnasioNombre}, ID: ${filaUsuario.insertId})`);
+
+        // Asignar grupo NUTRICIONISTA
+        await asignarGruposAUsuario(nutri.email, 'NUTRICIONISTA');
       }
     };
 
-    await crearNutricionistas(gimnasioIds);
+    await crearNutricionistas();
 
-    const crearSocios = async (gimnasioIds: Map<string, number>): Promise<void> => {
+    const crearSocios = async (): Promise<void> => {
       const contraseniaHash = await bcrypt.hash('123456', 10);
 
       for (const socio of socios) {
@@ -287,10 +409,13 @@ async function runSeedMultiTenant() {
 
         const filaUsuario = resultadoUsuario as { insertId: number };
         console.log(`SOCIO creado: ${socio.email} (Gimnasio: ${socio.gimnasioNombre}, ID: ${filaUsuario.insertId})`);
+
+        // Asignar grupo SOCIO
+        await asignarGruposAUsuario(socio.email, 'SOCIO');
       }
     };
 
-    await crearSocios(gimnasioIds);
+    await crearSocios();
 
     console.log('Seed multi-tenant completado');
   } catch (error) {

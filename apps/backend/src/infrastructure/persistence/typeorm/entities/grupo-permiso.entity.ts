@@ -3,10 +3,12 @@ import {
   Entity,
   JoinTable,
   ManyToMany,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { AccionOrmEntity } from './accion.entity';
 import { UsuarioOrmEntity } from './usuario.entity';
+import { UsuarioGrupoPermisoOrmEntity } from './usuario-grupo-permiso.entity';
 
 @Entity('grupo_permiso')
 export class GrupoPermisoOrmEntity {
@@ -32,8 +34,8 @@ export class GrupoPermisoOrmEntity {
   })
   acciones: AccionOrmEntity[];
 
-  @ManyToMany(() => UsuarioOrmEntity, (usuario) => usuario.grupos)
-  usuarios: UsuarioOrmEntity[];
+  @OneToMany(() => UsuarioGrupoPermisoOrmEntity, (ugp) => ugp.grupoPermiso)
+  usuariosGruposPermisos: UsuarioGrupoPermisoOrmEntity[];
 
   @ManyToMany(() => GrupoPermisoOrmEntity, {
     eager: false,

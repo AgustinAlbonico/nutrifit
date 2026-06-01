@@ -4,6 +4,7 @@ import {
   JoinColumn,
   JoinTable,
   ManyToMany,
+  OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
@@ -11,6 +12,7 @@ import { PersonaOrmEntity } from './persona.entity';
 import { Rol } from 'src/domain/entities/Usuario/Rol';
 import { GrupoPermisoOrmEntity } from './grupo-permiso.entity';
 import { AccionOrmEntity } from './accion.entity';
+import { UsuarioGrupoPermisoOrmEntity } from './usuario-grupo-permiso.entity';
 
 @Entity('usuario')
 export class UsuarioOrmEntity {
@@ -40,15 +42,8 @@ export class UsuarioOrmEntity {
   @Column({ name: 'rol', type: 'enum', enum: Rol })
   rol: Rol;
 
-  @ManyToMany(() => GrupoPermisoOrmEntity, (grupo) => grupo.usuarios, {
-    eager: false,
-  })
-  @JoinTable({
-    name: 'usuario_grupo_permiso',
-    joinColumn: { name: 'id_usuario', referencedColumnName: 'idUsuario' },
-    inverseJoinColumn: { name: 'id_grupo_permiso', referencedColumnName: 'id' },
-  })
-  grupos: GrupoPermisoOrmEntity[];
+  @OneToMany(() => UsuarioGrupoPermisoOrmEntity, (ugp) => ugp.usuario)
+  usuariosGruposPermisos: UsuarioGrupoPermisoOrmEntity[];
 
   @ManyToMany(() => AccionOrmEntity, (accion) => accion.usuarios, {
     eager: false,

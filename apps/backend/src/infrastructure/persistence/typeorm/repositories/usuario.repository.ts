@@ -33,10 +33,12 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
         // No requiere eager-loading de la relacion gimnasio.
         persona: true,
         acciones: true,
-        grupos: {
-          acciones: true,
-          hijos: {
+        usuariosGruposPermisos: {
+          grupoPermiso: {
             acciones: true,
+            hijos: {
+              acciones: true,
+            },
           },
         },
       },
@@ -45,6 +47,8 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
     if (!user) return null;
 
     const { idUsuario, contraseña, rol } = user;
+
+    const grupos = (user.usuariosGruposPermisos ?? []).map((ugp) => ugp.grupoPermiso);
 
     const mapGrupo = (group: {
       id: number;
@@ -139,7 +143,7 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
       contraseña,
       formatedPersona,
       rol,
-      (user.grupos ?? []).map(mapGrupo),
+      grupos.map(mapGrupo),
       (user.acciones ?? []).map(
         (action) =>
           new AccionPermisoEntity(
@@ -202,9 +206,9 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
       } as PersonaOrmEntity;
     }
 
-    usuarioOrmEntity.grupos = (entity.grupos ?? []).map(
-      (grupo) => ({ id: grupo.id }) as GrupoPermisoOrmEntity,
-    );
+    // Note: grupos and acciones are now managed via the join table usuario_grupo_permiso
+    // The assignment of grupos to usuarioOrmEntity.grupos has been removed.
+    // To assign grupos after creation, use PermisosService.asignarGruposAUsuario.
 
     usuarioOrmEntity.acciones = (entity.acciones ?? []).map(
       (accion) => ({ id: accion.id }) as AccionOrmEntity,
@@ -235,11 +239,14 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
     const users = await this.userRepository.find({
       relations: {
         acciones: true,
-        grupos: true,
+        usuariosGruposPermisos: {
+          grupoPermiso: true,
+        },
       },
     });
 
     return users.map((user) => {
+      const grupos = (user.usuariosGruposPermisos ?? []).map((ugp) => ugp.grupoPermiso);
       const { idUsuario, email, contraseña, rol } = user;
       return new UsuarioEntity(
         idUsuario,
@@ -247,7 +254,7 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
         contraseña,
         null,
         rol,
-        (user.grupos ?? []).map(
+        grupos.map(
           (g) =>
             new GrupoPermisoEntity(
               g.id,
@@ -274,10 +281,12 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
       relations: {
         persona: true,
         acciones: true,
-        grupos: {
-          acciones: true,
-          hijos: {
+        usuariosGruposPermisos: {
+          grupoPermiso: {
             acciones: true,
+            hijos: {
+              acciones: true,
+            },
           },
         },
       },
@@ -286,6 +295,8 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
     if (!user) return null;
 
     const { idUsuario, email, contraseña, rol } = user;
+
+    const grupos = (user.usuariosGruposPermisos ?? []).map((ugp) => ugp.grupoPermiso);
 
     const mapGrupo = (group: {
       id: number;
@@ -351,7 +362,7 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
       contraseña,
       null,
       rol,
-      (user.grupos ?? []).map(mapGrupo),
+      grupos.map(mapGrupo),
       (user.acciones ?? []).map(
         (action) =>
           new AccionPermisoEntity(
