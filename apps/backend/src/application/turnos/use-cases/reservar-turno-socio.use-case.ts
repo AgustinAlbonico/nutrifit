@@ -39,6 +39,7 @@ import {
 import { Not, Repository } from 'typeorm';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 @Injectable()
 export class ReservarTurnoSocioUseCase implements BaseUseCase {
@@ -58,6 +59,7 @@ export class ReservarTurnoSocioUseCase implements BaseUseCase {
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
     private readonly notificacionesService: NotificacionesService,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(
@@ -92,7 +94,10 @@ export class ReservarTurnoSocioUseCase implements BaseUseCase {
 
     const existingSameDay = await this.turnoRepository.findOne({
       where: {
-        socio: { idPersona: socio.idPersona ?? 0 },
+        socio: {
+          idPersona: socio.idPersona ?? 0,
+          gimnasioId: this.tenantContext.gimnasioId,
+        },
         nutricionista: { idPersona: payload.nutricionistaId },
         fechaTurno,
         estadoTurno: Not(EstadoTurno.CANCELADO),
@@ -107,7 +112,10 @@ export class ReservarTurnoSocioUseCase implements BaseUseCase {
 
     const conflictingTurno = await this.turnoRepository.findOne({
       where: {
-        nutricionista: { idPersona: payload.nutricionistaId },
+        nutricionista: {
+          idPersona: payload.nutricionistaId,
+          gimnasioId: this.tenantContext.gimnasioId,
+        },
         fechaTurno,
         horaTurno,
         estadoTurno: Not(EstadoTurno.CANCELADO),
@@ -171,7 +179,10 @@ export class ReservarTurnoSocioUseCase implements BaseUseCase {
     }
 
     const socio = await this.socioRepository.findOne({
-      where: { idPersona: personaId },
+      where: {
+        idPersona: personaId,
+        gimnasioId: this.tenantContext.gimnasioId,
+      },
       relations: {
         fichaSalud: true,
       },
@@ -193,7 +204,10 @@ export class ReservarTurnoSocioUseCase implements BaseUseCase {
 
     const agendaDelDia = await this.agendaRepository.find({
       where: {
-        nutricionista: { idPersona: nutricionistaId },
+        nutricionista: {
+          idPersona: nutricionistaId,
+          gimnasioId: this.tenantContext.gimnasioId,
+        },
         dia: diaSemana,
       },
       order: { horaInicio: 'ASC' },
