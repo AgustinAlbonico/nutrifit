@@ -70,7 +70,10 @@ export class CrearPlanAlimentacionUseCase implements BaseUseCase {
     if (usuario.rol === Rol.ADMIN) {
       // Buscar el nutricionista que tiene turno con el socio (el más reciente)
       const socio = await this.socioRepo.findOne({
-        where: { idPersona: payload.socioId, gimnasioId: this.tenantContext.gimnasioId },
+        where: {
+          idPersona: payload.socioId,
+          gimnasioId: this.tenantContext.gimnasioId,
+        },
       });
       if (!socio) {
         throw new NotFoundError('Socio', String(payload.socioId));
@@ -88,7 +91,10 @@ export class CrearPlanAlimentacionUseCase implements BaseUseCase {
     } else {
       // Para NUTRICIONISTA, validar que sea nutricionista válido
       nutricionista = await this.nutricionistaRepo.findOne({
-        where: { idPersona: nutricionistaUserId, gimnasioId: this.tenantContext.gimnasioId },
+        where: {
+          idPersona: nutricionistaUserId,
+          gimnasioId: this.tenantContext.gimnasioId,
+        },
       });
       if (!nutricionista) {
         throw new ForbiddenError(
@@ -99,7 +105,10 @@ export class CrearPlanAlimentacionUseCase implements BaseUseCase {
 
     // Resolver socio
     const socio = await this.socioRepo.findOne({
-      where: { idPersona: payload.socioId, gimnasioId: this.tenantContext.gimnasioId },
+      where: {
+        idPersona: payload.socioId,
+        gimnasioId: this.tenantContext.gimnasioId,
+      },
       relations: { fichaSalud: true },
     });
     if (!socio) {
@@ -109,7 +118,10 @@ export class CrearPlanAlimentacionUseCase implements BaseUseCase {
     // Validar plan activo único por socio
     const planActivoExistente = await this.planRepo.findOne({
       where: {
-        socio: { idPersona: payload.socioId, gimnasioId: this.tenantContext.gimnasioId },
+        socio: {
+          idPersona: payload.socioId,
+          gimnasioId: this.tenantContext.gimnasioId,
+        },
         activo: true,
       },
     });

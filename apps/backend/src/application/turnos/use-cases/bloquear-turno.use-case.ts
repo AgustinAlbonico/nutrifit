@@ -69,7 +69,10 @@ export class BloquearTurnoUseCase implements BaseUseCase {
     // 2. Verificar si ya existe un turno en ese horario (activo o bloqueado)
     const existingTurno = await this.turnoRepository.findOne({
       where: {
-        nutricionista: { idPersona: nutricionistaId, gimnasioId: this.tenantContext.gimnasioId },
+        nutricionista: {
+          idPersona: nutricionistaId,
+          gimnasioId: this.tenantContext.gimnasioId,
+        },
         fechaTurno,
         horaTurno,
         estadoTurno: Not(EstadoTurno.CANCELADO),
@@ -116,7 +119,10 @@ export class BloquearTurnoUseCase implements BaseUseCase {
 
     const agendaDelDia = await this.agendaRepository.find({
       where: {
-        nutricionista: { idPersona: nutricionistaId, gimnasioId: this.tenantContext.gimnasioId },
+        nutricionista: {
+          idPersona: nutricionistaId,
+          gimnasioId: this.tenantContext.gimnasioId,
+        },
         dia: diaSemana,
       },
       order: { horaInicio: 'ASC' },

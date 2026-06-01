@@ -100,7 +100,10 @@ export class AsignarTurnoManualUseCase implements BaseUseCase {
 
     const conflictingTurno = await this.turnoRepository.findOne({
       where: {
-        nutricionista: { idPersona: nutricionistaId, gimnasioId: this.tenantContext.gimnasioId },
+        nutricionista: {
+          idPersona: nutricionistaId,
+          gimnasioId: this.tenantContext.gimnasioId,
+        },
         fechaTurno,
         horaTurno,
         estadoTurno: Not(EstadoTurno.CANCELADO),
@@ -156,7 +159,10 @@ export class AsignarTurnoManualUseCase implements BaseUseCase {
 
     const agendaDelDia = await this.agendaRepository.find({
       where: {
-        nutricionista: { idPersona: nutricionistaId, gimnasioId: this.tenantContext.gimnasioId },
+        nutricionista: {
+          idPersona: nutricionistaId,
+          gimnasioId: this.tenantContext.gimnasioId,
+        },
         dia: diaSemana,
       },
       order: { horaInicio: 'ASC' },

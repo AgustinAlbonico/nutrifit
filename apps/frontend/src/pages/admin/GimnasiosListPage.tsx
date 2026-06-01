@@ -63,7 +63,7 @@ export function GimnasiosListPage() {
     isError,
     error,
   } = useQuery({
-    queryKey: ['gimnasios'],
+    queryKey: ['gimnasios', token],
     queryFn: () => listarGimnasios(token!),
     enabled: !!token,
   });

@@ -81,7 +81,7 @@ export function GimnasioDetailPage() {
     isError,
     error,
   } = useQuery<Gimnasio>({
-    queryKey: ['gimnasios', gimnasioId],
+    queryKey: ['gimnasios', gimnasioId, token],
     queryFn: () => obtenerGimnasio(gimnasioId, token!),
     enabled: !!token && !isNaN(gimnasioId),
   });
@@ -89,7 +89,7 @@ export function GimnasioDetailPage() {
   const {
     data: admins,
   } = useQuery<AdminUser[]>({
-    queryKey: ['gimnasios', gimnasioId, 'admins'],
+    queryKey: ['gimnasios', gimnasioId, 'admins', token],
     queryFn: () => listarAdminsDeGimnasio(gimnasioId, token!),
     enabled: !!token && !isNaN(gimnasioId) && modoEditar,
   });

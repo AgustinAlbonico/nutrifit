@@ -1,5 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundError, ConflictError } from 'src/domain/exceptions/custom-exceptions';
+import {
+  NotFoundError,
+  ConflictError,
+} from 'src/domain/exceptions/custom-exceptions';
 import { GimnasiosController } from './gimnasios.controller';
 import { CrearGimnasioUseCase } from 'src/application/gimnasios/use-cases/crear-gimnasio.use-case';
 import { ListarGimnasiosUseCase } from 'src/application/gimnasios/use-cases/listar-gimnasios.use-case';
@@ -21,7 +24,9 @@ describe('GimnasiosController', () => {
   let mockEliminar: jest.Mocked<EliminarGimnasioUseCase>;
   let mockImpersonar: jest.Mocked<ImpersonarUsuarioUseCase>;
 
-  const mockGimnasio = (overrides: Partial<GimnasioEntity> = {}): GimnasioEntity => {
+  const mockGimnasio = (
+    overrides: Partial<GimnasioEntity> = {},
+  ): GimnasioEntity => {
     return new GimnasioEntity({
       id: 1,
       nombre: 'Gym Central',
@@ -114,7 +119,9 @@ describe('GimnasiosController', () => {
     });
 
     it('debe propagar NotFoundError si no existe', async () => {
-      mockObtener.execute.mockRejectedValue(new NotFoundError('Gimnasio', '999'));
+      mockObtener.execute.mockRejectedValue(
+        new NotFoundError('Gimnasio', '999'),
+      );
 
       await expect(controller.obtener(999)).rejects.toThrow(NotFoundError);
     });
@@ -154,9 +161,17 @@ describe('GimnasiosController', () => {
       };
       mockImpersonar.execute.mockResolvedValue(resultado);
 
-      const result = await controller.impersonar(5, { email: 'admin@gym.com' }, 1);
+      const result = await controller.impersonar(
+        5,
+        { email: 'admin@gym.com' },
+        1,
+      );
 
-      expect(mockImpersonar.execute).toHaveBeenCalledWith(1, 5, 'admin@gym.com');
+      expect(mockImpersonar.execute).toHaveBeenCalledWith(
+        1,
+        5,
+        'admin@gym.com',
+      );
       expect(result.token).toBe('jwt-token');
       expect(result.gimnasio.id).toBe(5);
       expect(result.impersonatedBy).toBe(1);

@@ -25,6 +25,23 @@ import {
 } from 'src/domain/services/logger.service';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
+
+// Helper para obtener el próximo viernes desde hoy
+function getNextFriday(): Date {
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0=Dom, 1=Lun, ..., 6=Sáb
+  const daysUntilFriday = (5 - dayOfWeek + 7) % 7 || 7; // Si hoy es viernes, obtener el próximo
+  return new Date(today.getTime() + daysUntilFriday * 24 * 60 * 60 * 1000);
+}
+
+// Helper para formatear fecha como YYYY-MM-DD en hora local
+function formatDateLocal(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 describe('ReprogramarTurnoSocioUseCase', () => {
   let useCase: ReprogramarTurnoSocioUseCase;
@@ -122,6 +139,17 @@ describe('ReprogramarTurnoSocioUseCase', () => {
           provide: AuditoriaService,
           useValue: { registrar: jest.fn() },
         },
+        {
+          provide: TenantContextService,
+          useValue: {
+            gimnasioId: 1,
+            personaId: 20,
+            usuarioId: 100,
+            jti: 'test-jti',
+            rol: 'SOCIO',
+            impersonatedBy: null,
+          },
+        },
       ],
     }).compile();
 
@@ -165,8 +193,9 @@ describe('ReprogramarTurnoSocioUseCase', () => {
         return turno as TurnoOrmEntity;
       });
 
+      const nextFriday = getNextFriday();
       const payload: ReprogramarTurnoSocioDto = {
-        fechaTurno: '2026-05-15',
+        fechaTurno: formatDateLocal(nextFriday),
         horaTurno: '11:00',
       };
 
@@ -189,8 +218,9 @@ describe('ReprogramarTurnoSocioUseCase', () => {
       socioRepository.findOne.mockResolvedValue(mockSocio);
       turnoRepository.findOne.mockResolvedValue(null);
 
+      const nextFriday = getNextFriday();
       const payload: ReprogramarTurnoSocioDto = {
-        fechaTurno: '2026-05-15',
+        fechaTurno: formatDateLocal(nextFriday),
         horaTurno: '11:00',
       };
 
@@ -219,8 +249,9 @@ describe('ReprogramarTurnoSocioUseCase', () => {
         } as unknown as AgendaOrmEntity,
       ]);
 
+      const nextFriday = getNextFriday();
       const payload: ReprogramarTurnoSocioDto = {
-        fechaTurno: '2026-05-15',
+        fechaTurno: formatDateLocal(nextFriday),
         horaTurno: '11:00',
       };
 
@@ -237,8 +268,9 @@ describe('ReprogramarTurnoSocioUseCase', () => {
       const mockTurno = buildMockTurno({ estadoTurno: EstadoTurno.PRESENTE });
       turnoRepository.findOne.mockResolvedValue(mockTurno);
 
+      const nextFriday = getNextFriday();
       const payload: ReprogramarTurnoSocioDto = {
-        fechaTurno: '2026-05-15',
+        fechaTurno: formatDateLocal(nextFriday),
         horaTurno: '11:00',
       };
 
@@ -274,8 +306,9 @@ describe('ReprogramarTurnoSocioUseCase', () => {
         async (turno) => turno as TurnoOrmEntity,
       );
 
+      const nextFriday = getNextFriday();
       const payload: ReprogramarTurnoSocioDto = {
-        fechaTurno: '2026-05-15',
+        fechaTurno: formatDateLocal(nextFriday),
         horaTurno: '11:00',
       };
 
@@ -296,8 +329,9 @@ describe('ReprogramarTurnoSocioUseCase', () => {
       turnoRepository.findOne.mockResolvedValue(mockTurno);
       politicaRepository.getPlazoReprogramacion.mockResolvedValue(24); // policy requires 24 hours
 
+      const nextFriday = getNextFriday();
       const payload: ReprogramarTurnoSocioDto = {
-        fechaTurno: '2026-05-15',
+        fechaTurno: formatDateLocal(nextFriday),
         horaTurno: '11:00',
       };
 
@@ -331,8 +365,9 @@ describe('ReprogramarTurnoSocioUseCase', () => {
         async (turno) => turno as TurnoOrmEntity,
       );
 
+      const nextFriday = getNextFriday();
       const payload: ReprogramarTurnoSocioDto = {
-        fechaTurno: '2026-05-15',
+        fechaTurno: formatDateLocal(nextFriday),
         horaTurno: '11:00',
       };
 
@@ -366,8 +401,9 @@ describe('ReprogramarTurnoSocioUseCase', () => {
         async (turno) => turno as TurnoOrmEntity,
       );
 
+      const nextFriday = getNextFriday();
       const payload: ReprogramarTurnoSocioDto = {
-        fechaTurno: '2026-05-15',
+        fechaTurno: formatDateLocal(nextFriday),
         horaTurno: '11:00',
         motivo: 'Cambio de horario laboral',
       };

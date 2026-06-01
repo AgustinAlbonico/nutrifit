@@ -54,7 +54,10 @@ export class GetAgendaDiariaUseCase implements BaseUseCase {
     // 1. Obtener configuracion de agenda para ese dia
     const agendas = await this.agendaRepository.find({
       where: {
-        nutricionista: { idPersona: nutricionistaId, gimnasioId: this.tenantContext.gimnasioId },
+        nutricionista: {
+          idPersona: nutricionistaId,
+          gimnasioId: this.tenantContext.gimnasioId,
+        },
         dia: diaSemana,
       },
       order: { horaInicio: 'ASC' },
@@ -67,7 +70,10 @@ export class GetAgendaDiariaUseCase implements BaseUseCase {
     // 2. Obtener turnos existentes para ese dia
     const turnos = await this.turnoRepository.find({
       where: {
-        nutricionista: { idPersona: nutricionistaId, gimnasioId: this.tenantContext.gimnasioId },
+        nutricionista: {
+          idPersona: nutricionistaId,
+          gimnasioId: this.tenantContext.gimnasioId,
+        },
         fechaTurno: fecha,
         estadoTurno: Not(EstadoTurno.CANCELADO),
       },

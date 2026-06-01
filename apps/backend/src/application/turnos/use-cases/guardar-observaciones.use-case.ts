@@ -25,7 +25,7 @@ export class GuardarObservacionesUseCase {
     dto: GuardarObservacionesDto,
   ): Promise<{ success: boolean }> {
     const turno = await this.turnoRepository.findOne({
-      where: { 
+      where: {
         idTurno: turnoId,
         socio: { gimnasioId: this.tenantContext.gimnasioId },
       },

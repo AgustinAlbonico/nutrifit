@@ -27,7 +27,9 @@ describe('ObtenerPermisosUsuarioUseCase', () => {
       ],
     }).compile();
 
-    useCase = module.get<ObtenerPermisosUsuarioUseCase>(ObtenerPermisosUsuarioUseCase);
+    useCase = module.get<ObtenerPermisosUsuarioUseCase>(
+      ObtenerPermisosUsuarioUseCase,
+    );
     usuarioRepo = module.get(getRepositoryToken(UsuarioOrmEntity));
   });
 
@@ -44,7 +46,16 @@ describe('ObtenerPermisosUsuarioUseCase', () => {
             clave: 'ADMIN',
             nombre: 'Administrador',
             descripcion: 'Admin',
-            acciones: [{ id: 1, clave: 'socios.ver', nombre: '', descripcion: null, grupos: [], usuarios: [] }],
+            acciones: [
+              {
+                id: 1,
+                clave: 'socios.ver',
+                nombre: '',
+                descripcion: null,
+                grupos: [],
+                usuarios: [],
+              },
+            ],
           },
           usuario: null as any,
           fechaAsignacion: new Date(),

@@ -31,7 +31,10 @@ export class ObtenerPlanActivoSocioUseCase implements BaseUseCase {
 
     const plan = await this.planRepo.findOne({
       where: {
-        socio: { idPersona: socioId, gimnasioId: this.tenantContext.gimnasioId },
+        socio: {
+          idPersona: socioId,
+          gimnasioId: this.tenantContext.gimnasioId,
+        },
         activo: true,
       },
       relations: {

@@ -1,5 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundError, ConflictError } from 'src/domain/exceptions/custom-exceptions';
+import {
+  NotFoundError,
+  ConflictError,
+} from 'src/domain/exceptions/custom-exceptions';
 import { ActualizarGimnasioUseCase } from './actualizar-gimnasio.use-case';
 import {
   GimnasioRepository,
@@ -11,7 +14,9 @@ describe('ActualizarGimnasioUseCase', () => {
   let useCase: ActualizarGimnasioUseCase;
   let mockRepository: jest.Mocked<GimnasioRepository>;
 
-  const mockGimnasio = (overrides: Partial<GimnasioEntity> = {}): GimnasioEntity => {
+  const mockGimnasio = (
+    overrides: Partial<GimnasioEntity> = {},
+  ): GimnasioEntity => {
     return new GimnasioEntity({
       id: 1,
       nombre: 'Gym Central',
@@ -58,7 +63,10 @@ describe('ActualizarGimnasioUseCase', () => {
 
       const result = await useCase.execute(1, dto);
 
-      expect(mockRepository.update).toHaveBeenCalledWith(1, expect.objectContaining({ nombre: 'Gym Centro' }));
+      expect(mockRepository.update).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ nombre: 'Gym Centro' }),
+      );
       expect(result.nombre).toBe('Gym Centro');
     });
 
@@ -79,10 +87,13 @@ describe('ActualizarGimnasioUseCase', () => {
 
       const result = await useCase.execute(1, dto);
 
-      expect(mockRepository.update).toHaveBeenCalledWith(1, expect.objectContaining({
-        direccion: 'Nueva Direccion 456',
-        telefono: '9876543210',
-      }));
+      expect(mockRepository.update).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({
+          direccion: 'Nueva Direccion 456',
+          telefono: '9876543210',
+        }),
+      );
       expect(result.direccion).toBe('Nueva Direccion 456');
       expect(result.telefono).toBe('9876543210');
     });
@@ -90,7 +101,10 @@ describe('ActualizarGimnasioUseCase', () => {
     it('debe lanzar ConflictError si el nuevo nombre ya existe en otro gimnasio', async () => {
       const dto = { nombre: 'Gym Norte' };
       const gimnasioActual = mockGimnasio({ id: 1, nombre: 'Gym Central' });
-      const gimnasioConNombreExistente = mockGimnasio({ id: 2, nombre: 'Gym Norte' });
+      const gimnasioConNombreExistente = mockGimnasio({
+        id: 2,
+        nombre: 'Gym Norte',
+      });
 
       mockRepository.findById.mockResolvedValue(gimnasioActual);
       mockRepository.findByNombre.mockResolvedValue(gimnasioConNombreExistente);
@@ -102,14 +116,19 @@ describe('ActualizarGimnasioUseCase', () => {
     it('debe lanzar NotFoundError si el gimnasio no existe', async () => {
       mockRepository.findById.mockResolvedValue(null);
 
-      await expect(useCase.execute(999, { nombre: 'Nuevo' })).rejects.toThrow(NotFoundError);
+      await expect(useCase.execute(999, { nombre: 'Nuevo' })).rejects.toThrow(
+        NotFoundError,
+      );
       expect(mockRepository.update).not.toHaveBeenCalled();
     });
 
     it('debe permitir actualizar sin cambios de nombre (mismo nombre)', async () => {
       const dto = { nombre: 'Gym Central' }; // mismo nombre
       const gimnasioExistente = mockGimnasio({ id: 1, nombre: 'Gym Central' });
-      const gimnasioActualizado = mockGimnasio({ id: 1, nombre: 'Gym Central' });
+      const gimnasioActualizado = mockGimnasio({
+        id: 1,
+        nombre: 'Gym Central',
+      });
 
       mockRepository.findById.mockResolvedValue(gimnasioExistente);
       mockRepository.findByNombre.mockResolvedValue(gimnasioExistente); // mismo gimnasio

@@ -2,9 +2,16 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { GetTurnoByIdUseCase } from './get-turno-by-id.use-case';
-import { TurnoOrmEntity, NutricionistaOrmEntity, FichaSaludOrmEntity } from 'src/infrastructure/persistence/typeorm/entities';
+import {
+  TurnoOrmEntity,
+  NutricionistaOrmEntity,
+  FichaSaludOrmEntity,
+} from 'src/infrastructure/persistence/typeorm/entities';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
-import { BadRequestError, NotFoundError } from 'src/domain/exceptions/custom-exceptions';
+import {
+  BadRequestError,
+  NotFoundError,
+} from 'src/domain/exceptions/custom-exceptions';
 import { EstadoTurno } from 'src/domain/entities/Turno/EstadoTurno';
 
 describe('GetTurnoByIdUseCase - Multi-Tenant Isolation', () => {
@@ -71,7 +78,9 @@ describe('GetTurnoByIdUseCase - Multi-Tenant Isolation', () => {
 
     useCase = module.get<GetTurnoByIdUseCase>(GetTurnoByIdUseCase);
     turnoRepository = module.get(getRepositoryToken(TurnoOrmEntity));
-    nutricionistaRepository = module.get(getRepositoryToken(NutricionistaOrmEntity));
+    nutricionistaRepository = module.get(
+      getRepositoryToken(NutricionistaOrmEntity),
+    );
     fichaSaludRepository = module.get(getRepositoryToken(FichaSaludOrmEntity));
     tenantContext = module.get<TenantContextService>(TenantContextService);
   });

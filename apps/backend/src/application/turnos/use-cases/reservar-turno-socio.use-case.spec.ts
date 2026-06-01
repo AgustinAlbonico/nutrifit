@@ -2,10 +2,20 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ReservarTurnoSocioUseCase } from './reservar-turno-socio.use-case';
-import { TurnoOrmEntity, SocioOrmEntity, NutricionistaOrmEntity, AgendaOrmEntity, UsuarioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities';
+import {
+  TurnoOrmEntity,
+  SocioOrmEntity,
+  NutricionistaOrmEntity,
+  AgendaOrmEntity,
+  UsuarioOrmEntity,
+} from 'src/infrastructure/persistence/typeorm/entities';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
-import { BadRequestError, ConflictError, NotFoundError } from 'src/domain/exceptions/custom-exceptions';
+import {
+  BadRequestError,
+  ConflictError,
+  NotFoundError,
+} from 'src/domain/exceptions/custom-exceptions';
 import { EstadoTurno } from 'src/domain/entities/Turno/EstadoTurno';
 import { DiaSemana } from 'src/domain/entities/Agenda/dia-semana';
 import {
@@ -21,7 +31,9 @@ describe('ReservarTurnoSocioUseCase - Multi-Tenant Isolation', () => {
   let useCase: ReservarTurnoSocioUseCase;
   let usuarioRepository: jest.Mocked<Repository<UsuarioOrmEntity>>;
   let socioRepository: jest.Mocked<Repository<SocioOrmEntity>>;
-  let nutricionistaOrmRepository: jest.Mocked<Repository<NutricionistaOrmEntity>>;
+  let nutricionistaOrmRepository: jest.Mocked<
+    Repository<NutricionistaOrmEntity>
+  >;
   let agendaRepository: jest.Mocked<Repository<AgendaOrmEntity>>;
   let turnoRepository: jest.Mocked<Repository<TurnoOrmEntity>>;
   let nutricionistaRepository: NutricionistaRepository;
@@ -108,7 +120,7 @@ describe('ReservarTurnoSocioUseCase - Multi-Tenant Isolation', () => {
       socio: mockSocio,
       nutricionista: mockNutricionista,
       ...overrides,
-    } as TurnoOrmEntity);
+    }) as TurnoOrmEntity;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -156,7 +168,9 @@ describe('ReservarTurnoSocioUseCase - Multi-Tenant Isolation', () => {
     useCase = module.get<ReservarTurnoSocioUseCase>(ReservarTurnoSocioUseCase);
     usuarioRepository = module.get(getRepositoryToken(UsuarioOrmEntity));
     socioRepository = module.get(getRepositoryToken(SocioOrmEntity));
-    nutricionistaOrmRepository = module.get(getRepositoryToken(NutricionistaOrmEntity));
+    nutricionistaOrmRepository = module.get(
+      getRepositoryToken(NutricionistaOrmEntity),
+    );
     agendaRepository = module.get(getRepositoryToken(AgendaOrmEntity));
     turnoRepository = module.get(getRepositoryToken(TurnoOrmEntity));
     nutricionistaRepository = module.get(NUTRICIONISTA_REPOSITORY);
@@ -172,11 +186,17 @@ describe('ReservarTurnoSocioUseCase - Multi-Tenant Isolation', () => {
       // Arrange
       jest.mocked(usuarioRepository.findOne).mockResolvedValue(mockUsuario);
       jest.mocked(socioRepository.findOne).mockResolvedValue(mockSocio);
-      jest.mocked(nutricionistaRepository.findById).mockResolvedValue(mockNutricionista as any);
+      jest
+        .mocked(nutricionistaRepository.findById)
+        .mockResolvedValue(mockNutricionista as any);
       jest.mocked(agendaRepository.find).mockResolvedValue([mockAgenda[0]]);
       jest.mocked(turnoRepository.findOne).mockResolvedValue(null);
-      jest.mocked(nutricionistaOrmRepository.findOne).mockResolvedValue(mockNutricionista);
-      jest.mocked(turnoRepository.save).mockResolvedValue(buildTurnoSaveResult());
+      jest
+        .mocked(nutricionistaOrmRepository.findOne)
+        .mockResolvedValue(mockNutricionista);
+      jest
+        .mocked(turnoRepository.save)
+        .mockResolvedValue(buildTurnoSaveResult());
 
       // Act
       await useCase.execute(100, {
@@ -199,11 +219,17 @@ describe('ReservarTurnoSocioUseCase - Multi-Tenant Isolation', () => {
       // Arrange
       jest.mocked(usuarioRepository.findOne).mockResolvedValue(mockUsuario);
       jest.mocked(socioRepository.findOne).mockResolvedValue(mockSocio);
-      jest.mocked(nutricionistaRepository.findById).mockResolvedValue(mockNutricionista as any);
+      jest
+        .mocked(nutricionistaRepository.findById)
+        .mockResolvedValue(mockNutricionista as any);
       jest.mocked(agendaRepository.find).mockResolvedValue([mockAgenda[0]]);
       jest.mocked(turnoRepository.findOne).mockResolvedValue(null);
-      jest.mocked(nutricionistaOrmRepository.findOne).mockResolvedValue(mockNutricionista);
-      jest.mocked(turnoRepository.save).mockResolvedValue(buildTurnoSaveResult());
+      jest
+        .mocked(nutricionistaOrmRepository.findOne)
+        .mockResolvedValue(mockNutricionista);
+      jest
+        .mocked(turnoRepository.save)
+        .mockResolvedValue(buildTurnoSaveResult());
 
       // Act
       await useCase.execute(100, {
@@ -230,11 +256,17 @@ describe('ReservarTurnoSocioUseCase - Multi-Tenant Isolation', () => {
       // Arrange
       jest.mocked(usuarioRepository.findOne).mockResolvedValue(mockUsuario);
       jest.mocked(socioRepository.findOne).mockResolvedValue(mockSocio);
-      jest.mocked(nutricionistaRepository.findById).mockResolvedValue(mockNutricionista as any);
+      jest
+        .mocked(nutricionistaRepository.findById)
+        .mockResolvedValue(mockNutricionista as any);
       jest.mocked(agendaRepository.find).mockResolvedValue([mockAgenda[0]]);
       jest.mocked(turnoRepository.findOne).mockResolvedValue(null);
-      jest.mocked(nutricionistaOrmRepository.findOne).mockResolvedValue(mockNutricionista);
-      jest.mocked(turnoRepository.save).mockResolvedValue(buildTurnoSaveResult());
+      jest
+        .mocked(nutricionistaOrmRepository.findOne)
+        .mockResolvedValue(mockNutricionista);
+      jest
+        .mocked(turnoRepository.save)
+        .mockResolvedValue(buildTurnoSaveResult());
 
       // Act
       await useCase.execute(100, {
@@ -259,11 +291,17 @@ describe('ReservarTurnoSocioUseCase - Multi-Tenant Isolation', () => {
       // Arrange: Intentando reservar con tenant Gimnasio 1, pero ya existe turno en Gimnasio 2
       jest.mocked(usuarioRepository.findOne).mockResolvedValue(mockUsuario);
       jest.mocked(socioRepository.findOne).mockResolvedValue(mockSocio);
-      jest.mocked(nutricionistaRepository.findById).mockResolvedValue(mockNutricionista as any);
+      jest
+        .mocked(nutricionistaRepository.findById)
+        .mockResolvedValue(mockNutricionista as any);
       jest.mocked(agendaRepository.find).mockResolvedValue([mockAgenda[0]]);
       jest.mocked(turnoRepository.findOne).mockResolvedValue(null);
-      jest.mocked(nutricionistaOrmRepository.findOne).mockResolvedValue(mockNutricionista);
-      jest.mocked(turnoRepository.save).mockResolvedValue(buildTurnoSaveResult());
+      jest
+        .mocked(nutricionistaOrmRepository.findOne)
+        .mockResolvedValue(mockNutricionista);
+      jest
+        .mocked(turnoRepository.save)
+        .mockResolvedValue(buildTurnoSaveResult());
 
       // Act
       const result = await useCase.execute(100, {

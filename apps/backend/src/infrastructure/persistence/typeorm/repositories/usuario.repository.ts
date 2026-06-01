@@ -48,7 +48,9 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
 
     const { idUsuario, contraseña, rol } = user;
 
-    const grupos = (user.usuariosGruposPermisos ?? []).map((ugp) => ugp.grupoPermiso);
+    const grupos = (user.usuariosGruposPermisos ?? []).map(
+      (ugp) => ugp.grupoPermiso,
+    );
 
     const mapGrupo = (group: {
       id: number;
@@ -246,7 +248,9 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
     });
 
     return users.map((user) => {
-      const grupos = (user.usuariosGruposPermisos ?? []).map((ugp) => ugp.grupoPermiso);
+      const grupos = (user.usuariosGruposPermisos ?? []).map(
+        (ugp) => ugp.grupoPermiso,
+      );
       const { idUsuario, email, contraseña, rol } = user;
       return new UsuarioEntity(
         idUsuario,
@@ -296,7 +300,9 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
 
     const { idUsuario, email, contraseña, rol } = user;
 
-    const grupos = (user.usuariosGruposPermisos ?? []).map((ugp) => ugp.grupoPermiso);
+    const grupos = (user.usuariosGruposPermisos ?? []).map(
+      (ugp) => ugp.grupoPermiso,
+    );
 
     const mapGrupo = (group: {
       id: number;

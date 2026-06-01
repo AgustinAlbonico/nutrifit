@@ -21,7 +21,10 @@ export abstract class GimnasioRepository implements BaseRepository<GimnasioEntit
   abstract findAll(): Promise<GimnasioEntity[]>;
   abstract findById(id: number): Promise<GimnasioEntity | null>;
   abstract save(entity: GimnasioEntity): Promise<GimnasioEntity>;
-  abstract update(id: number, entity: Partial<GimnasioEntity>): Promise<GimnasioEntity>;
+  abstract update(
+    id: number,
+    entity: Partial<GimnasioEntity>,
+  ): Promise<GimnasioEntity>;
   abstract delete(id: number): Promise<void>;
   abstract findByNombre(nombre: string): Promise<GimnasioEntity | null>;
   abstract findActivos(): Promise<GimnasioEntity[]>;

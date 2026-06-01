@@ -27,7 +27,12 @@ describe('ListarAccionesUseCase', () => {
 
   it('debe listar todas las acciones', async () => {
     const mockAcciones = [
-      { id: 1, clave: 'socios.crear', nombre: 'Crear Socios', descripcion: null },
+      {
+        id: 1,
+        clave: 'socios.crear',
+        nombre: 'Crear Socios',
+        descripcion: null,
+      },
       { id: 2, clave: 'socios.ver', nombre: 'Ver Socios', descripcion: null },
     ] as AccionOrmEntity[];
 

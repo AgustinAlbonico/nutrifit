@@ -63,16 +63,12 @@ export class ImpersonarUsuarioUseCase implements BaseUseCase {
 
     // 3. Validar: no se puede impersonar a otro SUPERADMIN
     if (usuario.rol === Rol.SUPERADMIN) {
-      throw new BadRequestError(
-        'No se puede impersonar a un SUPERADMIN',
-      );
+      throw new BadRequestError('No se puede impersonar a un SUPERADMIN');
     }
 
     // 4. Validar: el usuario debe tener gimnasio asociado
     if (!usuario.persona?.gimnasioId) {
-      throw new BadRequestError(
-        'El usuario no tiene un gimnasio asociado',
-      );
+      throw new BadRequestError('El usuario no tiene un gimnasio asociado');
     }
 
     // 5. Validar: el gimnasio del usuario debe coincidir con el solicitado

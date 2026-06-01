@@ -31,7 +31,10 @@ export class ListarPlanesSocioUseCase implements BaseUseCase {
 
     const planes = await this.planRepo.find({
       where: {
-        socio: { idPersona: socioId, gimnasioId: this.tenantContext.gimnasioId },
+        socio: {
+          idPersona: socioId,
+          gimnasioId: this.tenantContext.gimnasioId,
+        },
       },
       relations: {
         dias: { opcionesComida: { items: { alimento: true } } },

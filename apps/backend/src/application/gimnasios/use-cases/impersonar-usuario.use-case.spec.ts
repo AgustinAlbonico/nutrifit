@@ -1,9 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ForbiddenError, NotFoundError, BadRequestError } from 'src/domain/exceptions/custom-exceptions';
+import {
+  ForbiddenError,
+  NotFoundError,
+  BadRequestError,
+} from 'src/domain/exceptions/custom-exceptions';
 import { Rol } from 'src/domain/entities/Usuario/Rol';
 import { UsuarioRepository } from 'src/domain/entities/Usuario/usuario.repository';
-import { GimnasioRepository, GIMNASIO_REPOSITORY } from 'src/domain/entities/Gimnasio/gimnasio.repository';
-import { IJwtService, JWT_SERVICE, JwtPayload } from 'src/domain/services/jwt.service';
+import {
+  GimnasioRepository,
+  GIMNASIO_REPOSITORY,
+} from 'src/domain/entities/Gimnasio/gimnasio.repository';
+import {
+  IJwtService,
+  JWT_SERVICE,
+  JwtPayload,
+} from 'src/domain/services/jwt.service';
 import { ImpersonarUsuarioUseCase } from './impersonar-usuario.use-case';
 import { randomUUID } from 'crypto';
 
@@ -21,7 +32,9 @@ describe('ImpersonarUsuarioUseCase', () => {
     email: null,
     fechaAlta: new Date(),
     fechaBaja: null,
-    get activo() { return this.fechaBaja === null; },
+    get activo() {
+      return this.fechaBaja === null;
+    },
   });
 
   const mockUsuarioEntity = (overrides: Partial<any> = {}) => ({
@@ -109,9 +122,9 @@ describe('ImpersonarUsuarioUseCase', () => {
     it('debe lanzar NotFoundError si el gimnasio no existe', async () => {
       mockGimnasioRepository.findById.mockResolvedValue(null);
 
-      await expect(
-        useCase.execute(1, 999, 'admin@gym.com'),
-      ).rejects.toThrow(NotFoundError);
+      await expect(useCase.execute(1, 999, 'admin@gym.com')).rejects.toThrow(
+        NotFoundError,
+      );
 
       expect(mockJwtService.sign).not.toHaveBeenCalled();
     });
@@ -121,9 +134,9 @@ describe('ImpersonarUsuarioUseCase', () => {
       mockGimnasioRepository.findById.mockResolvedValue(gimnasio as any);
       mockUsuarioRepository.findByEmail.mockResolvedValue(null);
 
-      await expect(
-        useCase.execute(1, 5, 'noexiste@gym.com'),
-      ).rejects.toThrow(NotFoundError);
+      await expect(useCase.execute(1, 5, 'noexiste@gym.com')).rejects.toThrow(
+        NotFoundError,
+      );
 
       expect(mockJwtService.sign).not.toHaveBeenCalled();
     });
@@ -137,7 +150,9 @@ describe('ImpersonarUsuarioUseCase', () => {
       });
 
       mockGimnasioRepository.findById.mockResolvedValue(gimnasio as any);
-      mockUsuarioRepository.findByEmail.mockResolvedValue(superadminUsuario as any);
+      mockUsuarioRepository.findByEmail.mockResolvedValue(
+        superadminUsuario as any,
+      );
 
       await expect(
         useCase.execute(1, 5, 'superadmin@nutrifit.com'),
@@ -159,11 +174,13 @@ describe('ImpersonarUsuarioUseCase', () => {
       });
 
       mockGimnasioRepository.findById.mockResolvedValue(gimnasio as any);
-      mockUsuarioRepository.findByEmail.mockResolvedValue(usuarioInactivo as any);
+      mockUsuarioRepository.findByEmail.mockResolvedValue(
+        usuarioInactivo as any,
+      );
 
-      await expect(
-        useCase.execute(1, 5, 'admin@gym.com'),
-      ).rejects.toThrow(BadRequestError);
+      await expect(useCase.execute(1, 5, 'admin@gym.com')).rejects.toThrow(
+        BadRequestError,
+      );
 
       expect(mockJwtService.sign).not.toHaveBeenCalled();
     });
@@ -181,11 +198,13 @@ describe('ImpersonarUsuarioUseCase', () => {
       });
 
       mockGimnasioRepository.findById.mockResolvedValue(gimnasio as any);
-      mockUsuarioRepository.findByEmail.mockResolvedValue(usuarioDeOtroGym as any);
+      mockUsuarioRepository.findByEmail.mockResolvedValue(
+        usuarioDeOtroGym as any,
+      );
 
-      await expect(
-        useCase.execute(1, 5, 'admin@gym.com'),
-      ).rejects.toThrow(BadRequestError);
+      await expect(useCase.execute(1, 5, 'admin@gym.com')).rejects.toThrow(
+        BadRequestError,
+      );
 
       expect(mockJwtService.sign).not.toHaveBeenCalled();
     });

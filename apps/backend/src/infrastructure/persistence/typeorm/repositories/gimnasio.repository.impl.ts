@@ -11,7 +11,10 @@ import {
   CrearGimnasioDto,
   ActualizarGimnasioDto,
 } from 'src/domain/entities/Gimnasio/gimnasio.repository';
-import { ConflictError, NotFoundError } from 'src/domain/exceptions/custom-exceptions';
+import {
+  ConflictError,
+  NotFoundError,
+} from 'src/domain/exceptions/custom-exceptions';
 
 @Injectable()
 export class GimnasioRepositoryImplementation implements GimnasioRepository {

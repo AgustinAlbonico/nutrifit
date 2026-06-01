@@ -1,6 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { BaseUseCase } from 'src/application/shared/use-case.base';
-import { BadRequestError, NotFoundError } from 'src/domain/exceptions/custom-exceptions';
+import {
+  BadRequestError,
+  NotFoundError,
+} from 'src/domain/exceptions/custom-exceptions';
 import {
   APP_LOGGER_SERVICE,
   IAppLoggerService,

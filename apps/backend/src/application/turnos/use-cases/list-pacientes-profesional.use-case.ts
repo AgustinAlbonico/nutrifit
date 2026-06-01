@@ -53,7 +53,9 @@ export class ListPacientesProfesionalUseCase implements BaseUseCase {
       .andWhere('nutricionista.gimnasioId = :gimnasioId', {
         gimnasioId: this.tenantContext.gimnasioId,
       })
-      .andWhere('nutricionista.idPersona = :nutricionistaId', { nutricionistaId })
+      .andWhere('nutricionista.idPersona = :nutricionistaId', {
+        nutricionistaId,
+      })
       .orderBy('turno.fechaTurno', 'DESC')
       .addOrderBy('turno.horaTurno', 'DESC');
 

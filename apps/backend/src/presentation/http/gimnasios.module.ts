@@ -27,7 +27,10 @@ import { IJwtService, JWT_SERVICE } from 'src/domain/services/jwt.service';
     EliminarGimnasioUseCase,
     ImpersonarUsuarioUseCase,
     // Repository
-    { provide: GIMNASIO_REPOSITORY, useClass: GimnasioRepositoryImplementation },
+    {
+      provide: GIMNASIO_REPOSITORY,
+      useClass: GimnasioRepositoryImplementation,
+    },
     // Guards
     JwtAuthGuard,
     RolesGuard,

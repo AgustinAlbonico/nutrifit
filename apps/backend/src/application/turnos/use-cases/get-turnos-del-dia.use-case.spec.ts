@@ -86,7 +86,9 @@ describe('GetTurnosDelDiaUseCase - Multi-Tenant Isolation', () => {
   describe('Multi-Tenant Isolation', () => {
     it('debe filtrar turnos por gimnasioId del TenantContext', async () => {
       // Arrange
-      jest.mocked(nutricionistaRepository.findById).mockResolvedValue(mockNutricionista as any);
+      jest
+        .mocked(nutricionistaRepository.findById)
+        .mockResolvedValue(mockNutricionista as any);
 
       // Act
       await useCase.execute(10, {});

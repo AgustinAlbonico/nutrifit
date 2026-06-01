@@ -10,7 +10,9 @@ describe('GimnasioRepositoryImplementation', () => {
   let dataSource: DataSource;
   let impl: GimnasioRepositoryImplementation;
 
-  const mockGimnasioOrm = (overrides: Partial<GimnasioOrmEntity> = {}): GimnasioOrmEntity => ({
+  const mockGimnasioOrm = (
+    overrides: Partial<GimnasioOrmEntity> = {},
+  ): GimnasioOrmEntity => ({
     idGimnasio: 1,
     nombre: 'Gym Central',
     direccion: 'Calle Principal 123',
@@ -59,8 +61,12 @@ describe('GimnasioRepositoryImplementation', () => {
       ],
     }).compile();
 
-    impl = module.get<GimnasioRepositoryImplementation>(GimnasioRepositoryImplementation);
-    repository = module.get<Repository<GimnasioOrmEntity>>(getRepositoryToken(GimnasioOrmEntity));
+    impl = module.get<GimnasioRepositoryImplementation>(
+      GimnasioRepositoryImplementation,
+    );
+    repository = module.get<Repository<GimnasioOrmEntity>>(
+      getRepositoryToken(GimnasioOrmEntity),
+    );
     dataSource = module.get<DataSource>(DataSource);
   });
 
@@ -101,7 +107,9 @@ describe('GimnasioRepositoryImplementation', () => {
 
       const result = await impl.findById(5);
 
-      expect(repository.findOne).toHaveBeenCalledWith({ where: { idGimnasio: 5 } });
+      expect(repository.findOne).toHaveBeenCalledWith({
+        where: { idGimnasio: 5 },
+      });
       expect(result).not.toBeNull();
       expect(result?.id).toBe(5);
     });
@@ -120,7 +128,9 @@ describe('GimnasioRepositoryImplementation', () => {
       const saved = mockGimnasioOrm({ idGimnasio: 10 });
       (repository.save as jest.Mock).mockResolvedValue(saved);
 
-      const { GimnasioEntity } = require('src/domain/entities/Gimnasio/gimnasio.entity');
+      const {
+        GimnasioEntity,
+      } = require('src/domain/entities/Gimnasio/gimnasio.entity');
       const entity = new GimnasioEntity({
         id: 0,
         nombre: 'Gym Nuevo',
@@ -140,13 +150,21 @@ describe('GimnasioRepositoryImplementation', () => {
 
   describe('delete', () => {
     it('debe hacer soft delete (marcar como inactivo)', async () => {
-      const gimnasio = mockGimnasioOrm({ idGimnasio: 1, emailHabilitado: true });
+      const gimnasio = mockGimnasioOrm({
+        idGimnasio: 1,
+        emailHabilitado: true,
+      });
       (repository.findOne as jest.Mock).mockResolvedValue(gimnasio);
-      (repository.save as jest.Mock).mockResolvedValue({ ...gimnasio, emailHabilitado: false });
+      (repository.save as jest.Mock).mockResolvedValue({
+        ...gimnasio,
+        emailHabilitado: false,
+      });
 
       await impl.delete(1);
 
-      expect(repository.findOne).toHaveBeenCalledWith({ where: { idGimnasio: 1 } });
+      expect(repository.findOne).toHaveBeenCalledWith({
+        where: { idGimnasio: 1 },
+      });
       expect(repository.save).toHaveBeenCalled();
     });
 
@@ -164,7 +182,9 @@ describe('GimnasioRepositoryImplementation', () => {
 
       const result = await impl.findByNombre('Gym Central');
 
-      expect(repository.findOne).toHaveBeenCalledWith({ where: { nombre: 'Gym Central' } });
+      expect(repository.findOne).toHaveBeenCalledWith({
+        where: { nombre: 'Gym Central' },
+      });
       expect(result).not.toBeNull();
     });
 
@@ -180,8 +200,16 @@ describe('GimnasioRepositoryImplementation', () => {
   describe('findActivos', () => {
     it('debe retornar solo gimnasios activos (emailHabilitado=true)', async () => {
       const gimnasios = [
-        mockGimnasioOrm({ idGimnasio: 1, nombre: 'Gym Central', emailHabilitado: true }),
-        mockGimnasioOrm({ idGimnasio: 2, nombre: 'Gym Norte', emailHabilitado: true }),
+        mockGimnasioOrm({
+          idGimnasio: 1,
+          nombre: 'Gym Central',
+          emailHabilitado: true,
+        }),
+        mockGimnasioOrm({
+          idGimnasio: 2,
+          nombre: 'Gym Norte',
+          emailHabilitado: true,
+        }),
       ];
       (repository.find as jest.Mock).mockResolvedValue(gimnasios);
 

@@ -11,7 +11,9 @@ describe('EliminarGimnasioUseCase', () => {
   let useCase: EliminarGimnasioUseCase;
   let mockRepository: jest.Mocked<GimnasioRepository>;
 
-  const mockGimnasio = (overrides: Partial<GimnasioEntity> = {}): GimnasioEntity => {
+  const mockGimnasio = (
+    overrides: Partial<GimnasioEntity> = {},
+  ): GimnasioEntity => {
     return new GimnasioEntity({
       id: 1,
       nombre: 'Gym Central',

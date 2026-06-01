@@ -139,7 +139,10 @@ export class UpsertFichaSaludSocioUseCase implements BaseUseCase {
     }
 
     const socio = await this.socioRepository.findOne({
-      where: { idPersona: personaId, gimnasioId: this.tenantContext.gimnasioId },
+      where: {
+        idPersona: personaId,
+        gimnasioId: this.tenantContext.gimnasioId,
+      },
       relations: {
         fichaSalud: {
           alergias: true,

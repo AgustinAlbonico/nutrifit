@@ -8,12 +8,19 @@ import * as bcrypt from 'bcrypt';
 dotenv.config({ path: '.env' });
 
 // Importar grupos de permisos data
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+
 const gruposPermisosData = require('./seed/data/grupos-permisos.data') as {
-  GRUPOS_PERMISOS: Record<string, { clave: string; nombre: string; descripcion: string; acciones: string[] }>;
-  getGrupoBasePorRol: (rol: string) => { clave: string; nombre: string; descripcion: string; acciones: string[] } | undefined;
+  GRUPOS_PERMISOS: Record<
+    string,
+    { clave: string; nombre: string; descripcion: string; acciones: string[] }
+  >;
+  getGrupoBasePorRol: (
+    rol: string,
+  ) =>
+    | { clave: string; nombre: string; descripcion: string; acciones: string[] }
+    | undefined;
 };
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+
 const shared = require('@nutrifit/shared') as { TODAS_LAS_ACCIONES: string[] };
 
 const GRUPOS_PERMISOS = gruposPermisosData.GRUPOS_PERMISOS;
@@ -121,15 +128,69 @@ const nutricionistas: NutricionistaData[] = [
 ];
 
 const socios: SocioData[] = [
-  { email: 'socio1-central@nutrifit.com', nombre: 'Socio1', apellido: 'Central', gimnasioNombre: 'Gym Central', dni: '50001001' },
-  { email: 'socio2-central@nutrifit.com', nombre: 'Socio2', apellido: 'Central', gimnasioNombre: 'Gym Central', dni: '50001002' },
-  { email: 'socio3-central@nutrifit.com', nombre: 'Socio3', apellido: 'Central', gimnasioNombre: 'Gym Central', dni: '50001003' },
-  { email: 'socio1-norte@nutrifit.com', nombre: 'Socio1', apellido: 'Norte', gimnasioNombre: 'Gym Norte', dni: '50002001' },
-  { email: 'socio2-norte@nutrifit.com', nombre: 'Socio2', apellido: 'Norte', gimnasioNombre: 'Gym Norte', dni: '50002002' },
-  { email: 'socio3-norte@nutrifit.com', nombre: 'Socio3', apellido: 'Norte', gimnasioNombre: 'Gym Norte', dni: '50002003' },
-  { email: 'socio1-sur@nutrifit.com', nombre: 'Socio1', apellido: 'Sur', gimnasioNombre: 'Gym Sur', dni: '50003001' },
-  { email: 'socio2-sur@nutrifit.com', nombre: 'Socio2', apellido: 'Sur', gimnasioNombre: 'Gym Sur', dni: '50003002' },
-  { email: 'socio3-sur@nutrifit.com', nombre: 'Socio3', apellido: 'Sur', gimnasioNombre: 'Gym Sur', dni: '50003003' },
+  {
+    email: 'socio1-central@nutrifit.com',
+    nombre: 'Socio1',
+    apellido: 'Central',
+    gimnasioNombre: 'Gym Central',
+    dni: '50001001',
+  },
+  {
+    email: 'socio2-central@nutrifit.com',
+    nombre: 'Socio2',
+    apellido: 'Central',
+    gimnasioNombre: 'Gym Central',
+    dni: '50001002',
+  },
+  {
+    email: 'socio3-central@nutrifit.com',
+    nombre: 'Socio3',
+    apellido: 'Central',
+    gimnasioNombre: 'Gym Central',
+    dni: '50001003',
+  },
+  {
+    email: 'socio1-norte@nutrifit.com',
+    nombre: 'Socio1',
+    apellido: 'Norte',
+    gimnasioNombre: 'Gym Norte',
+    dni: '50002001',
+  },
+  {
+    email: 'socio2-norte@nutrifit.com',
+    nombre: 'Socio2',
+    apellido: 'Norte',
+    gimnasioNombre: 'Gym Norte',
+    dni: '50002002',
+  },
+  {
+    email: 'socio3-norte@nutrifit.com',
+    nombre: 'Socio3',
+    apellido: 'Norte',
+    gimnasioNombre: 'Gym Norte',
+    dni: '50002003',
+  },
+  {
+    email: 'socio1-sur@nutrifit.com',
+    nombre: 'Socio1',
+    apellido: 'Sur',
+    gimnasioNombre: 'Gym Sur',
+    dni: '50003001',
+  },
+  {
+    email: 'socio2-sur@nutrifit.com',
+    nombre: 'Socio2',
+    apellido: 'Sur',
+    gimnasioNombre: 'Gym Sur',
+    dni: '50003002',
+  },
+  {
+    email: 'socio3-sur@nutrifit.com',
+    nombre: 'Socio3',
+    apellido: 'Sur',
+    gimnasioNombre: 'Gym Sur',
+    dni: '50003003',
+  },
 ];
 
 async function runSeedMultiTenant() {
@@ -160,7 +221,12 @@ async function runSeedMultiTenant() {
           `INSERT INTO gimnasio (nombre, direccion, telefono, email, activo, fecha_creacion)
            VALUES (?, ?, ?, ?, TRUE, NOW())
            ON DUPLICATE_KEY UPDATE id_gimnasio = LAST_INSERT_ID(id_gimnasio)`,
-          [gimnasio.nombre, gimnasio.direccion, gimnasio.telefono, gimnasio.email],
+          [
+            gimnasio.nombre,
+            gimnasio.direccion,
+            gimnasio.telefono,
+            gimnasio.email,
+          ],
         );
 
         const fila = resultado as { insertId: number };
@@ -179,12 +245,17 @@ async function runSeedMultiTenant() {
       const accionIds = new Map<string, number>();
 
       for (const claveAccion of TODAS_LAS_ACCIONES) {
-        const nombreAccion = claveAccion.split('.')[1]?.replace(/-/g, ' ') || claveAccion;
+        const nombreAccion =
+          claveAccion.split('.')[1]?.replace(/-/g, ' ') || claveAccion;
         const resultado: unknown = await dataSource.query(
           `INSERT INTO accion (clave, nombre, descripcion)
            VALUES (?, ?, ?)
            ON DUPLICATE KEY UPDATE id_accion = LAST_INSERT_ID(id_accion)`,
-          [claveAccion, nombreAccion.charAt(0).toUpperCase() + nombreAccion.slice(1), `Accion ${claveAccion}`],
+          [
+            claveAccion,
+            nombreAccion.charAt(0).toUpperCase() + nombreAccion.slice(1),
+            `Accion ${claveAccion}`,
+          ],
         );
 
         const fila = resultado as { insertId: number };
@@ -227,7 +298,9 @@ async function runSeedMultiTenant() {
           }
         }
 
-        console.log(`Grupo creado: ${grupo.nombre} (ID: ${idGrupo}) con ${grupo.acciones.length} acciones`);
+        console.log(
+          `Grupo creado: ${grupo.nombre} (ID: ${idGrupo}) con ${grupo.acciones.length} acciones`,
+        );
       }
 
       return grupoIds;
@@ -236,7 +309,10 @@ async function runSeedMultiTenant() {
     const grupoIds = await crearGruposPermisos();
 
     // Asignar grupo a usuario por rol
-    const asignarGruposAUsuario = async (email: string, rol: string): Promise<void> => {
+    const asignarGruposAUsuario = async (
+      email: string,
+      rol: string,
+    ): Promise<void> => {
       const grupoBase = getGrupoBasePorRol(rol);
       if (!grupoBase) {
         console.log(`No hay grupo base para rol: ${rol}`);
@@ -334,7 +410,9 @@ async function runSeedMultiTenant() {
         );
 
         const filaUsuario = resultadoUsuario as { insertId: number };
-        console.log(`ADMIN creado: ${admin.email} (Gimnasio: ${admin.gimnasioNombre}, ID: ${filaUsuario.insertId})`);
+        console.log(
+          `ADMIN creado: ${admin.email} (Gimnasio: ${admin.gimnasioNombre}, ID: ${filaUsuario.insertId})`,
+        );
 
         // Asignar grupo ADMIN
         await asignarGruposAUsuario(admin.email, 'ADMIN');
@@ -371,7 +449,9 @@ async function runSeedMultiTenant() {
         );
 
         const filaUsuario = resultadoUsuario as { insertId: number };
-        console.log(`NUTRICIONISTA creado: ${nutri.email} (Gimnasio: ${nutri.gimnasioNombre}, ID: ${filaUsuario.insertId})`);
+        console.log(
+          `NUTRICIONISTA creado: ${nutri.email} (Gimnasio: ${nutri.gimnasioNombre}, ID: ${filaUsuario.insertId})`,
+        );
 
         // Asignar grupo NUTRICIONISTA
         await asignarGruposAUsuario(nutri.email, 'NUTRICIONISTA');
@@ -408,7 +488,9 @@ async function runSeedMultiTenant() {
         );
 
         const filaUsuario = resultadoUsuario as { insertId: number };
-        console.log(`SOCIO creado: ${socio.email} (Gimnasio: ${socio.gimnasioNombre}, ID: ${filaUsuario.insertId})`);
+        console.log(
+          `SOCIO creado: ${socio.email} (Gimnasio: ${socio.gimnasioNombre}, ID: ${filaUsuario.insertId})`,
+        );
 
         // Asignar grupo SOCIO
         await asignarGruposAUsuario(socio.email, 'SOCIO');

@@ -50,7 +50,9 @@ export class ObtenerPermisosUsuarioUseCase {
 
     const accionesUsuario = (usuario.acciones ?? []).map((a) => a.clave);
     const accionesGrupos = grupos.flatMap((g) => g.acciones);
-    const accionesUnicas = [...new Set([...accionesUsuario, ...accionesGrupos])];
+    const accionesUnicas = [
+      ...new Set([...accionesUsuario, ...accionesGrupos]),
+    ];
 
     return {
       usuarioId: usuario.idUsuario ?? usuarioId,

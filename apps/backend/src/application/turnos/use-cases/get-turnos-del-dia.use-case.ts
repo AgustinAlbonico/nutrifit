@@ -62,7 +62,9 @@ export class GetTurnosDelDiaUseCase implements BaseUseCase {
       .andWhere('nutricionista.gimnasioId = :gimnasioId', {
         gimnasioId: this.tenantContext.gimnasioId,
       })
-      .andWhere('nutricionista.idPersona = :nutricionistaId', { nutricionistaId })
+      .andWhere('nutricionista.idPersona = :nutricionistaId', {
+        nutricionistaId,
+      })
       .andWhere('turno.fechaTurno = :today', { today })
       .orderBy('turno.horaTurno', 'ASC');
 

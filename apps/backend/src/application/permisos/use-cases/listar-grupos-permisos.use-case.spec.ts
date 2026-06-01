@@ -21,7 +21,9 @@ describe('ListarGruposPermisosUseCase', () => {
       ],
     }).compile();
 
-    useCase = module.get<ListarGruposPermisosUseCase>(ListarGruposPermisosUseCase);
+    useCase = module.get<ListarGruposPermisosUseCase>(
+      ListarGruposPermisosUseCase,
+    );
     grupoRepo = module.get(getRepositoryToken(GrupoPermisoOrmEntity));
   });
 
@@ -32,7 +34,16 @@ describe('ListarGruposPermisosUseCase', () => {
         clave: 'ADMIN',
         nombre: 'Administrador',
         descripcion: 'Admin',
-        acciones: [{ id: 1, clave: 'socios.ver', nombre: '', descripcion: null, grupos: [], usuarios: [] }],
+        acciones: [
+          {
+            id: 1,
+            clave: 'socios.ver',
+            nombre: '',
+            descripcion: null,
+            grupos: [],
+            usuarios: [],
+          },
+        ],
         usuariosGruposPermisos: [],
         hijos: [],
       },
@@ -41,7 +52,16 @@ describe('ListarGruposPermisosUseCase', () => {
         clave: 'RECEPCIONISTA',
         nombre: 'Recepcionista',
         descripcion: 'Recep',
-        acciones: [{ id: 2, clave: 'turnos.ver', nombre: '', descripcion: null, grupos: [], usuarios: [] }],
+        acciones: [
+          {
+            id: 2,
+            clave: 'turnos.ver',
+            nombre: '',
+            descripcion: null,
+            grupos: [],
+            usuarios: [],
+          },
+        ],
         usuariosGruposPermisos: [],
         hijos: [],
       },
