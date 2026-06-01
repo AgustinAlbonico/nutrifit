@@ -16,6 +16,7 @@ import {
 import { SocioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities';
 import { Repository } from 'typeorm';
 import { ContextoPaciente } from '@nutrifit/shared';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 @Injectable()
 export class PrepararContextoPacienteUseCase implements BaseUseCase {
@@ -26,12 +27,16 @@ export class PrepararContextoPacienteUseCase implements BaseUseCase {
     private readonly nutricionistaRepository: NutricionistaRepository,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(socioId: number): Promise<ContextoPaciente> {
-    // 1. Validar que el socio existe
+    // 1. Validar que el socio existe y pertenece al gimnasio actual
     const socio = await this.socioRepository.findOne({
-      where: { idPersona: socioId },
+      where: {
+        idPersona: socioId,
+        gimnasioId: this.tenantContext.gimnasioId,
+      },
       relations: {
         fichaSalud: {
           alergias: true,
