@@ -34,6 +34,7 @@ import { NotificacionesPage } from '@/features/notificaciones/pages/Notificacion
 import { GimnasiosListPage } from '@/pages/admin/GimnasiosListPage';
 import { GimnasioWizardPage } from '@/pages/admin/GimnasioWizardPage';
 import { GimnasioDetailPage } from '@/pages/admin/GimnasioDetailPage';
+import { UsuarioPermisosPage } from '@/pages/admin/UsuarioPermisosPage';
 
 // Definir el tipo del context del router
 declare module '@tanstack/react-router' {
@@ -280,6 +281,13 @@ const gimnasioDetalleRoute = createRoute({
   component: GimnasioDetailPage,
 });
 
+// Usuario permisos route (ADMIN/SUPERADMIN)
+const usuarioPermisosRoute = createRoute({
+  getParentRoute: () => authLayoutRoute,
+  path: '/usuarios/$id/permisos',
+  component: UsuarioPermisosPage,
+});
+
 // Default redirect to dashboard or login
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -322,6 +330,7 @@ const routeTree = rootRoute.addChildren([
     gimnasiosListRoute,
     gimnasioNuevoRoute,
     gimnasioDetalleRoute,
+    usuarioPermisosRoute,
   ]),
 ]);
 

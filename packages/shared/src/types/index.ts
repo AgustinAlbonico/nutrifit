@@ -3,4 +3,4 @@ export * from './auth';
 export * from './turno';
 export * from './notificacion';
 export * from './ai';
-export * from './consentimiento';
+export * from './acciones';
