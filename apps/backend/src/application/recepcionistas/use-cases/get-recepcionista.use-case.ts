@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { BaseUseCase } from 'src/application/shared/use-case.base';
-import { RecepcionistaResponseDto } from '../dtos/recepcionista-response.dto';
+import { RecepcionistaEntity } from 'src/domain/entities/Persona/Recepcionista/recepcionista.entity';
 import {
   RECEPCIONISTA_REPOSITORY,
   RecepcionistaRepository,
@@ -14,13 +14,13 @@ export class GetRecepcionistaUseCase implements BaseUseCase {
     private readonly recepcionistaRepository: RecepcionistaRepository,
   ) {}
 
-  async execute(id: number): Promise<RecepcionistaResponseDto> {
+  async execute(id: number): Promise<RecepcionistaEntity> {
     const recepcionista = await this.recepcionistaRepository.findById(id);
 
     if (!recepcionista) {
       throw new NotFoundError(`Recepcionista con id ${id} no encontrado`);
     }
 
-    return RecepcionistaResponseDto.fromEntity(recepcionista);
+    return recepcionista;
   }
 }
