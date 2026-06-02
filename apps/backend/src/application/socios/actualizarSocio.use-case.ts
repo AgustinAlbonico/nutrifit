@@ -1,4 +1,4 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { BaseUseCase } from '../shared/use-case.base';
 import { SocioEntity } from 'src/domain/entities/Persona/Socio/socio.entity';
 import {
@@ -14,28 +14,36 @@ import {
   IPasswordEncrypterService,
   PASSWORD_ENCRYPTER_SERVICE,
 } from 'src/domain/services/password-encrypter.service';
+import {
+  IObjectStorageService,
+  OBJECT_STORAGE_SERVICE,
+} from 'src/domain/services/object-storage.service';
 
 @Injectable()
 export class ActualizarSocioUseCase implements BaseUseCase {
+  private readonly logger = new Logger(ActualizarSocioUseCase.name);
+
   constructor(
     @Inject(SOCIO_REPOSITORY) private readonly socioRepository: SocioRepository,
     @Inject(USUARIO_REPOSITORY)
     private readonly usuarioRepository: UsuarioRepository,
     @Inject(PASSWORD_ENCRYPTER_SERVICE)
     private readonly passwordEncrypter: IPasswordEncrypterService,
+    @Inject(OBJECT_STORAGE_SERVICE)
+    private readonly objectStorage: IObjectStorageService,
   ) {}
 
   async execute(
     id: number,
     payload: ActualizarSocioDto,
     fotoPerfilKey?: string,
+    eliminarFoto: boolean = false,
   ): Promise<SocioEntity> {
     const socioExistente = await this.socioRepository.findById(id);
     if (!socioExistente) {
       throw new NotFoundException(`Socio con id ${id} no encontrado`);
     }
 
-    // Actualizar datos del socio, usando valores existentes si no se proporcionan nuevos
     const socioActualizado = new SocioEntity(
       id,
       payload.nombre ?? socioExistente.nombre,
@@ -54,17 +62,20 @@ export class ActualizarSocioUseCase implements BaseUseCase {
       socioExistente.planesAlimentacion,
     );
 
-    // Asignar foto de perfil si se proporcionó una nueva
     if (fotoPerfilKey) {
+      if (socioExistente.fotoPerfilKey) {
+        await this.eliminarFotoAnterior(socioExistente.fotoPerfilKey);
+      }
       socioActualizado.fotoPerfilKey = fotoPerfilKey;
+    } else if (eliminarFoto && socioExistente.fotoPerfilKey) {
+      await this.eliminarFotoAnterior(socioExistente.fotoPerfilKey);
+      socioActualizado.fotoPerfilKey = null;
     } else if (socioExistente.fotoPerfilKey) {
-      // Mantener la foto existente si no se proporcionó una nueva
       socioActualizado.fotoPerfilKey = socioExistente.fotoPerfilKey;
     }
 
     const result = await this.socioRepository.update(id, socioActualizado);
 
-    // Si se proporciona contraseña, actualizarla
     if (payload.contrasena) {
       const usuario = await this.usuarioRepository.findByPersonaId(id);
       if (usuario) {
@@ -75,5 +86,15 @@ export class ActualizarSocioUseCase implements BaseUseCase {
     }
 
     return result;
+  }
+
+  private async eliminarFotoAnterior(objectKey: string): Promise<void> {
+    try {
+      await this.objectStorage.eliminarArchivo(objectKey);
+    } catch (error) {
+      this.logger.warn(
+        `No se pudo eliminar la foto anterior ${objectKey} del bucket: ${error}`,
+      );
+    }
   }
 }
