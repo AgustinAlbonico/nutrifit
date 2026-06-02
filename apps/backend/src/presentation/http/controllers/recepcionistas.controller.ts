@@ -10,7 +10,12 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  Res,
+  ParseIntPipe,
+  Inject,
+  UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { CreateRecepcionistaDto } from 'src/application/recepcionistas/dtos/create-recepcionista.dto';
 import { UpdateRecepcionistaDto } from 'src/application/recepcionistas/dtos/update-recepcionista.dto';
 import { CreateRecepcionistaUseCase } from 'src/application/recepcionistas/use-cases/create-recepcionista.use-case';
@@ -20,18 +25,17 @@ import { UpdateRecepcionistaUseCase } from 'src/application/recepcionistas/use-c
 import { DeleteRecepcionistaUseCase } from 'src/application/recepcionistas/use-cases/delete-recepcionista.use-case';
 import { ReactivarRecepcionistaUseCase } from 'src/application/recepcionistas/use-cases/reactivar-recepcionista.use-case';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Inject } from '@nestjs/common';
 import {
   OBJECT_STORAGE_SERVICE,
   IObjectStorageService,
 } from 'src/domain/services/object-storage.service';
+import { Public } from 'src/infrastructure/auth/decorators/public.decorator';
 import { Actions } from 'src/infrastructure/auth/decorators/actions.decorator';
 import { Rol } from 'src/infrastructure/auth/decorators/role.decorator';
 import { Rol as RolEnum } from 'src/domain/entities/Usuario/Rol';
 import { JwtAuthGuard } from 'src/infrastructure/auth/guards/auth.guard';
 import { RolesGuard } from 'src/infrastructure/auth/guards/roles.guard';
 import { ActionsGuard } from 'src/infrastructure/auth/guards/actions.guard';
-import { UseGuards } from '@nestjs/common';
 
 @Controller('recepcionistas')
 @UseGuards(JwtAuthGuard, RolesGuard, ActionsGuard)
@@ -92,12 +96,42 @@ export class RecepcionistasController {
     return this.getRecepcionistaUseCase.execute(+id);
   }
 
+  @Public()
+  @Get(':id/foto')
+  async obtenerFoto(
+    @Param('id', ParseIntPipe) id: number,
+    @Res() res: Response,
+  ) {
+    const recepcionista = await this.getRecepcionistaUseCase.execute(id);
+
+    if (!recepcionista || !recepcionista.fotoPerfilKey) {
+      return res.redirect(
+        'https://ui-avatars.com/api/?name=Recepcionista&background=f59e0b&color=fff&size=200',
+      );
+    }
+
+    const archivo = await this.objectStorage.obtenerArchivo(
+      recepcionista.fotoPerfilKey,
+    );
+
+    if (!archivo) {
+      return res.redirect(
+        'https://ui-avatars.com/api/?name=Recepcionista&background=f59e0b&color=fff&size=200',
+      );
+    }
+
+    res.setHeader('Content-Type', archivo.mimeType);
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    return res.send(archivo.buffer);
+  }
+
   @Put(':id')
   @UseInterceptors(FileInterceptor('fotoPerfil'))
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateRecepcionistaDto,
     @UploadedFile() file?: Express.Multer.File,
+    @Body('eliminarFoto') eliminarFotoRaw?: string,
   ) {
     let fotoPerfilKey: string | undefined;
 
@@ -116,10 +150,13 @@ export class RecepcionistasController {
       );
     }
 
+    const eliminarFoto = eliminarFotoRaw === 'true';
+
     const result = await this.updateRecepcionistaUseCase.execute(
       +id,
       dto,
       fotoPerfilKey,
+      eliminarFoto,
     );
     return {
       message: 'Recepcionista actualizado exitosamente',

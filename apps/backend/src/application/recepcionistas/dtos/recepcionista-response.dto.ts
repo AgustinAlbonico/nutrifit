@@ -11,6 +11,7 @@ export class RecepcionistaResponseDto {
   ciudad: string;
   provincia: string;
   dni: string;
+  fotoPerfilKey?: string | null;
   fotoPerfilUrl?: string;
   fechaBaja: Date | null;
 
@@ -27,9 +28,10 @@ export class RecepcionistaResponseDto {
     dto.provincia = entity.provincia;
     dto.dni = entity.dni;
     dto.fechaBaja = entity.fechaBaja;
+    dto.fotoPerfilKey = entity.fotoPerfilKey;
 
     if (entity.fotoPerfilKey) {
-      dto.fotoPerfilUrl = `/recepcionista/${entity.idPersona}/foto?v=${encodeURIComponent(
+      dto.fotoPerfilUrl = `/recepcionistas/${entity.idPersona}/foto?v=${encodeURIComponent(
         entity.fotoPerfilKey,
       )}`;
     }
