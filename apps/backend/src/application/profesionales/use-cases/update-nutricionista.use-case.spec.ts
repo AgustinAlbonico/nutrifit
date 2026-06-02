@@ -41,13 +41,17 @@ describe('UpdateNutricionistaUseCase — limpieza de foto de perfil', () => {
       error: jest.fn(),
       debug: jest.fn(),
       verbose: jest.fn(),
-    };
+    } as unknown as jest.Mocked<IAppLoggerService>;
+
+    const passwordEncrypter: jest.Mocked<IPasswordEncrypterService> = {
+      encryptPassword: jest.fn(),
+    } as unknown as jest.Mocked<IPasswordEncrypterService>;
 
     const useCase = new UpdateNutricionistaUseCase(
       nutricionistaRepository,
       usuarioRepository,
       logger,
-      {} as any,
+      passwordEncrypter,
       objectStorage,
     );
 
