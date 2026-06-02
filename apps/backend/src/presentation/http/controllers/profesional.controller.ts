@@ -45,6 +45,7 @@ import {
   OBJECT_STORAGE_SERVICE,
 } from 'src/domain/services/object-storage.service';
 import { Actions } from 'src/infrastructure/auth/decorators/actions.decorator';
+import { ACCIONES } from '@nutrifit/shared';
 import { Public } from 'src/infrastructure/auth/decorators/public.decorator';
 import { Rol } from 'src/infrastructure/auth/decorators/role.decorator';
 import { ActionsGuard } from 'src/infrastructure/auth/guards/actions.guard';
@@ -70,7 +71,7 @@ export class ProfesionalController {
 
   @Post()
   @Rol(RolEnum.ADMIN)
-  @Actions('profesionales.crear')
+  @Actions(ACCIONES.NUTRICIONISTAS_CREAR)
   @UseInterceptors(FileInterceptor('foto'))
   async create(
     @Body() createNutricionistaDto: CreateNutricionistaDto,
@@ -105,7 +106,7 @@ export class ProfesionalController {
 
   @Get()
   @Rol(RolEnum.ADMIN)
-  @Actions('profesionales.listar')
+  @Actions(ACCIONES.NUTRICIONISTAS_VER)
   async findAll(): Promise<NutricionistaResponseDto[]> {
     this.logger.log('Listando todos los profesionales');
     const nutricionistas = await this.listNutricionistasUseCase.execute();
@@ -134,7 +135,7 @@ export class ProfesionalController {
 
   @Get(':id')
   @Rol(RolEnum.ADMIN)
-  @Actions('profesionales.ver')
+  @Actions(ACCIONES.NUTRICIONISTAS_VER)
   async findOne(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<NutricionistaResponseDto> {
@@ -145,12 +146,13 @@ export class ProfesionalController {
 
   @Put(':id')
   @Rol(RolEnum.ADMIN)
-  @Actions('profesionales.actualizar')
+  @Actions(ACCIONES.NUTRICIONISTAS_EDITAR)
   @UseInterceptors(FileInterceptor('foto'))
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateNutricionistaDto: UpdateNutricionistaDto,
     @UploadedFile() file?: Express.Multer.File,
+    @Body('eliminarFoto') eliminarFotoRaw?: string,
   ): Promise<NutricionistaResponseDto> {
     this.logger.log(`Actualizando profesional con ID: ${id}`);
 
@@ -170,10 +172,13 @@ export class ProfesionalController {
       this.logger.log(`Foto de perfil actualizada: ${fotoPerfilKey}`);
     }
 
+    const eliminarFoto = eliminarFotoRaw === 'true';
+
     const nutricionista = await this.updateNutricionistaUseCase.execute(
       id,
       updateNutricionistaDto,
       fotoPerfilKey,
+      eliminarFoto,
     );
     return this.mapToResponseDto(nutricionista);
   }
@@ -209,7 +214,7 @@ export class ProfesionalController {
 
   @Delete(':id')
   @Rol(RolEnum.ADMIN)
-  @Actions('profesionales.eliminar')
+  @Actions(ACCIONES.NUTRICIONISTAS_ELIMINAR)
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     this.logger.log(`Dando de baja profesional con ID: ${id}`);
     await this.deleteNutricionistaUseCase.execute(id);
@@ -217,7 +222,7 @@ export class ProfesionalController {
 
   @Post(':id/reactivar')
   @Rol(RolEnum.ADMIN)
-  @Actions('profesionales.actualizar')
+  @Actions(ACCIONES.NUTRICIONISTAS_EDITAR)
   async reactivar(@Param('id', ParseIntPipe) id: number): Promise<void> {
     this.logger.log(`Reactivando profesional con ID: ${id}`);
     await this.reactivarNutricionistaUseCase.execute(id);
