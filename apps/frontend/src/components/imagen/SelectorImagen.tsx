@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent } from 'react';
 import { Upload, X } from 'lucide-react';
 
@@ -28,6 +28,8 @@ export function SelectorImagen({
   const [errorValidacion, setErrorValidacion] = useState<string | null>(null);
   const [arrastrando, setArrastrando] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const idInput = useId();
+  const idError = `${idInput}-error`;
 
   const mensajeError = error ?? errorValidacion;
 
@@ -83,7 +85,9 @@ export function SelectorImagen({
 
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium text-foreground">{etiqueta}</label>
+      <label htmlFor={idInput} className="text-sm font-medium text-foreground">
+        {etiqueta}
+      </label>
 
       <div
         data-testid="drop-zone"
@@ -146,16 +150,25 @@ export function SelectorImagen({
               </Button>
               <input
                 ref={inputRef}
+                id={idInput}
                 type="file"
                 accept="image/*"
                 className="hidden"
                 onChange={manejarInputArchivo}
                 disabled={deshabilitado}
                 aria-label={etiqueta}
+                aria-describedby={mensajeError ? idError : undefined}
+                aria-invalid={Boolean(mensajeError)}
               />
             </div>
             {mensajeError && (
-              <p className="mt-2 text-sm text-destructive">{mensajeError}</p>
+              <p
+                id={idError}
+                role="alert"
+                className="mt-2 text-sm text-destructive"
+              >
+                {mensajeError}
+              </p>
             )}
           </div>
         )}
