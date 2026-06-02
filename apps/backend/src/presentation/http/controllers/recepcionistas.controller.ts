@@ -55,7 +55,7 @@ export class RecepcionistasController {
   @Post()
   @Rol(RolEnum.ADMIN)
   @Actions('recepcionistas.crear')
-  @UseInterceptors(FileInterceptor('fotoPerfil'))
+  @UseInterceptors(FileInterceptor('foto'))
   async create(
     @Body() dto: CreateRecepcionistaDto,
     @UploadedFile() file?: Express.Multer.File,
@@ -128,7 +128,7 @@ export class RecepcionistasController {
   }
 
   @Put(':id')
-  @UseInterceptors(FileInterceptor('fotoPerfil'))
+  @UseInterceptors(FileInterceptor('foto'))
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateRecepcionistaDto,
