@@ -111,6 +111,7 @@ export class SocioController {
     @Param('id', ParseIntPipe) id: number,
     @Body() actualizarSocioDto: ActualizarSocioDto,
     @UploadedFile() file?: Express.Multer.File,
+    @Body('eliminarFoto') eliminarFotoRaw?: string,
   ) {
     this.logger.log(`Actualizando socio ${id}`);
 
@@ -132,10 +133,13 @@ export class SocioController {
       this.logger.log(`Foto de perfil actualizada: ${fotoPerfilKey}`);
     }
 
+    const eliminarFoto = eliminarFotoRaw === 'true';
+
     const socioActualizado = await this.actualizarSocioUseCase.execute(
       id,
       actualizarSocioDto,
       fotoPerfilKey,
+      eliminarFoto,
     );
     return new SocioResponseDto(socioActualizado);
   }
