@@ -22,6 +22,10 @@ import {
   ConflictError,
   NotFoundError,
 } from 'src/domain/exceptions/custom-exceptions';
+import {
+  IObjectStorageService,
+  OBJECT_STORAGE_SERVICE,
+} from 'src/domain/services/object-storage.service';
 
 @Injectable()
 export class UpdateNutricionistaUseCase implements BaseUseCase {
@@ -33,12 +37,15 @@ export class UpdateNutricionistaUseCase implements BaseUseCase {
     @Inject(APP_LOGGER_SERVICE) private readonly logger: IAppLoggerService,
     @Inject(PASSWORD_ENCRYPTER_SERVICE)
     private readonly passwordEncrypter: IPasswordEncrypterService,
+    @Inject(OBJECT_STORAGE_SERVICE)
+    private readonly objectStorage: IObjectStorageService,
   ) {}
 
   async execute(
     id: number,
     payload: UpdateNutricionistaDto,
     fotoPerfilKey?: string,
+    eliminarFoto: boolean = false,
   ): Promise<NutricionistaEntity> {
     // Find existing nutricionista
     const nutricionista = await this.nutricionistaRepository.findById(id);
@@ -107,7 +114,13 @@ export class UpdateNutricionistaUseCase implements BaseUseCase {
 
     // Update foto de perfil if provided
     if (fotoPerfilKey) {
+      if (nutricionista.fotoPerfilKey) {
+        await this.eliminarFotoAnterior(nutricionista.fotoPerfilKey);
+      }
       nutricionista.fotoPerfilKey = fotoPerfilKey;
+    } else if (eliminarFoto && nutricionista.fotoPerfilKey) {
+      await this.eliminarFotoAnterior(nutricionista.fotoPerfilKey);
+      nutricionista.fotoPerfilKey = null;
     }
 
     // Update nutricionista
@@ -136,5 +149,15 @@ export class UpdateNutricionistaUseCase implements BaseUseCase {
     );
 
     return nutricionistaActualizado;
+  }
+
+  private async eliminarFotoAnterior(objectKey: string): Promise<void> {
+    try {
+      await this.objectStorage.eliminarArchivo(objectKey);
+    } catch (error) {
+      this.logger.warn(
+        `No se pudo eliminar la foto anterior ${objectKey} del bucket: ${error}`,
+      );
+    }
   }
 }
