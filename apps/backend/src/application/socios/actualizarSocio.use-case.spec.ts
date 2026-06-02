@@ -11,20 +11,20 @@ describe('ActualizarSocioUseCase — limpieza de foto de perfil', () => {
     const socioRepository: jest.Mocked<SocioRepository> = {
       findById: jest.fn(),
       update: jest.fn(),
-    } as any;
+    } as unknown as jest.Mocked<SocioRepository>;
     const usuarioRepository: jest.Mocked<UsuarioRepository> = {
       findByPersonaId: jest.fn(),
-    } as any;
+    } as unknown as jest.Mocked<UsuarioRepository>;
     const passwordEncrypter: jest.Mocked<IPasswordEncrypterService> = {
       encryptPassword: jest.fn(),
-    } as any;
+    } as unknown as jest.Mocked<IPasswordEncrypterService>;
     const objectStorage: jest.Mocked<IObjectStorageService> = {
       eliminarArchivo: jest.fn(),
       subirArchivo: jest.fn(),
       obtenerUrlFirmada: jest.fn(),
       archivoExiste: jest.fn(),
       obtenerArchivo: jest.fn(),
-    } as any;
+    } as unknown as jest.Mocked<IObjectStorageService>;
 
     const useCase = new ActualizarSocioUseCase(
       socioRepository,
