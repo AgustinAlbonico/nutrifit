@@ -414,7 +414,6 @@ export function Socios() {
       toast.success('Socio creado exitosamente');
       setMostrarFormularioSocio(false);
       limpiarEstadoCreacion();
-      setFotoCreacion(null);
       await cargarSocios();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'No se pudo crear el socio';
@@ -465,7 +464,10 @@ export function Socios() {
       // Usar FormData si hay foto nueva o eliminación, sino JSON normal
       const esFile = fotoEdicion instanceof File;
       const esNull = fotoEdicion === null;
-      const socioTeniaFoto = socioSeleccionado?.fotoPerfilUrl;
+      const socioSiendoEditado = socios.find(
+        (s) => s.idPersona === idSocioEditando,
+      );
+      const socioTeniaFoto = socioSiendoEditado?.fotoPerfilUrl;
 
       if (esFile || (esNull && socioTeniaFoto)) {
         const formData = new FormData();
@@ -1143,6 +1145,8 @@ export function Socios() {
         onOpenChange={(open) => {
           setMostrarFormularioEdicion(open);
           if (!open) {
+            setIdSocioEditando(null);
+            setErroresEdicion({});
             setFotoEdicion(null);
           }
         }}
@@ -1262,7 +1266,16 @@ export function Socios() {
               </section>
             </div>
             <div className="flex justify-end gap-2 border-t bg-background px-6 py-4">
-              <Button type="button" variant="outline" onClick={() => setMostrarFormularioEdicion(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setMostrarFormularioEdicion(false);
+                  setIdSocioEditando(null);
+                  setErroresEdicion({});
+                  setFotoEdicion(null);
+                }}
+              >
                 Cancelar
               </Button>
               <Button type="submit">Guardar cambios</Button>
