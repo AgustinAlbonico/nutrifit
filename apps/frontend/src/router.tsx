@@ -35,6 +35,7 @@ import { GimnasiosListPage } from '@/pages/admin/GimnasiosListPage';
 import { GimnasioWizardPage } from '@/pages/admin/GimnasioWizardPage';
 import { GimnasioDetailPage } from '@/pages/admin/GimnasioDetailPage';
 import { UsuarioPermisosPage } from '@/pages/admin/UsuarioPermisosPage';
+import { Recepcionistas } from '@/pages/Recepcionistas';
 
 // Definir el tipo del context del router
 declare module '@tanstack/react-router' {
@@ -54,11 +55,11 @@ interface RouterContextType {
 }
 
 // Función para leer autenticación del localStorage (mismo que AuthContext)
-function readStoredAuth(): { isAuthenticated: boolean } {
+function readStoredAuth(): { isAuthenticated: boolean; rol: string | null } {
   const AUTH_STORAGE_KEY = 'nutrifit.auth';
   const raw = localStorage.getItem(AUTH_STORAGE_KEY);
   if (!raw) {
-    return { isAuthenticated: false };
+    return { isAuthenticated: false, rol: null };
   }
 
   try {
@@ -67,10 +68,21 @@ function readStoredAuth(): { isAuthenticated: boolean } {
       rol: string;
       permissions: string[];
     };
-    return { isAuthenticated: !!parsed.token };
+    return { isAuthenticated: !!parsed.token, rol: parsed.rol ?? null };
   } catch {
     localStorage.removeItem(AUTH_STORAGE_KEY);
-    return { isAuthenticated: false };
+    return { isAuthenticated: false, rol: null };
+  }
+}
+
+/** Redirect non-SUPERADMIN users to /dashboard. */
+function requireSuperadmin() {
+  const auth = readStoredAuth();
+  if (!auth.isAuthenticated) {
+    throw redirect({ to: '/login', replace: true });
+  }
+  if (auth.rol !== 'SUPERADMIN') {
+    throw redirect({ to: '/dashboard', replace: true });
   }
 }
 
@@ -130,6 +142,13 @@ const sociosRoute = createRoute({
   getParentRoute: () => authLayoutRoute,
   path: '/socios',
   component: Socios,
+});
+
+// Recepcionistas route
+const recepcionistasRoute = createRoute({
+  getParentRoute: () => authLayoutRoute,
+  path: '/recepcionistas',
+  component: Recepcionistas,
 });
 
 // Permisos route
@@ -267,18 +286,21 @@ const gimnasiosListRoute = createRoute({
   getParentRoute: () => authLayoutRoute,
   path: '/admin/gimnasios',
   component: GimnasiosListPage,
+  beforeLoad: requireSuperadmin,
 });
 
 const gimnasioNuevoRoute = createRoute({
   getParentRoute: () => authLayoutRoute,
   path: '/admin/gimnasios/nuevo',
   component: GimnasioWizardPage,
+  beforeLoad: requireSuperadmin,
 });
 
 const gimnasioDetalleRoute = createRoute({
   getParentRoute: () => authLayoutRoute,
   path: '/admin/gimnasios/$id',
   component: GimnasioDetailPage,
+  beforeLoad: requireSuperadmin,
 });
 
 // Usuario permisos route (ADMIN/SUPERADMIN)
@@ -306,6 +328,7 @@ const routeTree = rootRoute.addChildren([
   authLayoutRoute.addChildren([
     dashboardRoute,
     nutricionistasRoute,
+    recepcionistasRoute,
     perfilNutricionistaRoute,
     sociosRoute,
     permisosRoute,

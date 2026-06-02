@@ -17,6 +17,7 @@ import {
   Shield,
   Bell,
   Building2,
+  X,
 } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -35,10 +36,19 @@ import {
 } from '@/components/ui/tooltip';
 import { obtenerUrlFoto } from '@/lib/api';
 import { NotificationCenter } from '@/features/notificaciones/components/NotificationCenter';
-import { TenantSwitcher } from '@/components/admin/TenantSwitcher';
 
 export function Sidebar() {
-  const { rol, email, nombre, apellido, fotoPerfilUrl, logout, esSuperadmin } = useAuth();
+  const {
+    rol,
+    email,
+    nombre,
+    apellido,
+    fotoPerfilUrl,
+    logout,
+    gimnasioActual,
+    estaImpersonando,
+    salirDeImpersonacion,
+  } = useAuth();
   const [expandido, establecerExpandido] = useState(false);
 
   const nombreCompleto = [nombre, apellido].filter(Boolean).join(' ').trim();
@@ -60,6 +70,12 @@ export function Sidebar() {
       roles: ['ADMIN'],
     },
     {
+      to: '/recepcionistas',
+      label: 'Recepcionistas',
+      icon: UserCog,
+      roles: ['ADMIN'],
+    },
+    {
       to: '/socios',
       label: 'Socios',
       icon: User,
@@ -69,7 +85,7 @@ export function Sidebar() {
       to: '/permisos',
       label: 'Permisos & Roles',
       icon: UserCheck,
-      roles: ['ADMIN'],
+      roles: ['ADMIN', 'SUPERADMIN'],
     },
     {
       to: '/agenda',
@@ -129,7 +145,7 @@ export function Sidebar() {
       to: '/admin/auditoria',
       label: 'Auditoría',
       icon: Shield,
-      roles: ['ADMIN'],
+      roles: ['ADMIN', 'SUPERADMIN'],
     },
     {
       to: '/admin/gimnasios',
@@ -150,7 +166,7 @@ export function Sidebar() {
       to: '/configuracion',
       label: 'Configuracion',
       icon: Settings,
-      roles: ['ADMIN', 'NUTRICIONISTA', 'SOCIO'],
+      roles: ['ADMIN', 'NUTRICIONISTA', 'SOCIO', 'SUPERADMIN'],
     },
   ];
 
@@ -224,11 +240,6 @@ export function Sidebar() {
             </div>
           </div>
           {expandido && <NotificationCenter />}
-          {expandido && esSuperadmin && (
-            <div className="ml-2">
-              <TenantSwitcher />
-            </div>
-          )}
         </div>
 
         <Separator className="opacity-50" />
@@ -278,6 +289,64 @@ export function Sidebar() {
 
         {/* User Footer */}
         <div className={`border-t bg-muted/30 transition-all duration-200 ${expandido ? 'p-3' : 'p-2'}`}>
+          {estaImpersonando && gimnasioActual && (
+            <div
+              className={`mb-2 rounded-lg border-2 border-primary/40 bg-primary/5 shadow-sm shadow-primary/10 ${
+                expandido ? 'p-2.5' : 'p-1'
+              }`}
+            >
+              {expandido ? (
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+                    <Building2 className="h-4 w-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-primary">
+                      Impersonando
+                    </p>
+                    <p className="truncate text-xs font-semibold text-foreground">
+                      {gimnasioActual.nombre}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-muted-foreground hover:bg-destructive/10 hover:text-destructive shrink-0"
+                    onClick={salirDeImpersonacion}
+                    title="Salir de impersonación"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              ) : (
+                <Tooltip delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={salirDeImpersonacion}
+                      className="flex h-9 w-full items-center justify-center rounded-md hover:bg-primary/15 transition-colors"
+                      title={`Salir de ${gimnasioActual.nombre}`}
+                    >
+                      <Building2 className="h-4 w-4 text-primary" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="right"
+                    sideOffset={10}
+                    className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground font-medium shadow-lg shadow-primary/20 border-0"
+                  >
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider opacity-80">
+                        Impersonando
+                      </p>
+                      <p className="font-semibold">{gimnasioActual.nombre}</p>
+                      <p className="text-[10px] opacity-80 mt-1">Click para salir</p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+          )}
           {expandido ? (
             <div className="flex items-center gap-2.5 rounded-xl border bg-background p-2 shadow-sm">
               <Avatar className="size-9 ring-1 ring-border/60 shrink-0">
@@ -331,8 +400,8 @@ export function Sidebar() {
                     </AvatarFallback>
                   </Avatar>
                 </TooltipTrigger>
-                <TooltipContent 
-                  side="right" 
+                <TooltipContent
+                  side="right"
                   sideOffset={10}
                   className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground font-medium shadow-lg shadow-primary/20 border-0"
                 >
