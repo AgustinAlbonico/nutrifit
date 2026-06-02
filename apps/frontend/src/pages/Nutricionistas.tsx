@@ -40,13 +40,13 @@ import {
   AvatarImage,
   AvatarFallback,
 } from '@/components/ui/avatar';
-import { DialogoZoomImagen } from '@/components/media/DialogoZoomImagen';
+import { SelectorImagen } from '@/components/imagen/SelectorImagen';
 
 type CampoFormularioCreacion = keyof CrearNutricionistaDto;
 type CampoFormularioEdicion = keyof CrearNutricionistaDto;
 type ErroresFormularioCreacion = Partial<Record<CampoFormularioCreacion, string>>;
 type ErroresFormularioEdicion = Partial<Record<CampoFormularioEdicion, string>>;
-type ContextoAjusteFoto = 'CREACION' | 'EDICION';
+type EstadoFoto = string | File | null;
 
 const FORMULARIO_NUTRICIONISTA_INICIAL: CrearNutricionistaDto = {
   nombre: '',
@@ -120,46 +120,8 @@ export function Nutricionistas() {
   const [nutricionistaForm, setNutricionistaForm] = useState<CrearNutricionistaDto>(FORMULARIO_NUTRICIONISTA_INICIAL);
   const [erroresCreacion, setErroresCreacion] = useState<ErroresFormularioCreacion>({});
   const [errorGeneralCreacion, setErrorGeneralCreacion] = useState<string | null>(null);
-  const [fotoCreacion, setFotoCreacion] = useState<File | null>(null);
-  const [mostrarDialogoZoomFoto, setMostrarDialogoZoomFoto] = useState(false);
-  const [archivoAjusteFoto, setArchivoAjusteFoto] = useState<File | null>(null);
-  const [contextoAjusteFoto, setContextoAjusteFoto] =
-    useState<ContextoAjusteFoto | null>(null);
-
-  const [nutricionistaFormEdicion, setNutricionistaFormEdicion] = useState<CrearNutricionistaDto>(FORMULARIO_NUTRICIONISTA_INICIAL);
-  const [erroresEdicion, setErroresEdicion] = useState<ErroresFormularioEdicion>({});
-  const [fotoEdicion, setFotoEdicion] = useState<File | null>(null);
-
-  const cerrarDialogoZoomFoto = useCallback(() => {
-    setMostrarDialogoZoomFoto(false);
-    setArchivoAjusteFoto(null);
-    setContextoAjusteFoto(null);
-  }, []);
-
-  const abrirDialogoZoomFoto = useCallback(
-    (archivo: File, contexto: ContextoAjusteFoto) => {
-      setArchivoAjusteFoto(archivo);
-      setContextoAjusteFoto(contexto);
-      setMostrarDialogoZoomFoto(true);
-    },
-    [],
-  );
-
-  const confirmarDialogoZoomFoto = useCallback(
-    (archivoProcesado: File) => {
-      if (contextoAjusteFoto === 'CREACION') {
-        setFotoCreacion(archivoProcesado);
-      }
-
-      if (contextoAjusteFoto === 'EDICION') {
-        setFotoEdicion(archivoProcesado);
-      }
-
-      cerrarDialogoZoomFoto();
-      toast.success('Foto ajustada correctamente.');
-    },
-    [cerrarDialogoZoomFoto, contextoAjusteFoto],
-  );
+  const [fotoCreacion, setFotoCreacion] = useState<EstadoFoto>(null);
+  const [fotoEdicion, setFotoEdicion] = useState<EstadoFoto>(null);
 
   const [mostrarConfirmacionEliminar, setMostrarConfirmacionEliminar] = useState(false);
   const [nutricionistaAEliminar, setNutricionistaAEliminar] = useState<Nutricionista | null>(null);
@@ -279,8 +241,7 @@ export function Nutricionistas() {
     setErroresCreacion({});
     setErrorGeneralCreacion(null);
     setFotoCreacion(null);
-    cerrarDialogoZoomFoto();
-  }, [cerrarDialogoZoomFoto]);
+  }, []);
 
   const provinciasDisponibles = useMemo(() => {
     return Array.from(
@@ -464,7 +425,7 @@ export function Nutricionistas() {
     }
 
     try {
-      if (fotoCreacion) {
+      if (fotoCreacion instanceof File) {
         const formData = new FormData();
         formData.append('foto', fotoCreacion);
         Object.entries(nutricionistaForm).forEach(([key, value]) => {
@@ -516,8 +477,7 @@ export function Nutricionistas() {
       contrasena: '',
     });
     setErroresEdicion({});
-    setFotoEdicion(null);
-    cerrarDialogoZoomFoto();
+    setFotoEdicion(nutricionista.fotoPerfilUrl ?? null);
     setMostrarFormularioEdicion(true);
   };
 
@@ -534,10 +494,27 @@ export function Nutricionistas() {
     }
 
     try {
-      if (fotoEdicion) {
+      const payload = {
+        ...nutricionistaFormEdicion,
+        ...(nutricionistaFormEdicion.contrasena ? {} : { contrasena: undefined }),
+      };
+
+      const esFile = fotoEdicion instanceof File;
+      const esNull = fotoEdicion === null;
+      const nutricionistaSiendoEditado = nutricionistas.find(
+        (n) => n.idPersona === idNutricionistaEditando,
+      );
+      const nutricionistaTeniaFoto = nutricionistaSiendoEditado?.fotoPerfilUrl;
+
+      if (esFile || (esNull && nutricionistaTeniaFoto)) {
         const formData = new FormData();
-        formData.append('foto', fotoEdicion);
-        Object.entries(nutricionistaFormEdicion).forEach(([key, value]) => {
+        if (esFile) {
+          formData.append('foto', fotoEdicion);
+        }
+        if (esNull && nutricionistaTeniaFoto) {
+          formData.append('eliminarFoto', 'true');
+        }
+        Object.entries(payload).forEach(([key, value]) => {
           if (key !== 'contrasena' || value) {
             formData.append(key, String(value));
           }
@@ -548,11 +525,6 @@ export function Nutricionistas() {
           formData,
         });
       } else {
-        const payload = {
-          ...nutricionistaFormEdicion,
-          ...(nutricionistaFormEdicion.contrasena ? {} : { contrasena: undefined }),
-        };
-
         await apiRequest(`/profesional/${idNutricionistaEditando}`, {
           method: 'PUT',
           token,
@@ -1073,42 +1045,11 @@ export function Nutricionistas() {
                  </div>
                </section>
 
-               <section className="space-y-4">
-                 <h3 className="text-sm font-semibold text-foreground">Foto de perfil</h3>
-                 <div className="grid gap-4 md:grid-cols-2">
-                   <div className="space-y-2 md:col-span-2">
-                     <Label htmlFor="crear-foto">Foto (opcional)</Label>
-                     <Input
-                       id="crear-foto"
-                       type="file"
-                       accept="image/*"
-                        onChange={(e) => {
-                          const archivo = e.target.files?.[0];
-                          if (archivo) {
-                            abrirDialogoZoomFoto(archivo, 'CREACION');
-                          }
-                          e.currentTarget.value = '';
-                        }}
-                      />
-                      {fotoCreacion && (
-                        <div className="flex items-center gap-2">
-                          <p className="text-xs text-muted-foreground">
-                            Archivo seleccionado: {fotoCreacion.name}
-                          </p>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-auto px-2 py-1 text-xs"
-                            onClick={() => abrirDialogoZoomFoto(fotoCreacion, 'CREACION')}
-                          >
-                            Ajustar zoom
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </section>
+<SelectorImagen
+                  etiqueta="Foto de perfil"
+                  alCambiarFoto={setFotoCreacion}
+                  deshabilitado={false}
+                />
 
                <section className="space-y-4">
                  <h3 className="text-sm font-semibold text-foreground">Contacto y ubicación</h3>
@@ -1285,11 +1226,10 @@ export function Nutricionistas() {
         </DialogContent>
       </Dialog>
 
-       <Dialog open={mostrarFormularioEdicion} onOpenChange={(open) => {
-         setMostrarFormularioEdicion(open);
-         if (!open) {
-           setFotoEdicion(null);
-            cerrarDialogoZoomFoto();
+<Dialog open={mostrarFormularioEdicion} onOpenChange={(open) => {
+          setMostrarFormularioEdicion(open);
+          if (!open) {
+            setFotoEdicion(null);
           }
         }}>
         <DialogContent className="max-w-4xl p-0">
@@ -1357,42 +1297,17 @@ export function Nutricionistas() {
                 </div>
               </section>
 
-              <section className="space-y-4">
-                <h3 className="text-sm font-semibold text-foreground">Foto de perfil</h3>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="editar-foto">Nueva foto (opcional)</Label>
-                    <Input
-                      id="editar-foto"
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const archivo = e.target.files?.[0];
-                        if (archivo) {
-                          abrirDialogoZoomFoto(archivo, 'EDICION');
-                        }
-                        e.currentTarget.value = '';
-                      }}
-                    />
-                    {fotoEdicion && (
-                      <div className="flex items-center gap-2">
-                        <p className="text-xs text-muted-foreground">
-                          Archivo seleccionado: {fotoEdicion.name}
-                        </p>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-auto px-2 py-1 text-xs"
-                          onClick={() => abrirDialogoZoomFoto(fotoEdicion, 'EDICION')}
-                        >
-                          Ajustar zoom
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </section>
+              <SelectorImagen
+                  etiqueta="Foto de perfil"
+                  valorActual={
+                    typeof fotoEdicion === 'string'
+                      ? fotoEdicion
+                      : nutricionistas.find((n) => n.idPersona === idNutricionistaEditando)
+                          ?.fotoPerfilUrl ?? null
+                  }
+                  alCambiarFoto={setFotoEdicion}
+                  deshabilitado={false}
+                />
 
               <section className="space-y-4">
                 <h3 className="text-sm font-semibold text-foreground">Contacto y ubicación</h3>
@@ -1439,7 +1354,11 @@ export function Nutricionistas() {
               </section>
             </div>
             <div className="flex justify-end gap-2 border-t bg-background px-6 py-4">
-              <Button type="button" variant="outline" onClick={() => setMostrarFormularioEdicion(false)}>
+              <Button type="button" variant="outline" onClick={() => {
+                  setMostrarFormularioEdicion(false);
+                  setIdNutricionistaEditando(null);
+                  setFotoEdicion(null);
+                }}>
                 Cancelar
               </Button>
               <Button type="submit">Guardar cambios</Button>
@@ -1448,15 +1367,7 @@ export function Nutricionistas() {
         </DialogContent>
       </Dialog>
 
-      <DialogoZoomImagen
-        abierto={mostrarDialogoZoomFoto}
-        archivoOriginal={archivoAjusteFoto}
-        titulo="Ajustar foto del nutricionista"
-        descripcion="Podés acercar la imagen para centrar mejor el perfil antes de guardar."
-        textoBotonConfirmar="Usar esta imagen"
-        onCancelar={cerrarDialogoZoomFoto}
-        onConfirmar={confirmarDialogoZoomFoto}
-      />
+      
 
       {/* Modal Ver Detalles */}
       <Dialog open={mostrarModalDetalles} onOpenChange={setMostrarModalDetalles}>
