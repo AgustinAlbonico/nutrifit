@@ -447,7 +447,6 @@ export function Nutricionistas() {
       toast.success('Nutricionista creado exitosamente');
       setMostrarFormularioNutricionista(false);
       limpiarEstadoCreacion();
-      setFotoCreacion(null);
       await cargarNutricionistas();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'No se pudo crear el nutricionista';
@@ -1229,6 +1228,8 @@ export function Nutricionistas() {
 <Dialog open={mostrarFormularioEdicion} onOpenChange={(open) => {
           setMostrarFormularioEdicion(open);
           if (!open) {
+            setIdNutricionistaEditando(null);
+            setErroresEdicion({});
             setFotoEdicion(null);
           }
         }}>
@@ -1300,10 +1301,7 @@ export function Nutricionistas() {
               <SelectorImagen
                   etiqueta="Foto de perfil"
                   valorActual={
-                    typeof fotoEdicion === 'string'
-                      ? fotoEdicion
-                      : nutricionistas.find((n) => n.idPersona === idNutricionistaEditando)
-                          ?.fotoPerfilUrl ?? null
+                    typeof fotoEdicion === 'string' ? fotoEdicion : null
                   }
                   alCambiarFoto={setFotoEdicion}
                   deshabilitado={false}
