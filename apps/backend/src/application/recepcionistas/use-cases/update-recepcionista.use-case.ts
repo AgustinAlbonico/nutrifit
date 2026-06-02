@@ -11,6 +11,10 @@ import {
   IAppLoggerService,
 } from 'src/domain/services/logger.service';
 import { NotFoundError } from 'src/domain/exceptions/custom-exceptions';
+import {
+  IObjectStorageService,
+  OBJECT_STORAGE_SERVICE,
+} from 'src/domain/services/object-storage.service';
 
 @Injectable()
 export class UpdateRecepcionistaUseCase implements BaseUseCase {
@@ -18,12 +22,15 @@ export class UpdateRecepcionistaUseCase implements BaseUseCase {
     @Inject(RECEPCIONISTA_REPOSITORY)
     private readonly recepcionistaRepository: RecepcionistaRepository,
     @Inject(APP_LOGGER_SERVICE) private readonly logger: IAppLoggerService,
+    @Inject(OBJECT_STORAGE_SERVICE)
+    private readonly objectStorage: IObjectStorageService,
   ) {}
 
   async execute(
     id: number,
     payload: UpdateRecepcionistaDto,
     fotoPerfilKey?: string,
+    eliminarFoto: boolean = false,
   ): Promise<RecepcionistaEntity> {
     const existing = await this.recepcionistaRepository.findById(id);
 
@@ -42,7 +49,13 @@ export class UpdateRecepcionistaUseCase implements BaseUseCase {
     if (payload.provincia) existing.provincia = payload.provincia;
 
     if (fotoPerfilKey) {
+      if (existing.fotoPerfilKey) {
+        await this.eliminarFotoAnterior(existing.fotoPerfilKey);
+      }
       existing.fotoPerfilKey = fotoPerfilKey;
+    } else if (eliminarFoto && existing.fotoPerfilKey) {
+      await this.eliminarFotoAnterior(existing.fotoPerfilKey);
+      existing.fotoPerfilKey = null;
     }
 
     const updated = await this.recepcionistaRepository.update(id, existing);
@@ -52,5 +65,15 @@ export class UpdateRecepcionistaUseCase implements BaseUseCase {
     );
 
     return updated;
+  }
+
+  private async eliminarFotoAnterior(objectKey: string): Promise<void> {
+    try {
+      await this.objectStorage.eliminarArchivo(objectKey);
+    } catch (error) {
+      this.logger.warn(
+        `No se pudo eliminar la foto anterior ${objectKey} del bucket: ${error}`,
+      );
+    }
   }
 }
