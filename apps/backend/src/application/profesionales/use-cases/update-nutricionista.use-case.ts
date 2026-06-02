@@ -55,9 +55,14 @@ export class UpdateNutricionistaUseCase implements BaseUseCase {
     }
 
     // Find associated usuario
-    const todosUsuarios = await this.usuarioRepository.findAll();
-    const usuario = todosUsuarios.find(
-      (u) => u.persona?.idPersona === nutricionista.idPersona,
+    if (!nutricionista.idPersona) {
+      this.logger.error(
+        `Nutricionista ${id} encontrado sin idPersona. Estado inconsistente.`,
+      );
+      throw new NotFoundError('Nutricionista no encontrado.');
+    }
+    const usuario = await this.usuarioRepository.findByPersonaId(
+      nutricionista.idPersona,
     );
     const currentEmail = usuario?.email;
 

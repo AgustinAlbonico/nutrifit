@@ -21,7 +21,6 @@ describe('UpdateNutricionistaUseCase — limpieza de foto de perfil', () => {
     } as unknown as jest.Mocked<NutricionistaRepository>;
 
     const usuarioRepository: jest.Mocked<UsuarioRepository> = {
-      findAll: jest.fn().mockResolvedValue([]),
       findByEmail: jest.fn(),
       update: jest.fn(),
       findByPersonaId: jest.fn(),
