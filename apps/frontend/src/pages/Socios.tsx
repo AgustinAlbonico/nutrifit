@@ -40,13 +40,13 @@ import {
   AvatarImage,
   AvatarFallback,
 } from '@/components/ui/avatar';
-import { DialogoZoomImagen } from '@/components/media/DialogoZoomImagen';
+import { SelectorImagen } from '@/components/imagen/SelectorImagen';
 
 type CampoFormularioCreacion = keyof CrearSocioDto;
 type CampoFormularioEdicion = keyof CrearSocioDto;
 type ErroresFormularioCreacion = Partial<Record<CampoFormularioCreacion, string>>;
 type ErroresFormularioEdicion = Partial<Record<CampoFormularioEdicion, string>>;
-type ContextoAjusteFoto = 'CREACION' | 'EDICION';
+
 
 const FORMULARIO_SOCIO_INICIAL: CrearSocioDto = {
   nombre: '',
@@ -121,43 +121,10 @@ export function Socios() {
   const [mostrarConfirmacionEliminar, setMostrarConfirmacionEliminar] = useState(false);
   const [socioAEliminar, setSocioAEliminar] = useState<Socio | null>(null);
 
-  const [fotoCreacion, setFotoCreacion] = useState<File | null>(null);
-  const [fotoEdicion, setFotoEdicion] = useState<File | null>(null);
-  const [mostrarDialogoZoomFoto, setMostrarDialogoZoomFoto] = useState(false);
-  const [archivoAjusteFoto, setArchivoAjusteFoto] = useState<File | null>(null);
-  const [contextoAjusteFoto, setContextoAjusteFoto] =
-    useState<ContextoAjusteFoto | null>(null);
-
-  const cerrarDialogoZoomFoto = useCallback(() => {
-    setMostrarDialogoZoomFoto(false);
-    setArchivoAjusteFoto(null);
-    setContextoAjusteFoto(null);
-  }, []);
-
-  const abrirDialogoZoomFoto = useCallback(
-    (archivo: File, contexto: ContextoAjusteFoto) => {
-      setArchivoAjusteFoto(archivo);
-      setContextoAjusteFoto(contexto);
-      setMostrarDialogoZoomFoto(true);
-    },
-    [],
-  );
-
-  const confirmarDialogoZoomFoto = useCallback(
-    (archivoProcesado: File) => {
-      if (contextoAjusteFoto === 'CREACION') {
-        setFotoCreacion(archivoProcesado);
-      }
-
-      if (contextoAjusteFoto === 'EDICION') {
-        setFotoEdicion(archivoProcesado);
-      }
-
-      cerrarDialogoZoomFoto();
-      toast.success('Foto ajustada correctamente.');
-    },
-    [cerrarDialogoZoomFoto, contextoAjusteFoto],
-  );
+  type EstadoFoto = string | File | null;
+  const [fotoCreacion, setFotoCreacion] = useState<EstadoFoto>(null);
+  const [fotoEdicion, setFotoEdicion] = useState<EstadoFoto>(null);
+  
 
   const [mostrarModalDetalles, setMostrarModalDetalles] = useState(false);
   const [socioSeleccionado, setSocioSeleccionado] = useState<Socio | null>(null);
@@ -381,8 +348,7 @@ export function Socios() {
     setErroresCreacion({});
     setErrorGeneralCreacion(null);
     setFotoCreacion(null);
-    cerrarDialogoZoomFoto();
-  }, [cerrarDialogoZoomFoto]);
+  }, []);
 
   const cargarSocios = useCallback(async () => {
     if (!token) return;
@@ -424,8 +390,8 @@ export function Socios() {
     }
 
     try {
-      // Usar FormData si hay foto, sino JSON normal
-      if (fotoCreacion) {
+      // Usar FormData si hay foto nueva, sino JSON normal
+      if (fotoCreacion instanceof File) {
         const formData = new FormData();
         formData.append('foto', fotoCreacion);
         Object.entries(socioForm).forEach(([key, value]) => {
@@ -475,8 +441,7 @@ export function Socios() {
       contrasena: '',
     });
     setErroresEdicion({});
-    setFotoEdicion(null);
-    cerrarDialogoZoomFoto();
+    setFotoEdicion(socio.fotoPerfilUrl ?? null);
     setMostrarFormularioEdicion(true);
   };
 
@@ -497,10 +462,19 @@ export function Socios() {
         ...(socioFormEdicion.contrasena ? {} : { contraseña: undefined }),
       };
 
-      // Usar FormData si hay foto, sino JSON normal
-      if (fotoEdicion) {
+      // Usar FormData si hay foto nueva o eliminación, sino JSON normal
+      const esFile = fotoEdicion instanceof File;
+      const esNull = fotoEdicion === null;
+      const socioTeniaFoto = socioSeleccionado?.fotoPerfilUrl;
+
+      if (esFile || (esNull && socioTeniaFoto)) {
         const formData = new FormData();
-        formData.append('foto', fotoEdicion);
+        if (esFile) {
+          formData.append('foto', fotoEdicion);
+        }
+        if (esNull && socioTeniaFoto) {
+          formData.append('eliminarFoto', 'true');
+        }
         Object.entries(payload).forEach(([key, value]) => {
           if (value !== undefined) {
             formData.append(key, String(value));
@@ -1018,35 +992,11 @@ export function Socios() {
                 <h3 className="text-sm font-semibold text-foreground">Foto de perfil</h3>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="crear-foto">Foto (opcional)</Label>
-                    <Input
-                      id="crear-foto"
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const archivo = e.target.files?.[0];
-                        if (archivo) {
-                          abrirDialogoZoomFoto(archivo, 'CREACION');
-                        }
-                        e.currentTarget.value = '';
-                      }}
+                    <SelectorImagen
+                      etiqueta="Foto del Socio"
+                      alCambiarFoto={setFotoCreacion}
+                      deshabilitado={false}
                     />
-                    {fotoCreacion && (
-                      <div className="flex items-center gap-2">
-                        <p className="text-xs text-muted-foreground">
-                          Archivo seleccionado: {fotoCreacion.name}
-                        </p>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-auto px-2 py-1 text-xs"
-                          onClick={() => abrirDialogoZoomFoto(fotoCreacion, 'CREACION')}
-                        >
-                          Ajustar zoom
-                        </Button>
-                      </div>
-                    )}
                   </div>
                 </div>
               </section>
@@ -1194,7 +1144,6 @@ export function Socios() {
           setMostrarFormularioEdicion(open);
           if (!open) {
             setFotoEdicion(null);
-            cerrarDialogoZoomFoto();
           }
         }}
       >
@@ -1267,35 +1216,14 @@ export function Socios() {
                 <h3 className="text-sm font-semibold text-foreground">Foto de perfil</h3>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="editar-foto">Nueva foto (opcional)</Label>
-                    <Input
-                      id="editar-foto"
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const archivo = e.target.files?.[0];
-                        if (archivo) {
-                          abrirDialogoZoomFoto(archivo, 'EDICION');
-                        }
-                        e.currentTarget.value = '';
-                      }}
+                    <SelectorImagen
+                      etiqueta="Foto del Socio"
+                      valorActual={
+                        typeof fotoEdicion === 'string' ? fotoEdicion : null
+                      }
+                      alCambiarFoto={setFotoEdicion}
+                      deshabilitado={false}
                     />
-                    {fotoEdicion && (
-                      <div className="flex items-center gap-2">
-                        <p className="text-xs text-muted-foreground">
-                          Archivo seleccionado: {fotoEdicion.name}
-                        </p>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-auto px-2 py-1 text-xs"
-                          onClick={() => abrirDialogoZoomFoto(fotoEdicion, 'EDICION')}
-                        >
-                          Ajustar zoom
-                        </Button>
-                      </div>
-                    )}
                   </div>
                 </div>
               </section>
@@ -1343,15 +1271,7 @@ export function Socios() {
         </DialogContent>
       </Dialog>
 
-      <DialogoZoomImagen
-        abierto={mostrarDialogoZoomFoto}
-        archivoOriginal={archivoAjusteFoto}
-        titulo="Ajustar foto del socio"
-        descripcion="Podés acercar la imagen para centrar mejor el perfil antes de guardar."
-        textoBotonConfirmar="Usar esta imagen"
-        onCancelar={cerrarDialogoZoomFoto}
-        onConfirmar={confirmarDialogoZoomFoto}
-      />
+      
 
       {/* Modal Ver Detalles */}
       <Dialog open={mostrarModalDetalles} onOpenChange={setMostrarModalDetalles}>
