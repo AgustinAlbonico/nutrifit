@@ -1,11 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { BaseUseCase } from 'src/application/shared/use-case.base';
 import {
   FichaSaludSocioResponseDto,
   UpsertFichaSaludSocioDto,
 } from 'src/application/turnos/dtos';
 import {
+  BadRequestError,
   ForbiddenError,
   NotFoundError,
 } from 'src/domain/exceptions/custom-exceptions';
@@ -16,11 +18,11 @@ import {
 import {
   AlergiaOrmEntity,
   FichaSaludOrmEntity,
+  FichaSaludVersionOrmEntity,
   PatologiaOrmEntity,
   SocioOrmEntity,
   UsuarioOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
-import { Repository } from 'typeorm';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 @Injectable()
@@ -32,6 +34,8 @@ export class UpsertFichaSaludSocioUseCase implements BaseUseCase {
     private readonly socioRepository: Repository<SocioOrmEntity>,
     @InjectRepository(FichaSaludOrmEntity)
     private readonly fichaSaludRepository: Repository<FichaSaludOrmEntity>,
+    @InjectRepository(FichaSaludVersionOrmEntity)
+    private readonly fichaSaludVersionRepository: Repository<FichaSaludVersionOrmEntity>,
     @InjectRepository(AlergiaOrmEntity)
     private readonly alergiaRepository: Repository<AlergiaOrmEntity>,
     @InjectRepository(PatologiaOrmEntity)
@@ -39,6 +43,8 @@ export class UpsertFichaSaludSocioUseCase implements BaseUseCase {
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
     private readonly tenantContext: TenantContextService,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
   ) {}
 
   async execute(
@@ -50,75 +56,172 @@ export class UpsertFichaSaludSocioUseCase implements BaseUseCase {
     const alergias = await this.resolveAlergias(payload.alergias ?? []);
     const patologias = await this.resolvePatologias(payload.patologias ?? []);
 
-    let ficha = socio.fichaSalud as FichaSaludOrmEntity | null;
+    const esCreacion = !socio.fichaSalud;
+    const ahora = new Date();
 
-    if (!ficha) {
-      ficha = new FichaSaludOrmEntity();
+    // Validación semántica del consentimiento (RB44): solo se exige en creación.
+    if (esCreacion && payload.consentimiento !== true) {
+      throw new BadRequestError(
+        'Se requiere consentimiento expreso para almacenar la ficha.',
+      );
     }
 
-    ficha.altura = payload.altura;
-    ficha.peso = payload.peso;
-    ficha.nivelActividadFisica = payload.nivelActividadFisica;
-    ficha.objetivoPersonal = payload.objetivoPersonal;
-    ficha.alergias = alergias;
-    ficha.patologias = patologias;
-    // --- Medicación y suplementos ---
-    ficha.medicacionActual = payload.medicacionActual ?? null;
-    ficha.suplementosActuales = payload.suplementosActuales ?? null;
-    // --- Historial médico ---
-    ficha.cirugiasPrevias = payload.cirugiasPrevias ?? null;
-    ficha.antecedentesFamiliares = payload.antecedentesFamiliares ?? null;
-    // --- Hábitos alimentarios ---
-    ficha.frecuenciaComidas = payload.frecuenciaComidas ?? null;
-    ficha.consumoAguaDiario = payload.consumoAguaDiario ?? null;
-    ficha.restriccionesAlimentarias = payload.restriccionesAlimentarias ?? null;
-    // --- Hábitos de vida ---
-    ficha.consumoAlcohol = payload.consumoAlcohol ?? null;
-    ficha.fumaTabaco = payload.fumaTabaco ?? false;
-    ficha.horasSueno = payload.horasSueno ?? null;
-    // --- Contacto de emergencia ---
-    ficha.contactoEmergenciaNombre = payload.contactoEmergenciaNombre ?? null;
-    ficha.contactoEmergenciaTelefono =
-      payload.contactoEmergenciaTelefono ?? null;
+    const fichaResultado = await this.dataSource.transaction(async (manager) => {
+      const fichaRepo = manager.getRepository(FichaSaludOrmEntity);
+      const versionRepo = manager.getRepository(FichaSaludVersionOrmEntity);
 
-    const fichaGuardada = await this.fichaSaludRepository.save(ficha);
+      let ficha = socio.fichaSalud as FichaSaludOrmEntity | null;
 
-    socio.fichaSalud = fichaGuardada;
-    await this.socioRepository.save(socio);
+      if (!ficha) {
+        ficha = new FichaSaludOrmEntity();
+        ficha.completada = true;
+        ficha.completadaAt = ahora;
+        ficha.consentAt = ahora;
+      } else {
+        // Edición: solo actualizamos actualizadaAt.
+        // NO tocamos consentAt (RB44: consentimiento es una sola vez).
+        ficha.actualizadaAt = ahora;
+      }
+
+      // Mapear todos los campos del payload
+      ficha.altura = payload.altura;
+      ficha.peso = payload.peso;
+      ficha.nivelActividadFisica = payload.nivelActividadFisica;
+      ficha.objetivoPersonal = payload.objetivoPersonal;
+      ficha.alergias = alergias;
+      ficha.patologias = patologias;
+      // --- Medicación y suplementos ---
+      ficha.medicacionActual = payload.medicacionActual ?? null;
+      ficha.suplementosActuales = payload.suplementosActuales ?? null;
+      // --- Historial médico ---
+      ficha.cirugiasPrevias = payload.cirugiasPrevias ?? null;
+      ficha.antecedentesFamiliares = payload.antecedentesFamiliares ?? null;
+      // --- Hábitos alimentarios ---
+      ficha.frecuenciaComidas = payload.frecuenciaComidas ?? null;
+      ficha.consumoAguaDiario = payload.consumoAguaDiario ?? null;
+      ficha.restriccionesAlimentarias =
+        payload.restriccionesAlimentarias ?? null;
+      // --- Hábitos de vida ---
+      ficha.consumoAlcohol = payload.consumoAlcohol ?? null;
+      ficha.fumaTabaco = payload.fumaTabaco ?? false;
+      ficha.horasSueno = payload.horasSueno ?? null;
+      // --- Contacto de emergencia ---
+      ficha.contactoEmergenciaNombre = payload.contactoEmergenciaNombre ?? null;
+      ficha.contactoEmergenciaTelefono =
+        payload.contactoEmergenciaTelefono ?? null;
+
+      const fichaGuardada = await fichaRepo.save(ficha);
+
+      // Calcular nueva versión con pessimistic lock para evitar race conditions.
+      // Si dos PATCH concurrentes llegan, una transacción espera a la otra
+      // y obtiene la versión siguiente.
+      const ultimaVersionRow: Array<{ max: number | null }> =
+        await manager.query(
+          `SELECT MAX(version) AS max
+             FROM ficha_salud_version
+             WHERE id_ficha_salud = ?
+             FOR UPDATE`,
+          [fichaGuardada.idFichaSalud],
+        );
+
+      const ultimaVersion = Number(ultimaVersionRow[0]?.max ?? 0);
+      const nuevaVersion = ultimaVersion + 1;
+
+      // Construir snapshot inmutable
+      const datosJson = this.construirSnapshot(fichaGuardada, alergias, patologias);
+
+      const nuevaVersionEntity = versionRepo.create({
+        idFichaSalud: fichaGuardada.idFichaSalud,
+        idSocio: socio.idPersona ?? 0,
+        version: nuevaVersion,
+        datosJson,
+        createdAt: ahora,
+        createdBy: userId,
+      });
+      const versionGuardada = await versionRepo.save(nuevaVersionEntity);
+
+      fichaGuardada.versionActualId = versionGuardada.idFichaSaludVersion;
+      const fichaConVersion = await fichaRepo.save(fichaGuardada);
+
+      socio.fichaSalud = fichaConVersion;
+      await manager.getRepository(SocioOrmEntity).save(socio);
+
+      return { ficha: fichaConVersion, nuevaVersion };
+    });
 
     this.logger.log(
-      `Ficha de salud guardada para socio ${socio.idPersona} por usuario ${userId}.`,
+      `Ficha de salud guardada para socio ${socio.idPersona} por usuario ${userId}. Versión=${fichaResultado.nuevaVersion}.`,
     );
 
-    const response = new FichaSaludSocioResponseDto();
-    response.socioId = socio.idPersona ?? 0;
-    response.fichaSaludId = fichaGuardada.idFichaSalud;
-    response.altura = fichaGuardada.altura;
-    response.peso = fichaGuardada.peso;
-    response.nivelActividadFisica = fichaGuardada.nivelActividadFisica;
-    response.alergias = fichaGuardada.alergias.map((item) => item.nombre);
-    response.patologias = fichaGuardada.patologias.map((item) => item.nombre);
-    response.objetivoPersonal = fichaGuardada.objetivoPersonal ?? '';
-    // --- Medicación y suplementos ---
-    response.medicacionActual = fichaGuardada.medicacionActual;
-    response.suplementosActuales = fichaGuardada.suplementosActuales;
-    // --- Historial médico ---
-    response.cirugiasPrevias = fichaGuardada.cirugiasPrevias;
-    response.antecedentesFamiliares = fichaGuardada.antecedentesFamiliares;
-    // --- Hábitos alimentarios ---
-    response.frecuenciaComidas = fichaGuardada.frecuenciaComidas;
-    response.consumoAguaDiario = fichaGuardada.consumoAguaDiario;
-    response.restriccionesAlimentarias =
-      fichaGuardada.restriccionesAlimentarias;
-    // --- Hábitos de vida ---
-    response.consumoAlcohol = fichaGuardada.consumoAlcohol;
-    response.fumaTabaco = fichaGuardada.fumaTabaco ?? false;
-    response.horasSueno = fichaGuardada.horasSueno;
-    // --- Contacto de emergencia ---
-    response.contactoEmergenciaNombre = fichaGuardada.contactoEmergenciaNombre;
-    response.contactoEmergenciaTelefono =
-      fichaGuardada.contactoEmergenciaTelefono;
+    return this.toResponseDto(fichaResultado.ficha, fichaResultado.nuevaVersion);
+  }
 
+  private construirSnapshot(
+    ficha: FichaSaludOrmEntity,
+    alergias: AlergiaOrmEntity[],
+    patologias: PatologiaOrmEntity[],
+  ): Record<string, unknown> {
+    return {
+      altura: ficha.altura,
+      peso: ficha.peso,
+      nivelActividadFisica: ficha.nivelActividadFisica,
+      objetivoPersonal: ficha.objetivoPersonal,
+      alergias: alergias.map((a) => a.nombre),
+      patologias: patologias.map((p) => p.nombre),
+      medicacionActual: ficha.medicacionActual,
+      suplementosActuales: ficha.suplementosActuales,
+      cirugiasPrevias: ficha.cirugiasPrevias,
+      antecedentesFamiliares: ficha.antecedentesFamiliares,
+      frecuenciaComidas: ficha.frecuenciaComidas,
+      consumoAguaDiario: ficha.consumoAguaDiario,
+      restriccionesAlimentarias: ficha.restriccionesAlimentarias,
+      consumoAlcohol: ficha.consumoAlcohol,
+      fumaTabaco: ficha.fumaTabaco,
+      horasSueno: ficha.horasSueno,
+      contactoEmergenciaNombre: ficha.contactoEmergenciaNombre,
+      contactoEmergenciaTelefono: ficha.contactoEmergenciaTelefono,
+    };
+  }
+
+  private toResponseDto(
+    ficha: FichaSaludOrmEntity,
+    versionActual: number,
+  ): FichaSaludSocioResponseDto {
+    const response = new FichaSaludSocioResponseDto();
+    const socioId =
+      (ficha as unknown as { socio?: { idPersona?: number } }).socio
+        ?.idPersona ?? 0;
+    response.socioId = socioId;
+    response.fichaSaludId = ficha.idFichaSalud;
+    response.altura = ficha.altura;
+    response.peso = ficha.peso;
+    response.nivelActividadFisica = ficha.nivelActividadFisica;
+    response.alergias = (ficha.alergias ?? []).map((item) => item.nombre);
+    response.patologias = (ficha.patologias ?? []).map((item) => item.nombre);
+    response.objetivoPersonal = ficha.objetivoPersonal ?? '';
+    // --- Medicación y suplementos ---
+    response.medicacionActual = ficha.medicacionActual;
+    response.suplementosActuales = ficha.suplementosActuales;
+    // --- Historial médico ---
+    response.cirugiasPrevias = ficha.cirugiasPrevias;
+    response.antecedentesFamiliares = ficha.antecedentesFamiliares;
+    // --- Hábitos alimentarios ---
+    response.frecuenciaComidas = ficha.frecuenciaComidas;
+    response.consumoAguaDiario = ficha.consumoAguaDiario;
+    response.restriccionesAlimentarias = ficha.restriccionesAlimentarias;
+    // --- Hábitos de vida ---
+    response.consumoAlcohol = ficha.consumoAlcohol;
+    response.fumaTabaco = ficha.fumaTabaco ?? false;
+    response.horasSueno = ficha.horasSueno;
+    // --- Contacto de emergencia ---
+    response.contactoEmergenciaNombre = ficha.contactoEmergenciaNombre;
+    response.contactoEmergenciaTelefono = ficha.contactoEmergenciaTelefono;
+    // --- Versionado y estado (RB14, RB44, RB50) ---
+    response.completada = ficha.completada ?? false;
+    response.completadaAt = ficha.completadaAt ?? null;
+    response.actualizadaAt = ficha.actualizadaAt ?? null;
+    response.consentAt = ficha.consentAt ?? null;
+    response.versionActual = versionActual;
     return response;
   }
 
