@@ -4,8 +4,11 @@ import { ConsumoAlcohol } from 'src/domain/entities/FichaSalud/ConsumoAlcohol';
 import {
   Column,
   Entity,
+  Index,
+  JoinColumn,
   JoinTable,
   ManyToMany,
+  ManyToOne,
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
@@ -15,8 +18,10 @@ import { AlergiaEntity } from 'src/domain/entities/FichaSalud/alergia.entity';
 import { SocioOrmEntity } from './persona.entity';
 import { SocioEntity } from 'src/domain/entities/Persona/Socio/socio.entity';
 import { AuditableOrmEntity } from '../common/auditable.orm-entity';
+import { FichaSaludVersionOrmEntity } from './ficha-salud-version.entity';
 
 @Entity('ficha_salud')
+@Index('idx_fs_completada', ['completada'])
 export class FichaSaludOrmEntity extends AuditableOrmEntity {
   @PrimaryGeneratedColumn({ name: 'id_ficha_salud' })
   idFichaSalud: number;
@@ -143,6 +148,56 @@ export class FichaSaludOrmEntity extends AuditableOrmEntity {
     nullable: true,
   })
   contactoEmergenciaTelefono: string | null;
+
+  // --- Versionado y estado (RB14, RB44, RB50) ---
+  @Column({
+    name: 'completada',
+    type: 'boolean',
+    default: false,
+  })
+  completada: boolean;
+
+  @Column({
+    name: 'completada_at',
+    type: 'datetime',
+    nullable: true,
+  })
+  completadaAt: Date | null;
+
+  @Column({
+    name: 'actualizada_at',
+    type: 'datetime',
+    nullable: true,
+  })
+  actualizadaAt: Date | null;
+
+  @Column({
+    name: 'consent_at',
+    type: 'datetime',
+    nullable: true,
+  })
+  consentAt: Date | null;
+
+  @Column({
+    name: 'version_actual_id',
+    type: 'int',
+    nullable: true,
+  })
+  versionActualId: number | null;
+
+  @ManyToOne(() => FichaSaludVersionOrmEntity, {
+    nullable: true,
+    onDelete: 'RESTRICT',
+  })
+  @JoinColumn({ name: 'version_actual_id' })
+  versionActual?: FichaSaludVersionOrmEntity | null;
+
+  @Column({
+    name: 'revisada_por_nutricionista_at',
+    type: 'datetime',
+    nullable: true,
+  })
+  revisadaPorNutricionistaAt: Date | null;
 
   @OneToOne(() => SocioOrmEntity, (socio) => socio.fichaSalud)
   socio: SocioEntity;
