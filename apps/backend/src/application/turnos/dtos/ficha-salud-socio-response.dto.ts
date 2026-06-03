@@ -28,4 +28,10 @@ export class FichaSaludSocioResponseDto {
   // --- Contacto de emergencia ---
   contactoEmergenciaNombre: string | null;
   contactoEmergenciaTelefono: string | null;
+  // --- Versionado y estado (RB14, RB44, RB50) ---
+  completada: boolean;
+  completadaAt: Date | null;
+  actualizadaAt: Date | null;
+  consentAt: Date | null;
+  versionActual: number;
 }
