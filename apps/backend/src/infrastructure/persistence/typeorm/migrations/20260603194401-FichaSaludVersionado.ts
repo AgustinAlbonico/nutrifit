@@ -93,6 +93,7 @@ export class FichaSaludVersionado20260603194401 implements MigrationInterface {
     // 4. Backfill de fichas pre-existentes
     // Asumimos: si existe la ficha, está completada (caso conservador pre-RB14).
     // Pre-RGPD: si la subieron, consintieron implícitamente.
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const fichasExistentes: Array<{
       id_ficha_salud: number;
       id_ficha_salud_real: number;
@@ -125,6 +126,7 @@ export class FichaSaludVersionado20260603194401 implements MigrationInterface {
       // Obtener datos crudos para construir snapshot JSON.
       // Incluimos solo los campos pre-existentes; los nuevos quedan null
       // porque son metadatos de versionado (consent_at, etc.).
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const datos: Array<{
         altura: number;
         peso: number;
@@ -159,14 +161,15 @@ export class FichaSaludVersionado20260603194401 implements MigrationInterface {
         continue;
       }
 
-      const snapshot = {
+      const snapshot: Record<string, unknown> = {
         ...datos[0],
         // id_socio no está directamente en ficha_salud; lo buscamos vía persona->socio
-        alergias: [],
-        patologias: [],
+        alergias: [] as string[],
+        patologias: [] as string[],
       };
 
       // Obtener id_socio (persona dueña de la ficha)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const socioRows: Array<{ id_persona: number }> = await queryRunner.query(
         `SELECT \`id_persona\` FROM \`persona\` WHERE \`id_ficha_salud\` = ? LIMIT 1`,
         [idFicha],
@@ -179,6 +182,7 @@ export class FichaSaludVersionado20260603194401 implements MigrationInterface {
       }
 
       // Obtener nombres de alergias
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const alergiaRows: Array<{ nombre: string }> = await queryRunner.query(
         `SELECT a.\`nombre\`
          FROM \`alergia\` a
@@ -189,6 +193,7 @@ export class FichaSaludVersionado20260603194401 implements MigrationInterface {
       snapshot.alergias = alergiaRows.map((a) => a.nombre);
 
       // Obtener nombres de patologías
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const patologiaRows: Array<{ nombre: string }> = await queryRunner.query(
         `SELECT p.\`nombre\`
          FROM \`patologia\` p
@@ -199,13 +204,12 @@ export class FichaSaludVersionado20260603194401 implements MigrationInterface {
       snapshot.patologias = patologiaRows.map((p) => p.nombre);
 
       // Insertar versión v1
-      const insertVersionResult: Array<{ id_ficha_salud_version: number }> =
-        await queryRunner.query(
-          `INSERT INTO \`ficha_salud_version\`
-           (\`id_ficha_salud\`, \`id_socio\`, \`version\`, \`datos_json\`, \`created_at\`, \`created_by\`)
-           VALUES (?, ?, 1, ?, ?, NULL)`,
-          [idFicha, idSocio, JSON.stringify(snapshot), fechaCreacion],
-        );
+      const insertVersionResult = (await queryRunner.query(
+        `INSERT INTO \`ficha_salud_version\`
+         (\`id_ficha_salud\`, \`id_socio\`, \`version\`, \`datos_json\`, \`created_at\`, \`created_by\`)
+         VALUES (?, ?, 1, ?, ?, NULL)`,
+        [idFicha, idSocio, JSON.stringify(snapshot), fechaCreacion],
+      )) as { insertId: number };
 
       const idVersion = insertVersionResult.insertId;
 
@@ -218,7 +222,6 @@ export class FichaSaludVersionado20260603194401 implements MigrationInterface {
       contadorBackfill += 1;
     }
 
-    // eslint-disable-next-line no-console
     console.log(
       `[FichaSaludVersionado] Backfill completado: ${contadorBackfill} fichas migradas a v1.`,
     );

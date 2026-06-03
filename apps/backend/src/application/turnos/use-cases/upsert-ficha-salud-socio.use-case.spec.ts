@@ -94,8 +94,9 @@ describe('UpsertFichaSaludSocioUseCase - PR 1a (versionado + RB44)', () => {
     const fichaRepoManager = {
       save: jest.fn(async (entity: FichaSaludOrmEntity) => {
         if (!entity.idFichaSalud) {
-          (entity as FichaSaludOrmEntity & { idFichaSalud: number }).idFichaSalud =
-            500;
+          (
+            entity as FichaSaludOrmEntity & { idFichaSalud: number }
+          ).idFichaSalud = 500;
         }
         return entity;
       }),
@@ -158,11 +159,19 @@ describe('UpsertFichaSaludSocioUseCase - PR 1a (versionado + RB44)', () => {
         },
         {
           provide: getRepositoryToken(AlergiaOrmEntity),
-          useValue: { find: jest.fn().mockResolvedValue([]), create: jest.fn(), save: jest.fn() },
+          useValue: {
+            find: jest.fn().mockResolvedValue([]),
+            create: jest.fn(),
+            save: jest.fn(),
+          },
         },
         {
           provide: getRepositoryToken(PatologiaOrmEntity),
-          useValue: { find: jest.fn().mockResolvedValue([]), create: jest.fn(), save: jest.fn() },
+          useValue: {
+            find: jest.fn().mockResolvedValue([]),
+            create: jest.fn(),
+            save: jest.fn(),
+          },
         },
         {
           provide: APP_LOGGER_SERVICE,
@@ -192,9 +201,7 @@ describe('UpsertFichaSaludSocioUseCase - PR 1a (versionado + RB44)', () => {
     patologiaRepository = module.get(getRepositoryToken(PatologiaOrmEntity));
     logger = module.get(APP_LOGGER_SERVICE);
     tenantContext = module.get<TenantContextService>(TenantContextService);
-    dataSource = module.get(DataSource) as unknown as {
-      transaction: jest.Mock;
-    };
+    dataSource = module.get(DataSource);
   });
 
   afterEach(() => {
@@ -294,10 +301,7 @@ describe('UpsertFichaSaludSocioUseCase - PR 1a (versionado + RB44)', () => {
 
   describe('Validación DTO', () => {
     const validateDto = async (plain: unknown) => {
-      const instance = plainToInstance(
-        UpsertFichaSaludSocioDto,
-        plain,
-      );
+      const instance = plainToInstance(UpsertFichaSaludSocioDto, plain);
       return validateOrReject(instance as object);
     };
 
@@ -479,8 +483,9 @@ describe('UpsertFichaSaludSocioUseCase - PR 1a (versionado + RB44)', () => {
                 return {
                   save: jest.fn(async (entity: FichaSaludOrmEntity) => {
                     if (!entity.idFichaSalud) {
-                      (entity as FichaSaludOrmEntity & { idFichaSalud: number }).idFichaSalud =
-                        500;
+                      (
+                        entity as FichaSaludOrmEntity & { idFichaSalud: number }
+                      ).idFichaSalud = 500;
                     }
                     return entity;
                   }),
@@ -514,7 +519,10 @@ describe('UpsertFichaSaludSocioUseCase - PR 1a (versionado + RB44)', () => {
       );
 
       // Act
-      const result1 = await useCase.execute(100, buildValidDto({ consentimiento: true }));
+      const result1 = await useCase.execute(
+        100,
+        buildValidDto({ consentimiento: true }),
+      );
       const result2 = await useCase.execute(100, buildValidDto({ peso: 79 }));
       const result3 = await useCase.execute(100, buildValidDto({ peso: 78 }));
 
@@ -544,8 +552,9 @@ describe('UpsertFichaSaludSocioUseCase - PR 1a (versionado + RB44)', () => {
                 return {
                   save: jest.fn(async (entity: FichaSaludOrmEntity) => {
                     if (!entity.idFichaSalud) {
-                      (entity as FichaSaludOrmEntity & { idFichaSalud: number }).idFichaSalud =
-                        500;
+                      (
+                        entity as FichaSaludOrmEntity & { idFichaSalud: number }
+                      ).idFichaSalud = 500;
                     }
                     return entity;
                   }),
@@ -586,8 +595,11 @@ describe('UpsertFichaSaludSocioUseCase - PR 1a (versionado + RB44)', () => {
       ]);
 
       // Assert: en condiciones reales el FOR UPDATE serializa; aquí al
-      // menos validamos que no se pierde ninguna versión.
+      // menos validamos que no se pierde ninguna versión y que ambas
+      // requests retornan con versionActual asignado.
       expect(versionesCreadas).toHaveLength(2);
+      expect(resultA.versionActual).toBeGreaterThan(0);
+      expect(resultB.versionActual).toBeGreaterThan(0);
     });
   });
 
@@ -609,8 +621,9 @@ describe('UpsertFichaSaludSocioUseCase - PR 1a (versionado + RB44)', () => {
                 return {
                   save: jest.fn(async (entity: FichaSaludOrmEntity) => {
                     if (!entity.idFichaSalud) {
-                      (entity as FichaSaludOrmEntity & { idFichaSalud: number }).idFichaSalud =
-                        500;
+                      (
+                        entity as FichaSaludOrmEntity & { idFichaSalud: number }
+                      ).idFichaSalud = 500;
                     }
                     fichaGuardadaEnTransaccion = entity;
                     return entity;
@@ -700,8 +713,9 @@ describe('UpsertFichaSaludSocioUseCase - PR 1a (versionado + RB44)', () => {
       await useCase.execute(100, dto);
 
       // Assert
-      const createCallArg = versionRepoManager.create.mock
-        .calls[0][0] as { datosJson: Record<string, unknown> };
+      const createCallArg = versionRepoManager.create.mock.calls[0][0] as {
+        datosJson: Record<string, unknown>;
+      };
       expect(createCallArg.datosJson.medicacionActual).toBe('Ibuprofeno');
       expect(createCallArg.datosJson.antecedentesFamiliares).toBe('Diabetes');
       expect(createCallArg.datosJson.horasSueno).toBe(8);
