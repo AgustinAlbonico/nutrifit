@@ -1,5 +1,7 @@
 export enum NivelActividadFisica {
-  SEDENTARIO = 'Sedentario',
-  MODERADO = 'Moderado',
-  INTENSO = 'Intenso',
+  SEDENTARIO = 'SEDENTARIO',
+  LIGERO = 'LIGERO',
+  MODERADO = 'MODERADO',
+  INTENSO = 'INTENSO',
+  MUY_INTENSO = 'MUY_INTENSO',
 }
