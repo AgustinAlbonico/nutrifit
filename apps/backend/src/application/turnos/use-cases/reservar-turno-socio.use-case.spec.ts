@@ -55,6 +55,7 @@ describe('ReservarTurnoSocioUseCase - Multi-Tenant Isolation', () => {
     fichaSalud: {
       idFichaSalud: 1,
       objetivoPersonal: 'Bajar de peso',
+      completada: true,
     },
   } as unknown as SocioOrmEntity;
 
@@ -329,6 +330,92 @@ describe('ReservarTurnoSocioUseCase - Multi-Tenant Isolation', () => {
           horaTurno: '10:00',
         }),
       ).rejects.toThrow(NotFoundError);
+    });
+  });
+
+  describe('RB14 - Bloqueo de reserva por ficha incompleta', () => {
+    const buildMockSocio = (
+      fichaSalud: { idFichaSalud: number; completada: boolean } | null,
+    ) =>
+      ({
+        idPersona: 20,
+        nombre: 'Juan',
+        apellido: 'Socio',
+        gimnasioId: 1,
+        fichaSalud,
+      }) as unknown as SocioOrmEntity;
+
+    const mockUsuarioConPersona = {
+      idUsuario: 100,
+      persona: { idPersona: 20 },
+    } as unknown as UsuarioOrmEntity;
+
+    it('bloquea si la ficha de salud es null (cubierto por lógica RB14)', async () => {
+      // Arrange
+      jest.mocked(usuarioRepository.findOne).mockResolvedValue(mockUsuarioConPersona);
+      jest
+        .mocked(socioRepository.findOne)
+        .mockResolvedValue(buildMockSocio(null));
+
+      // Act & Assert
+      await expect(
+        useCase.execute(100, {
+          nutricionistaId: 10,
+          fechaTurno: '2026-06-15',
+          horaTurno: '10:00',
+        }),
+      ).rejects.toThrow(BadRequestError);
+    });
+
+    it('bloquea si la ficha existe pero completada=false', async () => {
+      // Arrange
+      jest.mocked(usuarioRepository.findOne).mockResolvedValue(mockUsuarioConPersona);
+      jest
+        .mocked(socioRepository.findOne)
+        .mockResolvedValue(
+          buildMockSocio({ idFichaSalud: 1, completada: false }),
+        );
+
+      // Act & Assert
+      await expect(
+        useCase.execute(100, {
+          nutricionistaId: 10,
+          fechaTurno: '2026-06-15',
+          horaTurno: '10:00',
+        }),
+      ).rejects.toThrow(BadRequestError);
+    });
+
+    it('permite si la ficha existe y completada=true', async () => {
+      // Arrange
+      jest.mocked(usuarioRepository.findOne).mockResolvedValue(mockUsuarioConPersona);
+      jest
+        .mocked(socioRepository.findOne)
+        .mockResolvedValue(
+          buildMockSocio({ idFichaSalud: 1, completada: true }),
+        );
+      jest
+        .mocked(nutricionistaRepository.findById)
+        .mockResolvedValue(mockNutricionista as any);
+      jest.mocked(agendaRepository.find).mockResolvedValue([mockAgenda[0]]);
+      jest.mocked(turnoRepository.findOne).mockResolvedValue(null);
+      jest
+        .mocked(nutricionistaOrmRepository.findOne)
+        .mockResolvedValue(mockNutricionista);
+      jest
+        .mocked(turnoRepository.save)
+        .mockResolvedValue(buildTurnoSaveResult());
+
+      // Act
+      const result = await useCase.execute(100, {
+        nutricionistaId: 10,
+        fechaTurno: '2026-06-15',
+        horaTurno: '10:00',
+      });
+
+      // Assert
+      expect(result.idTurno).toBe(1);
+      expect(turnoRepository.save).toHaveBeenCalled();
     });
   });
 });
