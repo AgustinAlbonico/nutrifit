@@ -31,6 +31,13 @@ export class FichaSaludEntity extends AuditableEntity {
   // --- Contacto de emergencia ---
   contactoEmergenciaNombre: string | null;
   contactoEmergenciaTelefono: string | null;
+  // --- Versionado y estado (RB14, RB44, RB50) ---
+  completada: boolean;
+  completadaAt: Date | null;
+  actualizadaAt: Date | null;
+  consentAt: Date | null;
+  versionActualId: number | null;
+  revisadaPorNutricionistaAt: Date | null;
 
   constructor(
     idFichaSalud: number | null = null,
@@ -53,6 +60,12 @@ export class FichaSaludEntity extends AuditableEntity {
     horasSueno: number | null = null,
     contactoEmergenciaNombre: string | null = null,
     contactoEmergenciaTelefono: string | null = null,
+    completada: boolean = false,
+    completadaAt: Date | null = null,
+    actualizadaAt: Date | null = null,
+    consentAt: Date | null = null,
+    versionActualId: number | null = null,
+    revisadaPorNutricionistaAt: Date | null = null,
     fechaBaja: Date | null = null,
   ) {
     super(fechaBaja);
@@ -76,5 +89,11 @@ export class FichaSaludEntity extends AuditableEntity {
     this.horasSueno = horasSueno;
     this.contactoEmergenciaNombre = contactoEmergenciaNombre;
     this.contactoEmergenciaTelefono = contactoEmergenciaTelefono;
+    this.completada = completada;
+    this.completadaAt = completadaAt;
+    this.actualizadaAt = actualizadaAt;
+    this.consentAt = consentAt;
+    this.versionActualId = versionActualId;
+    this.revisadaPorNutricionistaAt = revisadaPorNutricionistaAt;
   }
 }
