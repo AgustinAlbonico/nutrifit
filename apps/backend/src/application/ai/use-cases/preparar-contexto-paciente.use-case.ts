@@ -17,6 +17,7 @@ import { SocioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities'
 import { Repository } from 'typeorm';
 import { ContextoPaciente } from '@nutrifit/shared';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
+import { NivelActividadFisica } from 'src/domain/entities/FichaSalud/NivelActividadFisica';
 
 @Injectable()
 export class PrepararContextoPacienteUseCase implements BaseUseCase {
@@ -100,17 +101,19 @@ export class PrepararContextoPacienteUseCase implements BaseUseCase {
    * Convierte NivelActividadFisica enum a string
    */
   private convertirNivelActividadFisica(
-    nivelActividadFisica: 'Sedentario' | 'Moderado' | 'Intenso' | 'Bajo',
+    nivelActividadFisica: NivelActividadFisica,
   ): string {
     switch (nivelActividadFisica) {
-      case 'Sedentario':
+      case NivelActividadFisica.SEDENTARIO:
         return 'SEDENTARIO';
-      case 'Moderado':
+      case NivelActividadFisica.LIGERO:
+        return 'LIGERO';
+      case NivelActividadFisica.MODERADO:
         return 'MODERADO';
-      case 'Intenso':
-        return 'ALTO';
-      case 'Bajo':
-        return 'BAJO';
+      case NivelActividadFisica.INTENSO:
+        return 'INTENSO';
+      case NivelActividadFisica.MUY_INTENSO:
+        return 'MUY_INTENSO';
       default:
         return 'SEDENTARIO';
     }
