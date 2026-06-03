@@ -68,9 +68,9 @@ export class ReservarTurnoSocioUseCase implements BaseUseCase {
   ): Promise<TurnoOperacionResponseDto> {
     const socio = await this.resolveSocioByUserId(userId);
 
-    if (!socio.fichaSalud) {
+    if (!socio.fichaSalud || !socio.fichaSalud.completada) {
       throw new BadRequestError(
-        'Debe completar su ficha de salud antes de reservar un turno.',
+        'Debés completar y tener completada tu ficha de salud antes de reservar un turno.',
       );
     }
 
