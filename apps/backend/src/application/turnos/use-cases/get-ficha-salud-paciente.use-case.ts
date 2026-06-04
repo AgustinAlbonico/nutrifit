@@ -15,6 +15,7 @@ import {
   IAppLoggerService,
 } from 'src/domain/services/logger.service';
 import {
+  FichaSaludOrmEntity,
   SocioOrmEntity,
   TurnoOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
@@ -28,6 +29,8 @@ export class GetFichaSaludPacienteUseCase implements BaseUseCase {
     private readonly turnoRepository: Repository<TurnoOrmEntity>,
     @InjectRepository(SocioOrmEntity)
     private readonly socioRepository: Repository<SocioOrmEntity>,
+    @InjectRepository(FichaSaludOrmEntity)
+    private readonly fichaSaludRepository: Repository<FichaSaludOrmEntity>,
     @Inject(NUTRICIONISTA_REPOSITORY)
     private readonly nutricionistaRepository: NutricionistaRepository,
     @Inject(APP_LOGGER_SERVICE)
@@ -70,6 +73,14 @@ export class GetFichaSaludPacienteUseCase implements BaseUseCase {
 
     if (!socio.fichaSalud) {
       throw new NotFoundError('Ficha de salud', String(socioId));
+    }
+
+    // RB45: registrar revisión del nutricionista al abrir la ficha
+    if (socio.fichaSalud.idFichaSalud != null) {
+      await this.fichaSaludRepository.update(
+        { idFichaSalud: socio.fichaSalud.idFichaSalud },
+        { revisadaPorNutricionistaAt: new Date() },
+      );
     }
 
     const response = new FichaSaludPacienteResponseDto();
