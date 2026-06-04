@@ -2,5 +2,5 @@
 // Este paquete contiene tipos, interfaces y constantes compartidas entre
 // el backend (NestJS) y el frontend (React) de NutriFit Supervisor.
 
-export * from './types';
-export * from './constants';
+export * from './types/index.js';
+export * from './constants/index.js';
