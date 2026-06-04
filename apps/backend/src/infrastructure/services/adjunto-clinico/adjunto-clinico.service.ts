@@ -1,10 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { AdjuntoClinicoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/adjunto-clinico.entity';
 import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/turno.entity';
-import { IObjectStorageService } from 'src/domain/services/object-storage.service';
+import {
+  IObjectStorageService,
+  OBJECT_STORAGE_SERVICE,
+} from 'src/domain/services/object-storage.service';
 import { EstadoTurno } from 'src/domain/entities/Turno/EstadoTurno';
 import { BadRequestError } from 'src/domain/exceptions/custom-exceptions';
 
@@ -37,6 +40,7 @@ export class AdjuntoClinicoService {
     private readonly adjuntoRepository: Repository<AdjuntoClinicoOrmEntity>,
     @InjectRepository(TurnoOrmEntity)
     private readonly turnoRepository: Repository<TurnoOrmEntity>,
+    @Inject(OBJECT_STORAGE_SERVICE)
     private readonly objectStorageService: IObjectStorageService,
   ) {}
 
