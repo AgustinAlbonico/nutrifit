@@ -27,11 +27,13 @@ import { NivelActividadFisica } from 'src/domain/entities/FichaSalud/NivelActivi
 import { FrecuenciaComidas } from 'src/domain/entities/FichaSalud/FrecuenciaComidas';
 import { ConsumoAlcohol } from 'src/domain/entities/FichaSalud/ConsumoAlcohol';
 import { UpsertFichaSaludSocioDto } from 'src/application/turnos/dtos/upsert-ficha-salud-socio.dto';
+import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
+import { AccionAuditoria } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
 
 /**
- * Spec de UpsertFichaSaludSocioUseCase — PR 1a.
+ * Spec de UpsertFichaSaludSocioUseCase — PR 1a + 1b.
  *
- * Cubre:
+ * PR 1a cubre:
  *  - Happy path crear (versión 1, completada=true, consentAt)
  *  - Happy path editar (versión 2, actualizadaAt updated, consentAt intacto)
  *  - Validación DTO altura/peso (clase-validator)
@@ -41,9 +43,15 @@ import { UpsertFichaSaludSocioDto } from 'src/application/turnos/dtos/upsert-fic
  *  - Versionado: 3 PATCH consecutivos → 1, 2, 3
  *  - Race condition: dos PATCH concurrentes → versiones distintas
  *  - Atomicidad: si version.save falla, ficha.save hace rollback
- *  - NO se valida auditoría ni notificaciones (eso es PR 1b)
+ *
+ * PR 1b cubre (RB33):
+ *  - Auditoría CREATE: accion=FICHA_COMPLETADA, metadata con shape seguro
+ *  - Auditoría UPDATE: accion=FICHA_ACTUALIZADA, antes/después, camposModificados
+ *  - Si la transacción falla, NO se llama auditoría (rollback)
+ *  - Si version.save falla, NO se llama auditoría
+ *  - camposModificados se calcula con el helper calcularDiffFicha
  */
-describe('UpsertFichaSaludSocioUseCase - PR 1a (versionado + RB44)', () => {
+describe('UpsertFichaSaludSocioUseCase - PR 1a + 1b (versionado + RB44 + RB33)', () => {
   let useCase: UpsertFichaSaludSocioUseCase;
   let usuarioRepository: jest.Mocked<Repository<UsuarioOrmEntity>>;
   let socioRepository: jest.Mocked<Repository<SocioOrmEntity>>;
@@ -56,6 +64,7 @@ describe('UpsertFichaSaludSocioUseCase - PR 1a (versionado + RB44)', () => {
   let logger: jest.Mocked<IAppLoggerService>;
   let tenantContext: TenantContextService;
   let dataSource: { transaction: jest.Mock };
+  let auditoriaService: jest.Mocked<AuditoriaService>;
 
   const mockUsuario = {
     idUsuario: 100,
@@ -185,6 +194,10 @@ describe('UpsertFichaSaludSocioUseCase - PR 1a (versionado + RB44)', () => {
           provide: DataSource,
           useValue: { transaction: jest.fn() },
         },
+        {
+          provide: AuditoriaService,
+          useValue: { registrar: jest.fn().mockResolvedValue(undefined) },
+        },
       ],
     }).compile();
 
@@ -202,6 +215,7 @@ describe('UpsertFichaSaludSocioUseCase - PR 1a (versionado + RB44)', () => {
     logger = module.get(APP_LOGGER_SERVICE);
     tenantContext = module.get<TenantContextService>(TenantContextService);
     dataSource = module.get(DataSource);
+    auditoriaService = module.get(AuditoriaService);
   });
 
   afterEach(() => {
@@ -725,6 +739,227 @@ describe('UpsertFichaSaludSocioUseCase - PR 1a (versionado + RB44)', () => {
       );
       expect(createCallArg.datosJson.consumoAlcohol).toBe(
         ConsumoAlcohol.OCASIONAL,
+      );
+    });
+  });
+
+  // === PR 1b: Auditoría RB33 ===
+  describe('Auditoría RB33', () => {
+    it('CREATE: llama a auditoriaService.registrar con accion=FICHA_COMPLETADA y shape seguro (sin medicacion/antecedentes)', async () => {
+      // Arrange
+      const socio = buildMockSocio();
+      jest.mocked(usuarioRepository.findOne).mockResolvedValue(mockUsuario);
+      jest.mocked(socioRepository.findOne).mockResolvedValue(socio);
+      setupTransactionMock();
+
+      const dto = buildValidDto({
+        consentimiento: true,
+        medicacionActual: 'Ibuprofeno',
+        antecedentesFamiliares: 'Diabetes',
+      });
+
+      // Act
+      await useCase.execute(100, dto);
+
+      // Assert
+      expect(auditoriaService.registrar).toHaveBeenCalledTimes(1);
+      const callArg = auditoriaService.registrar.mock.calls[0][0] as {
+        accion: AccionAuditoria;
+        entidad: string;
+        entidadId: number;
+        usuarioId: number;
+        metadata: Record<string, unknown>;
+      };
+      expect(callArg.accion).toBe(AccionAuditoria.FICHA_COMPLETADA);
+      expect(callArg.entidad).toBe('ficha_salud');
+      expect(callArg.entidadId).toBe(500);
+      expect(callArg.usuarioId).toBe(100);
+
+      // Shape seguro: NO debe contener medicación, antecedentes ni cirugías
+      const metadataStr = JSON.stringify(callArg.metadata);
+      expect(metadataStr).not.toMatch(/medicacion/i);
+      expect(metadataStr).not.toMatch(/antecedentes/i);
+      expect(metadataStr).not.toMatch(/cirugias/i);
+
+      // Debe contener el resumen seguro
+      const resumen = callArg.metadata.resumen as Record<string, unknown>;
+      expect(resumen.altura).toBe(175);
+      expect(resumen.peso).toBe(80);
+      expect(typeof resumen.alergiasCount).toBe('number');
+      expect(typeof resumen.patologiasCount).toBe('number');
+    });
+
+    it('UPDATE: llama a auditoriaService.registrar con accion=FICHA_ACTUALIZADA, antes/después y camposModificados', async () => {
+      // Arrange
+      const fechaConsentimientoOriginal = new Date('2025-01-01T00:00:00Z');
+      const fichaExistente = {
+        idFichaSalud: 500,
+        fechaCreacion: new Date('2025-01-01'),
+        completada: true,
+        consentAt: fechaConsentimientoOriginal,
+        completadaAt: fechaConsentimientoOriginal,
+        actualizadaAt: null,
+        versionActualId: 999,
+        altura: 175,
+        peso: 80,
+        nivelActividadFisica: NivelActividadFisica.MODERADO,
+        objetivoPersonal: 'X',
+        alergias: [],
+        patologias: [],
+        fumaTabaco: false,
+        horasSueno: null,
+        consumoAguaDiario: null,
+        consumoAlcohol: null,
+        contactoEmergenciaNombre: null,
+        contactoEmergenciaTelefono: null,
+        restriccionesAlimentarias: null,
+        antecedentesFamiliares: null,
+        cirugiasPrevias: null,
+        frecuenciaComidas: null,
+        suplementosActuales: null,
+        medicacionActual: null,
+        revisadaPorNutricionistaAt: null,
+      } as unknown as FichaSaludOrmEntity;
+
+      const socio = buildMockSocio({ fichaSalud: fichaExistente });
+      jest.mocked(usuarioRepository.findOne).mockResolvedValue(mockUsuario);
+      jest.mocked(socioRepository.findOne).mockResolvedValue(socio);
+      setupTransactionMock();
+
+      // Solo cambia el peso (80 → 78)
+      const dto = buildValidDto({ peso: 78 });
+
+      // Act
+      await useCase.execute(100, dto);
+
+      // Assert
+      expect(auditoriaService.registrar).toHaveBeenCalledTimes(1);
+      const callArg = auditoriaService.registrar.mock.calls[0][0] as {
+        accion: AccionAuditoria;
+        metadata: Record<string, unknown>;
+      };
+      expect(callArg.accion).toBe(AccionAuditoria.FICHA_ACTUALIZADA);
+
+      const metadata = callArg.metadata;
+      const antes = metadata.antes as Record<string, unknown>;
+      const despues = metadata.despues as Record<string, unknown>;
+      expect(antes.altura).toBe(175);
+      expect(antes.peso).toBe(80);
+      expect(despues.altura).toBe(175);
+      expect(despues.peso).toBe(78);
+
+      const camposModificados = metadata.camposModificados as string[];
+      expect(camposModificados).toContain('peso');
+    });
+
+    it('NO llama a auditoría si la transacción falla (rollback natural)', async () => {
+      // Arrange
+      const socio = buildMockSocio();
+      jest.mocked(usuarioRepository.findOne).mockResolvedValue(mockUsuario);
+      jest.mocked(socioRepository.findOne).mockResolvedValue(socio);
+
+      dataSource.transaction.mockImplementation(
+        async (cb: (m: unknown) => Promise<unknown>) => {
+          const manager = {
+            getRepository: jest.fn((entity: unknown) => {
+              if (entity === FichaSaludOrmEntity) {
+                return {
+                  save: jest.fn(async (entity: FichaSaludOrmEntity) => {
+                    if (!entity.idFichaSalud) {
+                      (
+                        entity as FichaSaludOrmEntity & { idFichaSalud: number }
+                      ).idFichaSalud = 500;
+                    }
+                    return entity;
+                  }),
+                };
+              }
+              if (entity === FichaSaludVersionOrmEntity) {
+                return {
+                  create: jest.fn(
+                    (data: Partial<FichaSaludVersionOrmEntity>) => data,
+                  ),
+                  save: jest.fn(async () => {
+                    throw new Error('version save failed');
+                  }),
+                };
+              }
+              if (entity === SocioOrmEntity) {
+                return { save: jest.fn(async (s: SocioOrmEntity) => s) };
+              }
+              return {};
+            }),
+            query: jest.fn(async () => [{ max: 0 }]),
+          };
+          return cb(manager);
+        },
+      );
+
+      // Act
+      const dto = buildValidDto({ consentimiento: true });
+      await expect(useCase.execute(100, dto)).rejects.toThrow(
+        'version save failed',
+      );
+
+      // Assert: la auditoría NO debe haberse llamado porque la transacción
+      // hizo rollback antes de llegar a la línea de auditoría.
+      expect(auditoriaService.registrar).not.toHaveBeenCalled();
+    });
+
+    it('camposModificados se calcula correctamente con el helper cuando cambian múltiples campos', async () => {
+      // Arrange
+      const fechaConsentimientoOriginal = new Date('2025-01-01T00:00:00Z');
+      const fichaExistente = {
+        idFichaSalud: 500,
+        fechaCreacion: new Date('2025-01-01'),
+        completada: true,
+        consentAt: fechaConsentimientoOriginal,
+        completadaAt: fechaConsentimientoOriginal,
+        actualizadaAt: null,
+        versionActualId: 999,
+        altura: 175,
+        peso: 80,
+        nivelActividadFisica: NivelActividadFisica.SEDENTARIO,
+        objetivoPersonal: 'X',
+        alergias: [],
+        patologias: [],
+        fumaTabaco: false,
+        horasSueno: null,
+        consumoAguaDiario: null,
+        consumoAlcohol: null,
+        contactoEmergenciaNombre: null,
+        contactoEmergenciaTelefono: null,
+        restriccionesAlimentarias: null,
+        antecedentesFamiliares: null,
+        cirugiasPrevias: null,
+        frecuenciaComidas: null,
+        suplementosActuales: null,
+        medicacionActual: null,
+        revisadaPorNutricionistaAt: null,
+      } as unknown as FichaSaludOrmEntity;
+
+      const socio = buildMockSocio({ fichaSalud: fichaExistente });
+      jest.mocked(usuarioRepository.findOne).mockResolvedValue(mockUsuario);
+      jest.mocked(socioRepository.findOne).mockResolvedValue(socio);
+      setupTransactionMock();
+
+      // Cambian altura, peso y objetivo
+      const dto = buildValidDto({
+        altura: 180,
+        peso: 78,
+        objetivoPersonal: 'Nuevo objetivo',
+      });
+
+      // Act
+      await useCase.execute(100, dto);
+
+      // Assert
+      const callArg = auditoriaService.registrar.mock.calls[0][0] as {
+        metadata: Record<string, unknown>;
+      };
+      const camposModificados = callArg.metadata.camposModificados as string[];
+      expect(camposModificados).toEqual(
+        expect.arrayContaining(['altura', 'peso', 'objetivoPersonal']),
       );
     });
   });
