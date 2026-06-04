@@ -32,6 +32,8 @@ import { RECEPCIONISTA_REPOSITORY } from 'src/domain/entities/Persona/Recepcioni
 import { POLITICA_OPERATIVA_REPOSITORY } from 'src/application/politicas/politica-operativa.repository';
 import { PoliticaOperativaRepositoryImpl } from 'src/infrastructure/politicas/politica-operativa.repository.impl';
 import { PoliticaOperativaOrmEntity } from 'src/infrastructure/politicas/politica-operativa.entity';
+import { FICHA_SALUD_VERSION_REPOSITORY } from 'src/domain/entities/FichaSalud/ficha-salud-version.repository';
+import { FichaSaludVersionRepositoryImpl } from './ficha-salud-version.repository.impl';
 
 // This module is responsible for providing TypeORM repositories for the application.
 // It imports the TypeOrmConfigModule for database configuration and registers the necessary entities.
@@ -75,6 +77,10 @@ import { PoliticaOperativaOrmEntity } from 'src/infrastructure/politicas/politic
       provide: POLITICA_OPERATIVA_REPOSITORY,
       useClass: PoliticaOperativaRepositoryImpl,
     },
+    {
+      provide: FICHA_SALUD_VERSION_REPOSITORY,
+      useClass: FichaSaludVersionRepositoryImpl,
+    },
   ],
   exports: [
     USUARIO_REPOSITORY,
@@ -82,6 +88,7 @@ import { PoliticaOperativaOrmEntity } from 'src/infrastructure/politicas/politic
     NUTRICIONISTA_REPOSITORY,
     RECEPCIONISTA_REPOSITORY,
     POLITICA_OPERATIVA_REPOSITORY,
+    FICHA_SALUD_VERSION_REPOSITORY,
   ],
 })
 export class RepositoriesModule {}
