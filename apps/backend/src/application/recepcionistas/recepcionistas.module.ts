@@ -7,14 +7,28 @@ import {
   ListRecepcionistasUseCase,
   GetRecepcionistaUseCase,
 } from './use-cases';
-import { RepositoriesModule } from 'src/infrastructure/persistence/typeorm/repositories/repositories.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { GrupoPermisoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/grupo-permiso.entity';
+import { AppLoggerModule } from 'src/infrastructure/common/logger/app-logger.module';
+import { PasswordEncrypterModule } from 'src/infrastructure/services/bcrypt/bcrypt.module';
+import {
+  GrupoPermisoOrmEntity,
+  RecepcionistaOrmEntity,
+  UsuarioOrmEntity,
+} from 'src/infrastructure/persistence/typeorm/entities';
+import { RECEPCIONISTA_REPOSITORY } from 'src/domain/entities/Persona/Recepcionista/recepcionista.repository';
+import { USUARIO_REPOSITORY } from 'src/domain/entities/Usuario/usuario.repository';
+import { RecepcionistaRepositoryImplementation } from 'src/infrastructure/persistence/typeorm/repositories/recepcionista.repository.impl';
+import { UsuarioRepositoryImplementation } from 'src/infrastructure/persistence/typeorm/repositories/usuario.repository';
 
 @Module({
   imports: [
-    RepositoriesModule,
-    TypeOrmModule.forFeature([GrupoPermisoOrmEntity]),
+    TypeOrmModule.forFeature([
+      UsuarioOrmEntity,
+      RecepcionistaOrmEntity,
+      GrupoPermisoOrmEntity,
+    ]),
+    AppLoggerModule,
+    PasswordEncrypterModule,
   ],
   providers: [
     CreateRecepcionistaUseCase,
@@ -23,6 +37,14 @@ import { GrupoPermisoOrmEntity } from 'src/infrastructure/persistence/typeorm/en
     ReactivarRecepcionistaUseCase,
     ListRecepcionistasUseCase,
     GetRecepcionistaUseCase,
+    {
+      provide: USUARIO_REPOSITORY,
+      useClass: UsuarioRepositoryImplementation,
+    },
+    {
+      provide: RECEPCIONISTA_REPOSITORY,
+      useClass: RecepcionistaRepositoryImplementation,
+    },
   ],
   exports: [
     CreateRecepcionistaUseCase,
