@@ -13,6 +13,7 @@ import {
   FichaSaludOrmEntity,
   PatologiaOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities/ficha-salud.entity';
+import { FichaSaludVersionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/ficha-salud-version.entity';
 import { UsuarioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/usuario.entity';
 import { OpcionComidaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/opcion-comida.entity';
 import { GrupoAlimenticioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/grupo-alimenticio.entity';
@@ -21,11 +22,20 @@ import { FormacionAcademicaOrmEntity } from 'src/infrastructure/persistence/type
 import { ObservacionClinicaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/observacion-clinica.entity';
 import { AccionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/accion.entity';
 import { GrupoPermisoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/grupo-permiso.entity';
+import { UsuarioGrupoPermisoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/usuario-grupo-permiso.entity';
 import { MedicionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/medicion.entity';
 import { DiaPlanOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/dia-plan.entity';
 import { ItemComidaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/item-comida.entity';
 import { ObjetivoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/objetivo.entity';
 import { FotoProgresoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/foto-progreso.entity';
+import { GimnasioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/gimnasio.entity';
+import { AdjuntoClinicoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/adjunto-clinico.entity';
+import { NotificacionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/notificacion.entity';
+import { AuditoriaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
+import { RecordatorioEnviadoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/recordatorio-enviado.entity';
+import { SugerenciaIAOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/sugerencia-ia.entity';
+import { TurnoConfirmacionTokenOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/turno-confirmacion-token.entity';
+import { PoliticaOperativaOrmEntity } from 'src/infrastructure/politicas/politica-operativa.entity';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { EnvironmentConfigService } from '../environment-config/environment-config.service';
 
@@ -54,6 +64,7 @@ export const AppDataSource = (
     RecepcionistaOrmEntity,
     PatologiaOrmEntity,
     FichaSaludOrmEntity,
+    FichaSaludVersionOrmEntity,
     ItemComidaOrmEntity,
     OpcionComidaOrmEntity,
     NutricionistaOrmEntity,
@@ -67,8 +78,17 @@ export const AppDataSource = (
     DiaPlanOrmEntity,
     ObjetivoOrmEntity,
     FotoProgresoOrmEntity,
+    GimnasioOrmEntity,
+    AdjuntoClinicoOrmEntity,
+    NotificacionOrmEntity,
+    AuditoriaOrmEntity,
+    RecordatorioEnviadoOrmEntity,
+    SugerenciaIAOrmEntity,
+    TurnoConfirmacionTokenOrmEntity,
+    UsuarioGrupoPermisoOrmEntity,
+    PoliticaOperativaOrmEntity,
   ],
   //BORRAR ESTO CUANDO SAQUE LA APP A PRODUCCION
-  synchronize: false,
+  synchronize: true,
   logging: false,
 });
