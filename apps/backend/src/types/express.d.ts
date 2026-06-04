@@ -1,4 +1,4 @@
-import type { Rol } from 'src/domain/entities/Usuario/Rol';
+import type { Rol } from '../domain/entities/Usuario/Rol';
 
 declare global {
   namespace Express {
