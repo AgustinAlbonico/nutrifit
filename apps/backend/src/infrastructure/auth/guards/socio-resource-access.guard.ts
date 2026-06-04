@@ -121,7 +121,7 @@ export class SocioResourceAccessGuard implements CanActivate {
   private async resolveTargetSocioId(
     request: RequestWithAccess,
   ): Promise<number | null> {
-    const body = request.body as Record<string, unknown>;
+    const body = (request.body ?? {}) as Record<string, unknown>;
     const socioIdParam = this.parseOptionalNumber(
       request.params?.socioId,
       'Parámetro de socio inválido',
