@@ -173,6 +173,7 @@ export function FichaSaludSocio() {
         return;
       }
       setFichaCargada(ficha);
+      setConsentimiento(true);
       setFormulario({
         altura: String(ficha.altura),
         peso: String(ficha.peso),
