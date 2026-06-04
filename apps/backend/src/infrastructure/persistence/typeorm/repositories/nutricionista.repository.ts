@@ -9,7 +9,12 @@ import { TenantContextService } from 'src/infrastructure/auth/tenant-context.ser
 function obtenerGimnasioIdActual(
   tenantContext: TenantContextService | undefined,
 ): number {
-  if (!tenantContext?.isInitialized) {
+  if (!tenantContext) {
+    throw new Error(
+      'Tenant context no disponible — no se pudo resolver TenantContextService en el repositorio.',
+    );
+  }
+  if (!tenantContext.isInitialized) {
     throw new Error(
       'Tenant context not initialized — cannot perform tenant-scoped operation',
     );

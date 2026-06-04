@@ -71,6 +71,7 @@ export class TenantContextService {
   }
 
   get isInitialized(): boolean {
+    this.hydrateFromRequest();
     return this._gimnasioId !== null;
   }
 
