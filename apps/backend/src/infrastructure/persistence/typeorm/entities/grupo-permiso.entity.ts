@@ -24,6 +24,9 @@ export class GrupoPermisoOrmEntity {
   @Column({ name: 'descripcion', type: 'varchar', length: 255, nullable: true })
   descripcion: string | null;
 
+  @Column({ name: 'es_grupo_sistema', type: 'boolean', default: false })
+  esGrupoSistema: boolean;
+
   @ManyToMany(() => AccionOrmEntity, (accion) => accion.grupos, {
     eager: false,
   })
