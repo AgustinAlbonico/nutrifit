@@ -22,6 +22,7 @@ import {
   BloquearTurnoDto,
   CancelarTurnoSocioDto,
   DatosTurnoResponseDto,
+  DatosVersionFichaSaludDto,
   FichaSaludPacienteResponseDto,
   FichaSaludSocioResponseDto,
   GetTurnosDelDiaQueryDto,
@@ -29,6 +30,7 @@ import {
   GuardarMedicionesDto,
   GuardarObservacionesDto,
   HistorialConsultaPacienteResponseDto,
+  HistorialFichaSaludItemDto,
   ListMisTurnosQueryDto,
   ListPacientesProfesionalQueryDto,
   MiTurnoResponseDto,
@@ -62,8 +64,12 @@ import {
   GuardarMedicionesUseCase,
   GuardarObservacionesUseCase,
   IniciarConsultaUseCase,
+  ListarHistorialFichaSaludNutricionistaUseCase,
+  ListarHistorialFichaSaludSocioUseCase,
   ListMisTurnosUseCase,
   ListPacientesProfesionalUseCase,
+  ObtenerVersionFichaSaludNutricionistaUseCase,
+  ObtenerVersionFichaSaludSocioUseCase,
   ReprogramarTurnoSocioUseCase,
   RegistrarAsistenciaTurnoUseCase,
   ReservarTurnoSocioUseCase,
@@ -112,8 +118,12 @@ export class TurnosController {
     private readonly guardarMedicionesUseCase: GuardarMedicionesUseCase,
     private readonly guardarObservacionesUseCase: GuardarObservacionesUseCase,
     private readonly iniciarConsultaUseCase: IniciarConsultaUseCase,
+    private readonly listarHistorialFichaSaludNutricionistaUseCase: ListarHistorialFichaSaludNutricionistaUseCase,
+    private readonly listarHistorialFichaSaludSocioUseCase: ListarHistorialFichaSaludSocioUseCase,
     private readonly listMisTurnosUseCase: ListMisTurnosUseCase,
     private readonly listPacientesProfesionalUseCase: ListPacientesProfesionalUseCase,
+    private readonly obtenerVersionFichaSaludNutricionistaUseCase: ObtenerVersionFichaSaludNutricionistaUseCase,
+    private readonly obtenerVersionFichaSaludSocioUseCase: ObtenerVersionFichaSaludSocioUseCase,
     private readonly reprogramarTurnoSocioUseCase: ReprogramarTurnoSocioUseCase,
     private readonly registrarAsistenciaTurnoUseCase: RegistrarAsistenciaTurnoUseCase,
     private readonly reservarTurnoSocioUseCase: ReservarTurnoSocioUseCase,
@@ -296,6 +306,69 @@ export class TurnosController {
     this.logger.log(`Consultando ficha de salud para socio usuario=${userId}.`);
 
     return this.getFichaSaludSocioUseCase.execute(userId);
+  }
+
+  // === PR 1b: Historial de versiones (socio) — RB50 ===
+  @Get('socio/ficha-salud/historial')
+  @Rol(RolEnum.SOCIO)
+  async listarHistorialFichaSaludSocio(
+    @CurrentUserId() userId: number,
+  ): Promise<HistorialFichaSaludItemDto[]> {
+    this.logger.log(
+      `Consultando historial de ficha de salud para socio usuario=${userId}.`,
+    );
+
+    return this.listarHistorialFichaSaludSocioUseCase.execute(userId);
+  }
+
+  @Get('socio/ficha-salud/version/:n')
+  @Rol(RolEnum.SOCIO)
+  async obtenerVersionFichaSaludSocio(
+    @CurrentUserId() userId: number,
+    @Param('n', ParseIntPipe) n: number,
+  ): Promise<DatosVersionFichaSaludDto> {
+    this.logger.log(
+      `Consultando versión ${n} de ficha de salud para socio usuario=${userId}.`,
+    );
+
+    return this.obtenerVersionFichaSaludSocioUseCase.execute(userId, n);
+  }
+
+  // === PR 1b: Historial de versiones (nutricionista) — RB13 ===
+  @Get('profesional/:nutricionistaId/pacientes/:socioId/ficha-salud/historial')
+  @Rol(RolEnum.NUTRICIONISTA)
+  @UseGuards(NutricionistaOwnershipGuard)
+  async listarHistorialFichaSaludPaciente(
+    @Param('nutricionistaId', ParseIntPipe) nutricionistaId: number,
+    @Param('socioId', ParseIntPipe) socioId: number,
+  ): Promise<HistorialFichaSaludItemDto[]> {
+    this.logger.log(
+      `Consultando historial de ficha de salud. Profesional=${nutricionistaId}, socio=${socioId}.`,
+    );
+
+    return this.listarHistorialFichaSaludNutricionistaUseCase.execute(
+      nutricionistaId,
+      socioId,
+    );
+  }
+
+  @Get('profesional/:nutricionistaId/pacientes/:socioId/ficha-salud/version/:n')
+  @Rol(RolEnum.NUTRICIONISTA)
+  @UseGuards(NutricionistaOwnershipGuard)
+  async obtenerVersionFichaSaludPaciente(
+    @Param('nutricionistaId', ParseIntPipe) nutricionistaId: number,
+    @Param('socioId', ParseIntPipe) socioId: number,
+    @Param('n', ParseIntPipe) n: number,
+  ): Promise<DatosVersionFichaSaludDto> {
+    this.logger.log(
+      `Consultando versión ${n} de ficha de salud. Profesional=${nutricionistaId}, socio=${socioId}.`,
+    );
+
+    return this.obtenerVersionFichaSaludNutricionistaUseCase.execute(
+      nutricionistaId,
+      socioId,
+      n,
+    );
   }
 
   @Get('socio/profesional/:nutricionistaId/disponibilidad')
