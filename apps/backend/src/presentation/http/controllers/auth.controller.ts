@@ -10,6 +10,7 @@ import { PermisosService } from 'src/application/permisos/permisos.service';
 import {
   CurrentUser,
   CurrentUserId,
+  type UsuarioAutenticadoPayload,
 } from 'src/infrastructure/auth/decorators/current-user.decorator';
 import {
   USUARIO_REPOSITORY,
@@ -44,8 +45,7 @@ export class AuthController {
 
   @Get('perfil')
   @UseGuards(JwtAuthGuard)
-  // @ts-ignore - augmentación de Express namespace definida en src/types/express.d.ts, ts-node no la registra consistentemente
-  async getProfile(@CurrentUser() user: Express.AuthenticatedUserPayload) {
+  async getProfile(@CurrentUser() user: UsuarioAutenticadoPayload) {
     const perfil = await this.usuarioRepository.findPerfilByUserId(user.id);
 
     if (!perfil) {

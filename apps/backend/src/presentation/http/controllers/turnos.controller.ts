@@ -85,8 +85,12 @@ import { Actions } from 'src/infrastructure/auth/decorators/actions.decorator';
 import {
   CurrentUser,
   CurrentUserId,
+  type UsuarioAutenticadoPayload,
 } from 'src/infrastructure/auth/decorators/current-user.decorator';
-import { ResourceAccess } from 'src/infrastructure/auth/decorators/resource-access.decorator';
+import {
+  ResourceAccess,
+  type ContextoAccesoRecurso,
+} from 'src/infrastructure/auth/decorators/resource-access.decorator';
 import { ActionsGuard } from 'src/infrastructure/auth/guards/actions.guard';
 import { JwtAuthGuard } from 'src/infrastructure/auth/guards/auth.guard';
 import { NutricionistaOwnershipGuard } from 'src/infrastructure/auth/guards/nutricionista-ownership.guard';
@@ -152,8 +156,7 @@ export class TurnosController {
   @UseGuards(TurnoNutricionistaAccessGuard)
   async getTurnoById(
     @Param('id', ParseIntPipe) turnoId: number,
-    // @ts-ignore - augmentación Express namespace
-    @ResourceAccess() access: Express.ResourceAccessContext,
+    @ResourceAccess() access: ContextoAccesoRecurso,
   ): Promise<DatosTurnoResponseDto> {
     const nutricionistaId = access.actorPersonaId;
 
@@ -607,8 +610,7 @@ export class TurnosController {
   @Get('socio/mi-progreso')
   @Rol(RolEnum.SOCIO)
   @UseGuards(SocioResourceAccessGuard)
-  // @ts-ignore - augmentación Express namespace
-  async getMiProgreso(@ResourceAccess() access: Express.ResourceAccessContext) {
+  async getMiProgreso(@ResourceAccess() access: ContextoAccesoRecurso) {
     const socioId = access.socioId;
 
     if (socioId == null) {
@@ -624,8 +626,7 @@ export class TurnosController {
   @Rol(RolEnum.SOCIO)
   @UseGuards(SocioResourceAccessGuard)
   async getMiHistorialMediciones(
-    // @ts-ignore - augmentación Express namespace
-    @ResourceAccess() access: Express.ResourceAccessContext,
+    @ResourceAccess() access: ContextoAccesoRecurso,
   ) {
     const socioId = access.socioId;
 
@@ -692,8 +693,7 @@ export class TurnosController {
   async eliminarAdjunto(
     @Param('id', ParseIntPipe) turnoId: number,
     @Param('adjId', ParseIntPipe) adjuntoId: number,
-    // @ts-ignore - augmentación Express namespace
-    @CurrentUser() user: Express.AuthenticatedUserPayload,
+    @CurrentUser() user: UsuarioAutenticadoPayload,
   ) {
     const esAdmin = user.rol === RolEnum.ADMIN;
     this.logger.log(`Eliminando adjunto ${adjuntoId} del turno ${turnoId}.`);

@@ -4,17 +4,30 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Request } from 'express';
+import { Rol } from 'src/domain/entities/Usuario/Rol';
+
+export interface UsuarioAutenticadoPayload {
+  id: number;
+  email: string;
+  rol: Rol;
+  acciones?: string[];
+  gimnasioId: number | null;
+  personaId: number | null;
+  jti: string;
+}
+
+interface RequestConUsuario extends Request {
+  user?: UsuarioAutenticadoPayload;
+}
 
 /**
  * Inyecta el payload completo del usuario autenticado.
  * Lanza UnauthorizedException si no hay usuario en la request.
  */
 export const CurrentUser = createParamDecorator(
-  (_data: unknown, ctx: ExecutionContext): // @ts-ignore - augmentación Express namespace
-  Express.AuthenticatedUserPayload => {
-    const request = ctx.switchToHttp().getRequest<Request>();
-    // @ts-ignore - augmentación Express namespace
-    const user = request.user as Express.AuthenticatedUserPayload | undefined;
+  (_data: unknown, ctx: ExecutionContext): UsuarioAutenticadoPayload => {
+    const request = ctx.switchToHttp().getRequest<RequestConUsuario>();
+    const user = request.user;
 
     if (!user) {
       throw new UnauthorizedException('Usuario no autenticado');
@@ -30,9 +43,8 @@ export const CurrentUser = createParamDecorator(
  */
 export const CurrentUserId = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext): number => {
-    const request = ctx.switchToHttp().getRequest<Request>();
-    // @ts-ignore - augmentación Express namespace
-    const user = request.user as Express.AuthenticatedUserPayload | undefined;
+    const request = ctx.switchToHttp().getRequest<RequestConUsuario>();
+    const user = request.user;
     const id = user?.id;
 
     if (!id) {
