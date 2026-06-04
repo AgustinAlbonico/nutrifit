@@ -30,8 +30,8 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
     unobserve(): void {}
     disconnect(): void {}
   }
-  // @ts-expect-error — polyfill mínimo para entorno de tests
-  globalThis.ResizeObserver = ResizeObserverPolyfill;
+  globalThis.ResizeObserver =
+    ResizeObserverPolyfill as unknown as typeof ResizeObserver;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

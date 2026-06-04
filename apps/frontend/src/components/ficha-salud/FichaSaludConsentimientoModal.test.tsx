@@ -21,8 +21,8 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
     unobserve(): void {}
     disconnect(): void {}
   }
-  // @ts-expect-error — polyfill mínimo
-  globalThis.ResizeObserver = ResizeObserverPolyfill;
+  globalThis.ResizeObserver =
+    ResizeObserverPolyfill as unknown as typeof ResizeObserver;
 }
 
 describe('FichaSaludConsentimientoModal', () => {
