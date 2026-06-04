@@ -36,6 +36,7 @@ export class TenantContextService {
   }
 
   get gimnasioId(): number {
+    this.hydrateFromRequest();
     if (this._gimnasioId === null) {
       throw new Error(
         'Tenant context not initialized — ensure JwtAuthGuard is applied',
@@ -45,10 +46,12 @@ export class TenantContextService {
   }
 
   get personaId(): number | null {
+    this.hydrateFromRequest();
     return this._personaId;
   }
 
   get usuarioId(): number {
+    this.hydrateFromRequest();
     if (this._usuarioId === null) {
       throw new Error('Tenant context not initialized');
     }
@@ -84,6 +87,22 @@ export class TenantContextService {
     this._jti = payload.jti ?? null;
     this._rol = payload.rol ?? null;
     this._impersonatedBy = payload.impersonatedBy ?? null;
+  }
+
+  private hydrateFromRequest(): void {
+    if (this._gimnasioId !== null) {
+      return;
+    }
+    const user = this.request?.user as JwtPayload | undefined;
+    if (!user) {
+      return;
+    }
+    this._gimnasioId = user.gimnasioId ?? null;
+    this._personaId = user.personaId ?? null;
+    this._usuarioId = user.id ?? null;
+    this._jti = user.jti ?? null;
+    this._rol = user.rol ?? null;
+    this._impersonatedBy = user.impersonatedBy ?? null;
   }
 
   toJSON(): TenantContext {
