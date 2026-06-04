@@ -12,7 +12,9 @@ import { FotoProgresoRepository } from 'src/infrastructure/persistence/typeorm/r
 import { ObjetivoRepository } from 'src/infrastructure/persistence/typeorm/repositories/objetivo.repository';
 import { FotoProgresoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/foto-progreso.entity';
 import { ObjetivoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/objetivo.entity';
+import { PlanAlimentacionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/plan-alimentacion.entity';
 import { SocioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/persona.entity';
+import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/turno.entity';
 import { MinioModule } from 'src/infrastructure/services/minio/minio.module';
 import { AppLoggerModule } from 'src/infrastructure/common/logger/app-logger.module';
 import { AuthModule } from 'src/application/auth/auth.module';
@@ -23,7 +25,9 @@ import { PermisosModule } from 'src/application/permisos/permisos.module';
     TypeOrmModule.forFeature([
       FotoProgresoOrmEntity,
       ObjetivoOrmEntity,
+      PlanAlimentacionOrmEntity,
       SocioOrmEntity,
+      TurnoOrmEntity,
     ]),
     MinioModule,
     AppLoggerModule,
