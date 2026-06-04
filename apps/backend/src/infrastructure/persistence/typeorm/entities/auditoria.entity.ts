@@ -90,7 +90,7 @@ export class AuditoriaOrmEntity {
 
   @Column({
     name: 'metadata',
-    type: 'jsonb',
+    type: 'json',
     nullable: true,
   })
   metadata: Record<string, unknown> | null;
