@@ -1,12 +1,10 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TypeOrmConfigModule } from 'src/infrastructure/config/typeorm/typeorm.module';
-import {
-  UsuarioRepositoryImplementation,
-  SocioRepositoryImplementation,
-  NutricionistaRepositoryImplementation,
-  RecepcionistaRepositoryImplementation,
-} from './';
+import { UsuarioRepositoryImplementation } from './usuario.repository';
+import { SocioRepositoryImplementation } from './socio.respository';
+import { NutricionistaRepositoryImplementation } from './nutricionista.repository';
+import { RecepcionistaRepositoryImplementation } from './recepcionista.repository.impl';
 import {
   SocioOrmEntity,
   AgendaOrmEntity,
@@ -33,6 +31,7 @@ import { NUTRICIONISTA_REPOSITORY } from 'src/domain/entities/Persona/Nutricioni
 import { RECEPCIONISTA_REPOSITORY } from 'src/domain/entities/Persona/Recepcionista/recepcionista.repository';
 import { POLITICA_OPERATIVA_REPOSITORY } from 'src/application/politicas/politica-operativa.repository';
 import { PoliticaOperativaRepositoryImpl } from 'src/infrastructure/politicas/politica-operativa.repository.impl';
+import { PoliticaOperativaOrmEntity } from 'src/infrastructure/politicas/politica-operativa.entity';
 
 // This module is responsible for providing TypeORM repositories for the application.
 // It imports the TypeOrmConfigModule for database configuration and registers the necessary entities.
@@ -58,6 +57,7 @@ import { PoliticaOperativaRepositoryImpl } from 'src/infrastructure/politicas/po
       TurnoOrmEntity,
       UsuarioOrmEntity,
       GimnasioOrmEntity,
+      PoliticaOperativaOrmEntity,
     ]),
   ],
   providers: [

@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { NUTRICIONISTA_REPOSITORY } from 'src/domain/entities/Persona/Nutricionista/nutricionista.repository';
 import { AppLoggerModule } from 'src/infrastructure/common/logger/app-logger.module';
 import {
   AgendaOrmEntity,
@@ -16,7 +15,7 @@ import {
   TurnoOrmEntity,
   UsuarioOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
-import { NutricionistaRepositoryImplementation } from 'src/infrastructure/persistence/typeorm/repositories/nutricionista.repository';
+import { RepositoriesModule } from 'src/infrastructure/persistence/typeorm/repositories/repositories.module';
 import {
   AsignarTurnoManualUseCase,
   BloquearTurnoUseCase,
@@ -66,6 +65,7 @@ import { NotificacionOrmEntity } from 'src/infrastructure/persistence/typeorm/en
       UsuarioOrmEntity,
       NotificacionOrmEntity,
     ]),
+    RepositoriesModule,
     AppLoggerModule,
     AuditoriaModule,
     AdjuntoClinicoModule,
@@ -97,10 +97,6 @@ import { NotificacionOrmEntity } from 'src/infrastructure/persistence/typeorm/en
     ReservarTurnoSocioUseCase,
     UpsertFichaSaludSocioUseCase,
     NotificacionesService,
-    {
-      provide: NUTRICIONISTA_REPOSITORY,
-      useClass: NutricionistaRepositoryImplementation,
-    },
   ],
   exports: [
     AsignarTurnoManualUseCase,
