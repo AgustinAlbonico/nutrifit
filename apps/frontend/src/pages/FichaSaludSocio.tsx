@@ -318,10 +318,14 @@ export function FichaSaludSocio() {
           : 'Ficha actualizada correctamente.',
       );
 
-      // Invalidar cache del historial para que la próxima apertura del modal
-      // traiga la versión nueva. RB50.
+      // Invalidar caches para que vistas que dependen del estado de la
+      // ficha (modal bloqueante en Mis Turnos, modal de historial)
+      // reflejen el cambio al volver.
       void queryClient.invalidateQueries({
         queryKey: ['ficha-salud', 'historial'],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ['ficha-salud', 'estado'],
       });
     } catch (requestError) {
       setError(obtenerMensajeError(requestError));
