@@ -29,7 +29,7 @@ export class SugerenciaIAOrmEntity {
   @Column({ name: 'info_extra', type: 'text' })
   infoExtra: string;
 
-  @Column({ name: 'propuesta', type: 'jsonb', nullable: true })
+  @Column({ name: 'propuesta', type: 'json', nullable: true })
   propuesta: PropuestaIA | null;
 
   @Column({
