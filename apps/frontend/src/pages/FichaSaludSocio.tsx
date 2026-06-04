@@ -1,6 +1,19 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent,
+} from 'react';
 import { Link } from '@tanstack/react-router';
-import { ArrowLeft, Calendar, CheckCircle2, FileWarning } from 'lucide-react';
+import {
+  ArrowLeft,
+  Calendar,
+  CheckCircle2,
+  FileWarning,
+  History,
+} from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRequest } from '@/lib/api';
@@ -9,6 +22,26 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { FichaSaludBannerUltimaEdicion } from '@/components/ficha-salud/FichaSaludBannerUltimaEdicion';
+import { FichaSaludConsentimientoModal } from '@/components/ficha-salud/FichaSaludConsentimientoModal';
+import { FichaSaludHistorialModal } from '@/components/ficha-salud/FichaSaludHistorialModal';
+import { SeccionConsentimiento } from '@/components/ficha-salud/SeccionConsentimiento';
+import { useObtenerHistorialFicha } from '@/hooks/useObtenerHistorialFicha';
+import { useObtenerVersionFicha } from '@/hooks/useObtenerVersionFicha';
+import { validarFormularioFichaSalud } from '@/schemas/ficha-salud.schema';
+import {
+  FRECUENCIAS_COMIDAS,
+  NIVELES_ACTIVIDAD_FISICA,
+  type FrecuenciaComidasValue,
+  type NivelActividadFisicaValue,
+} from '@nutrifit/shared';
+import type { FichaSaludSocio as FichaSaludSocioDto } from '@/types/ficha-salud';
+
+type ConsumoAlcoholValue =
+  | 'Nunca'
+  | 'Ocasional'
+  | 'Moderado'
+  | 'Frecuente';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -17,37 +50,13 @@ interface ApiResponse<T> {
   timestamp: string;
 }
 
-type NivelActividadFisica = 'Sedentario' | 'Moderado' | 'Intenso';
-type FrecuenciaComidas = '1-2 comidas' | '3 comidas' | '4-5 comidas' | '6 o más comidas';
-type ConsumoAlcohol = 'Nunca' | 'Ocasional' | 'Moderado' | 'Frecuente';
-
-interface FichaSaludSocio {
-  socioId: number;
-  fichaSaludId: number;
-  altura: number;
-  peso: number;
-  nivelActividadFisica: NivelActividadFisica;
-  alergias: string[];
-  patologias: string[];
-  objetivoPersonal: string;
-  medicacionActual: string | null;
-  suplementosActuales: string | null;
-  cirugiasPrevias: string | null;
-  antecedentesFamiliares: string | null;
-  frecuenciaComidas: FrecuenciaComidas | null;
-  consumoAguaDiario: number | null;
-  restriccionesAlimentarias: string | null;
-  consumoAlcohol: ConsumoAlcohol | null;
-  fumaTabaco: boolean;
-  horasSueno: number | null;
-  contactoEmergenciaNombre: string | null;
-  contactoEmergenciaTelefono: string | null;
-}
+type FrecuenciaComidasForm = FrecuenciaComidasValue | '';
+type ConsumoAlcoholForm = ConsumoAlcoholValue | '';
 
 interface FormularioFichaSalud {
   altura: string;
   peso: string;
-  nivelActividadFisica: NivelActividadFisica;
+  nivelActividadFisica: NivelActividadFisicaValue;
   alergias: string;
   patologias: string;
   objetivoPersonal: string;
@@ -55,10 +64,10 @@ interface FormularioFichaSalud {
   suplementosActuales: string;
   cirugiasPrevias: string;
   antecedentesFamiliares: string;
-  frecuenciaComidas: FrecuenciaComidas | '';
+  frecuenciaComidas: FrecuenciaComidasForm;
   consumoAguaDiario: string;
   restriccionesAlimentarias: string;
-  consumoAlcohol: ConsumoAlcohol | '';
+  consumoAlcohol: ConsumoAlcoholForm;
   fumaTabaco: boolean;
   horasSueno: string;
   contactoEmergenciaNombre: string;
@@ -68,7 +77,7 @@ interface FormularioFichaSalud {
 const FORMULARIO_INICIAL: FormularioFichaSalud = {
   altura: '',
   peso: '',
-  nivelActividadFisica: 'Moderado',
+  nivelActividadFisica: 'MODERADO',
   alergias: '',
   patologias: '',
   objetivoPersonal: '',
@@ -99,40 +108,71 @@ const separarLista = (valor: string): string[] => {
 
 const unirLista = (items: string[]): string => items.join(', ');
 
+function formatearFechaHora(fecha: Date | string | null | undefined): string {
+  if (!fecha) return 'desconocida';
+  const fechaObj = fecha instanceof Date ? fecha : new Date(fecha);
+  if (Number.isNaN(fechaObj.getTime())) return 'desconocida';
+  return fechaObj.toLocaleString('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function obtenerMensajeError(err: unknown): string {
+  return err instanceof Error
+    ? err.message
+    : 'No se pudo completar la operación.';
+}
+
 export function FichaSaludSocio() {
   const { token, rol } = useAuth();
+  const queryClient = useQueryClient();
 
   const [formulario, setFormulario] =
     useState<FormularioFichaSalud>(FORMULARIO_INICIAL);
+  const [fichaCargada, setFichaCargada] = useState<FichaSaludSocioDto | null>(
+    null,
+  );
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mensajeExito, setMensajeExito] = useState<string | null>(null);
-  const [fichaExistente, setFichaExistente] = useState(false);
+
+  const [consentimiento, setConsentimiento] = useState(false);
+  const [modalConsentimientoAbierto, setModalConsentimientoAbierto] =
+    useState(false);
+  const [modalHistorialAbierto, setModalHistorialAbierto] = useState(false);
+  const [versionConsultada, setVersionConsultada] = useState<number | null>(
+    null,
+  );
+  const [erroresValidacion, setErroresValidacion] = useState<
+    Record<string, string>
+  >({});
+
+  const fichaExistente = fichaCargada !== null;
 
   const cargarFichaSalud = useCallback(async () => {
     if (!token) {
       return;
     }
-
     try {
       setCargando(true);
       setError(null);
-
-      const response = await apiRequest<ApiResponse<FichaSaludSocio | null>>(
+      const response = await apiRequest<ApiResponse<FichaSaludSocioDto | null>>(
         '/turnos/socio/ficha-salud',
         { token },
       );
-
       const ficha = response.data;
-
       if (!ficha) {
-        setFichaExistente(false);
+        setFichaCargada(null);
         setFormulario(FORMULARIO_INICIAL);
+        setConsentimiento(false);
         return;
       }
-
-      setFichaExistente(true);
+      setFichaCargada(ficha);
       setFormulario({
         altura: String(ficha.altura),
         peso: String(ficha.peso),
@@ -145,20 +185,18 @@ export function FichaSaludSocio() {
         cirugiasPrevias: ficha.cirugiasPrevias ?? '',
         antecedentesFamiliares: ficha.antecedentesFamiliares ?? '',
         frecuenciaComidas: ficha.frecuenciaComidas ?? '',
-        consumoAguaDiario: ficha.consumoAguaDiario ? String(ficha.consumoAguaDiario) : '',
+        consumoAguaDiario: ficha.consumoAguaDiario
+          ? String(ficha.consumoAguaDiario)
+          : '',
         restriccionesAlimentarias: ficha.restriccionesAlimentarias ?? '',
         consumoAlcohol: ficha.consumoAlcohol ?? '',
-        fumaTabaco: ficha.fumaTabaco ?? false,
+        fumaTabaco: ficha.fumaTabaco,
         horasSueno: ficha.horasSueno ? String(ficha.horasSueno) : '',
         contactoEmergenciaNombre: ficha.contactoEmergenciaNombre ?? '',
         contactoEmergenciaTelefono: ficha.contactoEmergenciaTelefono ?? '',
       });
     } catch (requestError) {
-      const mensaje =
-        requestError instanceof Error
-          ? requestError.message
-          : 'No se pudo cargar tu ficha de salud.';
-      setError(mensaje);
+      setError(obtenerMensajeError(requestError));
     } finally {
       setCargando(false);
     }
@@ -169,36 +207,76 @@ export function FichaSaludSocio() {
       setCargando(false);
       return;
     }
-
     void cargarFichaSalud();
   }, [cargarFichaSalud, rol, token]);
 
-  const formularioValido = useMemo(() => {
-    const altura = Number(formulario.altura);
-    const peso = Number(formulario.peso);
+  const {
+    data: historial,
+    isLoading: cargandoHistorial,
+    isError: errorHistorial,
+    error: errorHistorialRaw,
+    refetch: refetchHistorial,
+  } = useObtenerHistorialFicha({
+    token,
+    habilitado: modalHistorialAbierto,
+  });
 
-    return (
-      Number.isFinite(altura) &&
-      altura >= 100 &&
-      altura <= 250 &&
-      Number.isFinite(peso) &&
-      peso >= 20 &&
-      peso <= 500 &&
-      formulario.objetivoPersonal.trim().length > 0
-    );
-  }, [formulario]);
+  const {
+    data: datosVersion,
+    isLoading: cargandoVersion,
+    isError: errorVersion,
+    error: errorVersionRaw,
+  } = useObtenerVersionFicha({ token, n: versionConsultada });
+
+  useEffect(() => {
+    if (modalHistorialAbierto) {
+      void refetchHistorial();
+    }
+  }, [modalHistorialAbierto, refetchHistorial]);
+
+  const erroresValidacionMemo = useMemo(() => {
+    const datosCrudos = {
+      altura: formulario.altura,
+      peso: formulario.peso,
+      nivelActividadFisica: formulario.nivelActividadFisica,
+      objetivoPersonal: formulario.objetivoPersonal,
+    };
+    return validarFormularioFichaSalud(datosCrudos);
+  }, [
+    formulario.altura,
+    formulario.peso,
+    formulario.nivelActividadFisica,
+    formulario.objetivoPersonal,
+  ]);
+
+  const formularioValido = useMemo(() => {
+    if (!erroresValidacionMemo.exito) return false;
+    return !fichaExistente ? consentimiento : true;
+  }, [erroresValidacionMemo, fichaExistente, consentimiento]);
 
   const manejarEnvio = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!token) {
+    if (!token) return;
+
+    if (!erroresValidacionMemo.exito) {
+      setErroresValidacion(erroresValidacionMemo.errores);
+      setError('Revisá los datos marcados en rojo.');
       return;
     }
+
+    if (!fichaExistente && !consentimiento) {
+      setError('Necesitamos tu consentimiento para almacenar la ficha.');
+      return;
+    }
+
+    setErroresValidacion({});
 
     try {
       setGuardando(true);
       setError(null);
       setMensajeExito(null);
 
+      const esCreacion = !fichaExistente;
       const payload = {
         altura: Number(formulario.altura),
         peso: Number(formulario.peso),
@@ -211,29 +289,41 @@ export function FichaSaludSocio() {
         cirugiasPrevias: formulario.cirugiasPrevias.trim() || null,
         antecedentesFamiliares: formulario.antecedentesFamiliares.trim() || null,
         frecuenciaComidas: formulario.frecuenciaComidas || null,
-        consumoAguaDiario: formulario.consumoAguaDiario ? Number(formulario.consumoAguaDiario) : null,
+        consumoAguaDiario: formulario.consumoAguaDiario
+          ? Number(formulario.consumoAguaDiario)
+          : null,
         restriccionesAlimentarias: formulario.restriccionesAlimentarias.trim() || null,
         consumoAlcohol: formulario.consumoAlcohol || null,
         fumaTabaco: formulario.fumaTabaco,
         horasSueno: formulario.horasSueno ? Number(formulario.horasSueno) : null,
         contactoEmergenciaNombre: formulario.contactoEmergenciaNombre.trim() || null,
         contactoEmergenciaTelefono: formulario.contactoEmergenciaTelefono.trim() || null,
+        ...(esCreacion ? { consentimiento: true } : {}),
       };
 
-      await apiRequest<ApiResponse<FichaSaludSocio>>('/turnos/socio/ficha-salud', {
-        method: 'PUT',
-        token,
-        body: payload,
-      });
+      const response = await apiRequest<ApiResponse<FichaSaludSocioDto>>(
+        '/turnos/socio/ficha-salud',
+        {
+          method: 'PUT',
+          token,
+          body: payload,
+        },
+      );
 
-      setFichaExistente(true);
-      setMensajeExito('Ficha de salud guardada correctamente. Ya podés reservar turnos.');
+      setFichaCargada(response.data);
+      setMensajeExito(
+        esCreacion
+          ? 'Ficha de salud completada. Ya podés reservar turnos.'
+          : 'Ficha actualizada correctamente.',
+      );
+
+      // Invalidar cache del historial para que la próxima apertura del modal
+      // traiga la versión nueva. RB50.
+      void queryClient.invalidateQueries({
+        queryKey: ['ficha-salud', 'historial'],
+      });
     } catch (requestError) {
-      const mensaje =
-        requestError instanceof Error
-          ? requestError.message
-          : 'No se pudo guardar la ficha de salud.';
-      setError(mensaje);
+      setError(obtenerMensajeError(requestError));
     } finally {
       setGuardando(false);
     }
@@ -251,15 +341,22 @@ export function FichaSaludSocio() {
   }
 
   return (
-    <div className="space-y-6">
+    <main
+      role="main"
+      aria-labelledby="titulo-ficha"
+      className="space-y-6"
+    >
       <div className="relative overflow-hidden rounded-2xl border border-orange-500/20 bg-gradient-to-r from-orange-500/10 via-rose-500/10 to-transparent p-8 mb-8">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-rose-500/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-rose-500/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
         <div className="relative z-10 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <Calendar className="h-8 w-8 text-orange-500" />
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-rose-600 bg-clip-text text-transparent">
+              <Calendar className="h-8 w-8 text-orange-500" aria-hidden="true" />
+              <h1
+                id="titulo-ficha"
+                className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-rose-600 bg-clip-text text-transparent"
+              >
                 Mi ficha de salud
               </h1>
             </div>
@@ -277,24 +374,58 @@ export function FichaSaludSocio() {
         </div>
       </div>
 
-      <Card className="border-amber-200 bg-amber-50/40">
-        <CardContent className="pt-4">
-          <p className="text-sm text-amber-800">
-            {fichaExistente
-              ? 'Tu ficha ya está cargada. Puedes actualizarla cuando lo necesites.'
-              : 'Todavía no tenés ficha cargada. Completala para habilitar la reserva de turnos.'}
-          </p>
-        </CardContent>
-      </Card>
+      {fichaExistente && fichaCargada?.completada === true && (
+        <FichaSaludBannerUltimaEdicion
+          fecha={fichaCargada.actualizadaAt ?? fichaCargada.completadaAt}
+        />
+      )}
+
+      {!fichaExistente && (
+        <Card className="border-amber-200 bg-amber-50/40">
+          <CardContent className="pt-4">
+            <p className="text-sm text-amber-800">
+              Todavía no tenés ficha cargada. Completala para habilitar la
+              reserva de turnos.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {cargando ? (
         <Card>
           <CardContent className="py-8">
-            <p className="text-sm text-muted-foreground">Cargando ficha de salud...</p>
+            <p
+              className="text-sm text-muted-foreground"
+              aria-live="polite"
+            >
+              Cargando ficha de salud...
+            </p>
           </CardContent>
         </Card>
       ) : (
-        <form className="space-y-6" onSubmit={manejarEnvio}>
+        <form className="space-y-6" onSubmit={manejarEnvio} noValidate>
+          {/* Consentimiento RGPD (siempre visible, requerido solo en creación) */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Consentimiento</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SeccionConsentimiento
+                checked={consentimiento}
+                onChange={setConsentimiento}
+                disabled={fichaExistente}
+                required={!fichaExistente}
+                fechaConsentimiento={fichaCargada?.consentAt}
+                onAbrirModalRGPD={() => setModalConsentimientoAbierto(true)}
+                idError={
+                  !fichaExistente && !consentimiento && error
+                    ? 'error-consentimiento'
+                    : undefined
+                }
+              />
+            </CardContent>
+          </Card>
+
           {/* Sección: Datos físicos básicos */}
           <Card>
             <CardHeader>
@@ -313,10 +444,28 @@ export function FichaSaludSocio() {
                     max={250}
                     value={formulario.altura}
                     onChange={(event) =>
-                      setFormulario((previo) => ({ ...previo, altura: event.target.value }))
+                      setFormulario((previo) => ({
+                        ...previo,
+                        altura: event.target.value,
+                      }))
+                    }
+                    aria-invalid={
+                      Boolean(erroresValidacion.altura) || undefined
+                    }
+                    aria-describedby={
+                      erroresValidacion.altura ? 'error-altura' : undefined
                     }
                     required
                   />
+                  {erroresValidacion.altura && (
+                    <p
+                      id="error-altura"
+                      className="text-xs text-destructive"
+                      role="alert"
+                    >
+                      {erroresValidacion.altura}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -331,10 +480,26 @@ export function FichaSaludSocio() {
                     step="0.1"
                     value={formulario.peso}
                     onChange={(event) =>
-                      setFormulario((previo) => ({ ...previo, peso: event.target.value }))
+                      setFormulario((previo) => ({
+                        ...previo,
+                        peso: event.target.value,
+                      }))
+                    }
+                    aria-invalid={Boolean(erroresValidacion.peso) || undefined}
+                    aria-describedby={
+                      erroresValidacion.peso ? 'error-peso' : undefined
                     }
                     required
                   />
+                  {erroresValidacion.peso && (
+                    <p
+                      id="error-peso"
+                      className="text-xs text-destructive"
+                      role="alert"
+                    >
+                      {erroresValidacion.peso}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -348,14 +513,17 @@ export function FichaSaludSocio() {
                     onChange={(event) =>
                       setFormulario((previo) => ({
                         ...previo,
-                        nivelActividadFisica: event.target.value as NivelActividadFisica,
+                        nivelActividadFisica: event.target
+                          .value as NivelActividadFisicaValue,
                       }))
                     }
                     required
                   >
-                    <option value="Sedentario">Sedentario</option>
-                    <option value="Moderado">Moderado</option>
-                    <option value="Intenso">Intenso</option>
+                    {NIVELES_ACTIVIDAD_FISICA.map((opcion) => (
+                      <option key={opcion.value} value={opcion.value}>
+                        {opcion.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -373,8 +541,25 @@ export function FichaSaludSocio() {
                       }))
                     }
                     placeholder="Ej: bajar grasa, mejorar rendimiento..."
+                    aria-invalid={
+                      Boolean(erroresValidacion.objetivoPersonal) || undefined
+                    }
+                    aria-describedby={
+                      erroresValidacion.objetivoPersonal
+                        ? 'error-objetivo'
+                        : undefined
+                    }
                     required
                   />
+                  {erroresValidacion.objetivoPersonal && (
+                    <p
+                      id="error-objetivo"
+                      className="text-xs text-destructive"
+                      role="alert"
+                    >
+                      {erroresValidacion.objetivoPersonal}
+                    </p>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -393,7 +578,10 @@ export function FichaSaludSocio() {
                     id="alergias"
                     value={formulario.alergias}
                     onChange={(event) =>
-                      setFormulario((previo) => ({ ...previo, alergias: event.target.value }))
+                      setFormulario((previo) => ({
+                        ...previo,
+                        alergias: event.target.value,
+                      }))
                     }
                     placeholder="Separar por coma. Ej: maní, lactosa"
                   />
@@ -405,7 +593,10 @@ export function FichaSaludSocio() {
                     id="patologias"
                     value={formulario.patologias}
                     onChange={(event) =>
-                      setFormulario((previo) => ({ ...previo, patologias: event.target.value }))
+                      setFormulario((previo) => ({
+                        ...previo,
+                        patologias: event.target.value,
+                      }))
                     }
                     placeholder="Separar por coma. Ej: diabetes, hipertensión"
                   />
@@ -427,7 +618,10 @@ export function FichaSaludSocio() {
                     id="medicacion"
                     value={formulario.medicacionActual}
                     onChange={(event) =>
-                      setFormulario((previo) => ({ ...previo, medicacionActual: event.target.value }))
+                      setFormulario((previo) => ({
+                        ...previo,
+                        medicacionActual: event.target.value,
+                      }))
                     }
                     placeholder="Listá los medicamentos que tomás actualmente"
                     rows={3}
@@ -440,7 +634,10 @@ export function FichaSaludSocio() {
                     id="suplementos"
                     value={formulario.suplementosActuales}
                     onChange={(event) =>
-                      setFormulario((previo) => ({ ...previo, suplementosActuales: event.target.value }))
+                      setFormulario((previo) => ({
+                        ...previo,
+                        suplementosActuales: event.target.value,
+                      }))
                     }
                     placeholder="Vitaminas, proteínas, etc."
                     rows={3}
@@ -463,7 +660,10 @@ export function FichaSaludSocio() {
                     id="cirugias"
                     value={formulario.cirugiasPrevias}
                     onChange={(event) =>
-                      setFormulario((previo) => ({ ...previo, cirugiasPrevias: event.target.value }))
+                      setFormulario((previo) => ({
+                        ...previo,
+                        cirugiasPrevias: event.target.value,
+                      }))
                     }
                     placeholder="Indicá si tuviste cirugías relevantes"
                     rows={3}
@@ -476,7 +676,10 @@ export function FichaSaludSocio() {
                     id="antecedentes"
                     value={formulario.antecedentesFamiliares}
                     onChange={(event) =>
-                      setFormulario((previo) => ({ ...previo, antecedentesFamiliares: event.target.value }))
+                      setFormulario((previo) => ({
+                        ...previo,
+                        antecedentesFamiliares: event.target.value,
+                      }))
                     }
                     placeholder="Enfermedades en tu familia (diabetes, hipertensión, etc.)"
                     rows={3}
@@ -502,15 +705,17 @@ export function FichaSaludSocio() {
                     onChange={(event) =>
                       setFormulario((previo) => ({
                         ...previo,
-                        frecuenciaComidas: event.target.value as FrecuenciaComidas | '',
+                        frecuenciaComidas: event.target
+                          .value as FrecuenciaComidasForm,
                       }))
                     }
                   >
                     <option value="">Seleccionar...</option>
-                    <option value="1-2 comidas">1-2 comidas</option>
-                    <option value="3 comidas">3 comidas</option>
-                    <option value="4-5 comidas">4-5 comidas</option>
-                    <option value="6 o más comidas">6 o más comidas</option>
+                    {FRECUENCIAS_COMIDAS.map((opcion) => (
+                      <option key={opcion.value} value={opcion.value}>
+                        {opcion.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -524,7 +729,10 @@ export function FichaSaludSocio() {
                     step="0.5"
                     value={formulario.consumoAguaDiario}
                     onChange={(event) =>
-                      setFormulario((previo) => ({ ...previo, consumoAguaDiario: event.target.value }))
+                      setFormulario((previo) => ({
+                        ...previo,
+                        consumoAguaDiario: event.target.value,
+                      }))
                     }
                     placeholder="Ej: 2"
                   />
@@ -564,7 +772,7 @@ export function FichaSaludSocio() {
                     onChange={(event) =>
                       setFormulario((previo) => ({
                         ...previo,
-                        consumoAlcohol: event.target.value as ConsumoAlcohol | '',
+                        consumoAlcohol: event.target.value as ConsumoAlcoholForm,
                       }))
                     }
                   >
@@ -584,7 +792,12 @@ export function FichaSaludSocio() {
                         type="radio"
                         name="tabaco"
                         checked={formulario.fumaTabaco === true}
-                        onChange={() => setFormulario((previo) => ({ ...previo, fumaTabaco: true }))}
+                        onChange={() =>
+                          setFormulario((previo) => ({
+                            ...previo,
+                            fumaTabaco: true,
+                          }))
+                        }
                       />
                       <span className="text-sm">Sí</span>
                     </label>
@@ -593,7 +806,12 @@ export function FichaSaludSocio() {
                         type="radio"
                         name="tabaco"
                         checked={formulario.fumaTabaco === false}
-                        onChange={() => setFormulario((previo) => ({ ...previo, fumaTabaco: false }))}
+                        onChange={() =>
+                          setFormulario((previo) => ({
+                            ...previo,
+                            fumaTabaco: false,
+                          }))
+                        }
                       />
                       <span className="text-sm">No</span>
                     </label>
@@ -609,7 +827,10 @@ export function FichaSaludSocio() {
                     max={24}
                     value={formulario.horasSueno}
                     onChange={(event) =>
-                      setFormulario((previo) => ({ ...previo, horasSueno: event.target.value }))
+                      setFormulario((previo) => ({
+                        ...previo,
+                        horasSueno: event.target.value,
+                      }))
                     }
                     placeholder="Ej: 7"
                   />
@@ -663,31 +884,95 @@ export function FichaSaludSocio() {
           <Card>
             <CardContent className="pt-6">
               {error && (
-                <div className="mb-4 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-                  <FileWarning className="mt-0.5 h-4 w-4 shrink-0" />
+                <div
+                  className="mb-4 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
+                  role="alert"
+                  aria-live="assertive"
+                >
+                  <FileWarning
+                    className="mt-0.5 h-4 w-4 shrink-0"
+                    aria-hidden="true"
+                  />
                   <p>{error}</p>
                 </div>
               )}
 
               {mensajeExito && (
-                <div className="mb-4 flex items-start gap-2 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                <div
+                  className="mb-4 flex items-start gap-2 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <CheckCircle2
+                    className="mt-0.5 h-4 w-4 shrink-0"
+                    aria-hidden="true"
+                  />
                   <p>{mensajeExito}</p>
                 </div>
               )}
 
               <div className="flex flex-wrap items-center justify-end gap-2">
+                {fichaExistente && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setModalHistorialAbierto(true)}
+                    data-testid="boton-ver-historial"
+                  >
+                    <History className="h-4 w-4" />
+                    Ver historial
+                  </Button>
+                )}
                 <Button type="button" variant="outline" asChild>
                   <Link to="/turnos/agendar">Ir a agendar turno</Link>
                 </Button>
-                <Button type="submit" disabled={!formularioValido || guardando}>
-                  {guardando ? 'Guardando...' : fichaExistente ? 'Actualizar ficha' : 'Guardar ficha'}
+                <Button
+                  type="submit"
+                  disabled={!formularioValido || guardando}
+                  data-testid="boton-guardar-ficha"
+                >
+                  {guardando
+                    ? 'Guardando...'
+                    : fichaExistente
+                      ? 'Actualizar ficha'
+                      : 'Guardar ficha'}
                 </Button>
               </div>
             </CardContent>
           </Card>
         </form>
       )}
-    </div>
+
+      <FichaSaludConsentimientoModal
+        open={modalConsentimientoAbierto}
+        onClose={() => setModalConsentimientoAbierto(false)}
+        onAceptar={() => setConsentimiento(true)}
+        fechaConsentimiento={fichaCargada?.consentAt}
+      />
+
+      <FichaSaludHistorialModal
+        open={modalHistorialAbierto}
+        onClose={() => {
+          setModalHistorialAbierto(false);
+          setVersionConsultada(null);
+        }}
+        versiones={historial}
+        cargando={cargandoHistorial}
+        error={errorHistorial ? obtenerMensajeError(errorHistorialRaw) : null}
+        versionSeleccionada={versionConsultada}
+        datosVersion={datosVersion}
+        cargandoVersion={cargandoVersion}
+        errorVersion={errorVersion ? obtenerMensajeError(errorVersionRaw) : null}
+        onSeleccionarVersion={(n) => setVersionConsultada(n)}
+      />
+
+      <p
+        className="sr-only"
+        data-testid="fecha-guardado-invisible"
+        aria-hidden="true"
+      >
+        {formatearFechaHora(fichaCargada?.actualizadaAt)}
+      </p>
+    </main>
   );
 }
