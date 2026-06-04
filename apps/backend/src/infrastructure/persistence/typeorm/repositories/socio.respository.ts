@@ -142,6 +142,10 @@ export class SocioRepositoryImplementation implements SocioRepository {
   }
 
   private toEntity(orm: SocioOrmEntity): SocioEntity {
+    if (orm.gimnasioId == null) {
+      throw new Error(`Socio ${orm.idPersona} sin gimnasio asociado en base de datos`);
+    }
+
     // Pasar el gimnnasioId del ORM al entity (SocioEntity lo necesita para tenant isolation)
     const entity = new SocioEntity(
       orm.idPersona,

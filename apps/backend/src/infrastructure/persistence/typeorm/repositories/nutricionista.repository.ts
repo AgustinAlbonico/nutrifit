@@ -178,6 +178,12 @@ export class NutricionistaRepositoryImplementation implements NutricionistaRepos
   }
 
   private toDomainEntity(orm: NutricionistaOrmEntity): NutricionistaEntity {
+    if (orm.gimnasioId == null) {
+      throw new Error(
+        `Nutricionista ${orm.idPersona} sin gimnasio asociado en base de datos`,
+      );
+    }
+
     // Convert ORM entity to domain entity using constructor
     const entity = new NutricionistaEntity(
       orm.idPersona,

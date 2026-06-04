@@ -67,8 +67,8 @@ export abstract class PersonaOrmEntity extends AuditableOrmEntity {
   })
   fotoPerfilKey: string | null;
 
-  @Column({ name: 'id_gimnasio', type: 'int' })
-  gimnasioId: number;
+  @Column({ name: 'id_gimnasio', type: 'int', nullable: true })
+  gimnasioId: number | null;
 
   @OneToOne(() => UsuarioOrmEntity, (usuario) => usuario.persona, {
     nullable: true,
