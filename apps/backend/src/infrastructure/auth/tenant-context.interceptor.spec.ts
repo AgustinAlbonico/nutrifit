@@ -64,7 +64,7 @@ describe('TenantContextInterceptor', () => {
     expect(mockTenantContextService.setFromPayload).not.toHaveBeenCalled();
   });
 
-  it('should call setFromPayload with user when user exists', () => {
+  it('should call setFromPayload on non-public routes (service resolves user from REQUEST)', () => {
     jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(false);
     const user = {
       id: 1,
@@ -79,17 +79,17 @@ describe('TenantContextInterceptor', () => {
 
     interceptor.intercept(context, next);
 
-    expect(mockTenantContextService.setFromPayload).toHaveBeenCalledWith(user);
+    expect(mockTenantContextService.setFromPayload).toHaveBeenCalledWith();
   });
 
-  it('should not call setFromPayload when user is missing', () => {
+  it('should still call setFromPayload when user is missing (service will read REQUEST)', () => {
     jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(false);
     const context = createMockContext(undefined, false);
     const next = { handle: () => 'result' };
 
     interceptor.intercept(context, next);
 
-    expect(mockTenantContextService.setFromPayload).not.toHaveBeenCalled();
+    expect(mockTenantContextService.setFromPayload).toHaveBeenCalledWith();
   });
 
   it('should still call next.handle even when tenant context is not set', () => {

@@ -38,11 +38,7 @@ export class TenantContextInterceptor implements NestInterceptor {
 
     // Solo establecer si el tenant context service esta disponible
     if (this.tenantContext) {
-      const req = context.switchToHttp().getRequest<Request>();
-      const user = (req as any).user;
-      if (user) {
-        this.tenantContext.setFromPayload(user);
-      }
+      this.tenantContext.setFromPayload();
     }
 
     return next.handle();

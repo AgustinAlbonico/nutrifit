@@ -71,7 +71,13 @@ export class TenantContextService {
     return this._gimnasioId !== null;
   }
 
-  setFromPayload(payload: JwtPayload): void {
+  setFromPayload(payload?: JwtPayload): void {
+    if (!payload && this.request?.user) {
+      payload = this.request.user as JwtPayload;
+    }
+    if (!payload) {
+      return;
+    }
     this._gimnasioId = payload.gimnasioId ?? null;
     this._personaId = payload.personaId ?? null;
     this._usuarioId = payload.id ?? null;
