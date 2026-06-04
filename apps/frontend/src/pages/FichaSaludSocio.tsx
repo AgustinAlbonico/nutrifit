@@ -367,7 +367,7 @@ export function FichaSaludSocio() {
           </div>
 
           <Button asChild variant="outline">
-            <Link to="/turnos/agendar">
+            <Link to="/turnos/agendar" data-testid="volver-agendar">
               <ArrowLeft className="h-4 w-4" />
               Volver a agendar
             </Link>
@@ -456,6 +456,8 @@ export function FichaSaludSocio() {
                     aria-describedby={
                       erroresValidacion.altura ? 'error-altura' : undefined
                     }
+                    title="Tu altura en centímetros, entre 100 y 250"
+                    placeholder="Ej: 175"
                     required
                   />
                   {erroresValidacion.altura && (
@@ -490,6 +492,8 @@ export function FichaSaludSocio() {
                     aria-describedby={
                       erroresValidacion.peso ? 'error-peso' : undefined
                     }
+                    title="Tu peso en kilogramos, entre 20 y 300 (el cliente bloquea >300)"
+                    placeholder="Ej: 75.5"
                     required
                   />
                   {erroresValidacion.peso && (
@@ -925,12 +929,19 @@ export function FichaSaludSocio() {
                   </Button>
                 )}
                 <Button type="button" variant="outline" asChild>
-                  <Link to="/turnos/agendar">Ir a agendar turno</Link>
+                  <Link to="/turnos/agendar" data-testid="ir-agendar-turno">
+                    Ir a agendar turno
+                  </Link>
                 </Button>
                 <Button
                   type="submit"
                   disabled={!formularioValido || guardando}
                   data-testid="boton-guardar-ficha"
+                  aria-label={
+                    fichaExistente
+                      ? 'Actualizar ficha de salud'
+                      : 'Guardar ficha de salud y dar consentimiento'
+                  }
                 >
                   {guardando
                     ? 'Guardando...'
