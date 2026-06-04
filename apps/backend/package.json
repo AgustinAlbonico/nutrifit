@@ -8,10 +8,10 @@
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "nest start",
-    "start:dev": "nest start --watch",
-    "start:debug": "nest start --debug --watch",
-    "start:prod": "node dist/main",
+    "start": "ts-node -r tsconfig-paths/register src/main.ts",
+    "start:dev": "nodemon",
+    "start:debug": "nodemon --inspect-brk",
+    "start:prod": "node dist/apps/backend/src/main.js",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -20,9 +20,9 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "typeorm": "npx typeorm",
     "migration:generate": "npx typeorm migration:generate src/infrastructure/persistence/typeorm/migrations/InitMigration -d src/infrastructure/config/typeorm/migration.schema.ts",
-    "migration:run": "npx typeorm migration:run -d dist/infrastructure/config/typeorm/migration.schema.js",
-    "migration:revert": "npx typeorm migration:revert -d dist/infrastructure/config/typeorm/migration.schema.js",
-    "seed:multi-tenant": "ts-node src/seed-multi-tenant.ts"
+    "migration:run": "npx typeorm migration:run -d dist/apps/backend/src/infrastructure/config/typeorm/migration.schema.js",
+    "migration:revert": "npx typeorm migration:revert -d dist/apps/backend/src/infrastructure/config/typeorm/migration.schema.js",
+    "seed:multi-tenant": "ts-node -r tsconfig-paths/register src/seed-multi-tenant.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -76,6 +76,7 @@
     "eslint-plugin-prettier": "^5.2.2",
     "globals": "^16.0.0",
     "jest": "^29.7.0",
+    "nodemon": "^3.1.7",
     "prettier": "^3.4.2",
     "source-map-support": "^0.5.21",
     "supertest": "^7.0.0",
