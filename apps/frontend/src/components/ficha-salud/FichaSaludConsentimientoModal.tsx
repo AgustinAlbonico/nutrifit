@@ -108,7 +108,6 @@ export function FichaSaludConsentimientoModal({
           <Button
             type="button"
             onClick={manejarAceptar}
-            autoFocus
             data-testid="boton-aceptar-consentimiento"
           >
             Aceptar
