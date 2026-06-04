@@ -44,7 +44,7 @@ export class AuthController {
 
   @Get('perfil')
   @UseGuards(JwtAuthGuard)
-  // @ts-expect-error - augmentación de Express namespace definida en src/types/express.d.ts, ts-node no la registra consistentemente
+  // @ts-ignore - augmentación de Express namespace definida en src/types/express.d.ts, ts-node no la registra consistentemente
   async getProfile(@CurrentUser() user: Express.AuthenticatedUserPayload) {
     const perfil = await this.usuarioRepository.findPerfilByUserId(user.id);
 

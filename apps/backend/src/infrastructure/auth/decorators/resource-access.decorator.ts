@@ -10,7 +10,8 @@ import { Request } from 'express';
  * guards similares. Lanza ForbiddenException si el guard no se ejecutó.
  */
 export const ResourceAccess = createParamDecorator(
-  (_data: unknown, ctx: ExecutionContext): Express.ResourceAccessContext => {
+  (_data: unknown, ctx: ExecutionContext): // @ts-ignore - augmentación Express namespace
+  Express.ResourceAccessContext => {
     const request = ctx.switchToHttp().getRequest<Request>();
     const access = request.resourceAccess;
 
