@@ -89,6 +89,7 @@ import { GimnasiosModule } from './gimnasios.module';
     ActualizarAlimentoUseCase,
     EliminarAlimentoUseCase,
     BuscarSociosConFichaUseCase,
+    GimnasioRepository,
     NotificacionesService,
     {
       provide: APP_INTERCEPTOR,
