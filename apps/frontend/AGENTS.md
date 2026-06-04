@@ -231,6 +231,93 @@ src/
 
 ---
 
+## Feature: Ficha de Salud del Socio
+
+Feature documentado en `openspec/changes/ficha-salud/`. Implementado en 4 PRs (PR 1a, PR 1b, PR 2, PR 3) ya mergeados a `main`.
+
+### RBs cubiertos
+
+- **RB14** — bloqueo de reserva de turno por ficha incompleta (backend).
+- **RB15** — banner "Última edición" en modo edición.
+- **RB16** — RECEPCIONISTA NO ve datos clínicos de ficha.
+- **RB21** — IMC histórico no se recalcula.
+- **RB29** — last-write-wins en versionado.
+- **RB33** — auditoría antes/después (sin datos clínicos sensibles en CREATE).
+- **RB42** — ficha editable.
+- **RB44** — consentimiento RGPD una sola vez.
+- **RB50** — historial de versiones inmutable.
+
+### Pantalla principal
+
+- Ruta: `/turnos/ficha-salud` → `apps/frontend/src/pages/FichaSaludSocio.tsx`
+- Solo accesible para rol `SOCIO`. Otros roles ven "Acceso denegado".
+
+### Endpoints del backend
+
+| Método | Path | Rol | Descripción |
+|--------|------|-----|-------------|
+| `GET`  | `/turnos/socio/ficha-salud` | `SOCIO` | Ficha actual del socio (o 404 → `null`). |
+| `PUT`  | `/turnos/socio/ficha-salud` | `SOCIO` | Crea o edita ficha. En creación requiere `consentimiento: true`. |
+| `GET`  | `/turnos/socio/ficha-salud/historial` | `SOCIO` | Array resumido de versiones (`version`, `versionId`, `createdAt`). |
+| `GET`  | `/turnos/socio/ficha-salud/version/:n` | `SOCIO` | Datos completos de una versión específica. |
+| `GET`  | `/turnos/profesional/:nutricionistaId/pacientes/:socioId/ficha-salud` | `NUTRICIONISTA` | Ficha de un paciente (requiere turno previo). |
+| `GET`  | `/turnos/profesional/:nutricionistaId/pacientes/:socioId/ficha-salud/historial` | `NUTRICIONISTA` | Historial de versiones del paciente. |
+| `GET`  | `/turnos/profesional/:nutricionistaId/pacientes/:socioId/ficha-salud/version/:n` | `NUTRICIONISTA` | Versión específica del paciente. |
+
+`RECEPCIONISTA` recibe **403** en todos los endpoints anteriores.
+
+### Componentes clave (en `apps/frontend/src/components/ficha-salud/`)
+
+- `FichaSaludBannerUltimaEdicion.tsx` — banner ámbar superior con `data-testid="fecha-ultima-edicion"`.
+- `SeccionConsentimiento.tsx` — checkbox + link "Ver detalle" (abre modal RGPD).
+- `FichaSaludConsentimientoModal.tsx` — modal RGPD con texto legal claro (`data-testid="boton-aceptar-consentimiento"`).
+- `FichaSaludHistorialModal.tsx` — modal con lista de versiones (`data-testid="boton-ver-historial"` en la página abre este modal).
+- `FichaSaludVersionDetalle.tsx` — vista read-only con `<fieldset disabled>` (`data-testid="detalle-version"`).
+
+### Hooks
+
+- `useObtenerHistorialFicha` — React Query, `enabled: false` (solo fetchea al abrir modal), `staleTime: 60_000`.
+- `useObtenerVersionFicha(n)` — React Query, `enabled: n != null`, `staleTime: 5 * 60_000`.
+
+Tras `PUT` exitoso, **invalidar** `['ficha-salud', 'historial']` para que la próxima apertura del modal refleje la nueva versión.
+
+### Validación (Zod)
+
+`apps/frontend/src/schemas/ficha-salud.schema.ts`:
+
+- `altura`: 100..250 cm (entero).
+- `peso`: 20..300 kg. **Discrepancia conocida**: backend acepta hasta 500; cliente bloquea >300 por UX.
+- `nivelActividadFisica`: enum centralizado en `@nutrifit/shared` (5 valores: SEDENTARIO, LIGERO, MODERADO, INTENSO, MUY_INTENSO).
+- `objetivoPersonal`: 1..500 chars.
+
+### Enums compartidos
+
+`packages/shared/src/types/ficha-salud.ts`:
+
+- `NIVELES_ACTIVIDAD_FISICA` (5 valores con `value` + `label` en español).
+- `FRECUENCIAS_COMIDAS` (strings libres — refactor pendiente a códigos en iter 2+).
+
+### Tests E2E
+
+`e2e/ficha-salud/`:
+
+- `crear-ficha.spec.ts` — RB14 (socio completa ficha y reserva turno).
+- `editar-ficha.spec.ts` — RB42, RB50 (socio edita y ve historial).
+- `rbac-roles.spec.ts` — RB16 (RECEPCIONISTA recibe 403).
+- `historial-nutricionista.spec.ts` — RB13, RB50 (nutricionista con/sin turno previo).
+
+Para ejecutar: `npx playwright test e2e/ficha-salud/` (requiere dev servers arriba; el config tiene `webServer.reuseExistingServer: true`).
+
+### Out of scope (recordatorio)
+
+- ❌ RB15 badge "Ficha completada hace X" en pantallas de nutricionista.
+- ❌ Notificaciones/email al socio por `FICHA_COMPLETADA` / `FICHA_ACTUALIZADA`.
+- ❌ Notificaciones a nutricionistas vinculados.
+- ❌ Refactor de `FrecuenciaComidas` a códigos.
+- ❌ Rate-limiting de versiones.
+
+---
+
 <!-- CLAVIX:START -->
 # Clavix - Prompt Improvement Assistant
 
