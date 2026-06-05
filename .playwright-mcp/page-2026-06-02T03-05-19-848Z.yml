@@ -1,0 +1,61 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e6]:
+        - img [ref=e8]
+        - generic:
+          - generic: NutriFit
+          - generic: Supervisor
+      - button "Expandir" [ref=e14]:
+        - img [ref=e15]
+      - navigation [ref=e17]:
+        - generic: Menu Principal
+        - link "Permisos & Roles" [ref=e18] [cursor=pointer]:
+          - /url: /permisos
+          - generic [ref=e19]:
+            - img [ref=e21]
+            - generic: Permisos & Roles
+        - link "Gimnasios" [ref=e25] [cursor=pointer]:
+          - /url: /admin/gimnasios
+          - generic [ref=e26]:
+            - img [ref=e28]
+            - generic: Gimnasios
+        - generic: Sistema
+        - link "Configuracion" [ref=e32] [cursor=pointer]:
+          - /url: /configuracion
+          - generic [ref=e33]:
+            - img [ref=e35]
+            - generic: Configuracion
+      - generic [ref=e41]: SA
+    - main [ref=e42]:
+      - generic [ref=e45]:
+        - generic [ref=e49]:
+          - generic [ref=e50]:
+            - img [ref=e51]
+            - heading "Permisos y Roles" [level=1] [ref=e54]
+          - paragraph [ref=e55]: Gestioná los grupos de permisos, acciones del sistema y asignaciones a usuarios.
+        - generic [ref=e56]:
+          - tablist [ref=e57]:
+            - tab "Grupos" [selected] [ref=e58]
+            - tab "Acciones" [ref=e59]
+            - tab "Asignación" [ref=e60]
+          - tabpanel "Grupos" [ref=e61]:
+            - generic [ref=e62]:
+              - generic [ref=e63]:
+                - img [ref=e64]
+                - textbox "Buscar grupos..." [ref=e67]
+              - button "Nuevo Grupo" [ref=e68]:
+                - img
+                - text: Nuevo Grupo
+            - table [ref=e71]:
+              - rowgroup [ref=e72]:
+                - row "Nombre Clave Descripción Acciones Opciones" [ref=e73]:
+                  - columnheader "Nombre" [ref=e74]
+                  - columnheader "Clave" [ref=e75]
+                  - columnheader "Descripción" [ref=e76]
+                  - columnheader "Acciones" [ref=e77]
+                  - columnheader "Opciones" [ref=e78]
+              - rowgroup [ref=e79]:
+                - row "Cargando grupos..." [ref=e80]:
+                  - cell "Cargando grupos..." [ref=e81]
+  - region "Notifications alt+T"

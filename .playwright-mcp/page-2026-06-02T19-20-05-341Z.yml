@@ -1,0 +1,202 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e6]:
+        - img [ref=e8]
+        - generic:
+          - generic: NutriFit
+          - generic: Supervisor
+      - button "Expandir" [ref=e14]:
+        - img [ref=e15]
+      - navigation [ref=e17]:
+        - generic: Menu Principal
+        - link "Dashboard" [ref=e18] [cursor=pointer]:
+          - /url: /dashboard
+          - generic [ref=e19]:
+            - img [ref=e21]
+            - generic: Dashboard
+        - link "Nutricionistas" [ref=e26] [cursor=pointer]:
+          - /url: /nutricionistas
+          - generic [ref=e27]:
+            - img [ref=e29]
+            - generic: Nutricionistas
+        - link "Recepcionistas" [ref=e34] [cursor=pointer]:
+          - /url: /recepcionistas
+          - generic [ref=e35]:
+            - img [ref=e37]
+            - generic: Recepcionistas
+        - link "Socios" [ref=e49] [cursor=pointer]:
+          - /url: /socios
+          - generic [ref=e50]:
+            - img [ref=e52]
+            - generic: Socios
+        - link "Permisos & Roles" [ref=e55] [cursor=pointer]:
+          - /url: /permisos
+          - generic [ref=e56]:
+            - img [ref=e58]
+            - generic: Permisos & Roles
+        - link "Turnos del dia" [ref=e62] [cursor=pointer]:
+          - /url: /turnos-profesional
+          - generic [ref=e63]:
+            - img [ref=e65]
+            - generic: Turnos del dia
+        - link "Notificaciones" [ref=e70] [cursor=pointer]:
+          - /url: /notificaciones
+          - generic [ref=e71]:
+            - img [ref=e73]
+            - generic: Notificaciones
+        - link "Auditoría" [ref=e76] [cursor=pointer]:
+          - /url: /admin/auditoria
+          - generic [ref=e77]:
+            - img [ref=e79]
+            - generic: Auditoría
+        - generic: Sistema
+        - link "Configuracion" [ref=e81] [cursor=pointer]:
+          - /url: /configuracion
+          - generic [ref=e82]:
+            - img [ref=e84]
+            - generic: Configuracion
+      - generic [ref=e90]: AC
+    - main [ref=e91]:
+      - generic [ref=e94]:
+        - generic [ref=e98]:
+          - generic [ref=e99]:
+            - generic [ref=e100]:
+              - img [ref=e101]
+              - heading "Gestión de Socios" [level=1] [ref=e106]
+            - paragraph [ref=e107]: Administración profesional de altas, bajas y seguimiento de socios.
+          - generic [ref=e108]:
+            - button "Refrescar" [ref=e172]
+            - button "Nuevo socio" [ref=e109]
+        - generic [ref=e111]:
+          - generic [ref=e112]:
+            - generic [ref=e113]:
+              - paragraph [ref=e114]: Buscar
+              - textbox "Nombre, apellido, email, DNI o ubicación" [ref=e115]
+            - generic [ref=e116]:
+              - paragraph [ref=e117]: Estado
+              - combobox [ref=e118]:
+                - option "Todos" [selected]
+                - option "Activos"
+                - option "Inactivos"
+            - generic [ref=e119]:
+              - paragraph [ref=e120]: Provincia
+              - combobox [ref=e121]:
+                - option "Todas" [selected]
+                - option "Santa Fe"
+            - generic [ref=e122]:
+              - paragraph [ref=e123]: Ciudad
+              - combobox [ref=e124]:
+                - option "Todas" [selected]
+                - option "Rosario"
+            - generic [ref=e125]:
+              - paragraph [ref=e126]: Orden
+              - generic [ref=e127]:
+                - combobox [ref=e128]:
+                  - option "Nombre" [selected]
+                  - option "Estado"
+                - combobox [ref=e129]:
+                  - option "Asc" [selected]
+                  - option "Desc"
+          - generic [ref=e130]:
+            - paragraph [ref=e131]: "Resultados: 4"
+            - generic [ref=e132]:
+              - combobox [ref=e133]:
+                - option "6 por página"
+                - option "9 por página" [selected]
+                - option "12 por página"
+                - option "18 por página"
+              - button "Limpiar filtros" [ref=e134]
+          - table [ref=e396]:
+            - rowgroup [ref=e397]:
+              - row "Nombre Email Teléfono Ubicación Estado Acciones" [ref=e398]:
+                - columnheader "Nombre" [ref=e399]
+                - columnheader "Email" [ref=e400]
+                - columnheader "Teléfono" [ref=e401]
+                - columnheader "Ubicación" [ref=e402]
+                - columnheader "Estado" [ref=e403]
+                - columnheader "Acciones" [ref=e404]
+            - rowgroup [ref=e405]:
+              - 'row "SC Socio1 Central DNI: 50001001 socio1-central@nutrifit.com 0000000000 Rosario Santa Fe Activo Ver Editar Baja" [ref=e406]':
+                - 'cell "SC Socio1 Central DNI: 50001001" [ref=e407]':
+                  - generic [ref=e408]:
+                    - generic [ref=e410]: SC
+                    - generic [ref=e411]:
+                      - paragraph [ref=e412]: Socio1 Central
+                      - paragraph [ref=e413]: "DNI: 50001001"
+                - cell "socio1-central@nutrifit.com" [ref=e414]
+                - cell "0000000000" [ref=e415]
+                - cell "Rosario Santa Fe" [ref=e416]:
+                  - paragraph [ref=e417]: Rosario
+                  - paragraph [ref=e418]: Santa Fe
+                - cell "Activo" [ref=e419]:
+                  - generic [ref=e420]: Activo
+                - cell "Ver Editar Baja" [ref=e421]:
+                  - generic [ref=e422]:
+                    - button "Ver" [ref=e423]
+                    - button "Editar" [ref=e424]
+                    - button "Baja" [ref=e425]
+              - 'row "SC Socio2 Central DNI: 50001002 socio2-central@nutrifit.com 0000000000 Rosario Santa Fe Activo Ver Editar Baja" [ref=e426]':
+                - 'cell "SC Socio2 Central DNI: 50001002" [ref=e427]':
+                  - generic [ref=e428]:
+                    - generic [ref=e430]: SC
+                    - generic [ref=e431]:
+                      - paragraph [ref=e432]: Socio2 Central
+                      - paragraph [ref=e433]: "DNI: 50001002"
+                - cell "socio2-central@nutrifit.com" [ref=e434]
+                - cell "0000000000" [ref=e435]
+                - cell "Rosario Santa Fe" [ref=e436]:
+                  - paragraph [ref=e437]: Rosario
+                  - paragraph [ref=e438]: Santa Fe
+                - cell "Activo" [ref=e439]:
+                  - generic [ref=e440]: Activo
+                - cell "Ver Editar Baja" [ref=e441]:
+                  - generic [ref=e442]:
+                    - button "Ver" [ref=e443]
+                    - button "Editar" [ref=e444]
+                    - button "Baja" [ref=e445]
+              - 'row "SC Socio3 Central DNI: 50001003 socio3-central@nutrifit.com 0000000000 Rosario Santa Fe Activo Ver Editar Baja" [ref=e446]':
+                - 'cell "SC Socio3 Central DNI: 50001003" [ref=e447]':
+                  - generic [ref=e448]:
+                    - generic [ref=e450]: SC
+                    - generic [ref=e451]:
+                      - paragraph [ref=e452]: Socio3 Central
+                      - paragraph [ref=e453]: "DNI: 50001003"
+                - cell "socio3-central@nutrifit.com" [ref=e454]
+                - cell "0000000000" [ref=e455]
+                - cell "Rosario Santa Fe" [ref=e456]:
+                  - paragraph [ref=e457]: Rosario
+                  - paragraph [ref=e458]: Santa Fe
+                - cell "Activo" [ref=e459]:
+                  - generic [ref=e460]: Activo
+                - cell "Ver Editar Baja" [ref=e461]:
+                  - generic [ref=e462]:
+                    - button "Ver" [ref=e463]
+                    - button "Editar" [ref=e464]
+                    - button "Baja" [ref=e465]
+              - 'row "ST Socio TestE2E DNI: 77777001 socio-test-e2e@nutrifit.com 3415552222 Rosario Santa Fe Activo Ver Editar Baja" [ref=e466]':
+                - 'cell "ST Socio TestE2E DNI: 77777001" [ref=e467]':
+                  - generic [ref=e468]:
+                    - generic [ref=e470]: ST
+                    - generic [ref=e471]:
+                      - paragraph [ref=e472]: Socio TestE2E
+                      - paragraph [ref=e473]: "DNI: 77777001"
+                - cell "socio-test-e2e@nutrifit.com" [ref=e474]
+                - cell "3415552222" [ref=e475]
+                - cell "Rosario Santa Fe" [ref=e476]:
+                  - paragraph [ref=e477]: Rosario
+                  - paragraph [ref=e478]: Santa Fe
+                - cell "Activo" [ref=e479]:
+                  - generic [ref=e480]: Activo
+                - cell "Ver Editar Baja" [ref=e481]:
+                  - generic [ref=e482]:
+                    - button "Ver" [ref=e483]
+                    - button "Editar" [ref=e484]
+                    - button "Baja" [ref=e485]
+          - generic [ref=e486]:
+            - paragraph [ref=e487]: Mostrando 1 - 4 de 4
+            - generic [ref=e488]:
+              - button "Anterior" [disabled]
+              - generic [ref=e489]: Página 1 de 1
+              - button "Siguiente" [disabled]
+  - region "Notifications alt+T"

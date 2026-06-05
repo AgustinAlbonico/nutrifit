@@ -1,0 +1,15 @@
+- generic [ref=e2]:
+  - main [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]: Iniciar sesión
+        - paragraph [ref=e7]: Nutrifit Supervisor
+      - generic [ref=e9]:
+        - textbox "Email" [ref=e11]: admin-central@nutrifit.com
+        - textbox "Contraseña" [ref=e13]: "123456"
+        - button "Entrar" [active] [ref=e14]
+  - region "Notifications alt+T":
+    - list:
+      - listitem [ref=e15]:
+        - img [ref=e17]
+        - generic [ref=e22]: Ocurrió un error del servidor. Intentá nuevamente en unos minutos.

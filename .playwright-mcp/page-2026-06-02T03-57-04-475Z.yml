@@ -1,0 +1,91 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e6]:
+        - img [ref=e8]
+        - generic:
+          - generic: NutriFit
+          - generic: Supervisor
+      - button "Expandir" [ref=e14]:
+        - img [ref=e15]
+      - navigation [ref=e17]:
+        - generic: Menu Principal
+        - link "Dashboard" [ref=e18] [cursor=pointer]:
+          - /url: /dashboard
+          - generic [ref=e19]:
+            - img [ref=e21]
+            - generic: Dashboard
+        - link "Mi Agenda" [ref=e26] [cursor=pointer]:
+          - /url: /agenda
+          - generic [ref=e27]:
+            - img [ref=e29]
+            - generic: Mi Agenda
+        - link "Turnos del dia" [ref=e31] [cursor=pointer]:
+          - /url: /turnos-profesional
+          - generic [ref=e32]:
+            - img [ref=e34]
+            - generic: Turnos del dia
+        - link "Mis Pacientes" [ref=e39] [cursor=pointer]:
+          - /url: /pacientes
+          - generic [ref=e40]:
+            - img [ref=e42]
+            - generic: Mis Pacientes
+        - link "Planes de Alimentacion" [ref=e45] [cursor=pointer]:
+          - /url: /planes
+          - generic [ref=e46]:
+            - img [ref=e48]
+            - generic: Planes de Alimentacion
+        - link "Notificaciones" [ref=e51] [cursor=pointer]:
+          - /url: /notificaciones
+          - generic [ref=e52]:
+            - img [ref=e54]
+            - generic: Notificaciones
+        - generic: Sistema
+        - link "Configuracion" [ref=e57] [cursor=pointer]:
+          - /url: /configuracion
+          - generic [ref=e58]:
+            - img [ref=e60]
+            - generic: Configuracion
+      - generic [ref=e66]: NC
+    - main [ref=e67]:
+      - generic [ref=e70]:
+        - generic [ref=e72]:
+          - heading "Dashboard Nutricionista" [level=1] [ref=e73]:
+            - img [ref=e74]
+            - text: Dashboard Nutricionista
+          - paragraph [ref=e76]: Panel de control con tus metricas y accesos rapidos.
+        - generic [ref=e108]:
+          - generic [ref=e109]:
+            - generic [ref=e111]:
+              - img [ref=e112]
+              - text: Turnos de Hoy
+            - paragraph [ref=e115]: Cargando turnos...
+          - generic [ref=e116]:
+            - generic [ref=e118]:
+              - img [ref=e119]
+              - text: Pacientes Recientes
+            - paragraph [ref=e125]: Cargando...
+          - generic [ref=e126]:
+            - generic [ref=e128]:
+              - img [ref=e129]
+              - text: Acciones Rapidas
+            - generic [ref=e132]:
+              - button "Crear Plan" [ref=e133]:
+                - img
+                - generic [ref=e134]: Crear Plan
+              - button "Mi Agenda" [ref=e135]:
+                - img
+                - generic [ref=e136]: Mi Agenda
+              - button "Ver Pacientes" [ref=e137]:
+                - img
+                - generic [ref=e138]: Ver Pacientes
+          - generic [ref=e139]:
+            - generic [ref=e141]:
+              - img [ref=e142]
+              - text: Paciente Destacado
+            - generic [ref=e145]:
+              - combobox [disabled] [ref=e146]:
+                - generic: Seleccionar paciente...
+                - img
+              - paragraph [ref=e147]: Selecciona un paciente para ver su progreso de peso
+  - region "Notifications alt+T"

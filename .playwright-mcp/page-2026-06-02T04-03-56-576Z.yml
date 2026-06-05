@@ -1,0 +1,184 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e6]:
+        - img [ref=e8]
+        - generic:
+          - generic: NutriFit
+          - generic: Supervisor
+      - button "Expandir" [ref=e14]:
+        - img [ref=e15]
+      - navigation [ref=e17]:
+        - generic: Menu Principal
+        - link "Dashboard" [ref=e18] [cursor=pointer]:
+          - /url: /dashboard
+          - generic [ref=e19]:
+            - img [ref=e21]
+            - generic: Dashboard
+        - link "Mis Turnos" [ref=e26] [cursor=pointer]:
+          - /url: /turnos
+          - generic [ref=e27]:
+            - img [ref=e29]
+            - generic: Mis Turnos
+        - link "Ficha de salud" [ref=e31] [cursor=pointer]:
+          - /url: /turnos/ficha-salud
+          - generic [ref=e32]:
+            - img [ref=e34]
+            - generic: Ficha de salud
+        - link "Mi Progreso" [ref=e37] [cursor=pointer]:
+          - /url: /mi-progreso
+          - generic [ref=e38]:
+            - img [ref=e40]
+            - generic: Mi Progreso
+        - link "Mi Plan" [ref=e43] [cursor=pointer]:
+          - /url: /mi-plan
+          - generic [ref=e44]:
+            - img [ref=e46]
+            - generic: Mi Plan
+        - link "Notificaciones" [ref=e49] [cursor=pointer]:
+          - /url: /notificaciones
+          - generic [ref=e50]:
+            - img [ref=e52]
+            - generic: Notificaciones
+        - generic: Sistema
+        - link "Configuracion" [ref=e55] [cursor=pointer]:
+          - /url: /configuracion
+          - generic [ref=e56]:
+            - img [ref=e58]
+            - generic: Configuracion
+      - generic [ref=e64]: SC
+    - main [ref=e65]:
+      - generic [ref=e68]:
+        - generic [ref=e72]:
+          - generic [ref=e73]:
+            - generic [ref=e74]:
+              - img [ref=e75]
+              - heading "Mi ficha de salud" [level=1] [ref=e77]
+            - paragraph [ref=e78]: Debes completar esta ficha para poder reservar turnos con nutricionistas.
+          - link "Volver a agendar" [ref=e79] [cursor=pointer]:
+            - /url: /turnos/agendar
+            - img
+            - text: Volver a agendar
+        - paragraph [ref=e82]: Todavía no tenés ficha cargada. Completala para habilitar la reserva de turnos.
+        - generic [ref=e86]:
+          - generic [ref=e87]:
+            - generic [ref=e89]: Datos físicos básicos
+            - generic [ref=e91]:
+              - generic [ref=e92]:
+                - generic [ref=e93]:
+                  - text: Altura (cm)
+                  - generic [ref=e94]: "*"
+                - spinbutton "Altura (cm) *" [ref=e95]
+              - generic [ref=e96]:
+                - generic [ref=e97]:
+                  - text: Peso (kg)
+                  - generic [ref=e98]: "*"
+                - spinbutton "Peso (kg) *" [ref=e99]
+              - generic [ref=e100]:
+                - generic [ref=e101]:
+                  - text: Nivel de actividad física
+                  - generic [ref=e102]: "*"
+                - combobox "Nivel de actividad física *" [ref=e103]:
+                  - option "Sedentario"
+                  - option "Moderado" [selected]
+                  - option "Intenso"
+              - generic [ref=e104]:
+                - generic [ref=e105]:
+                  - text: Objetivo personal
+                  - generic [ref=e106]: "*"
+                - textbox "Objetivo personal *" [ref=e107]:
+                  - /placeholder: "Ej: bajar grasa, mejorar rendimiento..."
+          - generic [ref=e108]:
+            - generic [ref=e110]: Alergias y patologías
+            - generic [ref=e112]:
+              - generic [ref=e113]:
+                - generic [ref=e114]: Alergias
+                - textbox "Alergias" [ref=e115]:
+                  - /placeholder: "Separar por coma. Ej: maní, lactosa"
+              - generic [ref=e116]:
+                - generic [ref=e117]: Patologías
+                - textbox "Patologías" [ref=e118]:
+                  - /placeholder: "Separar por coma. Ej: diabetes, hipertensión"
+          - generic [ref=e119]:
+            - generic [ref=e121]: Medicación y suplementos
+            - generic [ref=e123]:
+              - generic [ref=e124]:
+                - generic [ref=e125]: Medicación actual
+                - textbox "Medicación actual" [ref=e126]:
+                  - /placeholder: Listá los medicamentos que tomás actualmente
+              - generic [ref=e127]:
+                - generic [ref=e128]: Suplementos actuales
+                - textbox "Suplementos actuales" [ref=e129]:
+                  - /placeholder: Vitaminas, proteínas, etc.
+          - generic [ref=e130]:
+            - generic [ref=e132]: Historial médico
+            - generic [ref=e134]:
+              - generic [ref=e135]:
+                - generic [ref=e136]: Cirugías previas
+                - textbox "Cirugías previas" [ref=e137]:
+                  - /placeholder: Indicá si tuviste cirugías relevantes
+              - generic [ref=e138]:
+                - generic [ref=e139]: Antecedentes familiares
+                - textbox "Antecedentes familiares" [ref=e140]:
+                  - /placeholder: Enfermedades en tu familia (diabetes, hipertensión, etc.)
+          - generic [ref=e141]:
+            - generic [ref=e143]: Hábitos alimentarios
+            - generic [ref=e145]:
+              - generic [ref=e146]:
+                - generic [ref=e147]: Comidas por día
+                - combobox "Comidas por día" [ref=e148]:
+                  - option "Seleccionar..." [selected]
+                  - option "1-2 comidas"
+                  - option "3 comidas"
+                  - option "4-5 comidas"
+                  - option "6 o más comidas"
+              - generic [ref=e149]:
+                - generic [ref=e150]: Agua diaria (litros)
+                - spinbutton "Agua diaria (litros)" [ref=e151]
+              - generic [ref=e152]:
+                - generic [ref=e153]: Restricciones alimentarias
+                - textbox "Restricciones alimentarias" [ref=e154]:
+                  - /placeholder: "Ej: vegetariano, kosher, halal"
+          - generic [ref=e155]:
+            - generic [ref=e157]: Hábitos de vida
+            - generic [ref=e159]:
+              - generic [ref=e160]:
+                - generic [ref=e161]: Consumo de alcohol
+                - combobox "Consumo de alcohol" [ref=e162]:
+                  - option "Seleccionar..." [selected]
+                  - option "Nunca"
+                  - option "Ocasional"
+                  - option "Moderado"
+                  - option "Frecuente"
+              - generic [ref=e163]:
+                - generic [ref=e164]: ¿Fumás tabaco?
+                - generic [ref=e165]:
+                  - generic [ref=e166]:
+                    - radio "Sí" [ref=e167]
+                    - generic [ref=e168]: Sí
+                  - generic [ref=e169]:
+                    - radio "No" [checked] [ref=e170]
+                    - generic [ref=e171]: "No"
+              - generic [ref=e172]:
+                - generic [ref=e173]: Horas de sueño (promedio)
+                - spinbutton "Horas de sueño (promedio)" [ref=e174]
+          - generic [ref=e175]:
+            - generic [ref=e177]: Contacto de emergencia
+            - generic [ref=e179]:
+              - generic [ref=e180]:
+                - generic [ref=e181]: Nombre completo
+                - textbox "Nombre completo" [ref=e182]:
+                  - /placeholder: Nombre del contacto
+              - generic [ref=e183]:
+                - generic [ref=e184]: Teléfono
+                - textbox "Teléfono" [ref=e185]:
+                  - /placeholder: "Ej: +54 11 1234-5678"
+          - generic [ref=e187]:
+            - generic [ref=e188]:
+              - img [ref=e189]
+              - paragraph [ref=e191]: Ocurrió un error del servidor. Intentá nuevamente en unos minutos.
+            - generic [ref=e192]:
+              - link "Ir a agendar turno" [ref=e193] [cursor=pointer]:
+                - /url: /turnos/agendar
+              - button "Guardar ficha" [disabled]
+  - region "Notifications alt+T"

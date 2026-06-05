@@ -1,0 +1,113 @@
+- generic [ref=e2]:
+  - generic [ref=e15]:
+    - complementary [ref=e16]:
+      - generic [ref=e18]:
+        - img [ref=e20]
+        - generic:
+          - generic: NutriFit
+          - generic: Supervisor
+      - button "Expandir" [ref=e26]:
+        - img [ref=e27]
+      - navigation [ref=e29]:
+        - generic: Menu Principal
+        - link "Dashboard" [ref=e30] [cursor=pointer]:
+          - /url: /dashboard
+          - generic [ref=e31]:
+            - img [ref=e33]
+            - generic: Dashboard
+        - link "Nutricionistas" [ref=e38] [cursor=pointer]:
+          - /url: /nutricionistas
+          - generic [ref=e39]:
+            - img [ref=e41]
+            - generic: Nutricionistas
+        - link "Recepcionistas" [ref=e46] [cursor=pointer]:
+          - /url: /recepcionistas
+          - generic [ref=e47]:
+            - img [ref=e49]
+            - generic: Recepcionistas
+        - link "Socios" [ref=e61] [cursor=pointer]:
+          - /url: /socios
+          - generic [ref=e62]:
+            - img [ref=e64]
+            - generic: Socios
+        - link "Permisos & Roles" [ref=e67] [cursor=pointer]:
+          - /url: /permisos
+          - generic [ref=e68]:
+            - img [ref=e70]
+            - generic: Permisos & Roles
+        - link "Turnos del dia" [ref=e74] [cursor=pointer]:
+          - /url: /turnos-profesional
+          - generic [ref=e75]:
+            - img [ref=e77]
+            - generic: Turnos del dia
+        - link "Notificaciones" [ref=e82] [cursor=pointer]:
+          - /url: /notificaciones
+          - generic [ref=e83]:
+            - img [ref=e85]
+            - generic: Notificaciones
+        - link "Auditoría" [ref=e88] [cursor=pointer]:
+          - /url: /admin/auditoria
+          - generic [ref=e89]:
+            - img [ref=e91]
+            - generic: Auditoría
+        - generic: Sistema
+        - link "Configuracion" [ref=e93] [cursor=pointer]:
+          - /url: /configuracion
+          - generic [ref=e94]:
+            - img [ref=e96]
+            - generic: Configuracion
+      - generic [ref=e102]: AC
+    - main [ref=e103]:
+      - generic [ref=e106]:
+        - generic [ref=e108]:
+          - heading "Dashboard" [level=1] [ref=e109]:
+            - img [ref=e110]
+            - text: Dashboard
+          - paragraph [ref=e112]: Bienvenido al panel de control. Aqui puedes ver tu informacion de sesion y permisos.
+        - generic [ref=e116]:
+          - generic [ref=e118]:
+            - generic [ref=e119]: Rol Actual
+            - img [ref=e120]
+          - generic [ref=e123]: ADMIN
+        - generic [ref=e124]:
+          - generic [ref=e127]:
+            - img [ref=e128]
+            - text: Mis Permisos
+          - generic [ref=e132]:
+            - generic [ref=e133]: socios.crear
+            - generic [ref=e134]: socios.editar
+            - generic [ref=e135]: socios.eliminar
+            - generic [ref=e136]: socios.ver
+            - generic [ref=e137]: nutricionistas.crear
+            - generic [ref=e138]: nutricionistas.editar
+            - generic [ref=e139]: nutricionistas.eliminar
+            - generic [ref=e140]: nutricionistas.ver
+            - generic [ref=e141]: recepcionistas.crear
+            - generic [ref=e142]: recepcionistas.editar
+            - generic [ref=e143]: recepcionistas.eliminar
+            - generic [ref=e144]: recepcionistas.ver
+            - generic [ref=e145]: turnos.crear
+            - generic [ref=e146]: turnos.editar
+            - generic [ref=e147]: turnos.cancelar
+            - generic [ref=e148]: turnos.ver
+            - generic [ref=e149]: turnos.reservar
+            - generic [ref=e150]: fichas.ver
+            - generic [ref=e151]: fichas.editar
+            - generic [ref=e152]: mi-ficha.ver
+            - generic [ref=e153]: planes.crear
+            - generic [ref=e154]: planes.editar
+            - generic [ref=e155]: planes.ver
+            - generic [ref=e156]: mis-planes.ver
+            - generic [ref=e157]: pacientes.ver
+            - generic [ref=e158]: reportes.generar
+            - generic [ref=e159]: reportes.ver
+            - generic [ref=e160]: gimnasios.crear
+            - generic [ref=e161]: gimnasios.editar
+            - generic [ref=e162]: gimnasios.eliminar
+            - generic [ref=e163]: gimnasios.ver
+            - generic [ref=e164]: gimnasios.impersonar
+  - region "Notifications alt+T":
+    - list:
+      - listitem [ref=e165]:
+        - img [ref=e167]
+        - generic [ref=e171]: Login exitoso

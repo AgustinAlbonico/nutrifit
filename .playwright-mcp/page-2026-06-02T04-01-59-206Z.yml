@@ -1,0 +1,116 @@
+- generic [ref=e2]:
+  - generic [ref=e15]:
+    - complementary [ref=e16]:
+      - generic [ref=e18]:
+        - img [ref=e20]
+        - generic:
+          - generic: NutriFit
+          - generic: Supervisor
+      - button "Expandir" [ref=e26]:
+        - img [ref=e27]
+      - navigation [ref=e29]:
+        - generic: Menu Principal
+        - link "Dashboard" [ref=e30] [cursor=pointer]:
+          - /url: /dashboard
+          - generic [ref=e31]:
+            - img [ref=e33]
+            - generic: Dashboard
+        - link "Mis Turnos" [ref=e38] [cursor=pointer]:
+          - /url: /turnos
+          - generic [ref=e39]:
+            - img [ref=e41]
+            - generic: Mis Turnos
+        - link "Ficha de salud" [ref=e43] [cursor=pointer]:
+          - /url: /turnos/ficha-salud
+          - generic [ref=e44]:
+            - img [ref=e46]
+            - generic: Ficha de salud
+        - link "Mi Progreso" [ref=e49] [cursor=pointer]:
+          - /url: /mi-progreso
+          - generic [ref=e50]:
+            - img [ref=e52]
+            - generic: Mi Progreso
+        - link "Mi Plan" [ref=e55] [cursor=pointer]:
+          - /url: /mi-plan
+          - generic [ref=e56]:
+            - img [ref=e58]
+            - generic: Mi Plan
+        - link "Notificaciones" [ref=e61] [cursor=pointer]:
+          - /url: /notificaciones
+          - generic [ref=e62]:
+            - img [ref=e64]
+            - generic: Notificaciones
+        - generic: Sistema
+        - link "Configuracion" [ref=e67] [cursor=pointer]:
+          - /url: /configuracion
+          - generic [ref=e68]:
+            - img [ref=e70]
+            - generic: Configuracion
+      - generic [ref=e76]: SC
+    - main [ref=e77]:
+      - generic [ref=e80]:
+        - generic [ref=e82]:
+          - heading "Mi Dashboard" [level=1] [ref=e83]:
+            - img [ref=e84]
+            - text: Mi Dashboard
+          - paragraph [ref=e86]: Tu espacio personal para seguir tu progreso y plan nutricional.
+        - generic [ref=e89]:
+          - generic [ref=e90]:
+            - generic [ref=e93]:
+              - img [ref=e94]
+              - text: Proximo Turno
+            - generic [ref=e97]: Sin turnos
+          - generic [ref=e98]:
+            - generic [ref=e101]:
+              - img [ref=e102]
+              - text: Mi IMC
+            - generic [ref=e104]:
+              - generic [ref=e105]: "-"
+              - paragraph [ref=e106]: Sin datos
+          - generic [ref=e107]:
+            - generic [ref=e110]:
+              - img [ref=e111]
+              - text: Progreso
+            - generic [ref=e115]:
+              - generic [ref=e116]: "-"
+              - paragraph [ref=e117]: Sin objetivo
+        - generic [ref=e118]:
+          - generic [ref=e119]:
+            - generic [ref=e121]:
+              - img [ref=e122]
+              - text: Mi Plan Alimenticio
+            - generic [ref=e125]:
+              - paragraph [ref=e126]: No tenes un plan alimenticio activo. Contacta a tu nutricionista.
+              - generic [ref=e127]: Sin plan activo
+          - generic [ref=e128]:
+            - generic [ref=e130]:
+              - img [ref=e131]
+              - text: Mi Progreso
+            - paragraph [ref=e135]: Aun no tienes mediciones registradas para graficar.
+          - generic [ref=e136]:
+            - generic [ref=e138]:
+              - img [ref=e139]
+              - text: Mis Objetivos
+            - paragraph [ref=e144]: No tienes objetivos configurados. Habla con tu nutricionista.
+          - generic [ref=e147]:
+            - img [ref=e148]
+            - paragraph [ref=e151]: Tu cuerpo es tu templo, cuidalo con amor.
+        - generic [ref=e152]:
+          - generic [ref=e154]:
+            - img [ref=e155]
+            - text: Acciones Rapidas
+          - generic [ref=e158]:
+            - button "Reservar Turno" [ref=e159]:
+              - img
+              - generic [ref=e160]: Reservar Turno
+            - button "Ver Mi Plan" [ref=e161]:
+              - img
+              - generic [ref=e162]: Ver Mi Plan
+            - button "Subir Foto" [ref=e163]:
+              - img
+              - generic [ref=e164]: Subir Foto
+  - region "Notifications alt+T":
+    - list:
+      - listitem [ref=e165]:
+        - img [ref=e167]
+        - generic [ref=e171]: Login exitoso

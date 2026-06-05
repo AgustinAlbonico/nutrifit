@@ -1,0 +1,115 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e6]:
+        - img [ref=e8]
+        - generic:
+          - generic: NutriFit
+          - generic: Supervisor
+      - button "Expandir" [ref=e14]:
+        - img [ref=e15]
+      - navigation [ref=e17]:
+        - generic: Menu Principal
+        - link "Permisos & Roles" [ref=e18] [cursor=pointer]:
+          - /url: /permisos
+          - generic [ref=e19]:
+            - img [ref=e21]
+            - generic: Permisos & Roles
+        - link "Gimnasios" [ref=e25] [cursor=pointer]:
+          - /url: /admin/gimnasios
+          - generic [ref=e26]:
+            - img [ref=e28]
+            - generic: Gimnasios
+        - generic: Sistema
+        - link "Configuracion" [ref=e32] [cursor=pointer]:
+          - /url: /configuracion
+          - generic [ref=e33]:
+            - img [ref=e35]
+            - generic: Configuracion
+      - generic [ref=e41]: SA
+    - main [ref=e42]:
+      - generic [ref=e45]:
+        - generic [ref=e49]:
+          - generic [ref=e50]:
+            - img [ref=e51]
+            - heading "Permisos y Roles" [level=1] [ref=e54]
+          - paragraph [ref=e55]: Gestioná los grupos de permisos, acciones del sistema y asignaciones a usuarios.
+        - generic [ref=e56]:
+          - tablist [ref=e57]:
+            - tab "Grupos" [selected] [ref=e58]
+            - tab "Acciones" [ref=e59]
+            - tab "Asignación" [ref=e60]
+          - tabpanel "Grupos" [ref=e61]:
+            - generic [ref=e62]:
+              - generic [ref=e63]:
+                - img [ref=e64]
+                - textbox "Buscar grupos..." [ref=e67]
+              - button "Nuevo Grupo" [ref=e68]:
+                - img
+                - text: Nuevo Grupo
+            - table [ref=e71]:
+              - rowgroup [ref=e72]:
+                - row "Nombre Clave Descripción Acciones Opciones" [ref=e73]:
+                  - columnheader "Nombre" [ref=e74]
+                  - columnheader "Clave" [ref=e75]
+                  - columnheader "Descripción" [ref=e76]
+                  - columnheader "Acciones" [ref=e77]
+                  - columnheader "Opciones" [ref=e78]
+              - rowgroup [ref=e79]:
+                - row "Admin E2E Test ADMIN test socios.crear socios.editar socios.eliminar +29 más" [ref=e82]:
+                  - cell "Admin E2E Test" [ref=e83]
+                  - cell "ADMIN" [ref=e84]:
+                    - generic [ref=e85]: ADMIN
+                  - cell "test" [ref=e86]
+                  - cell "socios.crear socios.editar socios.eliminar +29 más" [ref=e87]:
+                    - generic [ref=e88]:
+                      - generic [ref=e89]: socios.crear
+                      - generic [ref=e90]: socios.editar
+                      - generic [ref=e91]: socios.eliminar
+                      - generic [ref=e92]: +29 más
+                  - cell [ref=e93]:
+                    - button [ref=e94]:
+                      - img
+                - row "Nutricionista NUTRICIONISTA Gestión de pacientes y planes turnos.ver fichas.ver fichas.editar +4 más" [ref=e95]:
+                  - cell "Nutricionista" [ref=e96]
+                  - cell "NUTRICIONISTA" [ref=e97]:
+                    - generic [ref=e98]: NUTRICIONISTA
+                  - cell "Gestión de pacientes y planes" [ref=e99]
+                  - cell "turnos.ver fichas.ver fichas.editar +4 más" [ref=e100]:
+                    - generic [ref=e101]:
+                      - generic [ref=e102]: turnos.ver
+                      - generic [ref=e103]: fichas.ver
+                      - generic [ref=e104]: fichas.editar
+                      - generic [ref=e105]: +4 más
+                  - cell [ref=e106]:
+                    - button [ref=e107]:
+                      - img
+                - row "Recepcionista RECEPCIONISTA Gestion de socios, nutricionistas y turnos nutricionistas.crear nutricionistas.editar nutricionistas.ver +1 más" [ref=e108]:
+                  - cell "Recepcionista" [ref=e109]
+                  - cell "RECEPCIONISTA" [ref=e110]:
+                    - generic [ref=e111]: RECEPCIONISTA
+                  - cell "Gestion de socios, nutricionistas y turnos" [ref=e112]
+                  - cell "nutricionistas.crear nutricionistas.editar nutricionistas.ver +1 más" [ref=e113]:
+                    - generic [ref=e114]:
+                      - generic [ref=e115]: nutricionistas.crear
+                      - generic [ref=e116]: nutricionistas.editar
+                      - generic [ref=e117]: nutricionistas.ver
+                      - generic [ref=e118]: +1 más
+                  - cell [ref=e119]:
+                    - button [ref=e120]:
+                      - img
+                - row "Socio SOCIO Acceso a funcionalidades propias turnos.ver turnos.reservar mi-ficha.ver +1 más" [ref=e121]:
+                  - cell "Socio" [ref=e122]
+                  - cell "SOCIO" [ref=e123]:
+                    - generic [ref=e124]: SOCIO
+                  - cell "Acceso a funcionalidades propias" [ref=e125]
+                  - cell "turnos.ver turnos.reservar mi-ficha.ver +1 más" [ref=e126]:
+                    - generic [ref=e127]:
+                      - generic [ref=e128]: turnos.ver
+                      - generic [ref=e129]: turnos.reservar
+                      - generic [ref=e130]: mi-ficha.ver
+                      - generic [ref=e131]: +1 más
+                  - cell [ref=e132]:
+                    - button [ref=e133]:
+                      - img
+  - region "Notifications alt+T"

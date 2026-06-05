@@ -1,0 +1,117 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e6]:
+        - img [ref=e8]
+        - generic:
+          - generic: NutriFit
+          - generic: Supervisor
+      - button "Expandir" [ref=e14]:
+        - img [ref=e15]
+      - navigation [ref=e17]:
+        - generic: Menu Principal
+        - link "Permisos & Roles" [ref=e120] [cursor=pointer]:
+          - /url: /permisos
+          - generic [ref=e121]:
+            - img [ref=e123]
+            - generic: Permisos & Roles
+        - link "Gimnasios" [ref=e127] [cursor=pointer]:
+          - /url: /admin/gimnasios
+          - generic [ref=e128]:
+            - img [ref=e130]
+            - generic: Gimnasios
+        - generic: Sistema
+        - link "Configuracion" [ref=e134] [cursor=pointer]:
+          - /url: /configuracion
+          - generic [ref=e135]:
+            - img [ref=e137]
+            - generic: Configuracion
+      - generic [ref=e41]: SA
+    - main [ref=e42]:
+      - generic [ref=e45]:
+        - generic [ref=e46]:
+          - heading "Gimnasios" [level=1] [ref=e140]
+          - link "Nuevo Gimnasio" [ref=e141] [cursor=pointer]:
+            - /url: /admin/gimnasios/nuevo
+            - img
+            - text: Nuevo Gimnasio
+        - generic [ref=e49]:
+          - generic [ref=e143]:
+            - img [ref=e144]
+            - text: Todos los gimnasios
+          - table [ref=e150]:
+            - rowgroup [ref=e151]:
+              - row "ID Nombre Dirección Email Estado Fecha Creación Acciones" [ref=e152]:
+                - columnheader "ID" [ref=e153]
+                - columnheader "Nombre" [ref=e154]
+                - columnheader "Dirección" [ref=e155]
+                - columnheader "Email" [ref=e156]
+                - columnheader "Estado" [ref=e157]
+                - columnheader "Fecha Creación" [ref=e158]
+                - columnheader "Acciones" [ref=e159]
+            - rowgroup [ref=e160]:
+              - row "#1 Gym Central Av. Central 1234 - Activo Invalid Date" [ref=e161]:
+                - cell "#1" [ref=e162]
+                - cell "Gym Central" [ref=e163]
+                - cell "Av. Central 1234" [ref=e164]
+                - cell "-" [ref=e165]
+                - cell "Activo" [ref=e166]:
+                  - generic [ref=e167]: Activo
+                - cell "Invalid Date" [ref=e168]
+                - cell [ref=e169]:
+                  - generic [ref=e170]:
+                    - link "Ver detalle" [ref=e171] [cursor=pointer]:
+                      - /url: /admin/gimnasios/1
+                      - img
+                    - link "Editar" [ref=e172] [cursor=pointer]:
+                      - /url: /admin/gimnasios/1
+                      - img
+                    - button "Eliminar" [ref=e173]:
+                      - img
+                    - button "Impersonar" [ref=e174]:
+                      - img
+              - row "#2 Gym Norte Av. Norte 5678 - Activo Invalid Date" [ref=e175]:
+                - cell "#2" [ref=e176]
+                - cell "Gym Norte" [ref=e177]
+                - cell "Av. Norte 5678" [ref=e178]
+                - cell "-" [ref=e179]
+                - cell "Activo" [ref=e180]:
+                  - generic [ref=e181]: Activo
+                - cell "Invalid Date" [ref=e182]
+                - cell [ref=e183]:
+                  - generic [ref=e184]:
+                    - link "Ver detalle" [ref=e185] [cursor=pointer]:
+                      - /url: /admin/gimnasios/2
+                      - img
+                    - link "Editar" [ref=e186] [cursor=pointer]:
+                      - /url: /admin/gimnasios/2
+                      - img
+                    - button "Eliminar" [ref=e187]:
+                      - img
+                    - button "Impersonar" [ref=e188]:
+                      - img
+              - row "#3 Gym Sur Av. Sur 9012 - Activo Invalid Date" [ref=e189]:
+                - cell "#3" [ref=e190]
+                - cell "Gym Sur" [ref=e191]
+                - cell "Av. Sur 9012" [ref=e192]
+                - cell "-" [ref=e193]
+                - cell "Activo" [ref=e194]:
+                  - generic [ref=e195]: Activo
+                - cell "Invalid Date" [ref=e196]
+                - cell [ref=e197]:
+                  - generic [ref=e198]:
+                    - link "Ver detalle" [ref=e199] [cursor=pointer]:
+                      - /url: /admin/gimnasios/3
+                      - img
+                    - link "Editar" [ref=e200] [cursor=pointer]:
+                      - /url: /admin/gimnasios/3
+                      - img
+                    - button "Eliminar" [ref=e201]:
+                      - img
+                    - button "Impersonar" [ref=e202]:
+                      - img
+  - region "Notifications alt+T":
+    - list:
+      - listitem [ref=e203]:
+        - img [ref=e205]
+        - generic [ref=e209]: Ahora operás como ADMIN de "Gym Central"

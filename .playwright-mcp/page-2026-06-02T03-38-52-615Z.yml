@@ -1,0 +1,31 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e6]:
+        - img [ref=e8]
+        - generic:
+          - generic: NutriFit
+          - generic: Supervisor
+      - button "Expandir" [ref=e14]:
+        - img [ref=e15]
+      - navigation [ref=e17]:
+        - generic: Menu Principal
+        - link "Permisos & Roles" [ref=e18] [cursor=pointer]:
+          - /url: /permisos
+          - generic [ref=e19]:
+            - img [ref=e21]
+            - generic: Permisos & Roles
+        - link "Gimnasios" [ref=e25] [cursor=pointer]:
+          - /url: /admin/gimnasios
+          - generic [ref=e26]:
+            - img [ref=e28]
+            - generic: Gimnasios
+        - generic: Sistema
+        - link "Configuracion" [ref=e32] [cursor=pointer]:
+          - /url: /configuracion
+          - generic [ref=e33]:
+            - img [ref=e35]
+            - generic: Configuracion
+      - generic [ref=e41]: SA
+    - main [ref=e42]
+  - region "Notifications alt+T"

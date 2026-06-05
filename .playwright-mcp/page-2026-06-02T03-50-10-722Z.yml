@@ -1,0 +1,83 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e6]:
+        - img [ref=e8]
+        - generic:
+          - generic: NutriFit
+          - generic: Supervisor
+      - button "Expandir" [ref=e14]:
+        - img [ref=e15]
+      - navigation [ref=e17]:
+        - generic: Menu Principal
+        - link "Dashboard" [ref=e18] [cursor=pointer]:
+          - /url: /dashboard
+          - generic [ref=e19]:
+            - img [ref=e21]
+            - generic: Dashboard
+        - link "Nutricionistas" [ref=e26] [cursor=pointer]:
+          - /url: /nutricionistas
+          - generic [ref=e27]:
+            - img [ref=e29]
+            - generic: Nutricionistas
+        - link "Socios" [ref=e34] [cursor=pointer]:
+          - /url: /socios
+          - generic [ref=e35]:
+            - img [ref=e37]
+            - generic: Socios
+        - link "Permisos & Roles" [ref=e40] [cursor=pointer]:
+          - /url: /permisos
+          - generic [ref=e41]:
+            - img [ref=e43]
+            - generic: Permisos & Roles
+        - link "Turnos del dia" [ref=e47] [cursor=pointer]:
+          - /url: /turnos-profesional
+          - generic [ref=e48]:
+            - img [ref=e50]
+            - generic: Turnos del dia
+        - link "Notificaciones" [ref=e55] [cursor=pointer]:
+          - /url: /notificaciones
+          - generic [ref=e56]:
+            - img [ref=e58]
+            - generic: Notificaciones
+        - link "Auditoría" [ref=e61] [cursor=pointer]:
+          - /url: /admin/auditoria
+          - generic [ref=e62]:
+            - img [ref=e64]
+            - generic: Auditoría
+        - generic: Sistema
+        - link "Configuracion" [ref=e66] [cursor=pointer]:
+          - /url: /configuracion
+          - generic [ref=e67]:
+            - img [ref=e69]
+            - generic: Configuracion
+      - generic [ref=e75]: AC
+    - main [ref=e76]:
+      - generic [ref=e79]:
+        - generic [ref=e81]:
+          - generic [ref=e82]:
+            - heading "Gestión de Turnos" [level=1] [ref=e83]:
+              - img [ref=e84]
+              - text: Gestión de Turnos
+            - paragraph [ref=e86]: Consulta la agenda diaria de los nutricionistas.
+          - generic [ref=e87]:
+            - generic [ref=e88]:
+              - generic [ref=e89]: Nutricionista
+              - generic [ref=e90]:
+                - img [ref=e91]
+                - combobox "Nutricionista" [disabled] [ref=e96]:
+                  - option "Sin nutricionistas activos" [selected]
+            - generic [ref=e97]:
+              - generic [ref=e98]: Fecha de agenda
+              - button "2 de junio de 2026" [ref=e99]:
+                - generic [ref=e100]:
+                  - img
+                  - text: 2 de junio de 2026
+        - generic [ref=e103]:
+          - generic [ref=e106]:
+            - img [ref=e107]
+            - text: Agenda del 02/06/2026
+          - generic [ref=e110]:
+            - img [ref=e111]
+            - paragraph [ref=e113]: Cargando profesionales...
+  - region "Notifications alt+T"

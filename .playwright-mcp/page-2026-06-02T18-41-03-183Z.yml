@@ -1,0 +1,499 @@
+- generic:
+  - generic:
+    - generic:
+      - complementary:
+        - generic:
+          - generic:
+            - generic:
+              - img
+        - button:
+          - img
+        - navigation:
+          - link:
+            - /url: /dashboard
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /nutricionistas
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /recepcionistas
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /socios
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /permisos
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /turnos-profesional
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /notificaciones
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /admin/auditoria
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /configuracion
+            - generic:
+              - generic:
+                - img
+        - generic:
+          - generic:
+            - generic:
+              - generic: AC
+      - main:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+                      - heading [level=1]: Gestión de Socios
+                    - paragraph: Administración profesional de altas, bajas y seguimiento de socios.
+                  - generic:
+                    - button: Refrescar
+                    - button: Nuevo socio
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - paragraph: Buscar
+                      - textbox:
+                        - /placeholder: Nombre, apellido, email, DNI o ubicación
+                    - generic:
+                      - paragraph: Estado
+                      - combobox
+                    - generic:
+                      - paragraph: Provincia
+                      - combobox
+                    - generic:
+                      - paragraph: Ciudad
+                      - combobox
+                    - generic:
+                      - paragraph: Orden
+                      - generic:
+                        - combobox
+                        - combobox
+                  - generic:
+                    - paragraph: "Resultados: 3"
+                    - generic:
+                      - combobox
+                      - button: Limpiar filtros
+                  - generic:
+                    - generic:
+                      - table:
+                        - rowgroup:
+                          - row:
+                            - columnheader: Nombre
+                            - columnheader: Email
+                            - columnheader: Teléfono
+                            - columnheader: Ubicación
+                            - columnheader: Estado
+                            - columnheader: Acciones
+                        - rowgroup:
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - generic: SC
+                                - generic:
+                                  - paragraph: Socio1 Central
+                                  - paragraph: "DNI: 50001001"
+                            - cell: socio1-central@nutrifit.com
+                            - cell: "0000000000"
+                            - cell:
+                              - paragraph: Rosario
+                              - paragraph: Santa Fe
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - generic: SC
+                                - generic:
+                                  - paragraph: Socio2 Central
+                                  - paragraph: "DNI: 50001002"
+                            - cell: socio2-central@nutrifit.com
+                            - cell: "0000000000"
+                            - cell:
+                              - paragraph: Rosario
+                              - paragraph: Santa Fe
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - generic: SC
+                                - generic:
+                                  - paragraph: Socio3 Central
+                                  - paragraph: "DNI: 50001003"
+                            - cell: socio3-central@nutrifit.com
+                            - cell: "0000000000"
+                            - cell:
+                              - paragraph: Rosario
+                              - paragraph: Santa Fe
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                  - generic:
+                    - paragraph: Mostrando 1 - 3 de 3
+                    - generic:
+                      - button [disabled]: Anterior
+                      - generic: Página 1 de 1
+                      - button [disabled]: Siguiente
+    - region "Notifications alt+T"
+  - dialog "Nuevo socio" [ref=e250]:
+    - generic [ref=e251]:
+      - heading "Nuevo socio" [level=2] [ref=e252]
+      - paragraph [ref=e253]: Completa los datos para registrar un nuevo socio.
+    - generic [ref=e254]:
+      - generic [ref=e255]:
+        - generic [ref=e256]:
+          - heading "Datos personales" [level=3] [ref=e257]
+          - generic [ref=e258]:
+            - generic [ref=e259]:
+              - generic [ref=e260]:
+                - text: Nombre
+                - generic [ref=e261]: "*"
+              - textbox "Nombre *" [ref=e262]: Test
+            - generic [ref=e263]:
+              - generic [ref=e264]:
+                - text: Apellido
+                - generic [ref=e265]: "*"
+              - textbox "Apellido *" [ref=e266]: E2E
+            - generic [ref=e267]:
+              - generic [ref=e268]:
+                - text: DNI
+                - generic [ref=e269]: "*"
+              - textbox "DNI *" [ref=e270]: "99999001"
+            - generic [ref=e271]:
+              - generic [ref=e272]:
+                - text: Fecha de nacimiento
+                - generic [ref=e273]: "*"
+              - button "Seleccionar fecha" [expanded] [ref=e274]:
+                - generic [ref=e275]:
+                  - img
+                  - generic [ref=e276]: Seleccionar fecha
+            - generic [ref=e277]:
+              - generic [ref=e278]:
+                - text: Género
+                - generic [ref=e279]: "*"
+              - combobox "Género *" [ref=e280]:
+                - option "Masculino" [selected]
+                - option "Femenino"
+                - option "Otro"
+            - generic [ref=e281]:
+              - generic [ref=e282]:
+                - text: Teléfono
+                - generic [ref=e283]: "*"
+              - textbox "Teléfono *" [ref=e284]: "3415559999"
+        - generic [ref=e285]:
+          - heading "Foto de perfil" [level=3] [ref=e286]
+          - generic [ref=e289]:
+            - text: Foto del Socio
+            - generic [ref=e291]:
+              - img [ref=e293]
+              - generic [ref=e296]:
+                - paragraph [ref=e297]: Arrastrá una imagen aquí o
+                - button "Seleccionar archivo" [ref=e298]
+        - generic [ref=e299]:
+          - heading "Contacto y ubicación" [level=3] [ref=e300]
+          - generic [ref=e301]:
+            - generic [ref=e302]:
+              - generic [ref=e303]:
+                - text: Dirección
+                - generic [ref=e304]: "*"
+              - textbox "Dirección *" [ref=e305]: Calle Test 123
+            - generic [ref=e306]:
+              - generic [ref=e307]:
+                - text: Ciudad
+                - generic [ref=e308]: "*"
+              - textbox "Ciudad *" [ref=e309]: Rosario
+            - generic [ref=e310]:
+              - generic [ref=e311]:
+                - text: Provincia
+                - generic [ref=e312]: "*"
+              - textbox "Provincia *" [ref=e313]: Santa Fe
+            - generic [ref=e314]:
+              - generic [ref=e315]:
+                - text: Email
+                - generic [ref=e316]: "*"
+              - textbox "Email *" [ref=e317]: test-e2e@nutrifit.com
+        - generic [ref=e318]:
+          - heading "Seguridad" [level=3] [ref=e319]
+          - generic [ref=e321]:
+            - generic [ref=e322]:
+              - text: Contraseña temporal
+              - generic [ref=e323]: "*"
+            - textbox "Contraseña temporal *" [ref=e324]: Test1234!
+            - generic [ref=e325]:
+              - paragraph [ref=e326]: Seguridad de contraseña
+              - list [ref=e327]:
+                - listitem [ref=e328]:
+                  - img [ref=e329]
+                  - generic [ref=e332]: Al menos 8 caracteres
+                - listitem [ref=e333]:
+                  - img [ref=e334]
+                  - generic [ref=e337]: Una letra mayúscula
+                - listitem [ref=e338]:
+                  - img [ref=e339]
+                  - generic [ref=e342]: Una letra minúscula
+                - listitem [ref=e343]:
+                  - img [ref=e344]
+                  - generic [ref=e347]: Un número
+                - listitem [ref=e348]:
+                  - img [ref=e349]
+                  - generic [ref=e352]: Un símbolo especial
+      - generic [ref=e353]:
+        - button "Cancelar" [ref=e354]
+        - button "Crear socio" [ref=e355]
+    - button "Close" [ref=e356]:
+      - img
+      - generic [ref=e357]: Close
+  - dialog [ref=e391]:
+    - generic [ref=e393]:
+      - navigation "Navigation bar" [ref=e394]:
+        - button "Go to the Previous Month" [active] [ref=e395]:
+          - img
+        - button "Go to the Next Month" [ref=e396]:
+          - img
+      - generic [ref=e397]:
+        - generic [ref=e399]:
+          - combobox "Choose the Month" [ref=e401]:
+            - option "enero"
+            - option "febrero"
+            - option "marzo"
+            - option "abril"
+            - option "mayo"
+            - option "junio" [selected]
+            - option "julio"
+            - option "agosto"
+            - option "septiembre"
+            - option "octubre"
+            - option "noviembre"
+            - option "diciembre"
+          - combobox "Choose the Year" [ref=e403]:
+            - option "1926"
+            - option "1927"
+            - option "1928"
+            - option "1929"
+            - option "1930"
+            - option "1931"
+            - option "1932"
+            - option "1933"
+            - option "1934"
+            - option "1935"
+            - option "1936"
+            - option "1937"
+            - option "1938"
+            - option "1939"
+            - option "1940"
+            - option "1941"
+            - option "1942"
+            - option "1943"
+            - option "1944"
+            - option "1945"
+            - option "1946"
+            - option "1947"
+            - option "1948"
+            - option "1949"
+            - option "1950"
+            - option "1951"
+            - option "1952"
+            - option "1953"
+            - option "1954"
+            - option "1955"
+            - option "1956"
+            - option "1957"
+            - option "1958"
+            - option "1959"
+            - option "1960"
+            - option "1961"
+            - option "1962"
+            - option "1963"
+            - option "1964"
+            - option "1965"
+            - option "1966"
+            - option "1967"
+            - option "1968"
+            - option "1969"
+            - option "1970"
+            - option "1971"
+            - option "1972"
+            - option "1973"
+            - option "1974"
+            - option "1975"
+            - option "1976"
+            - option "1977"
+            - option "1978"
+            - option "1979"
+            - option "1980"
+            - option "1981"
+            - option "1982"
+            - option "1983"
+            - option "1984"
+            - option "1985"
+            - option "1986"
+            - option "1987"
+            - option "1988"
+            - option "1989"
+            - option "1990"
+            - option "1991"
+            - option "1992"
+            - option "1993"
+            - option "1994"
+            - option "1995"
+            - option "1996"
+            - option "1997"
+            - option "1998"
+            - option "1999"
+            - option "2000"
+            - option "2001"
+            - option "2002"
+            - option "2003"
+            - option "2004"
+            - option "2005"
+            - option "2006"
+            - option "2007"
+            - option "2008"
+            - option "2009"
+            - option "2010"
+            - option "2011"
+            - option "2012"
+            - option "2013"
+            - option "2014"
+            - option "2015"
+            - option "2016"
+            - option "2017"
+            - option "2018"
+            - option "2019"
+            - option "2020"
+            - option "2021"
+            - option "2022"
+            - option "2023"
+            - option "2024"
+            - option "2025"
+            - option "2026" [selected]
+            - option "2027"
+          - status [ref=e404]: junio 2026
+        - grid "junio 2026" [ref=e405]:
+          - rowgroup [ref=e406]:
+            - row [ref=e407]:
+              - columnheader [ref=e408]: lu
+              - columnheader [ref=e409]: ma
+              - columnheader [ref=e410]: mi
+              - columnheader [ref=e411]: ju
+              - columnheader [ref=e412]: vi
+              - columnheader [ref=e413]: sá
+              - columnheader [ref=e414]: do
+          - rowgroup [ref=e415]:
+            - row "lunes, 1 de junio de 2026 Today, martes, 2 de junio de 2026 miércoles, 3 de junio de 2026 jueves, 4 de junio de 2026 viernes, 5 de junio de 2026 sábado, 6 de junio de 2026 domingo, 7 de junio de 2026" [ref=e416]:
+              - gridcell "lunes, 1 de junio de 2026" [ref=e417]:
+                - button "lunes, 1 de junio de 2026" [ref=e418]: "1"
+              - gridcell "Today, martes, 2 de junio de 2026" [ref=e419]:
+                - button "Today, martes, 2 de junio de 2026" [ref=e420]: "2"
+              - gridcell "miércoles, 3 de junio de 2026" [ref=e421]:
+                - button "miércoles, 3 de junio de 2026" [ref=e422]: "3"
+              - gridcell "jueves, 4 de junio de 2026" [ref=e423]:
+                - button "jueves, 4 de junio de 2026" [ref=e424]: "4"
+              - gridcell "viernes, 5 de junio de 2026" [ref=e425]:
+                - button "viernes, 5 de junio de 2026" [ref=e426]: "5"
+              - gridcell "sábado, 6 de junio de 2026" [ref=e427]:
+                - button "sábado, 6 de junio de 2026" [ref=e428]: "6"
+              - gridcell "domingo, 7 de junio de 2026" [ref=e429]:
+                - button "domingo, 7 de junio de 2026" [ref=e430]: "7"
+            - row "lunes, 8 de junio de 2026 martes, 9 de junio de 2026 miércoles, 10 de junio de 2026 jueves, 11 de junio de 2026 viernes, 12 de junio de 2026 sábado, 13 de junio de 2026 domingo, 14 de junio de 2026" [ref=e431]:
+              - gridcell "lunes, 8 de junio de 2026" [ref=e432]:
+                - button "lunes, 8 de junio de 2026" [ref=e433]: "8"
+              - gridcell "martes, 9 de junio de 2026" [ref=e434]:
+                - button "martes, 9 de junio de 2026" [ref=e435]: "9"
+              - gridcell "miércoles, 10 de junio de 2026" [ref=e436]:
+                - button "miércoles, 10 de junio de 2026" [ref=e437]: "10"
+              - gridcell "jueves, 11 de junio de 2026" [ref=e438]:
+                - button "jueves, 11 de junio de 2026" [ref=e439]: "11"
+              - gridcell "viernes, 12 de junio de 2026" [ref=e440]:
+                - button "viernes, 12 de junio de 2026" [ref=e441]: "12"
+              - gridcell "sábado, 13 de junio de 2026" [ref=e442]:
+                - button "sábado, 13 de junio de 2026" [ref=e443]: "13"
+              - gridcell "domingo, 14 de junio de 2026" [ref=e444]:
+                - button "domingo, 14 de junio de 2026" [ref=e445]: "14"
+            - row "lunes, 15 de junio de 2026 martes, 16 de junio de 2026 miércoles, 17 de junio de 2026 jueves, 18 de junio de 2026 viernes, 19 de junio de 2026 sábado, 20 de junio de 2026 domingo, 21 de junio de 2026" [ref=e446]:
+              - gridcell "lunes, 15 de junio de 2026" [ref=e447]:
+                - button "lunes, 15 de junio de 2026" [ref=e448]: "15"
+              - gridcell "martes, 16 de junio de 2026" [ref=e449]:
+                - button "martes, 16 de junio de 2026" [ref=e450]: "16"
+              - gridcell "miércoles, 17 de junio de 2026" [ref=e451]:
+                - button "miércoles, 17 de junio de 2026" [ref=e452]: "17"
+              - gridcell "jueves, 18 de junio de 2026" [ref=e453]:
+                - button "jueves, 18 de junio de 2026" [ref=e454]: "18"
+              - gridcell "viernes, 19 de junio de 2026" [ref=e455]:
+                - button "viernes, 19 de junio de 2026" [ref=e456]: "19"
+              - gridcell "sábado, 20 de junio de 2026" [ref=e457]:
+                - button "sábado, 20 de junio de 2026" [ref=e458]: "20"
+              - gridcell "domingo, 21 de junio de 2026" [ref=e459]:
+                - button "domingo, 21 de junio de 2026" [ref=e460]: "21"
+            - row "lunes, 22 de junio de 2026 martes, 23 de junio de 2026 miércoles, 24 de junio de 2026 jueves, 25 de junio de 2026 viernes, 26 de junio de 2026 sábado, 27 de junio de 2026 domingo, 28 de junio de 2026" [ref=e461]:
+              - gridcell "lunes, 22 de junio de 2026" [ref=e462]:
+                - button "lunes, 22 de junio de 2026" [ref=e463]: "22"
+              - gridcell "martes, 23 de junio de 2026" [ref=e464]:
+                - button "martes, 23 de junio de 2026" [ref=e465]: "23"
+              - gridcell "miércoles, 24 de junio de 2026" [ref=e466]:
+                - button "miércoles, 24 de junio de 2026" [ref=e467]: "24"
+              - gridcell "jueves, 25 de junio de 2026" [ref=e468]:
+                - button "jueves, 25 de junio de 2026" [ref=e469]: "25"
+              - gridcell "viernes, 26 de junio de 2026" [ref=e470]:
+                - button "viernes, 26 de junio de 2026" [ref=e471]: "26"
+              - gridcell "sábado, 27 de junio de 2026" [ref=e472]:
+                - button "sábado, 27 de junio de 2026" [ref=e473]: "27"
+              - gridcell "domingo, 28 de junio de 2026" [ref=e474]:
+                - button "domingo, 28 de junio de 2026" [ref=e475]: "28"
+            - row "lunes, 29 de junio de 2026 martes, 30 de junio de 2026 miércoles, 1 de julio de 2026 jueves, 2 de julio de 2026 viernes, 3 de julio de 2026 sábado, 4 de julio de 2026 domingo, 5 de julio de 2026" [ref=e476]:
+              - gridcell "lunes, 29 de junio de 2026" [ref=e477]:
+                - button "lunes, 29 de junio de 2026" [ref=e478]: "29"
+              - gridcell "martes, 30 de junio de 2026" [ref=e479]:
+                - button "martes, 30 de junio de 2026" [ref=e480]: "30"
+              - gridcell "miércoles, 1 de julio de 2026" [ref=e481]:
+                - button "miércoles, 1 de julio de 2026" [ref=e482]: "1"
+              - gridcell "jueves, 2 de julio de 2026" [ref=e483]:
+                - button "jueves, 2 de julio de 2026" [ref=e484]: "2"
+              - gridcell "viernes, 3 de julio de 2026" [ref=e485]:
+                - button "viernes, 3 de julio de 2026" [ref=e486]: "3"
+              - gridcell "sábado, 4 de julio de 2026" [ref=e487]:
+                - button "sábado, 4 de julio de 2026" [ref=e488]: "4"
+              - gridcell "domingo, 5 de julio de 2026" [ref=e489]:
+                - button "domingo, 5 de julio de 2026" [ref=e490]: "5"

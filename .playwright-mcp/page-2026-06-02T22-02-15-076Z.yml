@@ -1,0 +1,286 @@
+- generic:
+  - generic:
+    - generic:
+      - complementary:
+        - generic:
+          - generic:
+            - generic:
+              - img
+        - button:
+          - img
+        - navigation:
+          - link:
+            - /url: /dashboard
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /nutricionistas
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /recepcionistas
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /socios
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /permisos
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /turnos-profesional
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /notificaciones
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /admin/auditoria
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /configuracion
+            - generic:
+              - generic:
+                - img
+        - generic:
+          - generic:
+            - generic:
+              - generic: AC
+      - main:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+                      - heading [level=1]: Gestión de Recepcionistas
+                    - paragraph: Administración profesional de altas, bajas y seguimiento del equipo de recepción.
+                  - generic:
+                    - button: Refrescar
+                    - button: Nuevo recepcionista
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - paragraph: Buscar
+                      - textbox:
+                        - /placeholder: Nombre, apellido, email, DNI o ubicación
+                    - generic:
+                      - paragraph: Estado
+                      - combobox
+                    - generic:
+                      - paragraph: Provincia
+                      - combobox
+                    - generic:
+                      - paragraph: Ciudad
+                      - combobox
+                    - generic:
+                      - paragraph: Orden
+                      - generic:
+                        - combobox
+                        - combobox
+                  - generic:
+                    - paragraph: "Resultados: 6"
+                    - generic:
+                      - combobox
+                      - button: Limpiar filtros
+                  - generic:
+                    - generic:
+                      - table:
+                        - rowgroup:
+                          - row:
+                            - columnheader: Nombre
+                            - columnheader: DNI
+                            - columnheader: Email
+                            - columnheader: Ubicación
+                            - columnheader: Estado
+                            - columnheader: Acciones
+                        - rowgroup:
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - generic: SA
+                                - generic:
+                                  - paragraph: Super Admin
+                                  - paragraph: "DNI: -"
+                            - cell
+                            - cell
+                            - cell:
+                              - paragraph: Rosario
+                              - paragraph: Santa Fe
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - generic: AC
+                                - generic:
+                                  - paragraph: Admin Central
+                                  - paragraph: "DNI: -"
+                            - cell
+                            - cell
+                            - cell:
+                              - paragraph: Rosario
+                              - paragraph: Santa Fe
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - img
+                                - generic:
+                                  - paragraph: Recep ConFoto
+                                  - paragraph: "DNI: 55555001"
+                            - cell: "55555001"
+                            - cell
+                            - cell:
+                              - paragraph: Rosario
+                              - paragraph: Santa Fe
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - generic: AN
+                                - generic:
+                                  - paragraph: Admin Norte
+                                  - paragraph: "DNI: -"
+                            - cell
+                            - cell
+                            - cell:
+                              - paragraph: Rosario
+                              - paragraph: Santa Fe
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - generic: AS
+                                - generic:
+                                  - paragraph: Admin Sur
+                                  - paragraph: "DNI: -"
+                            - cell
+                            - cell
+                            - cell:
+                              - paragraph: Rosario
+                              - paragraph: Santa Fe
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - generic: RT
+                                - generic:
+                                  - paragraph: Recep Test
+                                  - paragraph: "DNI: 88888001"
+                            - cell: "88888001"
+                            - cell
+                            - cell:
+                              - paragraph: Rosario
+                              - paragraph: Santa Fe
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                  - generic:
+                    - paragraph: Mostrando 1 - 6 de 6
+                    - generic:
+                      - button [disabled]: Anterior
+                      - generic: Página 1 de 1
+                      - button [disabled]: Siguiente
+    - region "Notifications alt+T"
+  - dialog "Detalles del Recepcionista" [ref=e180]:
+    - generic [ref=e181]:
+      - heading "Detalles del Recepcionista" [level=2] [ref=e182]
+      - paragraph [ref=e183]: Información personal y de contacto del recepcionista seleccionado.
+    - generic [ref=e184]:
+      - generic [ref=e186]:
+        - generic [ref=e187]:
+          - generic [ref=e188]:
+            - img "Recep ConFoto" [ref=e190]
+            - button "Maximizar foto de Recep ConFoto" [active] [ref=e191]:
+              - img
+          - generic [ref=e192]:
+            - heading "Recep ConFoto" [level=3] [ref=e193]
+            - paragraph
+        - generic [ref=e195]: Activo
+      - generic [ref=e196]:
+        - generic [ref=e197]:
+          - heading "Datos personales" [level=4] [ref=e198]
+          - generic [ref=e199]:
+            - generic [ref=e200]:
+              - paragraph [ref=e201]: DNI
+              - paragraph [ref=e202]: "55555001"
+            - generic [ref=e203]:
+              - paragraph [ref=e204]: Fecha de nacimiento
+              - paragraph [ref=e205]: 13/06/1990
+            - generic [ref=e206]:
+              - paragraph [ref=e207]: Género
+              - paragraph [ref=e208]: femenino
+            - generic [ref=e209]:
+              - paragraph [ref=e210]: Teléfono
+              - paragraph [ref=e211]: "3415550001"
+        - generic [ref=e212]:
+          - heading "Ubicación" [level=4] [ref=e213]
+          - generic [ref=e214]:
+            - generic [ref=e215]:
+              - paragraph [ref=e216]: Dirección
+              - paragraph [ref=e217]: Av Test 200
+            - generic [ref=e218]:
+              - paragraph [ref=e219]: Ciudad
+              - paragraph [ref=e220]: Rosario
+            - generic [ref=e221]:
+              - paragraph [ref=e222]: Provincia
+              - paragraph [ref=e223]: Santa Fe
+    - button "Cerrar" [ref=e225]
+    - button "Close" [ref=e226]:
+      - img
+      - generic [ref=e227]: Close

@@ -1,0 +1,108 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e6]:
+        - img [ref=e8]
+        - generic:
+          - generic: NutriFit
+          - generic: Supervisor
+      - button "Expandir" [ref=e14]:
+        - img [ref=e15]
+      - navigation [ref=e17]:
+        - generic: Menu Principal
+        - link "Dashboard" [ref=e18] [cursor=pointer]:
+          - /url: /dashboard
+          - generic [ref=e19]:
+            - img [ref=e21]
+            - generic: Dashboard
+        - link "Nutricionistas" [ref=e26] [cursor=pointer]:
+          - /url: /nutricionistas
+          - generic [ref=e27]:
+            - img [ref=e29]
+            - generic: Nutricionistas
+        - link "Recepcionistas" [ref=e34] [cursor=pointer]:
+          - /url: /recepcionistas
+          - generic [ref=e35]:
+            - img [ref=e37]
+            - generic: Recepcionistas
+        - link "Socios" [ref=e49] [cursor=pointer]:
+          - /url: /socios
+          - generic [ref=e50]:
+            - img [ref=e52]
+            - generic: Socios
+        - link "Permisos & Roles" [ref=e55] [cursor=pointer]:
+          - /url: /permisos
+          - generic [ref=e56]:
+            - img [ref=e58]
+            - generic: Permisos & Roles
+        - link "Turnos del dia" [ref=e62] [cursor=pointer]:
+          - /url: /turnos-profesional
+          - generic [ref=e63]:
+            - img [ref=e65]
+            - generic: Turnos del dia
+        - link "Notificaciones" [ref=e70] [cursor=pointer]:
+          - /url: /notificaciones
+          - generic [ref=e71]:
+            - img [ref=e73]
+            - generic: Notificaciones
+        - link "Auditoría" [ref=e76] [cursor=pointer]:
+          - /url: /admin/auditoria
+          - generic [ref=e77]:
+            - img [ref=e79]
+            - generic: Auditoría
+        - generic: Sistema
+        - link "Configuracion" [ref=e81] [cursor=pointer]:
+          - /url: /configuracion
+          - generic [ref=e82]:
+            - img [ref=e84]
+            - generic: Configuracion
+      - generic [ref=e90]: AC
+    - main [ref=e91]:
+      - generic [ref=e94]:
+        - generic [ref=e98]:
+          - generic [ref=e99]:
+            - generic [ref=e100]:
+              - img [ref=e101]
+              - heading "Gestión de Recepcionistas" [level=1] [ref=e113]
+            - paragraph [ref=e114]: Administración profesional de altas, bajas y seguimiento del equipo de recepción.
+          - generic [ref=e115]:
+            - button "Refrescar" [disabled]
+            - button "Nuevo recepcionista" [ref=e116]
+        - generic [ref=e118]:
+          - generic [ref=e119]:
+            - generic [ref=e120]:
+              - paragraph [ref=e121]: Buscar
+              - textbox "Nombre, apellido, email, DNI o ubicación" [ref=e122]
+            - generic [ref=e123]:
+              - paragraph [ref=e124]: Estado
+              - combobox [ref=e125]:
+                - option "Todos" [selected]
+                - option "Activos"
+                - option "Inactivos"
+            - generic [ref=e126]:
+              - paragraph [ref=e127]: Provincia
+              - combobox [ref=e128]:
+                - option "Todas" [selected]
+            - generic [ref=e129]:
+              - paragraph [ref=e130]: Ciudad
+              - combobox [ref=e131]:
+                - option "Todas" [selected]
+            - generic [ref=e132]:
+              - paragraph [ref=e133]: Orden
+              - generic [ref=e134]:
+                - combobox [ref=e135]:
+                  - option "Nombre" [selected]
+                  - option "Estado"
+                - combobox [ref=e136]:
+                  - option "Asc" [selected]
+                  - option "Desc"
+          - generic [ref=e137]:
+            - paragraph [ref=e138]: "Resultados: 0"
+            - generic [ref=e139]:
+              - combobox [ref=e140]:
+                - option "6 por página"
+                - option "9 por página" [selected]
+                - option "12 por página"
+                - option "18 por página"
+              - button "Limpiar filtros" [ref=e141]
+  - region "Notifications alt+T"

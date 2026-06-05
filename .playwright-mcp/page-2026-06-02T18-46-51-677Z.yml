@@ -1,0 +1,221 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e6]:
+        - img [ref=e8]
+        - generic:
+          - generic: NutriFit
+          - generic: Supervisor
+      - button "Expandir" [ref=e14]:
+        - img [ref=e15]
+      - navigation [ref=e17]:
+        - generic: Menu Principal
+        - link "Dashboard" [ref=e18] [cursor=pointer]:
+          - /url: /dashboard
+          - generic [ref=e19]:
+            - img [ref=e21]
+            - generic: Dashboard
+        - link "Nutricionistas" [ref=e26] [cursor=pointer]:
+          - /url: /nutricionistas
+          - generic [ref=e27]:
+            - img [ref=e29]
+            - generic: Nutricionistas
+        - link "Recepcionistas" [ref=e34] [cursor=pointer]:
+          - /url: /recepcionistas
+          - generic [ref=e35]:
+            - img [ref=e37]
+            - generic: Recepcionistas
+        - link "Socios" [ref=e49] [cursor=pointer]:
+          - /url: /socios
+          - generic [ref=e50]:
+            - img [ref=e52]
+            - generic: Socios
+        - link "Permisos & Roles" [ref=e55] [cursor=pointer]:
+          - /url: /permisos
+          - generic [ref=e56]:
+            - img [ref=e58]
+            - generic: Permisos & Roles
+        - link "Turnos del dia" [ref=e62] [cursor=pointer]:
+          - /url: /turnos-profesional
+          - generic [ref=e63]:
+            - img [ref=e65]
+            - generic: Turnos del dia
+        - link "Notificaciones" [ref=e70] [cursor=pointer]:
+          - /url: /notificaciones
+          - generic [ref=e71]:
+            - img [ref=e73]
+            - generic: Notificaciones
+        - link "Auditoría" [ref=e76] [cursor=pointer]:
+          - /url: /admin/auditoria
+          - generic [ref=e77]:
+            - img [ref=e79]
+            - generic: Auditoría
+        - generic: Sistema
+        - link "Configuracion" [ref=e81] [cursor=pointer]:
+          - /url: /configuracion
+          - generic [ref=e82]:
+            - img [ref=e84]
+            - generic: Configuracion
+      - generic [ref=e90]: AC
+    - main [ref=e91]:
+      - generic [ref=e94]:
+        - generic [ref=e98]:
+          - generic [ref=e99]:
+            - generic [ref=e100]:
+              - img [ref=e101]
+              - heading "Gestión de Recepcionistas" [level=1] [ref=e113]
+            - paragraph [ref=e114]: Administración profesional de altas, bajas y seguimiento del equipo de recepción.
+          - generic [ref=e115]:
+            - button "Refrescar" [ref=e179]
+            - button "Nuevo recepcionista" [ref=e116]
+        - generic [ref=e118]:
+          - generic [ref=e119]:
+            - generic [ref=e120]:
+              - paragraph [ref=e121]: Buscar
+              - textbox "Nombre, apellido, email, DNI o ubicación" [ref=e122]
+            - generic [ref=e123]:
+              - paragraph [ref=e124]: Estado
+              - combobox [ref=e125]:
+                - option "Todos" [selected]
+                - option "Activos"
+                - option "Inactivos"
+            - generic [ref=e126]:
+              - paragraph [ref=e127]: Provincia
+              - combobox [ref=e128]:
+                - option "Todas" [selected]
+                - option "Santa Fe"
+            - generic [ref=e129]:
+              - paragraph [ref=e130]: Ciudad
+              - combobox [ref=e131]:
+                - option "Todas" [selected]
+                - option "Rosario"
+            - generic [ref=e132]:
+              - paragraph [ref=e133]: Orden
+              - generic [ref=e134]:
+                - combobox [ref=e135]:
+                  - option "Nombre" [selected]
+                  - option "Estado"
+                - combobox [ref=e136]:
+                  - option "Asc" [selected]
+                  - option "Desc"
+          - generic [ref=e137]:
+            - paragraph [ref=e138]: "Resultados: 5"
+            - generic [ref=e139]:
+              - combobox [ref=e140]:
+                - option "6 por página"
+                - option "9 por página" [selected]
+                - option "12 por página"
+                - option "18 por página"
+              - button "Limpiar filtros" [ref=e141]
+          - table [ref=e523]:
+            - rowgroup [ref=e524]:
+              - row "Nombre DNI Email Ubicación Estado Acciones" [ref=e525]:
+                - columnheader "Nombre" [ref=e526]
+                - columnheader "DNI" [ref=e527]
+                - columnheader "Email" [ref=e528]
+                - columnheader "Ubicación" [ref=e529]
+                - columnheader "Estado" [ref=e530]
+                - columnheader "Acciones" [ref=e531]
+            - rowgroup [ref=e532]:
+              - 'row "SA Super Admin DNI: - Rosario Santa Fe Activo Ver Editar Baja" [ref=e533]':
+                - 'cell "SA Super Admin DNI: -" [ref=e534]':
+                  - generic [ref=e535]:
+                    - generic [ref=e537]: SA
+                    - generic [ref=e538]:
+                      - paragraph [ref=e539]: Super Admin
+                      - paragraph [ref=e540]: "DNI: -"
+                - cell [ref=e541]
+                - cell [ref=e542]
+                - cell "Rosario Santa Fe" [ref=e543]:
+                  - paragraph [ref=e544]: Rosario
+                  - paragraph [ref=e545]: Santa Fe
+                - cell "Activo" [ref=e546]:
+                  - generic [ref=e547]: Activo
+                - cell "Ver Editar Baja" [ref=e548]:
+                  - generic [ref=e549]:
+                    - button "Ver" [ref=e550]
+                    - button "Editar" [ref=e551]
+                    - button "Baja" [ref=e552]
+              - 'row "AC Admin Central DNI: - Rosario Santa Fe Activo Ver Editar Baja" [ref=e553]':
+                - 'cell "AC Admin Central DNI: -" [ref=e554]':
+                  - generic [ref=e555]:
+                    - generic [ref=e557]: AC
+                    - generic [ref=e558]:
+                      - paragraph [ref=e559]: Admin Central
+                      - paragraph [ref=e560]: "DNI: -"
+                - cell [ref=e561]
+                - cell [ref=e562]
+                - cell "Rosario Santa Fe" [ref=e563]:
+                  - paragraph [ref=e564]: Rosario
+                  - paragraph [ref=e565]: Santa Fe
+                - cell "Activo" [ref=e566]:
+                  - generic [ref=e567]: Activo
+                - cell "Ver Editar Baja" [ref=e568]:
+                  - generic [ref=e569]:
+                    - button "Ver" [ref=e570]
+                    - button "Editar" [ref=e571]
+                    - button "Baja" [ref=e572]
+              - 'row "AN Admin Norte DNI: - Rosario Santa Fe Activo Ver Editar Baja" [ref=e573]':
+                - 'cell "AN Admin Norte DNI: -" [ref=e574]':
+                  - generic [ref=e575]:
+                    - generic [ref=e577]: AN
+                    - generic [ref=e578]:
+                      - paragraph [ref=e579]: Admin Norte
+                      - paragraph [ref=e580]: "DNI: -"
+                - cell [ref=e581]
+                - cell [ref=e582]
+                - cell "Rosario Santa Fe" [ref=e583]:
+                  - paragraph [ref=e584]: Rosario
+                  - paragraph [ref=e585]: Santa Fe
+                - cell "Activo" [ref=e586]:
+                  - generic [ref=e587]: Activo
+                - cell "Ver Editar Baja" [ref=e588]:
+                  - generic [ref=e589]:
+                    - button "Ver" [ref=e590]
+                    - button "Editar" [ref=e591]
+                    - button "Baja" [ref=e592]
+              - 'row "AS Admin Sur DNI: - Rosario Santa Fe Activo Ver Editar Baja" [ref=e593]':
+                - 'cell "AS Admin Sur DNI: -" [ref=e594]':
+                  - generic [ref=e595]:
+                    - generic [ref=e597]: AS
+                    - generic [ref=e598]:
+                      - paragraph [ref=e599]: Admin Sur
+                      - paragraph [ref=e600]: "DNI: -"
+                - cell [ref=e601]
+                - cell [ref=e602]
+                - cell "Rosario Santa Fe" [ref=e603]:
+                  - paragraph [ref=e604]: Rosario
+                  - paragraph [ref=e605]: Santa Fe
+                - cell "Activo" [ref=e606]:
+                  - generic [ref=e607]: Activo
+                - cell "Ver Editar Baja" [ref=e608]:
+                  - generic [ref=e609]:
+                    - button "Ver" [ref=e610]
+                    - button "Editar" [ref=e611]
+                    - button "Baja" [ref=e612]
+              - 'row "Recep Test Recep Test DNI: 88888001 88888001 Rosario Santa Fe Activo Ver Editar Baja" [ref=e613]':
+                - 'cell "Recep Test Recep Test DNI: 88888001" [ref=e614]':
+                  - generic [ref=e615]:
+                    - img "Recep Test" [ref=e617]
+                    - generic [ref=e618]:
+                      - paragraph [ref=e619]: Recep Test
+                      - paragraph [ref=e620]: "DNI: 88888001"
+                - cell "88888001" [ref=e621]
+                - cell [ref=e622]
+                - cell "Rosario Santa Fe" [ref=e623]:
+                  - paragraph [ref=e624]: Rosario
+                  - paragraph [ref=e625]: Santa Fe
+                - cell "Activo" [ref=e626]:
+                  - generic [ref=e627]: Activo
+                - cell "Ver Editar Baja" [ref=e628]:
+                  - generic [ref=e629]:
+                    - button "Ver" [ref=e630]
+                    - button "Editar" [ref=e631]
+                    - button "Baja" [ref=e632]
+          - generic [ref=e633]:
+            - paragraph [ref=e634]: Mostrando 1 - 5 de 5
+            - generic [ref=e635]:
+              - button "Anterior" [disabled]
+              - generic [ref=e636]: Página 1 de 1
+              - button "Siguiente" [disabled]
+  - region "Notifications alt+T"

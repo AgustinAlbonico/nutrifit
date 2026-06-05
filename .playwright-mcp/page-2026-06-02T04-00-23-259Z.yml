@@ -1,0 +1,76 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e6]:
+        - img [ref=e8]
+        - generic:
+          - generic: NutriFit
+          - generic: Supervisor
+      - button "Expandir" [ref=e14]:
+        - img [ref=e15]
+      - navigation [ref=e17]:
+        - generic: Menu Principal
+        - link "Dashboard" [ref=e18] [cursor=pointer]:
+          - /url: /dashboard
+          - generic [ref=e19]:
+            - img [ref=e21]
+            - generic: Dashboard
+        - link "Mi Agenda" [ref=e26] [cursor=pointer]:
+          - /url: /agenda
+          - generic [ref=e27]:
+            - img [ref=e29]
+            - generic: Mi Agenda
+        - link "Turnos del dia" [ref=e31] [cursor=pointer]:
+          - /url: /turnos-profesional
+          - generic [ref=e32]:
+            - img [ref=e34]
+            - generic: Turnos del dia
+        - link "Mis Pacientes" [ref=e39] [cursor=pointer]:
+          - /url: /pacientes
+          - generic [ref=e40]:
+            - img [ref=e42]
+            - generic: Mis Pacientes
+        - link "Planes de Alimentacion" [ref=e45] [cursor=pointer]:
+          - /url: /planes
+          - generic [ref=e46]:
+            - img [ref=e48]
+            - generic: Planes de Alimentacion
+        - link "Notificaciones" [ref=e51] [cursor=pointer]:
+          - /url: /notificaciones
+          - generic [ref=e52]:
+            - img [ref=e54]
+            - generic: Notificaciones
+        - generic: Sistema
+        - link "Configuracion" [ref=e57] [cursor=pointer]:
+          - /url: /configuracion
+          - generic [ref=e58]:
+            - img [ref=e60]
+            - generic: Configuracion
+      - generic [ref=e66]: NC
+    - main [ref=e67]:
+      - generic [ref=e70]:
+        - generic [ref=e72]:
+          - generic [ref=e73]:
+            - heading "Planes de Alimentación" [level=1] [ref=e74]:
+              - img [ref=e75]
+              - text: Planes de Alimentación
+            - paragraph [ref=e78]: Gestiona los planes de tus pacientes
+          - generic [ref=e79]:
+            - generic [ref=e80]:
+              - img [ref=e81]
+              - textbox "Buscar por paciente u objetivo..." [ref=e84]
+            - button "Crear Plan" [ref=e85]:
+              - img
+              - text: Crear Plan
+        - generic [ref=e88]:
+          - generic [ref=e90]:
+            - generic [ref=e91]: Total Planes
+            - img [ref=e92]
+          - generic [ref=e99]:
+            - generic [ref=e100]: Planes Activos
+            - img [ref=e101]
+          - generic [ref=e108]:
+            - generic [ref=e109]: Planes Inactivos
+            - img [ref=e110]
+        - heading "Planes Activos" [level=2] [ref=e118]
+  - region "Notifications alt+T"

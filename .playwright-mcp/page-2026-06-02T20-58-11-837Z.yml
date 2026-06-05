@@ -1,0 +1,325 @@
+- generic:
+  - generic:
+    - generic:
+      - complementary:
+        - generic:
+          - generic:
+            - generic:
+              - img
+        - button:
+          - img
+        - navigation:
+          - link:
+            - /url: /dashboard
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /nutricionistas
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /recepcionistas
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /socios
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /permisos
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /turnos-profesional
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /notificaciones
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /admin/auditoria
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /configuracion
+            - generic:
+              - generic:
+                - img
+        - generic:
+          - generic:
+            - generic:
+              - generic: AC
+      - main:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+                      - heading [level=1]: Gestión de Recepcionistas
+                    - paragraph: Administración profesional de altas, bajas y seguimiento del equipo de recepción.
+                  - generic:
+                    - button: Refrescar
+                    - button: Nuevo recepcionista
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - paragraph: Buscar
+                      - textbox:
+                        - /placeholder: Nombre, apellido, email, DNI o ubicación
+                    - generic:
+                      - paragraph: Estado
+                      - combobox
+                    - generic:
+                      - paragraph: Provincia
+                      - combobox
+                    - generic:
+                      - paragraph: Ciudad
+                      - combobox
+                    - generic:
+                      - paragraph: Orden
+                      - generic:
+                        - combobox
+                        - combobox
+                  - generic:
+                    - paragraph: "Resultados: 5"
+                    - generic:
+                      - combobox
+                      - button: Limpiar filtros
+                  - generic:
+                    - generic:
+                      - table:
+                        - rowgroup:
+                          - row:
+                            - columnheader: Nombre
+                            - columnheader: DNI
+                            - columnheader: Email
+                            - columnheader: Ubicación
+                            - columnheader: Estado
+                            - columnheader: Acciones
+                        - rowgroup:
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - generic: SA
+                                - generic:
+                                  - paragraph: Super Admin
+                                  - paragraph: "DNI: -"
+                            - cell
+                            - cell
+                            - cell:
+                              - paragraph: Rosario
+                              - paragraph: Santa Fe
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - generic: AC
+                                - generic:
+                                  - paragraph: Admin Central
+                                  - paragraph: "DNI: -"
+                            - cell
+                            - cell
+                            - cell:
+                              - paragraph: Rosario
+                              - paragraph: Santa Fe
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - generic: AN
+                                - generic:
+                                  - paragraph: Admin Norte
+                                  - paragraph: "DNI: -"
+                            - cell
+                            - cell
+                            - cell:
+                              - paragraph: Rosario
+                              - paragraph: Santa Fe
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - generic: AS
+                                - generic:
+                                  - paragraph: Admin Sur
+                                  - paragraph: "DNI: -"
+                            - cell
+                            - cell
+                            - cell:
+                              - paragraph: Rosario
+                              - paragraph: Santa Fe
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - generic: RT
+                                - generic:
+                                  - paragraph: Recep Test
+                                  - paragraph: "DNI: 88888001"
+                            - cell: "88888001"
+                            - cell
+                            - cell:
+                              - paragraph: Rosario
+                              - paragraph: Santa Fe
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                  - generic:
+                    - paragraph: Mostrando 1 - 5 de 5
+                    - generic:
+                      - button [disabled]: Anterior
+                      - generic: Página 1 de 1
+                      - button [disabled]: Siguiente
+    - region "Notifications alt+T"
+  - dialog "Nuevo recepcionista" [ref=e297]:
+    - generic [ref=e298]:
+      - heading "Nuevo recepcionista" [level=2] [ref=e299]
+      - paragraph [ref=e300]: Completa los datos para registrar un nuevo recepcionista.
+    - generic [ref=e301]:
+      - generic [ref=e302]:
+        - generic [ref=e303]:
+          - heading "Datos personales" [level=3] [ref=e304]
+          - generic [ref=e305]:
+            - generic [ref=e306]:
+              - generic [ref=e307]:
+                - text: Nombre
+                - generic [ref=e308]: "*"
+              - textbox "Nombre *" [ref=e309]: Recep
+            - generic [ref=e310]:
+              - generic [ref=e311]:
+                - text: Apellido
+                - generic [ref=e312]: "*"
+              - textbox "Apellido *" [ref=e313]: ConFoto
+            - generic [ref=e314]:
+              - generic [ref=e315]:
+                - text: DNI
+                - generic [ref=e316]: "*"
+              - textbox "DNI *" [ref=e317]: "55555001"
+            - generic [ref=e318]:
+              - generic [ref=e319]:
+                - text: Fecha de nacimiento
+                - generic [ref=e320]: "*"
+              - button "Seleccionar fecha" [ref=e321]:
+                - generic [ref=e322]:
+                  - img
+                  - generic [ref=e323]: Seleccionar fecha
+            - generic [ref=e324]:
+              - generic [ref=e325]:
+                - text: Género
+                - generic [ref=e326]: "*"
+              - combobox "Género *" [ref=e327]:
+                - option "Masculino"
+                - option "Femenino" [selected]
+                - option "Otro"
+            - generic [ref=e328]:
+              - generic [ref=e329]:
+                - text: Teléfono
+                - generic [ref=e330]: "*"
+              - textbox "Teléfono *" [ref=e331]: "3415550001"
+        - generic [ref=e332]:
+          - text: Foto de perfil
+          - generic [ref=e334]:
+            - img [ref=e336]
+            - generic [ref=e339]:
+              - paragraph [ref=e340]: Arrastrá una imagen aquí o
+              - button "Seleccionar archivo" [ref=e341]
+        - generic [ref=e342]:
+          - heading "Contacto y ubicación" [level=3] [ref=e343]
+          - generic [ref=e344]:
+            - generic [ref=e345]:
+              - generic [ref=e346]:
+                - text: Dirección
+                - generic [ref=e347]: "*"
+              - textbox "Dirección *" [ref=e348]: Av Test 200
+            - generic [ref=e349]:
+              - generic [ref=e350]:
+                - text: Ciudad
+                - generic [ref=e351]: "*"
+              - textbox "Ciudad *" [ref=e352]: Rosario
+            - generic [ref=e353]:
+              - generic [ref=e354]:
+                - text: Provincia
+                - generic [ref=e355]: "*"
+              - textbox "Provincia *" [ref=e356]: Santa Fe
+            - generic [ref=e357]:
+              - generic [ref=e358]:
+                - text: Email
+                - generic [ref=e359]: "*"
+              - textbox "Email *" [ref=e360]: recep-confoto@nutrifit.com
+        - generic [ref=e361]:
+          - heading "Seguridad" [level=3] [ref=e362]
+          - generic [ref=e364]:
+            - generic [ref=e365]:
+              - text: Contraseña temporal
+              - generic [ref=e366]: "*"
+            - textbox "Contraseña temporal *" [active] [ref=e367]: Test1234!
+            - generic [ref=e368]:
+              - paragraph [ref=e369]: Seguridad de contraseña
+              - list [ref=e370]:
+                - listitem [ref=e371]:
+                  - img [ref=e372]
+                  - generic [ref=e375]: Al menos 8 caracteres
+                - listitem [ref=e376]:
+                  - img [ref=e377]
+                  - generic [ref=e380]: Una letra mayúscula
+                - listitem [ref=e381]:
+                  - img [ref=e382]
+                  - generic [ref=e385]: Una letra minúscula
+                - listitem [ref=e386]:
+                  - img [ref=e387]
+                  - generic [ref=e390]: Un número
+                - listitem [ref=e391]:
+                  - img [ref=e392]
+                  - generic [ref=e395]: Un símbolo especial
+      - generic [ref=e396]:
+        - button "Cancelar" [ref=e397]
+        - button "Crear recepcionista" [ref=e398]
+    - button "Close" [ref=e399]:
+      - img
+      - generic [ref=e400]: Close

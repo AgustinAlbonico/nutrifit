@@ -1,0 +1,85 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e6]:
+        - img [ref=e8]
+        - generic:
+          - generic: NutriFit
+          - generic: Supervisor
+      - button "Expandir" [ref=e14]:
+        - img [ref=e15]
+      - navigation [ref=e17]:
+        - generic: Menu Principal
+        - link "Dashboard" [ref=e18] [cursor=pointer]:
+          - /url: /dashboard
+          - generic [ref=e19]:
+            - img [ref=e21]
+            - generic: Dashboard
+        - link "Mis Turnos" [ref=e26] [cursor=pointer]:
+          - /url: /turnos
+          - generic [ref=e27]:
+            - img [ref=e29]
+            - generic: Mis Turnos
+        - link "Ficha de salud" [ref=e31] [cursor=pointer]:
+          - /url: /turnos/ficha-salud
+          - generic [ref=e32]:
+            - img [ref=e34]
+            - generic: Ficha de salud
+        - link "Mi Progreso" [ref=e37] [cursor=pointer]:
+          - /url: /mi-progreso
+          - generic [ref=e38]:
+            - img [ref=e40]
+            - generic: Mi Progreso
+        - link "Mi Plan" [ref=e43] [cursor=pointer]:
+          - /url: /mi-plan
+          - generic [ref=e44]:
+            - img [ref=e46]
+            - generic: Mi Plan
+        - link "Notificaciones" [ref=e49] [cursor=pointer]:
+          - /url: /notificaciones
+          - generic [ref=e50]:
+            - img [ref=e52]
+            - generic: Notificaciones
+        - generic: Sistema
+        - link "Configuracion" [ref=e55] [cursor=pointer]:
+          - /url: /configuracion
+          - generic [ref=e56]:
+            - img [ref=e58]
+            - generic: Configuracion
+      - generic [ref=e64]: SC
+    - main [ref=e65]:
+      - generic [ref=e68]:
+        - generic [ref=e70]:
+          - generic [ref=e71]:
+            - heading "Agendar turno" [level=1] [ref=e72]:
+              - img [ref=e73]
+              - text: Agendar turno
+            - paragraph [ref=e75]: Primero elige profesional, luego fecha, y por ultimo el horario.
+          - link "Volver a mis turnos" [ref=e76] [cursor=pointer]:
+            - /url: /turnos
+            - img
+            - text: Volver a mis turnos
+        - generic [ref=e79]:
+          - generic [ref=e81]:
+            - paragraph [ref=e82]: Paso 1
+            - paragraph [ref=e83]: Seleccionar profesional
+          - generic [ref=e85]:
+            - paragraph [ref=e86]: Paso 2
+            - paragraph [ref=e87]: Seleccionar fecha
+          - generic [ref=e89]:
+            - paragraph [ref=e90]: Paso 3
+            - paragraph [ref=e91]: Elegir horario y reservar
+        - generic [ref=e92]:
+          - generic [ref=e94]: 1) Profesional
+          - generic [ref=e95]:
+            - generic [ref=e96]:
+              - img
+              - textbox "Buscar por nombre, ciudad o provincia" [ref=e97]
+            - paragraph [ref=e98]: Cargando profesionales disponibles...
+        - generic [ref=e99]:
+          - generic [ref=e101]: 2) Fecha
+          - paragraph [ref=e103]: Selecciona un profesional para habilitar la fecha.
+        - generic [ref=e104]:
+          - generic [ref=e106]: 3) Horarios disponibles
+          - paragraph [ref=e108]: Selecciona profesional y fecha para ver horarios.
+  - region "Notifications alt+T"

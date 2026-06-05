@@ -1,0 +1,79 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e6]:
+        - img [ref=e8]
+        - generic:
+          - generic: NutriFit
+          - generic: Supervisor
+      - button "Expandir" [ref=e14]:
+        - img [ref=e15]
+      - navigation [ref=e17]:
+        - generic: Menu Principal
+        - link "Dashboard" [ref=e18] [cursor=pointer]:
+          - /url: /dashboard
+          - generic [ref=e19]:
+            - img [ref=e21]
+            - generic: Dashboard
+        - link "Mis Turnos" [ref=e26] [cursor=pointer]:
+          - /url: /turnos
+          - generic [ref=e27]:
+            - img [ref=e29]
+            - generic: Mis Turnos
+        - link "Ficha de salud" [ref=e31] [cursor=pointer]:
+          - /url: /turnos/ficha-salud
+          - generic [ref=e32]:
+            - img [ref=e34]
+            - generic: Ficha de salud
+        - link "Mi Progreso" [ref=e37] [cursor=pointer]:
+          - /url: /mi-progreso
+          - generic [ref=e38]:
+            - img [ref=e40]
+            - generic: Mi Progreso
+        - link "Mi Plan" [ref=e43] [cursor=pointer]:
+          - /url: /mi-plan
+          - generic [ref=e44]:
+            - img [ref=e46]
+            - generic: Mi Plan
+        - link "Notificaciones" [ref=e49] [cursor=pointer]:
+          - /url: /notificaciones
+          - generic [ref=e50]:
+            - img [ref=e52]
+            - generic: Notificaciones
+        - generic: Sistema
+        - link "Configuracion" [ref=e55] [cursor=pointer]:
+          - /url: /configuracion
+          - generic [ref=e56]:
+            - img [ref=e58]
+            - generic: Configuracion
+      - generic [ref=e64]: SC
+    - main [ref=e65]:
+      - generic [ref=e68]:
+        - generic [ref=e70]:
+          - generic [ref=e72]:
+            - heading "Mi Progreso" [level=1] [ref=e73]:
+              - img [ref=e74]
+              - text: Mi Progreso
+            - paragraph [ref=e77]: Seguí tu evolución sesión a sesión
+          - generic [ref=e78]:
+            - button "Sin datos para exportar" [disabled]:
+              - img
+              - text: Sin datos para exportar
+        - navigation [ref=e82]:
+          - button "Resumen" [ref=e83]:
+            - img [ref=e84]
+            - text: Resumen
+          - button "Fotos" [ref=e87]:
+            - img [ref=e88]
+            - text: Fotos
+          - button "Objetivos" [ref=e91]:
+            - img [ref=e92]
+            - text: Objetivos
+          - button "Gráficos" [ref=e96]:
+            - img [ref=e97]
+            - text: Gráficos
+          - button "Historial" [ref=e99]:
+            - img [ref=e100]
+            - text: Historial
+        - paragraph [ref=e123]: No hay datos de peso para mostrar
+  - region "Notifications alt+T"

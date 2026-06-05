@@ -1,0 +1,79 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e6]:
+        - img [ref=e8]
+        - generic:
+          - generic: NutriFit
+          - generic: Supervisor
+      - button "Expandir" [ref=e14]:
+        - img [ref=e15]
+      - navigation [ref=e17]:
+        - generic: Menu Principal
+        - link "Permisos & Roles" [ref=e18] [cursor=pointer]:
+          - /url: /permisos
+          - generic [ref=e19]:
+            - img [ref=e21]
+            - generic: Permisos & Roles
+        - link "Gimnasios" [ref=e25] [cursor=pointer]:
+          - /url: /admin/gimnasios
+          - generic [ref=e26]:
+            - img [ref=e28]
+            - generic: Gimnasios
+        - generic: Sistema
+        - link "Configuracion" [ref=e32] [cursor=pointer]:
+          - /url: /configuracion
+          - generic [ref=e33]:
+            - img [ref=e35]
+            - generic: Configuracion
+      - generic [ref=e41]: SA
+    - main [ref=e42]:
+      - generic [ref=e45]:
+        - generic [ref=e47]:
+          - heading "Dashboard" [level=1] [ref=e48]:
+            - img [ref=e49]
+            - text: Dashboard
+          - paragraph [ref=e51]: Bienvenido al panel de control. Aqui puedes ver tu informacion de sesion y permisos.
+        - generic [ref=e55]:
+          - generic [ref=e57]:
+            - generic [ref=e58]: Rol Actual
+            - img [ref=e59]
+          - generic [ref=e62]: SUPERADMIN
+        - generic [ref=e63]:
+          - generic [ref=e66]:
+            - img [ref=e67]
+            - text: Mis Permisos
+          - generic [ref=e71]:
+            - generic [ref=e72]: socios.crear
+            - generic [ref=e73]: socios.editar
+            - generic [ref=e74]: socios.eliminar
+            - generic [ref=e75]: socios.ver
+            - generic [ref=e76]: nutricionistas.crear
+            - generic [ref=e77]: nutricionistas.editar
+            - generic [ref=e78]: nutricionistas.eliminar
+            - generic [ref=e79]: nutricionistas.ver
+            - generic [ref=e80]: recepcionistas.crear
+            - generic [ref=e81]: recepcionistas.editar
+            - generic [ref=e82]: recepcionistas.eliminar
+            - generic [ref=e83]: recepcionistas.ver
+            - generic [ref=e84]: turnos.crear
+            - generic [ref=e85]: turnos.editar
+            - generic [ref=e86]: turnos.cancelar
+            - generic [ref=e87]: turnos.ver
+            - generic [ref=e88]: turnos.reservar
+            - generic [ref=e89]: fichas.ver
+            - generic [ref=e90]: fichas.editar
+            - generic [ref=e91]: mi-ficha.ver
+            - generic [ref=e92]: planes.crear
+            - generic [ref=e93]: planes.editar
+            - generic [ref=e94]: planes.ver
+            - generic [ref=e95]: mis-planes.ver
+            - generic [ref=e96]: pacientes.ver
+            - generic [ref=e97]: reportes.generar
+            - generic [ref=e98]: reportes.ver
+            - generic [ref=e99]: gimnasios.crear
+            - generic [ref=e100]: gimnasios.editar
+            - generic [ref=e101]: gimnasios.eliminar
+            - generic [ref=e102]: gimnasios.ver
+            - generic [ref=e103]: gimnasios.impersonar
+  - region "Notifications alt+T"

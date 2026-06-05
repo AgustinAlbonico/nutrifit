@@ -1,0 +1,267 @@
+- generic:
+  - generic:
+    - generic:
+      - complementary:
+        - generic:
+          - generic:
+            - generic:
+              - img
+        - button:
+          - img
+        - navigation:
+          - link:
+            - /url: /dashboard
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /nutricionistas
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /recepcionistas
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /socios
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /permisos
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /turnos-profesional
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /notificaciones
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /admin/auditoria
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /configuracion
+            - generic:
+              - generic:
+                - img
+        - generic:
+          - generic:
+            - generic:
+              - generic: AC
+      - main:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+                      - heading [level=1]: Gestión de Nutricionistas
+                    - paragraph: Administración profesional de altas, bajas y seguimiento del equipo.
+                  - generic:
+                    - button: Refrescar
+                    - button: Nuevo nutricionista
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - paragraph: Buscar
+                      - textbox:
+                        - /placeholder: Nombre, apellido, email, matrícula o DNI
+                    - generic:
+                      - paragraph: Estado
+                      - combobox
+                    - generic:
+                      - paragraph: Provincia
+                      - combobox
+                    - generic:
+                      - paragraph: Ciudad
+                      - combobox
+                    - generic:
+                      - paragraph: Antigüedad
+                      - combobox
+                    - generic:
+                      - paragraph: Orden
+                      - generic:
+                        - combobox
+                        - combobox
+                  - generic:
+                    - paragraph: "Resultados: 1"
+                    - generic:
+                      - combobox
+                      - button: Limpiar filtros
+                  - generic:
+                    - generic:
+                      - table:
+                        - rowgroup:
+                          - row:
+                            - columnheader: Nombre
+                            - columnheader: Matrícula
+                            - columnheader: Email
+                            - columnheader: Exp.
+                            - columnheader: Tarifa
+                            - columnheader: Estado
+                            - columnheader: Acciones
+                        - rowgroup:
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - generic: NC
+                                - generic:
+                                  - paragraph: Nutri Central
+                                  - paragraph: Rosario, Santa Fe
+                            - cell
+                            - cell: nutri-central@nutrifit.com
+                            - cell: 5 años
+                            - cell: $1500.00
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                  - generic:
+                    - paragraph: Mostrando 1 - 1 de 1
+                    - generic:
+                      - button [disabled]: Anterior
+                      - generic: Página 1 de 1
+                      - button [disabled]: Siguiente
+    - region "Notifications alt+T"
+  - dialog "Nuevo nutricionista" [ref=e371]:
+    - generic [ref=e372]:
+      - heading "Nuevo nutricionista" [level=2] [ref=e373]
+      - paragraph [ref=e374]: Completa los datos para registrar un nuevo nutricionista.
+    - generic [ref=e375]:
+      - generic [ref=e376]:
+        - alert [ref=e377]:
+          - img [ref=e378]
+          - generic [ref=e380]: No se pudo crear el nutricionista
+          - generic [ref=e381]: añosExperiencia should not be empty
+        - generic [ref=e382]:
+          - heading "Datos personales" [level=3] [ref=e383]
+          - generic [ref=e384]:
+            - generic [ref=e385]:
+              - generic [ref=e386]:
+                - text: Nombre
+                - generic [ref=e387]: "*"
+              - textbox "Nombre *" [active] [ref=e388]: Nutri
+            - generic [ref=e389]:
+              - generic [ref=e390]:
+                - text: Apellido
+                - generic [ref=e391]: "*"
+              - textbox "Apellido *" [ref=e392]: TestE2E
+            - generic [ref=e393]:
+              - generic [ref=e394]:
+                - text: DNI
+                - generic [ref=e395]: "*"
+              - textbox "DNI *" [ref=e396]: "66666001"
+            - generic [ref=e397]:
+              - generic [ref=e398]:
+                - text: Fecha de nacimiento
+                - generic [ref=e399]: "*"
+              - button "15 de junio de 1990" [ref=e400]:
+                - generic [ref=e401]:
+                  - img
+                  - text: 15 de junio de 1990
+            - generic [ref=e402]:
+              - generic [ref=e403]:
+                - text: Género
+                - generic [ref=e404]: "*"
+              - combobox "Género *" [ref=e405]:
+                - option "Masculino" [selected]
+                - option "Femenino"
+                - option "Otro"
+            - generic [ref=e406]:
+              - generic [ref=e407]:
+                - text: Teléfono
+                - generic [ref=e408]: "*"
+              - textbox "Teléfono *" [ref=e409]: "3415553333"
+        - generic [ref=e410]:
+          - text: Foto de perfil
+          - generic [ref=e412]:
+            - img "Foto de perfil" [ref=e413]
+            - button "Quitar foto de perfil" [ref=e414]:
+              - img
+        - generic [ref=e415]:
+          - heading "Contacto y ubicación" [level=3] [ref=e416]
+          - generic [ref=e417]:
+            - generic [ref=e418]:
+              - generic [ref=e419]:
+                - text: Dirección
+                - generic [ref=e420]: "*"
+              - textbox "Dirección *" [ref=e421]: Calle Nutri 100
+            - generic [ref=e422]:
+              - generic [ref=e423]:
+                - text: Ciudad
+                - generic [ref=e424]: "*"
+              - textbox "Ciudad *" [ref=e425]: Rosario
+            - generic [ref=e426]:
+              - generic [ref=e427]:
+                - text: Provincia
+                - generic [ref=e428]: "*"
+              - textbox "Provincia *" [ref=e429]: Santa Fe
+            - generic [ref=e430]:
+              - generic [ref=e431]:
+                - text: Email
+                - generic [ref=e432]: "*"
+              - textbox "Email *" [ref=e433]: nutri-test-e2e@nutrifit.com
+        - generic [ref=e434]:
+          - heading "Datos profesionales" [level=3] [ref=e435]
+          - generic [ref=e436]:
+            - generic [ref=e437]:
+              - generic [ref=e438]:
+                - text: Matrícula
+                - generic [ref=e439]: "*"
+              - textbox "Matrícula *" [ref=e440]: MN-9999
+            - generic [ref=e441]:
+              - generic [ref=e442]:
+                - text: Años de experiencia
+                - generic [ref=e443]: "*"
+              - spinbutton "Años de experiencia *" [ref=e444]: "5"
+            - generic [ref=e445]:
+              - generic [ref=e446]:
+                - text: Tarifa por sesión
+                - generic [ref=e447]: "*"
+              - spinbutton "Tarifa por sesión *" [ref=e448]: "10000"
+            - generic [ref=e449]:
+              - generic [ref=e450]:
+                - text: Contraseña temporal
+                - generic [ref=e451]: "*"
+              - textbox "Contraseña temporal *" [ref=e452]: Test1234!
+              - generic [ref=e453]:
+                - paragraph [ref=e454]: Seguridad de contraseña
+                - list [ref=e455]:
+                  - listitem [ref=e456]:
+                    - img [ref=e457]
+                    - generic [ref=e460]: Al menos 8 caracteres
+                  - listitem [ref=e461]:
+                    - img [ref=e462]
+                    - generic [ref=e465]: Una letra mayúscula
+                  - listitem [ref=e466]:
+                    - img [ref=e467]
+                    - generic [ref=e470]: Una letra minúscula
+                  - listitem [ref=e471]:
+                    - img [ref=e472]
+                    - generic [ref=e475]: Un número
+                  - listitem [ref=e476]:
+                    - img [ref=e477]
+                    - generic [ref=e480]: Un símbolo especial
+      - generic [ref=e481]:
+        - button "Cancelar" [ref=e482]
+        - button "Crear nutricionista" [ref=e483]
+    - button "Close" [ref=e484]:
+      - img
+      - generic [ref=e485]: Close

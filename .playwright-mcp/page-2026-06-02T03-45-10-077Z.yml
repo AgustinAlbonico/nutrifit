@@ -1,0 +1,115 @@
+- generic [ref=e2]:
+  - generic [ref=e15]:
+    - complementary [ref=e16]:
+      - generic [ref=e18]:
+        - img [ref=e20]
+        - generic:
+          - generic: NutriFit
+          - generic: Supervisor
+      - button "Expandir" [ref=e26]:
+        - img [ref=e27]
+      - navigation [ref=e29]:
+        - generic: Menu Principal
+        - link "Dashboard" [ref=e30] [cursor=pointer]:
+          - /url: /dashboard
+          - generic [ref=e31]:
+            - img [ref=e33]
+            - generic: Dashboard
+        - link "Nutricionistas" [ref=e38] [cursor=pointer]:
+          - /url: /nutricionistas
+          - generic [ref=e39]:
+            - img [ref=e41]
+            - generic: Nutricionistas
+        - link "Socios" [active] [ref=e46] [cursor=pointer]:
+          - /url: /socios
+          - generic [ref=e47]:
+            - img [ref=e49]
+            - generic: Socios
+        - link "Permisos & Roles" [ref=e52] [cursor=pointer]:
+          - /url: /permisos
+          - generic [ref=e53]:
+            - img [ref=e55]
+            - generic: Permisos & Roles
+        - link "Turnos del dia" [ref=e59] [cursor=pointer]:
+          - /url: /turnos-profesional
+          - generic [ref=e60]:
+            - img [ref=e62]
+            - generic: Turnos del dia
+        - link "Notificaciones" [ref=e67] [cursor=pointer]:
+          - /url: /notificaciones
+          - generic [ref=e68]:
+            - img [ref=e70]
+            - generic: Notificaciones
+        - link "Auditoría" [ref=e73] [cursor=pointer]:
+          - /url: /admin/auditoria
+          - generic [ref=e74]:
+            - img [ref=e76]
+            - generic: Auditoría
+        - generic: Sistema
+        - link "Configuracion" [ref=e78] [cursor=pointer]:
+          - /url: /configuracion
+          - generic [ref=e79]:
+            - img [ref=e81]
+            - generic: Configuracion
+      - generic [ref=e87]: AC
+    - main [ref=e88]:
+      - generic [ref=e157]:
+        - generic [ref=e161]:
+          - generic [ref=e162]:
+            - generic [ref=e163]:
+              - img [ref=e164]
+              - heading "Gestión de Socios" [level=1] [ref=e169]
+            - paragraph [ref=e170]: Administración profesional de altas, bajas y seguimiento de socios.
+          - generic [ref=e171]:
+            - button "Refrescar" [ref=e172]
+            - button "Nuevo socio" [ref=e173]
+        - generic [ref=e175]:
+          - generic [ref=e176]:
+            - generic [ref=e177]:
+              - paragraph [ref=e178]: Buscar
+              - textbox "Nombre, apellido, email, DNI o ubicación" [ref=e179]
+            - generic [ref=e180]:
+              - paragraph [ref=e181]: Estado
+              - combobox [ref=e182]:
+                - option "Todos" [selected]
+                - option "Activos"
+                - option "Inactivos"
+            - generic [ref=e183]:
+              - paragraph [ref=e184]: Provincia
+              - combobox [ref=e185]:
+                - option "Todas" [selected]
+            - generic [ref=e186]:
+              - paragraph [ref=e187]: Ciudad
+              - combobox [ref=e188]:
+                - option "Todas" [selected]
+            - generic [ref=e189]:
+              - paragraph [ref=e190]: Orden
+              - generic [ref=e191]:
+                - combobox [ref=e192]:
+                  - option "Nombre" [selected]
+                  - option "Estado"
+                - combobox [ref=e193]:
+                  - option "Asc" [selected]
+                  - option "Desc"
+          - generic [ref=e194]:
+            - paragraph [ref=e195]: "Resultados: 0"
+            - generic [ref=e196]:
+              - combobox [ref=e197]:
+                - option "6 por página"
+                - option "9 por página" [selected]
+                - option "12 por página"
+                - option "18 por página"
+              - button "Limpiar filtros" [ref=e198]
+          - alert [ref=e199]:
+            - img [ref=e200]
+            - generic [ref=e202]: No se pudo cargar el listado
+            - generic [ref=e203]: Ocurrió un error del servidor. Intentá nuevamente en unos minutos.
+          - generic [ref=e204]: No hay socios registrados.
+  - region "Notifications alt+T":
+    - list:
+      - listitem [ref=e205]:
+        - img [ref=e207]
+        - generic [ref=e212]: Ocurrió un error del servidor. Intentá nuevamente en unos minutos.
+      - listitem [ref=e213]:
+        - img [ref=e215]
+        - generic [ref=e220]: Ocurrió un error del servidor. Intentá nuevamente en unos minutos.

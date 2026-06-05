@@ -1,0 +1,66 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e6]:
+        - img [ref=e8]
+        - generic:
+          - generic: NutriFit
+          - generic: Supervisor
+      - button "Expandir" [ref=e14]:
+        - img [ref=e15]
+      - navigation [ref=e17]:
+        - generic: Menu Principal
+        - link "Dashboard" [ref=e18] [cursor=pointer]:
+          - /url: /dashboard
+          - generic [ref=e19]:
+            - img [ref=e21]
+            - generic: Dashboard
+        - link "Mis Turnos" [ref=e26] [cursor=pointer]:
+          - /url: /turnos
+          - generic [ref=e27]:
+            - img [ref=e29]
+            - generic: Mis Turnos
+        - link "Ficha de salud" [ref=e31] [cursor=pointer]:
+          - /url: /turnos/ficha-salud
+          - generic [ref=e32]:
+            - img [ref=e34]
+            - generic: Ficha de salud
+        - link "Mi Progreso" [ref=e37] [cursor=pointer]:
+          - /url: /mi-progreso
+          - generic [ref=e38]:
+            - img [ref=e40]
+            - generic: Mi Progreso
+        - link "Mi Plan" [ref=e43] [cursor=pointer]:
+          - /url: /mi-plan
+          - generic [ref=e44]:
+            - img [ref=e46]
+            - generic: Mi Plan
+        - link "Notificaciones" [ref=e49] [cursor=pointer]:
+          - /url: /notificaciones
+          - generic [ref=e50]:
+            - img [ref=e52]
+            - generic: Notificaciones
+        - generic: Sistema
+        - link "Configuracion" [ref=e55] [cursor=pointer]:
+          - /url: /configuracion
+          - generic [ref=e56]:
+            - img [ref=e58]
+            - generic: Configuracion
+      - generic [ref=e64]: SC
+    - main [ref=e65]:
+      - generic [ref=e68]:
+        - generic [ref=e70]:
+          - generic [ref=e71]:
+            - heading "Mis Turnos" [level=1] [ref=e72]:
+              - img [ref=e73]
+              - text: Mis Turnos
+            - paragraph [ref=e75]: Historial y proximos turnos.
+          - link "Ir a agendar turno" [ref=e76] [cursor=pointer]:
+            - /url: /turnos/agendar
+            - img
+            - text: Ir a agendar turno
+        - generic [ref=e85]: Ocurrió un error del servidor. Intentá nuevamente en unos minutos.
+        - generic [ref=e79]:
+          - generic [ref=e81]: Listado
+          - paragraph [ref=e83]: No tenes turnos registrados.
+  - region "Notifications alt+T"

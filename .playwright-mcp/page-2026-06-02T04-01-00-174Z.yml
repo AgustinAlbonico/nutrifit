@@ -1,0 +1,72 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e6]:
+        - img [ref=e8]
+        - generic:
+          - generic: NutriFit
+          - generic: Supervisor
+      - button "Expandir" [ref=e14]:
+        - img [ref=e15]
+      - navigation [ref=e17]:
+        - generic: Menu Principal
+        - link "Dashboard" [ref=e18] [cursor=pointer]:
+          - /url: /dashboard
+          - generic [ref=e19]:
+            - img [ref=e21]
+            - generic: Dashboard
+        - link "Mi Agenda" [ref=e26] [cursor=pointer]:
+          - /url: /agenda
+          - generic [ref=e27]:
+            - img [ref=e29]
+            - generic: Mi Agenda
+        - link "Turnos del dia" [ref=e31] [cursor=pointer]:
+          - /url: /turnos-profesional
+          - generic [ref=e32]:
+            - img [ref=e34]
+            - generic: Turnos del dia
+        - link "Mis Pacientes" [ref=e39] [cursor=pointer]:
+          - /url: /pacientes
+          - generic [ref=e40]:
+            - img [ref=e42]
+            - generic: Mis Pacientes
+        - link "Planes de Alimentacion" [ref=e45] [cursor=pointer]:
+          - /url: /planes
+          - generic [ref=e46]:
+            - img [ref=e48]
+            - generic: Planes de Alimentacion
+        - link "Notificaciones" [ref=e51] [cursor=pointer]:
+          - /url: /notificaciones
+          - generic [ref=e52]:
+            - img [ref=e54]
+            - generic: Notificaciones
+        - generic: Sistema
+        - link "Configuracion" [ref=e57] [cursor=pointer]:
+          - /url: /configuracion
+          - generic [ref=e58]:
+            - img [ref=e60]
+            - generic: Configuracion
+      - generic [ref=e66]: NC
+    - main [ref=e67]:
+      - generic [ref=e70]:
+        - generic [ref=e72]:
+          - generic [ref=e73]:
+            - heading "Gestión de Turnos" [level=1] [ref=e74]:
+              - img [ref=e75]
+              - text: Gestión de Turnos
+            - paragraph [ref=e77]: Administra la disponibilidad y turnos del día.
+          - generic [ref=e79]:
+            - generic [ref=e80]: Fecha de agenda
+            - button "2 de junio de 2026" [ref=e81]:
+              - generic [ref=e82]:
+                - img
+                - text: 2 de junio de 2026
+        - generic [ref=e85]:
+          - generic [ref=e88]:
+            - img [ref=e89]
+            - text: Agenda del 02/06/2026
+          - generic [ref=e92]:
+            - img [ref=e97]
+            - heading "Sin turnos disponibles" [level=3] [ref=e101]
+            - paragraph [ref=e102]: No hay horarios configurados o disponibles para este día. Asegúrate de revisar tu configuración de agenda semanal.
+  - region "Notifications alt+T"

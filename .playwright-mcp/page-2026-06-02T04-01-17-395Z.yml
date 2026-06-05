@@ -1,0 +1,54 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e6]:
+        - img [ref=e8]
+        - generic:
+          - generic: NutriFit
+          - generic: Supervisor
+      - button "Expandir" [ref=e14]:
+        - img [ref=e15]
+      - navigation [ref=e17]:
+        - generic: Menu Principal
+        - link "Dashboard" [ref=e18] [cursor=pointer]:
+          - /url: /dashboard
+          - generic [ref=e19]:
+            - img [ref=e21]
+            - generic: Dashboard
+        - link "Mi Agenda" [ref=e26] [cursor=pointer]:
+          - /url: /agenda
+          - generic [ref=e27]:
+            - img [ref=e29]
+            - generic: Mi Agenda
+        - link "Turnos del dia" [ref=e31] [cursor=pointer]:
+          - /url: /turnos-profesional
+          - generic [ref=e32]:
+            - img [ref=e34]
+            - generic: Turnos del dia
+        - link "Mis Pacientes" [ref=e39] [cursor=pointer]:
+          - /url: /pacientes
+          - generic [ref=e40]:
+            - img [ref=e42]
+            - generic: Mis Pacientes
+        - link "Planes de Alimentacion" [ref=e45] [cursor=pointer]:
+          - /url: /planes
+          - generic [ref=e46]:
+            - img [ref=e48]
+            - generic: Planes de Alimentacion
+        - link "Notificaciones" [ref=e51] [cursor=pointer]:
+          - /url: /notificaciones
+          - generic [ref=e52]:
+            - img [ref=e54]
+            - generic: Notificaciones
+        - generic: Sistema
+        - link "Configuracion" [ref=e57] [cursor=pointer]:
+          - /url: /configuracion
+          - generic [ref=e58]:
+            - img [ref=e60]
+            - generic: Configuracion
+      - generic [ref=e66]: NC
+    - main [ref=e67]:
+      - generic [ref=e71]:
+        - heading "Notificaciones" [level=1] [ref=e72]
+        - paragraph [ref=e73]: No tenés notificaciones.
+  - region "Notifications alt+T"

@@ -1,0 +1,39 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e6]:
+        - img [ref=e8]
+        - generic:
+          - generic: NutriFit
+          - generic: Supervisor
+      - button "Expandir" [ref=e14]:
+        - img [ref=e15]
+      - navigation [ref=e17]:
+        - generic: Menu Principal
+        - link "Permisos & Roles" [ref=e111] [cursor=pointer]:
+          - /url: /permisos
+          - generic [ref=e112]:
+            - img [ref=e114]
+            - generic: Permisos & Roles
+        - link "Gimnasios" [ref=e118] [cursor=pointer]:
+          - /url: /admin/gimnasios
+          - generic [ref=e119]:
+            - img [ref=e121]
+            - generic: Gimnasios
+        - generic: Sistema
+        - link "Configuracion" [ref=e125] [cursor=pointer]:
+          - /url: /configuracion
+          - generic [ref=e126]:
+            - img [ref=e128]
+            - generic: Configuracion
+      - generic [ref=e41]: SA
+    - main [ref=e42]:
+      - generic [ref=e45]:
+        - img [ref=e131]
+        - heading "Error al cargar gimnasios" [level=3] [ref=e133]
+        - paragraph [ref=e134]: No tenés permisos para realizar esta acción.
+  - region "Notifications alt+T":
+    - list:
+      - listitem [ref=e135]:
+        - img [ref=e137]
+        - generic [ref=e141]: Ahora operás como ADMIN de "Gym Central"

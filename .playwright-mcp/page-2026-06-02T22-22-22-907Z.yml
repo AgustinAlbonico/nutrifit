@@ -1,0 +1,265 @@
+- generic:
+  - generic:
+    - generic:
+      - complementary:
+        - generic:
+          - generic:
+            - generic:
+              - img
+        - button:
+          - img
+        - navigation:
+          - link:
+            - /url: /dashboard
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /nutricionistas
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /recepcionistas
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /socios
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /permisos
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /turnos-profesional
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /notificaciones
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /admin/auditoria
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /configuracion
+            - generic:
+              - generic:
+                - img
+        - generic:
+          - generic:
+            - generic:
+              - generic: AC
+      - main:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+                      - heading [level=1]: Gestión de Socios
+                    - paragraph: Administración profesional de altas, bajas y seguimiento de socios.
+                  - generic:
+                    - button: Refrescar
+                    - button: Nuevo socio
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - paragraph: Buscar
+                      - textbox:
+                        - /placeholder: Nombre, apellido, email, DNI o ubicación
+                    - generic:
+                      - paragraph: Estado
+                      - combobox
+                    - generic:
+                      - paragraph: Provincia
+                      - combobox
+                    - generic:
+                      - paragraph: Ciudad
+                      - combobox
+                    - generic:
+                      - paragraph: Orden
+                      - generic:
+                        - combobox
+                        - combobox
+                  - generic:
+                    - paragraph: "Resultados: 5"
+                    - generic:
+                      - combobox
+                      - button: Limpiar filtros
+                  - generic:
+                    - generic:
+                      - table:
+                        - rowgroup:
+                          - row:
+                            - columnheader: Nombre
+                            - columnheader: Email
+                            - columnheader: Teléfono
+                            - columnheader: Ubicación
+                            - columnheader: Estado
+                            - columnheader: Acciones
+                        - rowgroup:
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - img
+                                - generic:
+                                  - paragraph: Agustín Albónico
+                                  - paragraph: "DNI: 12312312"
+                            - cell: agusalbo2024@gmail.com
+                            - cell: "123123123"
+                            - cell:
+                              - paragraph: Rosario
+                              - paragraph: Santa Fe
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - generic: SC
+                                - generic:
+                                  - paragraph: Socio1 Central
+                                  - paragraph: "DNI: 50001001"
+                            - cell: socio1-central@nutrifit.com
+                            - cell: "0000000000"
+                            - cell:
+                              - paragraph: Rosario
+                              - paragraph: Santa Fe
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - generic: SC
+                                - generic:
+                                  - paragraph: Socio2 Central
+                                  - paragraph: "DNI: 50001002"
+                            - cell: socio2-central@nutrifit.com
+                            - cell: "0000000000"
+                            - cell:
+                              - paragraph: Rosario
+                              - paragraph: Santa Fe
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - generic: SC
+                                - generic:
+                                  - paragraph: Socio3 Central
+                                  - paragraph: "DNI: 50001003"
+                            - cell: socio3-central@nutrifit.com
+                            - cell: "0000000000"
+                            - cell:
+                              - paragraph: Rosario
+                              - paragraph: Santa Fe
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - img
+                                - generic:
+                                  - paragraph: Socio TestE2E
+                                  - paragraph: "DNI: 77777001"
+                            - cell: socio-test-e2e@nutrifit.com
+                            - cell: "3415552222"
+                            - cell:
+                              - paragraph: Rosario
+                              - paragraph: Santa Fe
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                  - generic:
+                    - paragraph: Mostrando 1 - 5 de 5
+                    - generic:
+                      - button [disabled]: Anterior
+                      - generic: Página 1 de 1
+                      - button [disabled]: Siguiente
+    - region "Notifications alt+T"
+  - dialog "Detalles del Socio" [ref=e290]:
+    - generic [ref=e291]:
+      - heading "Detalles del Socio" [level=2] [ref=e292]
+      - paragraph [ref=e293]: Información personal y de contacto del socio seleccionado.
+    - generic [ref=e294]:
+      - generic [ref=e296]:
+        - generic [ref=e297]:
+          - generic [ref=e298]:
+            - img "Agustín Albónico" [ref=e300]
+            - button "Maximizar foto de Agustín Albónico" [active] [ref=e301]:
+              - img
+          - generic [ref=e302]:
+            - heading "Agustín Albónico" [level=3] [ref=e303]
+            - paragraph [ref=e304]: agusalbo2024@gmail.com
+        - generic [ref=e305]:
+          - generic [ref=e306]: Activo
+          - generic [ref=e307]: DNI 12312312
+      - generic [ref=e308]:
+        - generic [ref=e309]:
+          - heading "Datos personales" [level=4] [ref=e310]
+          - generic [ref=e311]:
+            - generic [ref=e312]:
+              - paragraph [ref=e313]: Fecha de nacimiento
+              - paragraph [ref=e314]: 01/06/2010
+            - generic [ref=e315]:
+              - paragraph [ref=e316]: Género
+              - paragraph [ref=e317]: masculino
+            - generic [ref=e318]:
+              - paragraph [ref=e319]: Teléfono
+              - paragraph [ref=e320]: "123123123"
+        - generic [ref=e321]:
+          - heading "Ubicación" [level=4] [ref=e322]
+          - generic [ref=e323]:
+            - generic [ref=e324]:
+              - paragraph [ref=e325]: Dirección
+              - paragraph [ref=e326]: Montevideo 1858
+            - generic [ref=e327]:
+              - paragraph [ref=e328]: Ciudad
+              - paragraph [ref=e329]: Rosario
+            - generic [ref=e330]:
+              - paragraph [ref=e331]: Provincia
+              - paragraph [ref=e332]: Santa Fe
+    - button "Cerrar" [ref=e334]
+    - button "Close" [ref=e335]:
+      - img
+      - generic [ref=e336]: Close

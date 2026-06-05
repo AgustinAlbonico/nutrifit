@@ -1,0 +1,112 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e6]:
+        - img [ref=e8]
+        - generic:
+          - generic: NutriFit
+          - generic: Supervisor
+      - button "Expandir" [ref=e14]:
+        - img [ref=e15]
+      - navigation [ref=e17]:
+        - generic: Menu Principal
+        - link "Dashboard" [ref=e18] [cursor=pointer]:
+          - /url: /dashboard
+          - generic [ref=e19]:
+            - img [ref=e21]
+            - generic: Dashboard
+        - link "Nutricionistas" [ref=e26] [cursor=pointer]:
+          - /url: /nutricionistas
+          - generic [ref=e27]:
+            - img [ref=e29]
+            - generic: Nutricionistas
+        - link "Socios" [ref=e34] [cursor=pointer]:
+          - /url: /socios
+          - generic [ref=e35]:
+            - img [ref=e37]
+            - generic: Socios
+        - link "Permisos & Roles" [ref=e40] [cursor=pointer]:
+          - /url: /permisos
+          - generic [ref=e41]:
+            - img [ref=e43]
+            - generic: Permisos & Roles
+        - link "Turnos del dia" [ref=e47] [cursor=pointer]:
+          - /url: /turnos-profesional
+          - generic [ref=e48]:
+            - img [ref=e50]
+            - generic: Turnos del dia
+        - link "Notificaciones" [ref=e55] [cursor=pointer]:
+          - /url: /notificaciones
+          - generic [ref=e56]:
+            - img [ref=e58]
+            - generic: Notificaciones
+        - link "Auditoría" [ref=e61] [cursor=pointer]:
+          - /url: /admin/auditoria
+          - generic [ref=e62]:
+            - img [ref=e64]
+            - generic: Auditoría
+        - generic: Sistema
+        - link "Configuracion" [ref=e66] [cursor=pointer]:
+          - /url: /configuracion
+          - generic [ref=e67]:
+            - img [ref=e69]
+            - generic: Configuracion
+      - generic [ref=e75]: AC
+    - main [ref=e76]:
+      - generic [ref=e79]:
+        - generic [ref=e83]:
+          - generic [ref=e84]:
+            - generic [ref=e85]:
+              - img [ref=e86]
+              - heading "Gestión de Nutricionistas" [level=1] [ref=e91]
+            - paragraph [ref=e92]: Administración profesional de altas, bajas y seguimiento del equipo.
+          - generic [ref=e93]:
+            - button "Refrescar" [disabled]
+            - button "Nuevo nutricionista" [ref=e94]
+        - generic [ref=e96]:
+          - generic [ref=e97]:
+            - generic [ref=e98]:
+              - paragraph [ref=e99]: Buscar
+              - textbox "Nombre, apellido, email, matrícula o DNI" [ref=e100]
+            - generic [ref=e101]:
+              - paragraph [ref=e102]: Estado
+              - combobox [ref=e103]:
+                - option "Todos" [selected]
+                - option "Activos"
+                - option "Inactivos"
+            - generic [ref=e104]:
+              - paragraph [ref=e105]: Provincia
+              - combobox [ref=e106]:
+                - option "Todas" [selected]
+            - generic [ref=e107]:
+              - paragraph [ref=e108]: Ciudad
+              - combobox [ref=e109]:
+                - option "Todas" [selected]
+            - generic [ref=e110]:
+              - paragraph [ref=e111]: Antigüedad
+              - combobox [ref=e112]:
+                - option "Todas" [selected]
+                - option "0 a 2 años"
+                - option "3 a 5 años"
+                - option "6 a 10 años"
+                - option "11+ años"
+            - generic [ref=e113]:
+              - paragraph [ref=e114]: Orden
+              - generic [ref=e115]:
+                - combobox [ref=e116]:
+                  - option "Nombre" [selected]
+                  - option "Estado"
+                  - option "Experiencia"
+                - combobox [ref=e117]:
+                  - option "Asc" [selected]
+                  - option "Desc"
+          - generic [ref=e118]:
+            - paragraph [ref=e119]: "Resultados: 0"
+            - generic [ref=e120]:
+              - combobox [ref=e121]:
+                - option "6 por página"
+                - option "9 por página" [selected]
+                - option "12 por página"
+                - option "18 por página"
+              - button "Limpiar filtros" [ref=e122]
+  - region "Notifications alt+T"

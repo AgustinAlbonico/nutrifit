@@ -1,0 +1,318 @@
+- generic:
+  - generic:
+    - generic:
+      - complementary:
+        - generic:
+          - generic:
+            - generic:
+              - img
+        - button:
+          - img
+        - navigation:
+          - link:
+            - /url: /dashboard
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /nutricionistas
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /recepcionistas
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /socios
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /permisos
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /turnos-profesional
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /notificaciones
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /admin/auditoria
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /configuracion
+            - generic:
+              - generic:
+                - img
+        - generic:
+          - generic:
+            - generic:
+              - generic: AC
+      - main:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+                      - heading [level=1]: Gestión de Socios
+                    - paragraph: Administración profesional de altas, bajas y seguimiento de socios.
+                  - generic:
+                    - button: Refrescar
+                    - button: Nuevo socio
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - paragraph: Buscar
+                      - textbox:
+                        - /placeholder: Nombre, apellido, email, DNI o ubicación
+                    - generic:
+                      - paragraph: Estado
+                      - combobox
+                    - generic:
+                      - paragraph: Provincia
+                      - combobox
+                    - generic:
+                      - paragraph: Ciudad
+                      - combobox
+                    - generic:
+                      - paragraph: Orden
+                      - generic:
+                        - combobox
+                        - combobox
+                  - generic:
+                    - paragraph: "Resultados: 3"
+                    - generic:
+                      - combobox
+                      - button: Limpiar filtros
+                  - generic:
+                    - generic:
+                      - table:
+                        - rowgroup:
+                          - row:
+                            - columnheader: Nombre
+                            - columnheader: Email
+                            - columnheader: Teléfono
+                            - columnheader: Ubicación
+                            - columnheader: Estado
+                            - columnheader: Acciones
+                        - rowgroup:
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - generic: SC
+                                - generic:
+                                  - paragraph: Socio1 Central
+                                  - paragraph: "DNI: 50001001"
+                            - cell: socio1-central@nutrifit.com
+                            - cell: "0000000000"
+                            - cell:
+                              - paragraph: Rosario
+                              - paragraph: Santa Fe
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - generic: SC
+                                - generic:
+                                  - paragraph: Socio2 Central
+                                  - paragraph: "DNI: 50001002"
+                            - cell: socio2-central@nutrifit.com
+                            - cell: "0000000000"
+                            - cell:
+                              - paragraph: Rosario
+                              - paragraph: Santa Fe
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - generic: SC
+                                - generic:
+                                  - paragraph: Socio3 Central
+                                  - paragraph: "DNI: 50001003"
+                            - cell: socio3-central@nutrifit.com
+                            - cell: "0000000000"
+                            - cell:
+                              - paragraph: Rosario
+                              - paragraph: Santa Fe
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                  - generic:
+                    - paragraph: Mostrando 1 - 3 de 3
+                    - generic:
+                      - button [disabled]: Anterior
+                      - generic: Página 1 de 1
+                      - button [disabled]: Siguiente
+    - region "Notifications alt+T"
+  - dialog:
+    - generic:
+      - heading [level=2]: Nuevo socio
+      - paragraph: Completa los datos para registrar un nuevo socio.
+    - generic:
+      - generic:
+        - generic:
+          - heading [level=3]: Datos personales
+          - generic:
+            - generic:
+              - generic:
+                - text: Nombre
+                - generic: "*"
+              - textbox: Socio
+            - generic:
+              - generic:
+                - text: Apellido
+                - generic: "*"
+              - textbox: TestE2E
+            - generic:
+              - generic:
+                - text: DNI
+                - generic: "*"
+              - textbox: "77777001"
+            - generic:
+              - generic:
+                - text: Fecha de nacimiento
+                - generic: "*"
+              - button:
+                - generic:
+                  - img
+                  - generic: Seleccionar fecha
+            - generic:
+              - generic:
+                - text: Género
+                - generic: "*"
+              - combobox
+            - generic:
+              - generic:
+                - text: Teléfono
+                - generic: "*"
+              - textbox: "3415552222"
+        - generic:
+          - heading [level=3]: Foto de perfil
+          - generic:
+            - generic:
+              - generic:
+                - text: Foto del Socio
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+                    - generic:
+                      - paragraph: Arrastrá una imagen aquí o
+                      - button: Seleccionar archivo
+        - generic:
+          - heading [level=3]: Contacto y ubicación
+          - generic:
+            - generic:
+              - generic:
+                - text: Dirección
+                - generic: "*"
+              - textbox: Calle Test 500
+            - generic:
+              - generic:
+                - text: Ciudad
+                - generic: "*"
+              - textbox: Rosario
+            - generic:
+              - generic:
+                - text: Provincia
+                - generic: "*"
+              - textbox: Santa Fe
+            - generic:
+              - generic:
+                - text: Email
+                - generic: "*"
+              - textbox: socio-test-e2e@nutrifit.com
+        - generic:
+          - heading [level=3]: Seguridad
+          - generic:
+            - generic:
+              - generic:
+                - text: Contraseña temporal
+                - generic: "*"
+              - textbox: Test1234!
+              - generic:
+                - paragraph: Seguridad de contraseña
+                - list:
+                  - listitem:
+                    - img
+                    - generic: Al menos 8 caracteres
+                  - listitem:
+                    - img
+                    - generic: Una letra mayúscula
+                  - listitem:
+                    - img
+                    - generic: Una letra minúscula
+                  - listitem:
+                    - img
+                    - generic: Un número
+                  - listitem:
+                    - img
+                    - generic: Un símbolo especial
+      - generic:
+        - button: Cancelar
+        - button: Crear socio
+    - button:
+      - img
+      - generic: Close
+  - dialog "Ajustar foto de perfil" [ref=e359]:
+    - generic [ref=e360]:
+      - heading "Ajustar foto de perfil" [level=2] [ref=e361]
+      - paragraph [ref=e362]: Ajustá el zoom y mové la imagen antes de guardar.
+    - generic [ref=e363]:
+      - img "Vista previa de imagen" [ref=e365]
+      - generic [ref=e366]:
+        - generic [ref=e367]:
+          - generic [ref=e368]:
+            - img [ref=e369]
+            - text: Alejar
+          - generic [ref=e372]: 100%
+          - generic [ref=e373]:
+            - text: Acercar
+            - img [ref=e374]
+        - slider [active] [ref=e377]: "1"
+        - generic [ref=e378]:
+          - paragraph [ref=e379]:
+            - img [ref=e380]
+            - text: Aumentá el zoom para poder mover la imagen.
+          - button "Recentrar" [ref=e385]:
+            - img
+            - text: Recentrar
+    - generic [ref=e386]:
+      - button "Cancelar" [ref=e387]
+      - button "Guardar imagen" [ref=e388]
+    - button "Close" [ref=e389]:
+      - img
+      - generic [ref=e390]: Close

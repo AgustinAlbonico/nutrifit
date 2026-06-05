@@ -1,0 +1,74 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e6]:
+        - img [ref=e8]
+        - generic:
+          - generic: NutriFit
+          - generic: Supervisor
+      - button "Expandir" [ref=e14]:
+        - img [ref=e15]
+      - navigation [ref=e17]:
+        - generic: Menu Principal
+        - link "Dashboard" [ref=e18] [cursor=pointer]:
+          - /url: /dashboard
+          - generic [ref=e19]:
+            - img [ref=e21]
+            - generic: Dashboard
+        - link "Mis Turnos" [ref=e26] [cursor=pointer]:
+          - /url: /turnos
+          - generic [ref=e27]:
+            - img [ref=e29]
+            - generic: Mis Turnos
+        - link "Ficha de salud" [ref=e31] [cursor=pointer]:
+          - /url: /turnos/ficha-salud
+          - generic [ref=e32]:
+            - img [ref=e34]
+            - generic: Ficha de salud
+        - link "Mi Progreso" [ref=e37] [cursor=pointer]:
+          - /url: /mi-progreso
+          - generic [ref=e38]:
+            - img [ref=e40]
+            - generic: Mi Progreso
+        - link "Mi Plan" [ref=e43] [cursor=pointer]:
+          - /url: /mi-plan
+          - generic [ref=e44]:
+            - img [ref=e46]
+            - generic: Mi Plan
+        - link "Notificaciones" [ref=e49] [cursor=pointer]:
+          - /url: /notificaciones
+          - generic [ref=e50]:
+            - img [ref=e52]
+            - generic: Notificaciones
+        - generic: Sistema
+        - link "Configuracion" [ref=e55] [cursor=pointer]:
+          - /url: /configuracion
+          - generic [ref=e56]:
+            - img [ref=e58]
+            - generic: Configuracion
+      - generic [ref=e64]: SC
+    - main [ref=e65]:
+      - generic [ref=e68]:
+        - generic [ref=e71]:
+          - heading "Configuración" [level=1] [ref=e72]:
+            - img [ref=e73]
+            - text: Configuración
+          - paragraph [ref=e76]: Preferencias y datos de la cuenta.
+        - generic [ref=e80]:
+          - generic [ref=e81]:
+            - generic [ref=e82]:
+              - img [ref=e83]
+              - text: Seguridad
+            - generic [ref=e86]: Actualizá tu contraseña para mantener tu cuenta segura.
+          - generic [ref=e88]:
+            - generic [ref=e89]:
+              - generic [ref=e90]: Contraseña actual
+              - textbox "Contraseña actual" [ref=e91]
+            - generic [ref=e92]:
+              - generic [ref=e93]: Nueva contraseña
+              - textbox "Nueva contraseña" [ref=e94]
+            - generic [ref=e95]:
+              - generic [ref=e96]: Confirmar nueva contraseña
+              - textbox "Confirmar nueva contraseña" [ref=e97]
+            - button "Guardar cambios" [ref=e98]
+  - region "Notifications alt+T"
