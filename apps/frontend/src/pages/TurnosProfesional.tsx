@@ -63,101 +63,17 @@ export function TurnosProfesional() {
   const esNutricionista = rol === 'NUTRICIONISTA';
   const esAdmin = rol === 'ADMIN';
 
-  const [fechaSeleccionada, setFechaSeleccionada] = useState<Date | undefined>(
-    new Date(),
-  );
+  const [fechaReferencia] = useState<Date>(() => new Date());
   const [turnos, setTurnos] = useState<TurnoDelDia[]>([]);
   const [cargando, setCargando] = useState(false);
   const [procesando, setProcesando] = useState<string | null>(null);
-
-  const [nutricionistas, setNutricionistas] = useState<NutricionistaListado[]>([]);
-  const [nutricionistaSeleccionadoId, setNutricionistaSeleccionadoId] = useState<
-    number | null
-  >(null);
-  const [cargandoNutricionistas, setCargandoNutricionistas] = useState(false);
-
-  // Estado para el modal de asignar turno
-  const [modalAsignarOpen, setModalAsignarOpen] = useState(false);
-  const [horaSeleccionadaModal, setHoraSeleccionadaModal] = useState<string>('');
 
   // Estado para el modal de marcar ausente manual
   const [modalAusenteOpen, setModalAusenteOpen] = useState(false);
   const [turnoIdAusente, setTurnoIdAusente] = useState<number | null>(null);
 
-  const fecha = format(fechaSeleccionada ?? new Date(), 'yyyy-MM-dd');
-
-  const nutricionistaSeleccionado = useMemo(() => {
-    if (!nutricionistaSeleccionadoId) {
-      return null;
-    }
-
-    return (
-      nutricionistas.find(
-        (nutricionista) => nutricionista.idPersona === nutricionistaSeleccionadoId,
-      ) ?? null
-    );
-  }, [nutricionistas, nutricionistaSeleccionadoId]);
-
-  const cargarNutricionistas = useCallback(async () => {
-    if (!token || !esAdmin) {
-      return;
-    }
-
-    try {
-      setCargandoNutricionistas(true);
-
-      const response = await apiRequest<ApiResponse<NutricionistaListado[]>>(
-        '/profesional',
-        { token },
-      );
-
-      const nutricionistasActivos = (response.data ?? []).filter(
-        (nutricionista) => nutricionista.activo,
-      );
-
-      setNutricionistas(nutricionistasActivos);
-
-      setNutricionistaSeleccionadoId((valorActual) => {
-        if (
-          valorActual &&
-          nutricionistasActivos.some(
-            (nutricionista) => nutricionista.idPersona === valorActual,
-          )
-        ) {
-          return valorActual;
-        }
-
-        return nutricionistasActivos[0]?.idPersona ?? null;
-      });
-    } catch {
-      toast.error('No se pudo cargar la lista de nutricionistas.');
-      setNutricionistas([]);
-      setNutricionistaSeleccionadoId(null);
-    } finally {
-      setCargandoNutricionistas(false);
-    }
-  }, [token, esAdmin]);
-
-  useEffect(() => {
-    if (!esAdmin) {
-      setNutricionistas([]);
-      setNutricionistaSeleccionadoId(null);
-      return;
-    }
-
-    void cargarNutricionistas();
-  }, [esAdmin, cargarNutricionistas]);
-
   const cargarAgenda = useCallback(async () => {
-    if (!token) {
-      return;
-    }
-
-    const profesionalId = esNutricionista
-      ? personaId
-      : nutricionistaSeleccionadoId;
-
-    if (!profesionalId) {
+    if (!token || !esNutricionista || !personaId) {
       setTurnos([]);
       return;
     }
@@ -165,24 +81,12 @@ export function TurnosProfesional() {
     try {
       setCargando(true);
 
-      // Nutricionista usa /hoy (agenda del dia, devuelve turnos con
-      // metadata clinica: fichaActualizada, consultaId). Admin sigue
-      // con /disponibilidad porque tiene selector de fecha.
-      const ruta = esAdmin
-        ? `/turnos/admin/profesional/${profesionalId}/disponibilidad?fecha=${fecha}`
-        : `/turnos/profesional/${profesionalId}/hoy`;
-
-      if (esAdmin) {
-        // Para admin, mantenemos la shape AgendaSlot por ahora; este path
-        // se reescribe en PR #2 (admin-today endpoint). Por seguridad
-        // reseteamos para no renderizar shape incompatible.
-        setTurnos([]);
-        return;
-      }
-
-      const response = await apiRequest<ApiResponse<TurnoDelDia[]>>(ruta, {
-        token,
-      });
+      // El endpoint /hoy devuelve los turnos del nutricionista para el
+      // dia actual, ya con metadata clinica: fichaActualizada, consultaId.
+      const response = await apiRequest<ApiResponse<TurnoDelDia[]>>(
+        `/turnos/profesional/${personaId}/hoy`,
+        { token },
+      );
 
       setTurnos(response.data ?? []);
     } catch {
@@ -191,7 +95,7 @@ export function TurnosProfesional() {
     } finally {
       setCargando(false);
     }
-  }, [token, esNutricionista, personaId, nutricionistaSeleccionadoId, esAdmin, fecha]);
+  }, [token, esNutricionista, personaId]);
 
   useEffect(() => {
     void cargarAgenda();
@@ -291,7 +195,7 @@ export function TurnosProfesional() {
               Mi Agenda de Hoy
             </h1>
             <p className="mt-2 text-muted-foreground max-w-2xl text-base">
-              Turnos del {format(fechaSeleccionada ?? new Date(), 'dd/MM/yyyy')}.
+              Turnos del {format(fechaReferencia, 'dd/MM/yyyy')}.
               Gestioná la asistencia y abrí cada consulta desde acá.
             </p>
           </div>
