@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
-  ListProfesionalesPublicQueryDto,
+  CatalogoProfesionalResponseDto,
   ProfesionalPublicoResponseDto,
 } from 'src/application/profesionales/dtos';
 import { BaseUseCase } from 'src/application/shared/use-case.base';
@@ -12,6 +12,12 @@ import {
   APP_LOGGER_SERVICE,
   IAppLoggerService,
 } from 'src/domain/services/logger.service';
+import {
+  ListProfesionalesPublicQueryDto,
+  SortCatalogo,
+} from 'src/application/profesionales/dtos/list-profesionales-public-query.dto';
+import { SlotComputationService } from 'src/application/turnos/services/slot-computation.service';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 @Injectable()
 export class ListProfesionalesPublicosUseCase implements BaseUseCase {
@@ -20,52 +26,127 @@ export class ListProfesionalesPublicosUseCase implements BaseUseCase {
     private readonly nutricionistaRepository: NutricionistaRepository,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
+    private readonly slotComputation: SlotComputationService,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(
     query: ListProfesionalesPublicQueryDto,
-  ): Promise<ProfesionalPublicoResponseDto[]> {
+  ): Promise<CatalogoProfesionalResponseDto> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 12;
+    const sort: SortCatalogo = query.sort ?? 'nombre';
+
+    // RB25: la list ya viene filtrada por gimnasioId desde el repository
     const nutricionistas = await this.nutricionistaRepository.findAll();
 
-    const normalizedNombre = query.nombre?.trim().toLowerCase();
-    const normalizedEspecialidad = query.especialidad?.trim().toLowerCase();
+    // RB17: solo activos (proxy: !fechaBaja)
+    const activos = nutricionistas.filter((n) => !n.fechaBaja);
 
-    const profesionalesActivos = nutricionistas
-      .filter((nutricionista) => !nutricionista.fechaBaja)
-      .filter((nutricionista) => {
-        if (!normalizedNombre) {
-          return true;
+    // Calcular slotsProximos7Dias por nutricionista en paralelo
+    const itemsConSlots = await Promise.all(
+      activos.map(async (nutri) => {
+        let slots = 0;
+        try {
+          slots = await this.slotComputation.contarSlotsProximos(
+            nutri.idPersona ?? 0,
+            7,
+          );
+        } catch (err) {
+          this.logger.warn(
+            `No se pudieron calcular slots para nutricionista ${nutri.idPersona}: ${
+              err instanceof Error ? err.message : 'error desconocido'
+            }`,
+          );
         }
-
-        const fullName = `${nutricionista.nombre} ${nutricionista.apellido}`
-          .trim()
-          .toLowerCase();
-
-        return fullName.includes(normalizedNombre);
-      })
-      .filter(() => {
-        if (!normalizedEspecialidad) {
-          return true;
-        }
-
-        return 'nutricionista'.includes(normalizedEspecialidad);
-      });
-
-    this.logger.log(
-      `Listado publico de profesionales recuperado: ${profesionalesActivos.length} resultados.`,
+        return { nutri, slots };
+      }),
     );
 
-    return profesionalesActivos.map((nutricionista) => {
-      const response = new ProfesionalPublicoResponseDto();
-      response.idPersona = nutricionista.idPersona ?? 0;
-      response.nombre = nutricionista.nombre;
-      response.apellido = nutricionista.apellido;
-      response.especialidad = 'Nutricionista';
-      response.ciudad = nutricionista.ciudad;
-      response.provincia = nutricionista.provincia;
-      response.añosExperiencia = nutricionista.añosExperiencia;
-      response.tarifaSesion = nutricionista.tarifaSesion;
-      return response;
+    // Filtros
+    let filtrados = itemsConSlots;
+
+    if (query.nombre?.trim()) {
+      const termino = query.nombre.trim().toLowerCase();
+      filtrados = filtrados.filter(({ nutri }) => {
+        const fullName =
+          `${nutri.nombre} ${nutri.apellido}`.trim().toLowerCase();
+        return fullName.includes(termino);
+      });
+    }
+
+    if (query.especialidad?.trim()) {
+      const termino = query.especialidad.trim().toLowerCase();
+      filtrados = filtrados.filter(() =>
+        'nutricionista'.includes(termino),
+      );
+    }
+
+    if (query.disponible === true) {
+      filtrados = filtrados.filter((x) => x.slots > 0);
+    }
+
+    // Sort
+    filtrados.sort((a, b) => {
+      if (sort === 'disponible') {
+        return b.slots - a.slots;
+      }
+      if (sort === 'recientes') {
+        return (b.nutri.idPersona ?? 0) - (a.nutri.idPersona ?? 0);
+      }
+      // 'nombre' (default)
+      const nombreA = `${a.nutri.apellido} ${a.nutri.nombre}`.toLowerCase();
+      const nombreB = `${b.nutri.apellido} ${b.nutri.nombre}`.toLowerCase();
+      return nombreA.localeCompare(nombreB);
     });
+
+    const total = filtrados.length;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const offset = (page - 1) * limit;
+    const pageItems = filtrados.slice(offset, offset + limit);
+
+    this.logger.log(
+      `Listado publico de profesionales: ${total} resultados, página ${page}/${totalPages}.`,
+    );
+
+    const items: ProfesionalPublicoResponseDto[] = pageItems.map(
+      ({ nutri, slots }) => {
+        const duracionTurnoMin =
+          nutri.agendas && nutri.agendas.length > 0
+            ? nutri.agendas[0].duracionTurno
+            : 30;
+        const fotoUrl = this.construirFotoUrl(nutri.idPersona, nutri.fotoPerfilKey);
+        const dto = new ProfesionalPublicoResponseDto();
+        dto.idPersona = nutri.idPersona ?? 0;
+        dto.nombre = nutri.nombre;
+        dto.apellido = nutri.apellido;
+        dto.especialidad = 'Nutricionista';
+        dto.ciudad = nutri.ciudad;
+        dto.provincia = nutri.provincia;
+        dto.añosExperiencia = nutri.añosExperiencia;
+        dto.tarifaSesion = nutri.tarifaSesion;
+        dto.fotoUrl = fotoUrl;
+        dto.presentacion = nutri.presentacion ?? null;
+        dto.duracionTurnoMin = duracionTurnoMin;
+        dto.slotsProximos7Dias = slots;
+        return dto;
+      },
+    );
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+      totalPages,
+    };
+  }
+
+  private construirFotoUrl(
+    idPersona: number | null,
+    fotoPerfilKey: string | null,
+  ): string | null {
+    if (!fotoPerfilKey) return null;
+    return `/api/profesional/${idPersona ?? 0}/foto?v=${encodeURIComponent(fotoPerfilKey)}`;
   }
 }

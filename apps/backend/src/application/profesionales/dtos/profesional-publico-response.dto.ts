@@ -7,6 +7,12 @@ export class HorarioProfesionalPublicoDto {
   duracionTurno: number;
 }
 
+export class FormacionAcademicaPublicaDto {
+  titulo: string;
+  institucion: string;
+  anio: number;
+}
+
 export class ProfesionalPublicoResponseDto {
   idPersona: number;
   nombre: string;
@@ -16,16 +22,26 @@ export class ProfesionalPublicoResponseDto {
   provincia: string;
   añosExperiencia: number;
   tarifaSesion: number;
+  // Campos nuevos (spec 10 / spec 15)
+  fotoUrl: string | null;
+  presentacion: string | null;
+  duracionTurnoMin: number;
+  slotsProximos7Dias: number;
 }
 
 export class PerfilProfesionalPublicoResponseDto extends ProfesionalPublicoResponseDto {
   matricula: string;
-  email: string;
-  telefono: string;
-  direccion: string;
-  genero: string;
-  biografia: string | null;
-  calificacionPromedio: number | null;
-  totalOpiniones: number;
+  // NO se exponen email, telefono, direccion, genero, biografia,
+  // calificacionPromedio, totalOpiniones (data leak)
+  certificaciones: string | null;
+  formacionAcademica: FormacionAcademicaPublicaDto[];
   horarios: HorarioProfesionalPublicoDto[];
+}
+
+export class CatalogoProfesionalResponseDto {
+  items: ProfesionalPublicoResponseDto[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }
