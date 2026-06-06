@@ -213,7 +213,11 @@ export async function apiRequest<T>(
       errorBody,
       isAuthEndpoint,
     );
-    const error = new Error(mensaje) as Error & { details?: string[] | null };
+    const error = new Error(mensaje) as Error & {
+      status?: number;
+      details?: string[] | null;
+    };
+    error.status = response.status;
     if (detalles && detalles.length > 0) {
       error.details = detalles;
     }

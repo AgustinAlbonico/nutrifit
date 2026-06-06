@@ -584,6 +584,25 @@ export function ConsultaProfesionalPage() {
       await cargarDatosTurno();
       toast.success('Observaciones guardadas');
     } catch (requestError) {
+      // TASK-1.19: 409 = lock optimista (otro usuario ya modifico
+      // observacion_clinica). El backend tiro OptimisticLockVersionMismatchError
+      // que el AppErrorFilter global traduce a HTTP 409.
+      const status =
+        requestError instanceof Error &&
+        'status' in requestError &&
+        typeof requestError.status === 'number'
+          ? requestError.status
+          : null;
+
+      if (status === 409) {
+        toast.error(
+          'La consulta fue modificada por otro usuario. Recargá los cambios.',
+        );
+        // Forzar recarga para que el form vuelva al estado persistido.
+        await cargarDatosTurno();
+        return;
+      }
+
       const mensaje =
         requestError instanceof Error
           ? requestError.message
