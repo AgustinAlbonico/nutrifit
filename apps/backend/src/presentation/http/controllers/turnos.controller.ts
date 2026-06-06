@@ -33,6 +33,7 @@ import {
   HistorialFichaSaludItemDto,
   ListMisTurnosQueryDto,
   ListPacientesProfesionalQueryDto,
+  MarcarAusenteManualDto,
   MiTurnoResponseDto,
   PacienteProfesionalResponseDto,
   RecepcionTurnoResponseDto,
@@ -68,6 +69,7 @@ import {
   ListarHistorialFichaSaludSocioUseCase,
   ListMisTurnosUseCase,
   ListPacientesProfesionalUseCase,
+  MarcarAusenteManualUseCase,
   ObtenerVersionFichaSaludNutricionistaUseCase,
   ObtenerVersionFichaSaludSocioUseCase,
   ReprogramarTurnoSocioUseCase,
@@ -98,6 +100,7 @@ import { RolesGuard } from 'src/infrastructure/auth/guards/roles.guard';
 import { SocioResourceAccessGuard } from 'src/infrastructure/auth/guards/socio-resource-access.guard';
 import { TurnoNutricionistaAccessGuard } from 'src/infrastructure/auth/guards/turno-nutricionista-access.guard';
 import { AdjuntoClinicoService } from 'src/infrastructure/services/adjunto-clinico/adjunto-clinico.service';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 @Controller('turnos')
 @UseGuards(JwtAuthGuard, RolesGuard, ActionsGuard)
@@ -126,6 +129,7 @@ export class TurnosController {
     private readonly listarHistorialFichaSaludSocioUseCase: ListarHistorialFichaSaludSocioUseCase,
     private readonly listMisTurnosUseCase: ListMisTurnosUseCase,
     private readonly listPacientesProfesionalUseCase: ListPacientesProfesionalUseCase,
+    private readonly marcarAusenteManualUseCase: MarcarAusenteManualUseCase,
     private readonly obtenerVersionFichaSaludNutricionistaUseCase: ObtenerVersionFichaSaludNutricionistaUseCase,
     private readonly obtenerVersionFichaSaludSocioUseCase: ObtenerVersionFichaSaludSocioUseCase,
     private readonly reprogramarTurnoSocioUseCase: ReprogramarTurnoSocioUseCase,
@@ -133,6 +137,7 @@ export class TurnosController {
     private readonly reservarTurnoSocioUseCase: ReservarTurnoSocioUseCase,
     private readonly upsertFichaSaludSocioUseCase: UpsertFichaSaludSocioUseCase,
     private readonly adjuntoClinicoService: AdjuntoClinicoService,
+    private readonly tenantContext: TenantContextService,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
   ) {}
@@ -551,6 +556,21 @@ export class TurnosController {
     this.logger.log(`Finalizando consulta para turno ${turnoId}.`);
 
     return this.finalizarConsultaUseCase.execute(turnoId);
+  }
+
+  // PR #1 — spec 17: marcar ausente manual (nutricionista dueno o RECEPCIONISTA/ADMIN del mismo gym)
+  @Post('profesional/turnos/:id/marcar-ausente-manual')
+  @Rol(RolEnum.NUTRICIONISTA, RolEnum.RECEPCIONISTA, RolEnum.ADMIN)
+  @UseGuards(TurnoNutricionistaAccessGuard)
+  async marcarAusenteManual(
+    @Param('id', ParseIntPipe) turnoId: number,
+    @Body() payload: MarcarAusenteManualDto,
+  ): Promise<TurnoOperacionResponseDto> {
+    this.logger.log(
+      `Marcando ausente manual el turno ${turnoId} por usuario ${this.tenantContext.usuarioId}.`,
+    );
+
+    return this.marcarAusenteManualUseCase.execute(turnoId, payload);
   }
 
   @Post(':id/mediciones')

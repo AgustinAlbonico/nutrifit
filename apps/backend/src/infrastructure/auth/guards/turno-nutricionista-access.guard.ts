@@ -15,6 +15,7 @@ import {
   UsuarioRepository,
 } from 'src/domain/entities/Usuario/usuario.repository';
 import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/turno.entity';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 type RequestWithAccess = Request & {
   resourceAccess?: {
@@ -35,6 +36,7 @@ export class TurnoNutricionistaAccessGuard implements CanActivate {
     private readonly usuarioRepository: UsuarioRepository,
     @InjectRepository(TurnoOrmEntity)
     private readonly turnoRepository: Repository<TurnoOrmEntity>,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -47,6 +49,34 @@ export class TurnoNutricionistaAccessGuard implements CanActivate {
     }
 
     if (user?.rol === Rol.ADMIN || user?.rol === Rol.SUPERADMIN) {
+      request.resourceAccess = {
+        ...request.resourceAccess,
+        turnoId,
+      };
+      return true;
+    }
+
+    // RECEPCIONISTA del mismo gimnasio puede operar sobre turnos
+    // del nutricionista del gimnasio (usado en marcar-ausente-manual).
+    if (user?.rol === Rol.RECEPCIONISTA) {
+      const turno = await this.turnoRepository.findOne({
+        where: { idTurno: turnoId },
+        relations: { nutricionista: true, socio: true },
+      });
+
+      if (!turno) {
+        throw new NotFoundException('Turno no encontrado');
+      }
+
+      const gimnasioTurno = turno.nutricionista?.gimnasioId;
+      const gimnasioContexto = this.tenantContext.gimnasioId;
+
+      if (gimnasioTurno == null || gimnasioTurno !== gimnasioContexto) {
+        throw new ForbiddenException(
+          'No tenés permisos para operar sobre un turno de otro gimnasio.',
+        );
+      }
+
       request.resourceAccess = {
         ...request.resourceAccess,
         turnoId,
