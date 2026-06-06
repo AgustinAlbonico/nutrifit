@@ -1,6 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { BaseUseCase } from 'src/application/shared/use-case.base';
+import { AbrirFichaDesdeTurnoUseCase } from 'src/application/turnos/use-cases/abrir-ficha-desde-turno.use-case';
 import { FichaSaludPacienteResponseDto } from 'src/application/turnos/dtos/ficha-salud-paciente-response.dto';
 import {
   NUTRICIONISTA_REPOSITORY,
@@ -14,12 +16,7 @@ import {
   APP_LOGGER_SERVICE,
   IAppLoggerService,
 } from 'src/domain/services/logger.service';
-import {
-  FichaSaludOrmEntity,
-  SocioOrmEntity,
-  TurnoOrmEntity,
-} from 'src/infrastructure/persistence/typeorm/entities';
-import { Repository } from 'typeorm';
+import { SocioOrmEntity, TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 @Injectable()
@@ -29,8 +26,7 @@ export class GetFichaSaludPacienteUseCase implements BaseUseCase {
     private readonly turnoRepository: Repository<TurnoOrmEntity>,
     @InjectRepository(SocioOrmEntity)
     private readonly socioRepository: Repository<SocioOrmEntity>,
-    @InjectRepository(FichaSaludOrmEntity)
-    private readonly fichaSaludRepository: Repository<FichaSaludOrmEntity>,
+    private readonly abrirFichaDesdeTurnoUseCase: AbrirFichaDesdeTurnoUseCase,
     @Inject(NUTRICIONISTA_REPOSITORY)
     private readonly nutricionistaRepository: NutricionistaRepository,
     @Inject(APP_LOGGER_SERVICE)
@@ -75,12 +71,26 @@ export class GetFichaSaludPacienteUseCase implements BaseUseCase {
       throw new NotFoundError('Ficha de salud', String(socioId));
     }
 
-    // RB45: registrar revisión del nutricionista al abrir la ficha
-    if (socio.fichaSalud.idFichaSalud != null) {
-      await this.fichaSaludRepository.update(
-        { idFichaSalud: socio.fichaSalud.idFichaSalud },
-        { revisadaPorNutricionistaAt: new Date() },
-      );
+    // RB45: delegar en AbrirFichaDesdeTurnoUseCase (single source of truth).
+    // Encontramos un turno previo entre (nutricionistaId, socioId) para pasar
+    // su idTurno al use case. Esto agrega 1 query, aceptada por el diseno.
+    const turnoPrevio = await this.turnoRepository.findOne({
+      where: {
+        nutricionista: {
+          idPersona: nutricionistaId,
+          gimnasioId: this.tenantContext.gimnasioId,
+        },
+        socio: { idPersona: socioId },
+      },
+      order: { idTurno: 'DESC' },
+    });
+
+    if (turnoPrevio) {
+      await this.abrirFichaDesdeTurnoUseCase.execute({
+        turnoId: turnoPrevio.idTurno,
+        nutricionistaId,
+        socioId,
+      });
     }
 
     const response = new FichaSaludPacienteResponseDto();

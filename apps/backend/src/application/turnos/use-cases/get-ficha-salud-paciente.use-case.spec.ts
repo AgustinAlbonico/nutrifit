@@ -16,13 +16,14 @@ import {
   NotFoundError,
 } from 'src/domain/exceptions/custom-exceptions';
 import { GetFichaSaludPacienteUseCase } from './get-ficha-salud-paciente.use-case';
+import { AbrirFichaDesdeTurnoUseCase } from './abrir-ficha-desde-turno.use-case';
 
 describe('GetFichaSaludPacienteUseCase', () => {
   let useCase: GetFichaSaludPacienteUseCase;
-  let turnoRepository: { count: jest.Mock };
+  let turnoRepository: { count: jest.Mock; findOne: jest.Mock };
   let socioRepository: { findOne: jest.Mock };
-  let fichaSaludRepository: { save: jest.Mock; update: jest.Mock };
   let nutricionistaRepository: { findById: jest.Mock };
+  let abrirFichaDesdeTurnoUseCase: { execute: jest.Mock };
   let tenantContext: { gimnasioId: number };
 
   const nutricionistaId = 10;
@@ -30,10 +31,10 @@ describe('GetFichaSaludPacienteUseCase', () => {
   const gimnasioId = 1;
 
   beforeEach(async () => {
-    turnoRepository = { count: jest.fn() };
+    turnoRepository = { count: jest.fn(), findOne: jest.fn() };
     socioRepository = { findOne: jest.fn() };
-    fichaSaludRepository = { save: jest.fn(), update: jest.fn() };
     nutricionistaRepository = { findById: jest.fn() };
+    abrirFichaDesdeTurnoUseCase = { execute: jest.fn().mockResolvedValue(undefined) };
     tenantContext = { gimnasioId };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -42,8 +43,8 @@ describe('GetFichaSaludPacienteUseCase', () => {
         { provide: getRepositoryToken(TurnoOrmEntity), useValue: turnoRepository },
         { provide: getRepositoryToken(SocioOrmEntity), useValue: socioRepository },
         {
-          provide: getRepositoryToken(FichaSaludOrmEntity),
-          useValue: fichaSaludRepository,
+          provide: AbrirFichaDesdeTurnoUseCase,
+          useValue: abrirFichaDesdeTurnoUseCase,
         },
         {
           provide: NUTRICIONISTA_REPOSITORY,
@@ -109,7 +110,7 @@ describe('GetFichaSaludPacienteUseCase', () => {
     );
   });
 
-  it('actualiza revisada_por_nutricionista_at al leer la ficha (RB45)', async () => {
+  it('delega en AbrirFichaDesdeTurnoUseCase al leer la ficha (RB45 single source of truth)', async () => {
     nutricionistaRepository.findById.mockResolvedValue({ idPersona: nutricionistaId });
     socioRepository.findOne.mockResolvedValue({
       idPersona: socioId,
@@ -128,19 +129,43 @@ describe('GetFichaSaludPacienteUseCase', () => {
       },
     });
     turnoRepository.count.mockResolvedValue(1);
-    fichaSaludRepository.update.mockResolvedValue({ affected: 1 });
+    turnoRepository.findOne.mockResolvedValue({ idTurno: 99 });
 
-    const before = new Date();
     await useCase.execute(nutricionistaId, socioId);
-    const after = new Date();
 
-    expect(fichaSaludRepository.update).toHaveBeenCalledTimes(1);
-    const [criteria, partial] = fichaSaludRepository.update.mock.calls[0];
-    expect(criteria).toEqual({ idFichaSalud: 1 });
-    expect(partial.revisadaPorNutricionistaAt).toBeInstanceOf(Date);
-    const timestamp = partial.revisadaPorNutricionistaAt as Date;
-    expect(timestamp.getTime()).toBeGreaterThanOrEqual(before.getTime());
-    expect(timestamp.getTime()).toBeLessThanOrEqual(after.getTime());
+    expect(abrirFichaDesdeTurnoUseCase.execute).toHaveBeenCalledTimes(1);
+    expect(abrirFichaDesdeTurnoUseCase.execute).toHaveBeenCalledWith({
+      turnoId: 99,
+      nutricionistaId,
+      socioId,
+    });
+  });
+
+  it('no delega en AbrirFichaDesdeTurnoUseCase si no hay turno previo (consulta 1 query, no falla)', async () => {
+    nutricionistaRepository.findById.mockResolvedValue({ idPersona: nutricionistaId });
+    socioRepository.findOne.mockResolvedValue({
+      idPersona: socioId,
+      nombre: 'Juan',
+      apellido: 'Pérez',
+      dni: '12345678',
+      fichaSalud: {
+        idFichaSalud: 1,
+        altura: 1.7,
+        peso: 70,
+        nivelActividadFisica: 'MODERADO',
+        objetivoPersonal: 'Bajar de peso',
+        alergias: [],
+        patologias: [],
+        revisadaPorNutricionistaAt: null,
+      },
+    });
+    turnoRepository.count.mockResolvedValue(1);
+    turnoRepository.findOne.mockResolvedValue(null);
+
+    const result = await useCase.execute(nutricionistaId, socioId);
+
+    expect(abrirFichaDesdeTurnoUseCase.execute).not.toHaveBeenCalled();
+    expect(result.socioId).toBe(socioId);
   });
 
   it('retorna la ficha del socio cuando todo es válido', async () => {
@@ -162,7 +187,7 @@ describe('GetFichaSaludPacienteUseCase', () => {
       },
     });
     turnoRepository.count.mockResolvedValue(1);
-    fichaSaludRepository.update.mockResolvedValue({ affected: 1 });
+    turnoRepository.findOne.mockResolvedValue({ idTurno: 99 });
 
     const result = await useCase.execute(nutricionistaId, socioId);
 
