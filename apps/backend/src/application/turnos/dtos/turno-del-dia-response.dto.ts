@@ -14,4 +14,14 @@ export class TurnoDelDiaResponseDto {
   estadoTurno: EstadoTurno;
   tipoConsulta: string;
   socio: SocioTurnoDelDiaResponseDto;
+  /**
+   * RB15: `true` si la ficha de salud del socio fue actualizada
+   * despues de la ultima consulta del par (nutricionista, socio).
+   */
+  fichaActualizada: boolean;
+  /**
+   * Id de la observacion clinica del turno (si existe). Permite al
+   * frontend enlazar el form de consulta sin pedirlo por separado.
+   */
+  consultaId: number | null;
 }
