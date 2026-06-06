@@ -93,7 +93,7 @@ const obtenerIniciales = (nombre: string, apellido: string): string => {
   return `${inicialNombre}${inicialApellido}`;
 };
 
-export function Nutricionistas() {
+export function GestionNutricionistas() {
   const { token } = useAuth();
   
   const [nutricionistas, setNutricionistas] = useState<Nutricionista[]>([]);

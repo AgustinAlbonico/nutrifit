@@ -9,7 +9,7 @@ import {
 import { AuthLayoutComponent } from '@/components/auth/AuthLayoutComponent';
 import { Login } from '@/pages/Login';
 import { Dashboard } from '@/pages/Dashboard';
-import { Nutricionistas } from '@/pages/Nutricionistas';
+import { GestionNutricionistas } from '@/pages/GestionNutricionistas';
 import { PerfilNutricionista } from '@/pages/PerfilNutricionista';
 import { Permisos } from '@/pages/Permisos';
 import { Agenda } from '@/pages/Agenda';
@@ -123,11 +123,11 @@ const dashboardRoute = createRoute({
   component: Dashboard,
 });
 
-// Nutricionistas route
+// Nutricionistas route (admin)
 const nutricionistasRoute = createRoute({
   getParentRoute: () => authLayoutRoute,
   path: '/nutricionistas',
-  component: Nutricionistas,
+  component: GestionNutricionistas,
 });
 
 // Perfil nutricionista route (para socios)
