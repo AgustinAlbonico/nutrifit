@@ -21,6 +21,7 @@ export * from './listar-historial-ficha-salud-nutricionista.use-case';
 export * from './listar-historial-ficha-salud.use-case';
 export * from './list-mis-turnos.use-case';
 export * from './list-pacientes-profesional.use-case';
+export * from './marcar-ausente-manual.use-case';
 export * from './obtener-version-ficha-salud-nutricionista.use-case';
 export * from './obtener-version-ficha-salud.use-case';
 export * from './reprogramar-turno-socio.use-case';
