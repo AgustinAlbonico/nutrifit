@@ -108,6 +108,13 @@ Contents: `types/rol.ts`, `types/auth.ts`, `types/turno.ts`, `constants/error-co
 
 **Frontend**: Hook-first component pattern. Keep server communication in `apiRequest` utility / page logic. Keep UI components presentational.
 
+## Credenciales de prueba (seed)
+
+- Las credenciales de usuarios seed (admin, nutricionista, socio por gimnasio) viven en `CREDENCIALES_SEED.md` en la raíz del repo.
+- **No hardcodear** emails ni passwords en tests, fixtures ni código de automation: leer siempre de `CREDENCIALES_SEED.md` o de un helper que lo parsee.
+- Contraseña universal de los usuarios seed: `123456`. Aplica a `apps/backend/src/seed-multi-tenant.ts`.
+- El seed **no crea recepcionistas**.
+
 ## Backend Environment (.env)
 
 ```env

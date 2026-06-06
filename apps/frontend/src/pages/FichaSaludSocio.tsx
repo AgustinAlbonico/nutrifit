@@ -2,11 +2,13 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type FormEvent,
 } from 'react';
 import { Link } from '@tanstack/react-router';
 import {
+  AlertCircle,
   ArrowLeft,
   Calendar,
   CheckCircle2,
@@ -127,6 +129,128 @@ function obtenerMensajeError(err: unknown): string {
     : 'No se pudo completar la operación.';
 }
 
+/**
+ * Extrae los `details: string[]` que el backend devuelve dentro de
+ * `error.error.details` cuando la respuesta 400 viene de class-validator.
+ * Devuelve `null` si el error no trae detalles estructurados.
+ */
+function obtenerDetallesDelError(err: unknown): string[] | null {
+  if (!(err instanceof Error)) return null;
+
+  const apiError = err as Error & {
+    details?: unknown;
+  };
+  if (!Array.isArray(apiError.details)) return null;
+
+  const detalles = apiError.details.filter(
+    (item): item is string => typeof item === 'string',
+  );
+  return detalles.length > 0 ? detalles : null;
+}
+
+/**
+ * Mapea los mensajes de error del backend a campos del formulario
+ * haciendo match por nombre del campo en el string (heurística best-effort
+ * mientras el backend no devuelva `{ field, message }`).
+ *
+ * Solo mapea campos que existen en `erroresValidacion` y que ya están
+ * siendo renderizados inline. El resto se expone en el banner.
+ */
+const MAPEO_CAMPOS_POR_TOKEN: ReadonlyArray<{
+  campo: string;
+  tokens: readonly string[];
+}> = [
+  { campo: 'altura', tokens: ['altura'] },
+  { campo: 'peso', tokens: ['peso'] },
+  { campo: 'nivelActividadFisica', tokens: ['actividad física', 'nivelActividadFisica'] },
+  { campo: 'objetivoPersonal', tokens: ['objetivo personal', 'objetivoPersonal'] },
+  { campo: 'alergias', tokens: ['alergia'] },
+  { campo: 'patologias', tokens: ['patología', 'patologias'] },
+  { campo: 'medicacionActual', tokens: ['medicación actual', 'medicacionActual'] },
+  { campo: 'suplementosActuales', tokens: ['suplementos'] },
+  { campo: 'cirugiasPrevias', tokens: ['cirugía', 'cirugiasPrevias'] },
+  { campo: 'antecedentesFamiliares', tokens: ['antecedentes familiar'] },
+  { campo: 'consumoAguaDiario', tokens: ['consumo de agua', 'consumoAguaDiario'] },
+  { campo: 'restriccionesAlimentarias', tokens: ['restricciones aliment'] },
+  { campo: 'horasSueno', tokens: ['horas de sueño', 'horasSueno'] },
+  { campo: 'contactoEmergenciaNombre', tokens: ['nombre del contacto de emergencia'] },
+  { campo: 'contactoEmergenciaTelefono', tokens: ['teléfono del contacto de emergencia'] },
+  { campo: 'frecuenciaComidas', tokens: ['frecuencia de comidas'] },
+  { campo: 'consumoAlcohol', tokens: ['consumo de alcohol'] },
+  { campo: 'fumaTabaco', tokens: ['fuma tabaco'] },
+];
+
+function mapearDetallesACampos(
+  detalles: string[],
+): Record<string, string> {
+  const resultado: Record<string, string> = {};
+  for (const detalle of detalles) {
+    const normalizado = detalle.toLowerCase();
+    for (const { campo, tokens } of MAPEO_CAMPOS_POR_TOKEN) {
+      if (tokens.some((token) => normalizado.includes(token.toLowerCase()))) {
+        if (!resultado[campo]) {
+          resultado[campo] = detalle;
+        }
+        break;
+      }
+    }
+  }
+  return resultado;
+}
+
+/**
+ * Hace focus en el primer input del formulario con `aria-invalid="true"`.
+ * Si no encuentra ninguno, no hace nada.
+ */
+function enfocarPrimerError(form: HTMLFormElement | null): void {
+  if (!form) return;
+  const invalido = form.querySelector<HTMLElement>('[aria-invalid="true"]');
+  if (invalido) {
+    invalido.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    invalido.focus({ preventScroll: true });
+  }
+}
+
+/**
+ * Genera el texto del tooltip del botón Guardar según el estado del form.
+ * Comunica al usuario POR QUÉ el botón está deshabilitado.
+ */
+function obtenerTituloBotonGuardar({
+  guardando,
+  formularioValido,
+  fichaExistente,
+  erroresVisibles,
+}: {
+  guardando: boolean;
+  formularioValido: boolean;
+  fichaExistente: boolean;
+  erroresVisibles: Record<string, string>;
+  erroresValidacionMemo?:
+    | { exito: true; datos: unknown }
+    | { exito: false; errores: Record<string, string> };
+}): string {
+  if (guardando) return 'Guardando tu ficha de salud…';
+
+  if (!formularioValido) {
+    const campos = Object.keys(erroresVisibles);
+    if (campos.length === 1) {
+      const unicoCampo = campos[0];
+      return `Revisá el campo "${unicoCampo}". ${erroresVisibles[unicoCampo]}`;
+    }
+    if (campos.length > 1) {
+      return `Hay ${campos.length} campos para revisar antes de guardar.`;
+    }
+    if (!fichaExistente) {
+      return 'Tildá el consentimiento expreso para guardar la ficha.';
+    }
+    return 'Revisá los datos antes de guardar.';
+  }
+
+  return fichaExistente
+    ? 'Actualizar la ficha de salud'
+    : 'Guardar la ficha de salud';
+}
+
 export function FichaSaludSocio() {
   const { token, rol } = useAuth();
   const queryClient = useQueryClient();
@@ -151,6 +275,7 @@ export function FichaSaludSocio() {
   const [erroresValidacion, setErroresValidacion] = useState<
     Record<string, string>
   >({});
+  const formRef = useRef<HTMLFormElement>(null);
 
   const fichaExistente = fichaCargada !== null;
 
@@ -255,6 +380,27 @@ export function FichaSaludSocio() {
     return !fichaExistente ? consentimiento : true;
   }, [erroresValidacionMemo, fichaExistente, consentimiento]);
 
+  const erroresVisibles = useMemo<Record<string, string>>(() => {
+    const zodErrores = erroresValidacionMemo.exito
+      ? {}
+      : erroresValidacionMemo.errores;
+    return { ...zodErrores, ...erroresValidacion };
+  }, [erroresValidacionMemo, erroresValidacion]);
+
+  const mensajesErrorBanner = useMemo(() => {
+    const mensajes = new Set<string>();
+    for (const mensaje of Object.values(erroresVisibles)) {
+      mensajes.add(mensaje);
+    }
+    if (error) {
+      for (const parte of error.split(' • ')) {
+        const trimmed = parte.trim();
+        if (trimmed) mensajes.add(trimmed);
+      }
+    }
+    return Array.from(mensajes);
+  }, [erroresVisibles, error]);
+
   const manejarEnvio = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!token) return;
@@ -262,6 +408,7 @@ export function FichaSaludSocio() {
     if (!erroresValidacionMemo.exito) {
       setErroresValidacion(erroresValidacionMemo.errores);
       setError('Revisá los datos marcados en rojo.');
+      enfocarPrimerError(formRef.current);
       return;
     }
 
@@ -328,7 +475,14 @@ export function FichaSaludSocio() {
         queryKey: ['ficha-salud', 'estado'],
       });
     } catch (requestError) {
-      setError(obtenerMensajeError(requestError));
+      const mensaje = obtenerMensajeError(requestError);
+      const detalles = obtenerDetallesDelError(requestError);
+      const erroresPorCampo = detalles ? mapearDetallesACampos(detalles) : {};
+      setErroresValidacion(erroresPorCampo);
+      setError(mensaje);
+      if (Object.keys(erroresPorCampo).length > 0) {
+        enfocarPrimerError(formRef.current);
+      }
     } finally {
       setGuardando(false);
     }
@@ -408,7 +562,12 @@ export function FichaSaludSocio() {
           </CardContent>
         </Card>
       ) : (
-        <form className="space-y-6" onSubmit={manejarEnvio} noValidate>
+        <form
+          ref={formRef}
+          className="space-y-6"
+          onSubmit={manejarEnvio}
+          noValidate
+        >
           {/* Consentimiento RGPD (siempre visible, requerido solo en creación) */}
           <Card>
             <CardHeader>
@@ -455,22 +614,22 @@ export function FichaSaludSocio() {
                       }))
                     }
                     aria-invalid={
-                      Boolean(erroresValidacion.altura) || undefined
+                      Boolean(erroresVisibles.altura) || undefined
                     }
                     aria-describedby={
-                      erroresValidacion.altura ? 'error-altura' : undefined
+                      erroresVisibles.altura ? 'error-altura' : undefined
                     }
                     title="Tu altura en centímetros, entre 100 y 250"
                     placeholder="Ej: 175"
                     required
                   />
-                  {erroresValidacion.altura && (
+                  {erroresVisibles.altura && (
                     <p
                       id="error-altura"
                       className="text-xs text-destructive"
                       role="alert"
                     >
-                      {erroresValidacion.altura}
+                      {erroresVisibles.altura}
                     </p>
                   )}
                 </div>
@@ -492,21 +651,21 @@ export function FichaSaludSocio() {
                         peso: event.target.value,
                       }))
                     }
-                    aria-invalid={Boolean(erroresValidacion.peso) || undefined}
+                    aria-invalid={Boolean(erroresVisibles.peso) || undefined}
                     aria-describedby={
-                      erroresValidacion.peso ? 'error-peso' : undefined
+                      erroresVisibles.peso ? 'error-peso' : undefined
                     }
                     title="Tu peso en kilogramos, entre 20 y 300 (el cliente bloquea >300)"
                     placeholder="Ej: 75.5"
                     required
                   />
-                  {erroresValidacion.peso && (
+                  {erroresVisibles.peso && (
                     <p
                       id="error-peso"
                       className="text-xs text-destructive"
                       role="alert"
                     >
-                      {erroresValidacion.peso}
+                      {erroresVisibles.peso}
                     </p>
                   )}
                 </div>
@@ -551,22 +710,22 @@ export function FichaSaludSocio() {
                     }
                     placeholder="Ej: bajar grasa, mejorar rendimiento..."
                     aria-invalid={
-                      Boolean(erroresValidacion.objetivoPersonal) || undefined
+                      Boolean(erroresVisibles.objetivoPersonal) || undefined
                     }
                     aria-describedby={
-                      erroresValidacion.objetivoPersonal
+                      erroresVisibles.objetivoPersonal
                         ? 'error-objetivo'
                         : undefined
                     }
                     required
                   />
-                  {erroresValidacion.objetivoPersonal && (
+                  {erroresVisibles.objetivoPersonal && (
                     <p
                       id="error-objetivo"
                       className="text-xs text-destructive"
                       role="alert"
                     >
-                      {erroresValidacion.objetivoPersonal}
+                      {erroresVisibles.objetivoPersonal}
                     </p>
                   )}
                 </div>
@@ -743,8 +902,25 @@ export function FichaSaludSocio() {
                         consumoAguaDiario: event.target.value,
                       }))
                     }
+                    aria-invalid={
+                      Boolean(erroresVisibles.consumoAguaDiario) || undefined
+                    }
+                    aria-describedby={
+                      erroresVisibles.consumoAguaDiario
+                        ? 'error-agua'
+                        : undefined
+                    }
                     placeholder="Ej: 2"
                   />
+                  {erroresVisibles.consumoAguaDiario && (
+                    <p
+                      id="error-agua"
+                      className="text-xs text-destructive"
+                      role="alert"
+                    >
+                      {erroresVisibles.consumoAguaDiario}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2 md:col-span-1">
@@ -841,8 +1017,23 @@ export function FichaSaludSocio() {
                         horasSueno: event.target.value,
                       }))
                     }
+                    aria-invalid={
+                      Boolean(erroresVisibles.horasSueno) || undefined
+                    }
+                    aria-describedby={
+                      erroresVisibles.horasSueno ? 'error-sueno' : undefined
+                    }
                     placeholder="Ej: 7"
                   />
+                  {erroresVisibles.horasSueno && (
+                    <p
+                      id="error-sueno"
+                      className="text-xs text-destructive"
+                      role="alert"
+                    >
+                      {erroresVisibles.horasSueno}
+                    </p>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -866,8 +1057,26 @@ export function FichaSaludSocio() {
                         contactoEmergenciaNombre: event.target.value,
                       }))
                     }
+                    aria-invalid={
+                      Boolean(erroresVisibles.contactoEmergenciaNombre) ||
+                      undefined
+                    }
+                    aria-describedby={
+                      erroresVisibles.contactoEmergenciaNombre
+                        ? 'error-contacto-nombre'
+                        : undefined
+                    }
                     placeholder="Nombre del contacto"
                   />
+                  {erroresVisibles.contactoEmergenciaNombre && (
+                    <p
+                      id="error-contacto-nombre"
+                      className="text-xs text-destructive"
+                      role="alert"
+                    >
+                      {erroresVisibles.contactoEmergenciaNombre}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -882,8 +1091,26 @@ export function FichaSaludSocio() {
                         contactoEmergenciaTelefono: event.target.value,
                       }))
                     }
+                    aria-invalid={
+                      Boolean(erroresVisibles.contactoEmergenciaTelefono) ||
+                      undefined
+                    }
+                    aria-describedby={
+                      erroresVisibles.contactoEmergenciaTelefono
+                        ? 'error-contacto-telefono'
+                        : undefined
+                    }
                     placeholder="Ej: +54 11 1234-5678"
                   />
+                  {erroresVisibles.contactoEmergenciaTelefono && (
+                    <p
+                      id="error-contacto-telefono"
+                      className="text-xs text-destructive"
+                      role="alert"
+                    >
+                      {erroresVisibles.contactoEmergenciaTelefono}
+                    </p>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -892,7 +1119,7 @@ export function FichaSaludSocio() {
           {/* Mensajes de error/éxito y botones */}
           <Card>
             <CardContent className="pt-6">
-              {error && (
+              {mensajesErrorBanner.length > 0 && (
                 <div
                   className="mb-4 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
                   role="alert"
@@ -902,7 +1129,15 @@ export function FichaSaludSocio() {
                     className="mt-0.5 h-4 w-4 shrink-0"
                     aria-hidden="true"
                   />
-                  <p>{error}</p>
+                  {mensajesErrorBanner.length > 1 ? (
+                    <ul className="list-disc pl-4 space-y-1">
+                      {mensajesErrorBanner.map((mensaje, idx) => (
+                        <li key={idx}>{mensaje}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>{mensajesErrorBanner[0]}</p>
+                  )}
                 </div>
               )}
 
@@ -941,6 +1176,13 @@ export function FichaSaludSocio() {
                   type="submit"
                   disabled={!formularioValido || guardando}
                   data-testid="boton-guardar-ficha"
+                  title={obtenerTituloBotonGuardar({
+                    guardando,
+                    formularioValido,
+                    fichaExistente,
+                    erroresVisibles,
+                    erroresValidacionMemo,
+                  })}
                   aria-label={
                     fichaExistente
                       ? 'Actualizar ficha de salud'
@@ -949,9 +1191,17 @@ export function FichaSaludSocio() {
                 >
                   {guardando
                     ? 'Guardando...'
-                    : fichaExistente
-                      ? 'Actualizar ficha'
-                      : 'Guardar ficha'}
+                    : !formularioValido
+                      ? 'No se puede guardar todavía'
+                      : fichaExistente
+                        ? 'Actualizar ficha'
+                        : 'Guardar ficha'}
+                  {!formularioValido && !guardando && (
+                    <AlertCircle
+                      className="ml-2 h-4 w-4"
+                      aria-hidden="true"
+                    />
+                  )}
                 </Button>
               </div>
             </CardContent>

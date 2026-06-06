@@ -68,40 +68,62 @@ function obtenerMensajeLegible(
   response: Response,
   errorBody: ErrorResponse | null,
   isAuthEndpoint: boolean,
-): string {
+): { mensaje: string; detalles: string[] | null } {
   const status = response.status;
+  const detalles = errorBody?.error?.details ?? null;
 
   if (status === 401) {
     if (isAuthEndpoint) {
-      return errorBody?.message || 'Email o contraseña incorrectos.';
+      return {
+        mensaje: errorBody?.message || 'Email o contraseña incorrectos.',
+        detalles,
+      };
     }
-    return 'Tu sesión venció. Volvé a iniciar sesión.';
+    return {
+      mensaje: 'Tu sesión venció. Volvé a iniciar sesión.',
+      detalles,
+    };
   }
 
   if (status === 403) {
     // Error de tenant - el usuario no tiene acceso a este gimnasio
-    return (
-      errorBody?.message ||
-      'No tenés permisos para este espacio de trabajo.'
-    );
+    return {
+      mensaje:
+        errorBody?.message ||
+        'No tenés permisos para este espacio de trabajo.',
+      detalles,
+    };
   }
 
   if (status === 404) {
-    return 'No se encontró el recurso solicitado.';
+    return {
+      mensaje: 'No se encontró el recurso solicitado.',
+      detalles,
+    };
   }
 
   if (status === 400) {
-    if (errorBody?.error?.details?.length) {
-      return errorBody.error.details[0];
+    if (detalles && detalles.length > 0) {
+      return { mensaje: detalles.join(' • '), detalles };
     }
-    return errorBody?.message || 'Revisá los datos ingresados.';
+    return {
+      mensaje: errorBody?.message || 'Revisá los datos ingresados.',
+      detalles,
+    };
   }
 
   if (status >= 500) {
-    return 'Ocurrió un error del servidor. Intentá nuevamente en unos minutos.';
+    return {
+      mensaje:
+        'Ocurrió un error del servidor. Intentá nuevamente en unos minutos.',
+      detalles,
+    };
   }
 
-  return errorBody?.message || 'No se pudo completar la operación.';
+  return {
+    mensaje: errorBody?.message || 'No se pudo completar la operación.',
+    detalles,
+  };
 }
 
 export async function apiRequest<T>(
@@ -176,14 +198,26 @@ export async function apiRequest<T>(
     if (response.status === 403 && !isAuthEndpoint) {
       // Error de tenant - redirigir a dashboard con mensaje
       if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-        const mensaje = encodeURIComponent(
-          obtenerMensajeLegible(response, errorBody, isAuthEndpoint),
+        const { mensaje } = obtenerMensajeLegible(
+          response,
+          errorBody,
+          isAuthEndpoint,
         );
-        window.location.assign(`/login?error=${mensaje}`);
+        const mensajeCodificado = encodeURIComponent(mensaje);
+        window.location.assign(`/login?error=${mensajeCodificado}`);
       }
     }
 
-    throw new Error(obtenerMensajeLegible(response, errorBody, isAuthEndpoint));
+    const { mensaje, detalles } = obtenerMensajeLegible(
+      response,
+      errorBody,
+      isAuthEndpoint,
+    );
+    const error = new Error(mensaje) as Error & { details?: string[] | null };
+    if (detalles && detalles.length > 0) {
+      error.details = detalles;
+    }
+    throw error;
   }
 
   return (await response.json()) as T;

@@ -101,7 +101,10 @@ export class AppErrorFilter implements ExceptionFilter {
     // ===== Errores genéricos =====
     else {
       const e = exception as Error;
-      this.logger.error(`[UNHANDLED_EXCEPTION] ${e.message}`, e.stack);
+      this.logger.error(
+        `[UNHANDLED_EXCEPTION] ${e.name}: ${e.message}`,
+        this.formatUnknownException(e),
+      );
     }
 
     // ===== Respuesta JSON unificada =====
@@ -115,5 +118,94 @@ export class AppErrorFilter implements ExceptionFilter {
         ...(details ? { details } : {}), // solo agregamos details si existen
       },
     });
+  }
+
+  private formatUnknownException(e: Error): string {
+    const lines: string[] = [];
+    lines.push(e.stack ?? '<no stack>');
+
+    const aggregateErrors = this.collectAggregateErrors(e);
+
+    if (aggregateErrors.length > 0) {
+      lines.push('');
+      lines.push(
+        `--- AggregateError contents (${aggregateErrors.length} inner error(s)) ---`,
+      );
+
+      aggregateErrors.forEach((inner, idx) => {
+        const innerErr = inner as Error & {
+          code?: string;
+          errno?: number | string;
+          syscall?: string;
+          address?: string;
+          port?: number;
+          hostname?: string;
+          host?: string;
+          path?: string;
+        };
+
+        const parts: string[] = [];
+        parts.push(`#${idx + 1} ${innerErr.name ?? 'Error'}`);
+        parts.push(`message=${JSON.stringify(innerErr.message ?? '')}`);
+
+        if (innerErr.code) parts.push(`code=${innerErr.code}`);
+        if (innerErr.errno !== undefined) parts.push(`errno=${innerErr.errno}`);
+        if (innerErr.syscall) parts.push(`syscall=${innerErr.syscall}`);
+        if (innerErr.address) parts.push(`address=${innerErr.address}`);
+        if (innerErr.port !== undefined) parts.push(`port=${innerErr.port}`);
+        if (innerErr.hostname) parts.push(`hostname=${innerErr.hostname}`);
+        if (innerErr.host) parts.push(`host=${innerErr.host}`);
+        if (innerErr.path) parts.push(`path=${innerErr.path}`);
+
+        lines.push(parts.join(' | '));
+      });
+    }
+
+    if (e.cause !== undefined && e.cause !== e) {
+      lines.push('');
+      lines.push('--- cause ---');
+      const cause = e.cause as Error;
+      lines.push(`${cause.name ?? 'Error'}: ${cause.message ?? ''}`);
+      if (cause.stack) {
+        lines.push(cause.stack);
+      }
+    }
+
+    return lines.join('\n');
+  }
+
+  private collectAggregateErrors(e: Error): unknown[] {
+    const found: unknown[] = [];
+    const direct = (e as { errors?: unknown }).errors;
+    if (Array.isArray(direct)) {
+      found.push(...direct);
+    }
+
+    let current: unknown = e;
+    const seen = new Set<unknown>();
+    while (
+      current !== null &&
+      typeof current === 'object' &&
+      !seen.has(current)
+    ) {
+      seen.add(current);
+      const next = (current as { cause?: unknown }).cause;
+      if (
+        next !== null &&
+        typeof next === 'object' &&
+        typeof (next as { errors?: unknown }).errors !== 'undefined'
+      ) {
+        const inner = (next as { errors?: unknown }).errors;
+        if (Array.isArray(inner)) {
+          found.push(...inner);
+        }
+        current = next;
+      } else {
+        current = next;
+        if (current === null || typeof current !== 'object') break;
+      }
+    }
+
+    return found;
   }
 }

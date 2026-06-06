@@ -33,99 +33,112 @@ import { ConsumoAlcohol } from 'src/domain/entities/FichaSalud/ConsumoAlcohol';
 export class UpsertFichaSaludSocioDto {
   // --- Datos físicos básicos ---
   @Type(() => Number)
-  @IsInt()
-  @Min(100)
-  @Max(250)
+  @IsInt({ message: 'La altura debe ser un número entero en centímetros' })
+  @Min(100, { message: 'La altura debe estar entre 100 y 250 cm' })
+  @Max(250, { message: 'La altura debe estar entre 100 y 250 cm' })
   altura: number;
 
   @Type(() => Number)
-  @Min(20)
-  @Max(500)
+  @IsNumber(
+    { allowNaN: false, allowInfinity: false, maxDecimalPlaces: 2 },
+    { message: 'El peso debe ser un número válido' },
+  )
+  @Min(20, { message: 'El peso debe estar entre 20 y 500 kg' })
+  @Max(500, { message: 'El peso debe estar entre 20 y 500 kg' })
   peso: number;
 
-  @IsEnum(NivelActividadFisica)
+  @IsEnum(NivelActividadFisica, {
+    message: 'Seleccioná un nivel de actividad física válido',
+  })
   nivelActividadFisica: NivelActividadFisica;
 
-  @IsString()
-  @MaxLength(500)
+  @IsString({ message: 'El objetivo personal es obligatorio' })
+  @MaxLength(500, { message: 'El objetivo personal no puede superar los 500 caracteres' })
   objetivoPersonal: string;
 
   // --- Alergias y patologías ---
-  @IsArray()
-  @ArrayUnique()
-  @IsString({ each: true })
+  @IsArray({ message: 'Las alergias deben ser una lista' })
+  @ArrayUnique({ message: 'Las alergias no pueden estar repetidas' })
+  @IsString({ each: true, message: 'Cada alergia debe ser un texto' })
   @IsOptional()
   alergias?: string[];
 
-  @IsArray()
-  @ArrayUnique()
-  @IsString({ each: true })
+  @IsArray({ message: 'Las patologías deben ser una lista' })
+  @ArrayUnique({ message: 'Las patologías no pueden estar repetidas' })
+  @IsString({ each: true, message: 'Cada patología debe ser un texto' })
   @IsOptional()
   patologias?: string[];
 
   // --- Medicación y suplementos ---
-  @IsString()
-  @MaxLength(1000)
+  @IsString({ message: 'La medicación actual debe ser un texto' })
+  @MaxLength(1000, { message: 'La medicación actual no puede superar los 1000 caracteres' })
   @IsOptional()
   medicacionActual?: string;
 
-  @IsString()
-  @MaxLength(500)
+  @IsString({ message: 'Los suplementos actuales deben ser un texto' })
+  @MaxLength(500, { message: 'Los suplementos actuales no pueden superar los 500 caracteres' })
   @IsOptional()
   suplementosActuales?: string;
 
   // --- Historial médico ---
-  @IsString()
-  @MaxLength(1000)
+  @IsString({ message: 'Las cirugías previas deben ser un texto' })
+  @MaxLength(1000, { message: 'Las cirugías previas no pueden superar los 1000 caracteres' })
   @IsOptional()
   cirugiasPrevias?: string;
 
-  @IsString()
-  @MaxLength(1000)
+  @IsString({ message: 'Los antecedentes familiares deben ser un texto' })
+  @MaxLength(1000, { message: 'Los antecedentes familiares no pueden superar los 1000 caracteres' })
   @IsOptional()
   antecedentesFamiliares?: string;
 
   // --- Hábitos alimentarios ---
-  @IsEnum(FrecuenciaComidas)
+  @IsEnum(FrecuenciaComidas, {
+    message: 'Seleccioná una frecuencia de comidas válida',
+  })
   @IsOptional()
   frecuenciaComidas?: FrecuenciaComidas;
 
   @Type(() => Number)
-  @IsNumber()
-  @Min(0)
-  @Max(10)
+  @IsNumber(
+    { allowNaN: false, allowInfinity: false },
+    { message: 'El consumo de agua diario debe ser un número válido' },
+  )
+  @Min(0, { message: 'El consumo de agua diario no puede ser negativo' })
+  @Max(10, { message: 'El consumo de agua diario no puede superar los 10 litros' })
   @IsOptional()
   consumoAguaDiario?: number;
 
-  @IsString()
-  @MaxLength(500)
+  @IsString({ message: 'Las restricciones alimentarias deben ser un texto' })
+  @MaxLength(500, { message: 'Las restricciones alimentarias no pueden superar los 500 caracteres' })
   @IsOptional()
   restriccionesAlimentarias?: string;
 
   // --- Hábitos de vida ---
-  @IsEnum(ConsumoAlcohol)
+  @IsEnum(ConsumoAlcohol, {
+    message: 'Seleccioná un valor de consumo de alcohol válido',
+  })
   @IsOptional()
   consumoAlcohol?: ConsumoAlcohol;
 
-  @IsBoolean()
+  @IsBoolean({ message: 'El campo "fuma tabaco" debe ser verdadero o falso' })
   @IsOptional()
   fumaTabaco?: boolean;
 
   @Type(() => Number)
-  @IsInt()
-  @Min(0)
-  @Max(24)
+  @IsInt({ message: 'Las horas de sueño deben ser un número entero' })
+  @Min(0, { message: 'Las horas de sueño no pueden ser negativas' })
+  @Max(24, { message: 'Las horas de sueño no pueden superar las 24' })
   @IsOptional()
   horasSueno?: number;
 
   // --- Contacto de emergencia ---
-  @IsString()
-  @MaxLength(100)
+  @IsString({ message: 'El nombre del contacto de emergencia debe ser un texto' })
+  @MaxLength(100, { message: 'El nombre del contacto de emergencia no puede superar los 100 caracteres' })
   @IsOptional()
   contactoEmergenciaNombre?: string;
 
-  @IsString()
-  @MaxLength(20)
+  @IsString({ message: 'El teléfono del contacto de emergencia debe ser un texto' })
+  @MaxLength(20, { message: 'El teléfono del contacto de emergencia no puede superar los 20 caracteres' })
   @IsOptional()
   contactoEmergenciaTelefono?: string;
 
