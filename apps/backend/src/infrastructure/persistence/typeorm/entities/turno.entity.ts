@@ -42,6 +42,14 @@ export class TurnoOrmEntity extends AuditableOrmEntity {
   ausenteAt: Date | null;
 
   @Column({
+    name: 'ausente_motivo',
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+  })
+  ausenteMotivo: string | null;
+
+  @Column({
     name: 'motivo_cancelacion',
     type: 'varchar',
     length: 500,
