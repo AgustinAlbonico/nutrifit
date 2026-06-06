@@ -24,6 +24,7 @@ import {
   normalizeTimeToHHmm,
 } from 'src/common/utils/argentina-datetime.util';
 import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/turno.entity';
+import { ObservacionClinicaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/observacion-clinica.entity';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
@@ -32,6 +33,8 @@ export class GetTurnosDelDiaUseCase implements BaseUseCase {
   constructor(
     @InjectRepository(TurnoOrmEntity)
     private readonly turnoRepository: Repository<TurnoOrmEntity>,
+    @InjectRepository(ObservacionClinicaOrmEntity)
+    private readonly observacionRepository: Repository<ObservacionClinicaOrmEntity>,
     @Inject(NUTRICIONISTA_REPOSITORY)
     private readonly nutricionistaRepository: NutricionistaRepository,
     @Inject(APP_LOGGER_SERVICE)
@@ -72,6 +75,20 @@ export class GetTurnosDelDiaUseCase implements BaseUseCase {
 
     const turnos = await queryBuilder.getMany();
 
+    // RB15 (fichaActualizada): una sola query agregada para todos los socios
+    // del dia, evitando N+1. Usamos MAX(t.fechaTurno) como proxy de
+    // "ultima consulta" (la entidad observacion_clinica no tiene created_at
+    // propio en este momento; ver TODO en apply-progress para PR #2).
+    const maxConsultasBySocio =
+      turnos.length > 0
+        ? await this.fetchMaxConsultaBySocio(
+            nutricionistaId,
+            turnos
+              .map((t) => t.socio?.idPersona)
+              .filter((id): id is number => typeof id === 'number'),
+          )
+        : new Map<number, Date>();
+
     this.logger.log(
       `Turnos del dia consultados para profesional ${nutricionistaId}: ${turnos.length} resultados.`,
     );
@@ -84,6 +101,11 @@ export class GetTurnosDelDiaUseCase implements BaseUseCase {
       socio.dni = turno.socio.dni ?? '';
       socio.objetivo = turno.socio.fichaSalud?.objetivoPersonal ?? null;
 
+      const fichaActualizada = this.computeFichaActualizada(
+        turno.socio.fichaSalud?.actualizadaAt ?? null,
+        maxConsultasBySocio.get(turno.socio.idPersona ?? -1) ?? null,
+      );
+
       const response = new TurnoDelDiaResponseDto();
       response.idTurno = turno.idTurno;
       response.fechaTurno = formatArgentinaDate(turno.fechaTurno);
@@ -91,9 +113,47 @@ export class GetTurnosDelDiaUseCase implements BaseUseCase {
       response.estadoTurno = turno.estadoTurno;
       response.tipoConsulta = 'Consulta nutricional';
       response.socio = socio;
+      response.fichaActualizada = fichaActualizada;
+      response.consultaId = turno.observacionClinica?.idObservacion ?? null;
 
       return response;
     });
+  }
+
+  private async fetchMaxConsultaBySocio(
+    nutricionistaId: number,
+    socioIds: number[],
+  ): Promise<Map<number, Date>> {
+    const raw = await this.observacionRepository
+      .createQueryBuilder('oc')
+      .innerJoin('oc.turno', 't')
+      .innerJoin('t.nutricionista', 'nutri')
+      .innerJoin('t.socio', 'socio')
+      .select('socio.idPersona', 'socioId')
+      .addSelect('MAX(t.fechaTurno)', 'maxFechaTurno')
+      .where('nutri.idPersona = :nutricionistaId', { nutricionistaId })
+      .andWhere('socio.idPersona IN (:...socioIds)', { socioIds })
+      .groupBy('socio.idPersona')
+      .getRawMany<{ socioId: number; maxFechaTurno: Date | string }>();
+
+    const map = new Map<number, Date>();
+    for (const row of raw) {
+      map.set(Number(row.socioId), new Date(row.maxFechaTurno));
+    }
+    return map;
+  }
+
+  private computeFichaActualizada(
+    fichaActualizadaAt: Date | null,
+    maxConsultaAt: Date | null,
+  ): boolean {
+    if (fichaActualizadaAt == null) {
+      return false;
+    }
+    if (maxConsultaAt == null) {
+      return true;
+    }
+    return fichaActualizadaAt.getTime() > maxConsultaAt.getTime();
   }
 
   private applyFilters(
