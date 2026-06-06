@@ -17,6 +17,7 @@ import {
 } from 'src/infrastructure/persistence/typeorm/entities';
 import { RepositoriesModule } from 'src/infrastructure/persistence/typeorm/repositories/repositories.module';
 import {
+  AbrirFichaDesdeTurnoUseCase,
   AsignarTurnoManualUseCase,
   BloquearTurnoUseCase,
   CancelarTurnoSocioUseCase,
@@ -40,6 +41,7 @@ import {
   ListarHistorialFichaSaludSocioUseCase,
   ListMisTurnosUseCase,
   ListPacientesProfesionalUseCase,
+  MarcarAusenteManualUseCase,
   ObtenerVersionFichaSaludNutricionistaUseCase,
   ObtenerVersionFichaSaludSocioUseCase,
   ReprogramarTurnoSocioUseCase,
@@ -98,6 +100,7 @@ import { NotificacionOrmEntity } from 'src/infrastructure/persistence/typeorm/en
     ListarHistorialFichaSaludSocioUseCase,
     ListMisTurnosUseCase,
     ListPacientesProfesionalUseCase,
+    MarcarAusenteManualUseCase,
     ObtenerVersionFichaSaludNutricionistaUseCase,
     ObtenerVersionFichaSaludSocioUseCase,
     ReprogramarTurnoSocioUseCase,
@@ -107,6 +110,7 @@ import { NotificacionOrmEntity } from 'src/infrastructure/persistence/typeorm/en
     NotificacionesService,
   ],
   exports: [
+    AbrirFichaDesdeTurnoUseCase,
     AsignarTurnoManualUseCase,
     BloquearTurnoUseCase,
     CancelarTurnoSocioUseCase,
@@ -130,6 +134,7 @@ import { NotificacionOrmEntity } from 'src/infrastructure/persistence/typeorm/en
     ListarHistorialFichaSaludSocioUseCase,
     ListMisTurnosUseCase,
     ListPacientesProfesionalUseCase,
+    MarcarAusenteManualUseCase,
     ObtenerVersionFichaSaludNutricionistaUseCase,
     ObtenerVersionFichaSaludSocioUseCase,
     ReprogramarTurnoSocioUseCase,

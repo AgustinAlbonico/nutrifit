@@ -1,3 +1,5 @@
+export * from './abrir-ficha-desde-turno-response.dto';
+export * from './abrir-ficha-desde-turno.dto';
 export * from './agenda-slot.dto';
 export * from './asignar-turno-manual.dto';
 export * from './bloquear-turno.dto';

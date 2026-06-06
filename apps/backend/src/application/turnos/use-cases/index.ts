@@ -1,3 +1,4 @@
+export * from './abrir-ficha-desde-turno.use-case';
 export * from './asignar-turno-manual.use-case';
 export * from './bloquear-turno.use-case';
 export * from './cancelar-turno-socio.use-case';
