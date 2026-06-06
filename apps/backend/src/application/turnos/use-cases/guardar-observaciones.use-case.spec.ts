@@ -1,13 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, SelectQueryBuilder } from 'typeorm';
+import { OptimisticLockVersionMismatchError, Repository, SelectQueryBuilder } from 'typeorm';
 import { GuardarObservacionesUseCase } from './guardar-observaciones.use-case';
 import { GuardarObservacionesDto } from '../dtos/guardar-observaciones.dto';
 import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/turno.entity';
 import { ObservacionClinicaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/observacion-clinica.entity';
 import { MedicionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/medicion.entity';
 import { EstadoTurno } from 'src/domain/entities/Turno/EstadoTurno';
-import { BadRequestError } from 'src/domain/exceptions/custom-exceptions';
+import {
+  BadRequestError,
+  ConflictError,
+} from 'src/domain/exceptions/custom-exceptions';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 describe('GuardarObservacionesUseCase', () => {
   let useCase: GuardarObservacionesUseCase;
@@ -30,6 +34,12 @@ describe('GuardarObservacionesUseCase', () => {
           useValue: {
             create: jest.fn(),
             save: jest.fn(),
+          },
+        },
+        {
+          provide: TenantContextService,
+          useValue: {
+            gimnasioId: 1,
           },
         },
       ],
@@ -247,6 +257,42 @@ describe('GuardarObservacionesUseCase', () => {
       useCase.execute(1, { comentario: 'Observación previa' }),
     ).rejects.toThrow(
       'Solo se pueden guardar observaciones durante una consulta en curso. Estado actual: PRESENTE',
+    );
+  });
+
+  it('debe traducir OptimisticLockVersionMismatchError a ConflictError (HTTP 409)', async () => {
+    const observacionExistente = {
+      idObservacion: 1,
+      comentario: 'Comentario viejo',
+      sugerencias: null,
+      habitosSocio: null,
+      objetivosSocio: null,
+      version: 1,
+    } as ObservacionClinicaOrmEntity;
+
+    const turno = {
+      idTurno: 1,
+      observacionClinica: observacionExistente,
+      consultaFinalizadaAt: null,
+      estadoTurno: EstadoTurno.EN_CURSO,
+    } as TurnoOrmEntity;
+
+    const dto: GuardarObservacionesDto = {
+      comentario: 'Edición concurrente',
+    };
+
+    jest.spyOn(turnoRepository, 'findOne').mockResolvedValue(turno);
+    jest.spyOn(observacionRepository, 'save').mockRejectedValue(
+      new OptimisticLockVersionMismatchError(
+        'observacion_clinica',
+        1,
+        2,
+      ),
+    );
+
+    await expect(useCase.execute(1, dto)).rejects.toThrow(ConflictError);
+    await expect(useCase.execute(1, dto)).rejects.toThrow(
+      'La consulta fue modificada por otro usuario. Recargá los cambios.',
     );
   });
 });
