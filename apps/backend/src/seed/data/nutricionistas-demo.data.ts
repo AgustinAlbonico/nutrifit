@@ -36,6 +36,8 @@ export interface NutricionistaDemo {
   matricula: string;
   aniosExperiencia: number;
   tarifaSesion: number;
+  presentacion: string;
+  certificaciones: string;
   formacionAcademica: FormacionAcademicaDemo[];
   agenda: BloqueAgendaDemo[];
 }
@@ -367,6 +369,31 @@ function generarFormacion(): FormacionAcademicaDemo[] {
   });
 }
 
+const PLANTILLAS_PRESENTACION: readonly string[] = [
+  'Nutricionista con foco en planes personalizados, control de peso y educacion alimentaria sostenible.',
+  'Nutricionista deportivo orientado a rendimiento, recomposicion corporal y atletas de fuerza y resistencia.',
+  'Nutricionista clinica especializada en patologias cronicas no transmisibles y alimentacion familiar.',
+  'Nutricionista focalizada en salud digestiva, intolerancias y alimentacion basada en plantas.',
+  'Nutricionista orientada a salud femenina, etapas de vida y composicion corporal con enfoque realista.',
+];
+
+function generarPresentacion(aniosExperiencia: number): string {
+  const base = PLANTILLAS_PRESENTACION[randomInt(0, PLANTILLAS_PRESENTACION.length - 1)];
+  return `${base} ${aniosExperiencia} anos de experiencia acompaniando pacientes.`;
+}
+
+const PLANTILLAS_CERTIFICACIONES: readonly string[] = [
+  'ISAK Nivel 2, Cert. en Nutricion Vegetariana/Vegana (UBA).',
+  'Maestria en Nutricion Deportiva (Universidad Favaloro), Cert. ISSN.',
+  'Diplomatura en Nutricion Clinica (Hospital Italiano), Posgrado SAOTA.',
+  'Cert. en Diabetes Education (IDF), Diplomatura en Obesidad.',
+  'Licenciatura en Nutricion (UBA), Doctorado en Ciencias de la Salud.',
+];
+
+function generarCertificaciones(): string {
+  return PLANTILLAS_CERTIFICACIONES[randomInt(0, PLANTILLAS_CERTIFICACIONES.length - 1)];
+}
+
 export function generarNutricionistasDemo(): NutricionistaDemo[] {
   const nombresFShuffled = mezclarArray(NOMBRES_FEMENINOS);
   const nombresMShuffled = mezclarArray(NOMBRES_MASCULINOS);
@@ -429,6 +456,8 @@ export function generarNutricionistasDemo(): NutricionistaDemo[] {
         matricula,
         aniosExperiencia,
         tarifaSesion,
+        presentacion: generarPresentacion(aniosExperiencia),
+        certificaciones: generarCertificaciones(),
         formacionAcademica: generarFormacion(),
         agenda: [...PLANTILLAS_AGENDA[plantillaIndice]],
       };

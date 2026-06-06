@@ -49,6 +49,8 @@ interface AdminData {
 
 interface NutricionistaData extends AdminData {
   matricula: string;
+  presentacion: string;
+  certificaciones: string;
 }
 
 interface SocioData extends AdminData {
@@ -110,6 +112,10 @@ const nutricionistas: NutricionistaData[] = [
     apellido: 'Central',
     gimnasioNombre: 'Gym Central',
     matricula: 'MN-2001',
+    presentacion:
+      'Nutricionista clinica con 10 anos de experiencia en planes personalizados, control de peso y educacion alimentaria.',
+    certificaciones:
+      'ISAK Nivel 2, Cert. en Nutricion Vegetariana, Posgrado en Obesidad y Trastornos Alimentarios (SAOTA).',
   },
   {
     email: 'nutri-norte@nutrifit.com',
@@ -117,6 +123,10 @@ const nutricionistas: NutricionistaData[] = [
     apellido: 'Norte',
     gimnasioNombre: 'Gym Norte',
     matricula: 'MN-2002',
+    presentacion:
+      'Nutricionista deportivo orientado a rendimiento, recomposicion corporal y atletas de fuerza y resistencia.',
+    certificaciones:
+      'Maestria en Nutricion Deportiva (Universidad Favaloro), Cert. International Society of Sports Nutrition (CISSN).',
   },
   {
     email: 'nutri-sur@nutrifit.com',
@@ -124,6 +134,10 @@ const nutricionistas: NutricionistaData[] = [
     apellido: 'Sur',
     gimnasioNombre: 'Gym Sur',
     matricula: 'MN-2003',
+    presentacion:
+      'Nutricionista focalizada en alimentacion familiar, patologias cronicas no transmisibles y habitos sostenibles.',
+    certificaciones:
+      'Diplomatura en Nutricion Clinica (Hospital Italiano), Cert. en Diabetes Education (International Diabetes Federation).',
   },
 ];
 
@@ -432,10 +446,17 @@ async function runSeedMultiTenant() {
         }
 
         const resultadoPersona: unknown = await dataSource.query(
-          `INSERT INTO persona (nombre, apellido, gimnasio_id, matricula, tipo_persona)
-           VALUES (?, ?, ?, ?, 'NutricionistaOrmEntity')
+          `INSERT INTO persona (nombre, apellido, gimnasio_id, matricula, presentacion, certificaciones, tipo_persona)
+           VALUES (?, ?, ?, ?, ?, ?, 'NutricionistaOrmEntity')
            ON DUPLICATE KEY UPDATE id_persona = LAST_INSERT_ID(id_persona)`,
-          [nutri.nombre, nutri.apellido, idGimnasio, nutri.matricula],
+          [
+            nutri.nombre,
+            nutri.apellido,
+            idGimnasio,
+            nutri.matricula,
+            nutri.presentacion,
+            nutri.certificaciones,
+          ],
         );
 
         const filaPersona = resultadoPersona as { insertId: number };
