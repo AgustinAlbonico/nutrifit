@@ -19,6 +19,7 @@ import {
   NutricionistaOrmEntity,
   FichaSaludOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
+import { ObservacionClinicaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/observacion-clinica.entity';
 import { Repository } from 'typeorm';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
@@ -32,6 +33,8 @@ export class GetTurnoByIdUseCase implements BaseUseCase {
     private readonly nutricionistaRepository: Repository<NutricionistaOrmEntity>,
     @InjectRepository(FichaSaludOrmEntity)
     private readonly fichaSaludRepository: Repository<FichaSaludOrmEntity>,
+    @InjectRepository(ObservacionClinicaOrmEntity)
+    private readonly observacionRepository: Repository<ObservacionClinicaOrmEntity>,
     private readonly tenantContext: TenantContextService,
   ) {}
 
@@ -76,12 +79,13 @@ export class GetTurnoByIdUseCase implements BaseUseCase {
 
     // 5. Buscar ficha de salud si existe
     let fichaSaludResponse: FichaSalud | null = null;
+    let fichaSaludOrm: FichaSaludOrmEntity | null = null;
 
     // Buscar ficha de salud del socio por separado
     const socioId = turno.socio?.idPersona;
     if (socioId) {
       try {
-        const fichaSaludOrm = await this.fichaSaludRepository.findOne({
+        fichaSaludOrm = await this.fichaSaludRepository.findOne({
           where: { socio: { idPersona: socioId } },
           relations: ['alergias', 'patologias'],
         });
@@ -131,6 +135,39 @@ export class GetTurnoByIdUseCase implements BaseUseCase {
       }
     }
 
+    // RB15: misma logica que GetTurnosDelDiaUseCase. Computamos el flag
+    // fichaActualizada para este turno puntual. La consulta se hace
+    // sobre el par (nutricionista, socio) en cuestion.
+    let fichaActualizada = false;
+    if (socioId) {
+      try {
+        const raw = await this.observacionRepository
+          .createQueryBuilder('oc')
+          .innerJoin('oc.turno', 't')
+          .innerJoin('t.nutricionista', 'nutri')
+          .innerJoin('t.socio', 'socio')
+          .select('MAX(t.fechaTurno)', 'maxFechaTurno')
+          .where('nutri.idPersona = :nutricionistaId', { nutricionistaId })
+          .andWhere('socio.idPersona = :socioId', { socioId })
+          .andWhere('t.idTurno <> :currentTurnoId', { currentTurnoId: turnoId })
+          .getRawOne<{ maxFechaTurno: Date | string | null }>();
+
+        const maxConsultaAt = raw?.maxFechaTurno
+          ? new Date(raw.maxFechaTurno)
+          : null;
+        const fichaActualizadaAt = fichaSaludOrm?.actualizadaAt ?? null;
+        fichaActualizada = this.computeFichaActualizada(
+          fichaActualizadaAt,
+          maxConsultaAt,
+        );
+      } catch (error) {
+        this.logger.error(
+          'Error al computar fichaActualizada',
+          error instanceof Error ? error.stack : String(error),
+        );
+      }
+    }
+
     // 6. Crear la respuesta completa
     const response: DatosTurnoResponseDto = {
       idTurno: turno.idTurno,
@@ -140,6 +177,8 @@ export class GetTurnoByIdUseCase implements BaseUseCase {
       consultaFinalizadaAt: turno.consultaFinalizadaAt?.toISOString() ?? null,
       socio: socioResponse,
       fichaSalud: fichaSaludResponse,
+      fichaActualizada,
+      consultaId: turno.observacionClinica?.idObservacion ?? null,
       observacionClinica: turno.observacionClinica
         ? {
             comentario: turno.observacionClinica.comentario,
@@ -152,6 +191,19 @@ export class GetTurnoByIdUseCase implements BaseUseCase {
     };
 
     return response;
+  }
+
+  private computeFichaActualizada(
+    fichaActualizadaAt: Date | null,
+    maxConsultaAt: Date | null,
+  ): boolean {
+    if (fichaActualizadaAt == null) {
+      return false;
+    }
+    if (maxConsultaAt == null) {
+      return true;
+    }
+    return fichaActualizadaAt.getTime() > maxConsultaAt.getTime();
   }
 
   private mapNivelActividad(
