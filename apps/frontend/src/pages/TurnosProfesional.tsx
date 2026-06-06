@@ -1,5 +1,5 @@
 import type { EstadoTurno } from '@nutrifit/shared';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useNavigate } from '@tanstack/react-router';
@@ -41,13 +41,6 @@ interface TurnoDelDia {
   };
   fichaActualizada: boolean;
   consultaId: number | null;
-}
-
-interface NutricionistaListado {
-  idPersona: number;
-  nombre: string;
-  apellido: string;
-  activo: boolean;
 }
 
 interface ApiResponse<T> {
@@ -209,7 +202,7 @@ export function TurnosProfesional() {
         <CardHeader className="border-b bg-slate-50/50 pb-6 pt-8">
           <CardTitle className="flex items-center text-xl font-bold">
             <CalendarDays className="mr-3 h-6 w-6 text-orange-500" />
-            Turnos del {format(fechaSeleccionada ?? new Date(), 'dd/MM/yyyy')}
+            Turnos del {format(fechaReferencia, 'dd/MM/yyyy')}
           </CardTitle>
         </CardHeader>
 
