@@ -13,6 +13,8 @@ export class NutricionistaEntity extends PersonaEntity {
   formacionAcademica: FormacionAcademicaEntity[];
   turnos: TurnoEntity[];
   fotoPerfilKey: string | null;
+  presentacion: string | null;
+  certificaciones: string | null;
 
   constructor(
     idPersona: number | null = null,
@@ -32,6 +34,8 @@ export class NutricionistaEntity extends PersonaEntity {
     turnos: TurnoEntity[] = [],
     fechaBaja: Date | null = null,
     email: string = '',
+    presentacion: string | null = null,
+    certificaciones: string | null = null,
   ) {
     super(
       idPersona,
@@ -55,5 +59,7 @@ export class NutricionistaEntity extends PersonaEntity {
     this.turnos = turnos;
     this.fechaBaja = fechaBaja;
     this.fotoPerfilKey = null;
+    this.presentacion = presentacion;
+    this.certificaciones = certificaciones;
   }
 }

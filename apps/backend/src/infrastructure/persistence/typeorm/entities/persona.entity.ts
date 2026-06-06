@@ -117,6 +117,12 @@ export class NutricionistaOrmEntity extends PersonaOrmEntity {
   @Column({ name: 'tarifa_sesion', type: 'decimal', precision: 10, scale: 2 })
   tarifaSesion: number;
 
+  @Column({ name: 'presentacion', type: 'text', nullable: true })
+  presentacion: string | null;
+
+  @Column({ name: 'certificaciones', type: 'text', nullable: true })
+  certificaciones: string | null;
+
   @OneToMany(() => AgendaOrmEntity, (agenda) => agenda.nutricionista, {
     eager: false,
     nullable: true,

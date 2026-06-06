@@ -71,6 +71,8 @@ export class NutricionistaRepositoryImplementation implements NutricionistaRepos
     existing.tarifaSesion = entity.tarifaSesion;
     existing.añosExperiencia = entity.añosExperiencia;
     existing.fechaBaja = entity.fechaBaja;
+    existing.presentacion = entity.presentacion;
+    existing.certificaciones = entity.certificaciones;
 
     const updated = await this.nutricionistaRepository.save(existing);
 
@@ -179,6 +181,8 @@ export class NutricionistaRepositoryImplementation implements NutricionistaRepos
       turnos: nutricionista.turnos || [],
       fechaBaja: nutricionista.fechaBaja,
       gimnasioId,
+      presentacion: nutricionista.presentacion,
+      certificaciones: nutricionista.certificaciones,
     };
   }
 
@@ -208,6 +212,8 @@ export class NutricionistaRepositoryImplementation implements NutricionistaRepos
       [],
       orm.fechaBaja,
       orm.usuario?.email ?? '',
+      orm.presentacion ?? null,
+      orm.certificaciones ?? null,
     );
 
     // Establecer gimnasioId del ORM (heredado de PersonaOrmEntity como columna directa)
