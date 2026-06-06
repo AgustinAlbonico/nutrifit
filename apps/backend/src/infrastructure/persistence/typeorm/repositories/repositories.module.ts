@@ -10,6 +10,7 @@ import {
   AgendaOrmEntity,
   AlergiaOrmEntity,
   AlimentoOrmEntity,
+  ExcepcionDisponibilidadOrmEntity,
   RecepcionistaOrmEntity,
   FichaSaludOrmEntity,
   FichaSaludVersionOrmEntity,
@@ -34,6 +35,8 @@ import { PoliticaOperativaRepositoryImpl } from 'src/infrastructure/politicas/po
 import { PoliticaOperativaOrmEntity } from 'src/infrastructure/politicas/politica-operativa.entity';
 import { FICHA_SALUD_VERSION_REPOSITORY } from 'src/domain/entities/FichaSalud/ficha-salud-version.repository';
 import { FichaSaludVersionRepositoryImpl } from './ficha-salud-version.repository.impl';
+import { EXCEPCION_DISPONIBILIDAD_REPOSITORY } from 'src/domain/entities/Agenda/excepcion-disponibilidad.repository';
+import { ExcepcionDisponibilidadRepositoryImpl } from './excepcion-disponibilidad.repository';
 
 // This module is responsible for providing TypeORM repositories for the application.
 // It imports the TypeOrmConfigModule for database configuration and registers the necessary entities.
@@ -45,6 +48,7 @@ import { FichaSaludVersionRepositoryImpl } from './ficha-salud-version.repositor
       AgendaOrmEntity,
       AlergiaOrmEntity,
       AlimentoOrmEntity,
+      ExcepcionDisponibilidadOrmEntity,
       RecepcionistaOrmEntity,
       FichaSaludOrmEntity,
       FichaSaludVersionOrmEntity,
@@ -81,6 +85,10 @@ import { FichaSaludVersionRepositoryImpl } from './ficha-salud-version.repositor
       provide: FICHA_SALUD_VERSION_REPOSITORY,
       useClass: FichaSaludVersionRepositoryImpl,
     },
+    {
+      provide: EXCEPCION_DISPONIBILIDAD_REPOSITORY,
+      useClass: ExcepcionDisponibilidadRepositoryImpl,
+    },
   ],
   exports: [
     USUARIO_REPOSITORY,
@@ -89,6 +97,7 @@ import { FichaSaludVersionRepositoryImpl } from './ficha-salud-version.repositor
     RECEPCIONISTA_REPOSITORY,
     POLITICA_OPERATIVA_REPOSITORY,
     FICHA_SALUD_VERSION_REPOSITORY,
+    EXCEPCION_DISPONIBILIDAD_REPOSITORY,
   ],
 })
 export class RepositoriesModule {}
