@@ -1,10 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { OptimisticLockVersionMismatchError, Repository } from 'typeorm';
 import { EstadoTurno } from 'src/domain/entities/Turno/EstadoTurno';
 import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/turno.entity';
 import { ObservacionClinicaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/observacion-clinica.entity';
-import { BadRequestError } from 'src/domain/exceptions/custom-exceptions';
+import {
+  BadRequestError,
+  ConflictError,
+} from 'src/domain/exceptions/custom-exceptions';
 import { GuardarObservacionesDto } from '../dtos/guardar-observaciones.dto';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
@@ -48,48 +51,57 @@ export class GuardarObservacionesUseCase {
       );
     }
 
-    // Si ya existe observación, actualizar
-    if (turno.observacionClinica) {
-      turno.observacionClinica.comentario = dto.comentario;
-      turno.observacionClinica.sugerencias = dto.sugerencias ?? null;
-      turno.observacionClinica.habitosSocio = dto.habitosSocio ?? null;
-      turno.observacionClinica.objetivosSocio = dto.objetivosSocio ?? null;
-      turno.observacionClinica.esPublica = dto.esPublica ?? false;
+    try {
+      // Si ya existe observación, actualizar
+      if (turno.observacionClinica) {
+        turno.observacionClinica.comentario = dto.comentario;
+        turno.observacionClinica.sugerencias = dto.sugerencias ?? null;
+        turno.observacionClinica.habitosSocio = dto.habitosSocio ?? null;
+        turno.observacionClinica.objetivosSocio = dto.objetivosSocio ?? null;
+        turno.observacionClinica.esPublica = dto.esPublica ?? false;
 
-      await this.observacionRepository.save(turno.observacionClinica);
-    } else {
-      // Crear nueva observación (necesitamos peso, altura, imc de las mediciones más recientes)
-      const medicionReciente = await this.turnoRepository
-        .createQueryBuilder('turno')
-        .innerJoinAndSelect('turno.mediciones', 'medicion')
-        .where('turno.idTurno = :turnoId', { turnoId })
-        .orderBy('medicion.createdAt', 'DESC')
-        .getOne();
+        await this.observacionRepository.save(turno.observacionClinica);
+      } else {
+        // Crear nueva observación (necesitamos peso, altura, imc de las mediciones más recientes)
+        const medicionReciente = await this.turnoRepository
+          .createQueryBuilder('turno')
+          .innerJoinAndSelect('turno.mediciones', 'medicion')
+          .where('turno.idTurno = :turnoId', { turnoId })
+          .orderBy('medicion.createdAt', 'DESC')
+          .getOne();
 
-      if (
-        !medicionReciente?.mediciones ||
-        medicionReciente.mediciones.length === 0
-      ) {
-        throw new BadRequestError(
-          'No se puede crear observación sin mediciones previas',
+        if (
+          !medicionReciente?.mediciones ||
+          medicionReciente.mediciones.length === 0
+        ) {
+          throw new BadRequestError(
+            'No se puede crear observación sin mediciones previas',
+          );
+        }
+
+        const ultimaMedicion = medicionReciente.mediciones[0];
+
+        const observacion = this.observacionRepository.create({
+          comentario: dto.comentario,
+          peso: ultimaMedicion.peso,
+          altura: ultimaMedicion.altura,
+          imc: ultimaMedicion.imc,
+          sugerencias: dto.sugerencias ?? null,
+          habitosSocio: dto.habitosSocio ?? null,
+          objetivosSocio: dto.objetivosSocio ?? null,
+          esPublica: dto.esPublica ?? false,
+          turno,
+        });
+
+        await this.observacionRepository.save(observacion);
+      }
+    } catch (error) {
+      if (error instanceof OptimisticLockVersionMismatchError) {
+        throw new ConflictError(
+          'La consulta fue modificada por otro usuario. Recargá los cambios.',
         );
       }
-
-      const ultimaMedicion = medicionReciente.mediciones[0];
-
-      const observacion = this.observacionRepository.create({
-        comentario: dto.comentario,
-        peso: ultimaMedicion.peso,
-        altura: ultimaMedicion.altura,
-        imc: ultimaMedicion.imc,
-        sugerencias: dto.sugerencias ?? null,
-        habitosSocio: dto.habitosSocio ?? null,
-        objetivosSocio: dto.objetivosSocio ?? null,
-        esPublica: dto.esPublica ?? false,
-        turno,
-      });
-
-      await this.observacionRepository.save(observacion);
+      throw error;
     }
 
     return { success: true };
