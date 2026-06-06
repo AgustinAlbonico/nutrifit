@@ -3,18 +3,19 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useNavigate } from '@tanstack/react-router';
-import { 
-  CalendarX2, 
-  Loader2, 
-  Clock, 
-  User, 
-  CheckCircle2, 
-  XCircle, 
+import {
+  CalendarX2,
+  Loader2,
+  Clock,
+  User,
+  CheckCircle2,
+  XCircle,
   PlayCircle,
   ShieldBan,
   CalendarDays,
-  Users,
-  UserPlus
+  FileCheck,
+  Ban,
+  Eye,
 } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,24 +23,24 @@ import { apiRequest } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DatePicker } from '@/components/ui/date-picker';
-import { AsignarTurnoModal } from '@/components/turnos/AsignarTurnoModal';
 import { AvatarPaciente } from '@/components/ui/avatar-paciente';
-import {
-  obtenerEstadoVisualSlotAgenda,
-  obtenerEtiquetaEstadoTurno,
-} from '@/lib/turnos/estadoTurno';
+import { MarcarAusenteManualModal } from '@/components/turnos/MarcarAusenteManualModal';
+import { obtenerClasesEstadoTurno } from '@/lib/turnos/estadoTurno';
 
-interface AgendaSlot {
-  horaInicio: string;
-  horaFin: string;
-  estado: EstadoTurno | 'LIBRE' | 'OCUPADO';
-  turnoId?: number;
-  socio?: {
-    nombre: string;
+interface TurnoDelDia {
+  idTurno: number;
+  fechaTurno: string;
+  horaTurno: string;
+  estadoTurno: EstadoTurno;
+  tipoConsulta: string;
+  socio: {
+    idPersona: number;
+    nombreCompleto: string;
     dni: string;
-    fotoPerfilUrl?: string | null;
+    objetivo: string | null;
   };
+  fichaActualizada: boolean;
+  consultaId: number | null;
 }
 
 interface NutricionistaListado {
@@ -65,7 +66,7 @@ export function TurnosProfesional() {
   const [fechaSeleccionada, setFechaSeleccionada] = useState<Date | undefined>(
     new Date(),
   );
-  const [slots, setSlots] = useState<AgendaSlot[]>([]);
+  const [turnos, setTurnos] = useState<TurnoDelDia[]>([]);
   const [cargando, setCargando] = useState(false);
   const [procesando, setProcesando] = useState<string | null>(null);
 
@@ -78,6 +79,10 @@ export function TurnosProfesional() {
   // Estado para el modal de asignar turno
   const [modalAsignarOpen, setModalAsignarOpen] = useState(false);
   const [horaSeleccionadaModal, setHoraSeleccionadaModal] = useState<string>('');
+
+  // Estado para el modal de marcar ausente manual
+  const [modalAusenteOpen, setModalAusenteOpen] = useState(false);
+  const [turnoIdAusente, setTurnoIdAusente] = useState<number | null>(null);
 
   const fecha = format(fechaSeleccionada ?? new Date(), 'yyyy-MM-dd');
 
@@ -143,148 +148,97 @@ export function TurnosProfesional() {
     void cargarNutricionistas();
   }, [esAdmin, cargarNutricionistas]);
 
-  const cargarDisponibilidad = useCallback(async () => {
+  const cargarAgenda = useCallback(async () => {
     if (!token) {
       return;
     }
 
-    const profesionalId = esNutricionista ? personaId : nutricionistaSeleccionadoId;
+    const profesionalId = esNutricionista
+      ? personaId
+      : nutricionistaSeleccionadoId;
 
     if (!profesionalId) {
-      setSlots([]);
+      setTurnos([]);
       return;
     }
 
     try {
       setCargando(true);
 
-      const rutaDisponibilidad = esAdmin
+      // Nutricionista usa /hoy (agenda del dia, devuelve turnos con
+      // metadata clinica: fichaActualizada, consultaId). Admin sigue
+      // con /disponibilidad porque tiene selector de fecha.
+      const ruta = esAdmin
         ? `/turnos/admin/profesional/${profesionalId}/disponibilidad?fecha=${fecha}`
-        : `/turnos/profesional/${profesionalId}/disponibilidad?fecha=${fecha}`;
+        : `/turnos/profesional/${profesionalId}/hoy`;
 
-      const response = await apiRequest<ApiResponse<AgendaSlot[]>>(
-        rutaDisponibilidad,
-        { token },
-      );
+      if (esAdmin) {
+        // Para admin, mantenemos la shape AgendaSlot por ahora; este path
+        // se reescribe en PR #2 (admin-today endpoint). Por seguridad
+        // reseteamos para no renderizar shape incompatible.
+        setTurnos([]);
+        return;
+      }
 
-      setSlots(response.data ?? []);
+      const response = await apiRequest<ApiResponse<TurnoDelDia[]>>(ruta, {
+        token,
+      });
+
+      setTurnos(response.data ?? []);
     } catch {
-      toast.error('No se pudo cargar la disponibilidad del día.');
-      setSlots([]);
+      toast.error('No se pudo cargar la agenda del día.');
+      setTurnos([]);
     } finally {
       setCargando(false);
     }
   }, [token, esNutricionista, personaId, nutricionistaSeleccionadoId, esAdmin, fecha]);
 
   useEffect(() => {
-    void cargarDisponibilidad();
-  }, [cargarDisponibilidad]);
+    void cargarAgenda();
+  }, [cargarAgenda]);
 
-  const bloquearTurno = async (hora: string) => {
+  const marcarPresente = async (turnoId: number) => {
     if (!token || !personaId || !esNutricionista) {
       return;
     }
 
     try {
-      setProcesando(hora);
-      await apiRequest(`/turnos/profesional/${personaId}/bloquear`, {
-        method: 'POST',
-        token,
-        body: {
-          fecha,
-          horaTurno: hora,
+      setProcesando(`presente-${turnoId}`);
+      await apiRequest(
+        `/turnos/profesional/${personaId}/${turnoId}/asistencia`,
+        {
+          method: 'PATCH',
+          token,
+          body: { estado: 'PRESENTE' },
         },
-      });
-      toast.success('Turno bloqueado exitosamente.');
-      await cargarDisponibilidad();
+      );
+      toast.success('Asistencia registrada.');
+      await cargarAgenda();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al bloquear turno';
+      const msg = err instanceof Error ? err.message : 'Error al registrar asistencia';
       toast.error(msg);
     } finally {
       setProcesando(null);
     }
   };
 
-  const desbloquearTurno = async (turnoId: number) => {
-    if (!token || !personaId || !esNutricionista) {
-      return;
-    }
-
-    try {
-      setProcesando(`id-${turnoId}`);
-      await apiRequest(`/turnos/profesional/${personaId}/${turnoId}/desbloquear`, {
-        method: 'PATCH',
-        token,
-      });
-      toast.success('Turno desbloqueado exitosamente.');
-      await cargarDisponibilidad();
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al desbloquear turno';
-      toast.error(msg);
-    } finally {
-      setProcesando(null);
-    }
+  const abrirModalAusente = (turnoId: number) => {
+    setTurnoIdAusente(turnoId);
+    setModalAusenteOpen(true);
   };
 
-  const abrirModalAsignar = (hora: string) => {
-    setHoraSeleccionadaModal(hora);
-    setModalAsignarOpen(true);
-  };
-
-  const getEstadoBadge = (slot: AgendaSlot) => {
-    const estado = obtenerEstadoVisualSlotAgenda(slot);
-
-    switch (estado) {
-      case 'REALIZADO':
-        return (
-          <Badge className="border-emerald-200 bg-emerald-100 text-emerald-800 hover:bg-emerald-200">
-            <CheckCircle2 className="mr-1 h-3 w-3" /> Realizado
-          </Badge>
-        );
-      case 'PROGRAMADO':
-        return (
-          <Badge className="border-amber-200 bg-amber-100 text-amber-800 hover:bg-amber-200">
-            <Clock className="mr-1 h-3 w-3" /> Programado
-          </Badge>
-        );
-      case 'BLOQUEADO':
-        return (
-          <Badge className="border-rose-200 bg-rose-100 text-rose-800 hover:bg-rose-200">
-            <ShieldBan className="mr-1 h-3 w-3" /> Bloqueado
-          </Badge>
-        );
-      case 'PRESENTE':
-        return (
-          <Badge className="border-blue-200 bg-blue-100 text-blue-800 hover:bg-blue-200">
-            <User className="mr-1 h-3 w-3" /> Presente
-          </Badge>
-        );
-      case 'EN_CURSO':
-        return (
-          <Badge className="border-violet-200 bg-violet-100 text-violet-800 hover:bg-violet-200">
-            <PlayCircle className="mr-1 h-3 w-3" /> En curso
-          </Badge>
-        );
-      case 'CANCELADO':
-      case 'AUSENTE':
-      case 'OCUPADO':
-        return (
-          <Badge className="border-rose-200 bg-rose-100 text-rose-800 hover:bg-rose-200">
-            <XCircle className="mr-1 h-3 w-3" /> {obtenerEtiquetaEstadoTurno(estado)}
-          </Badge>
-        );
-      case 'LIBRE':
-        return (
-          <Badge
-            variant="outline"
-            className="border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
-          >
-            Libre
-          </Badge>
-        );
-      default:
-        return <Badge variant="outline">{estado}</Badge>;
-    }
+  const getEstadoBadge = (estado: EstadoTurno) => {
+    return (
+      <Badge className={obtenerClasesEstadoTurno(estado)}>
+        {estado === 'PRESENTE' && <User className="mr-1 h-3 w-3" />}
+        {estado === 'PROGRAMADO' && <Clock className="mr-1 h-3 w-3" />}
+        {estado === 'EN_CURSO' && <PlayCircle className="mr-1 h-3 w-3" />}
+        {estado === 'REALIZADO' && <CheckCircle2 className="mr-1 h-3 w-3" />}
+        {estado === 'CANCELADO' && <XCircle className="mr-1 h-3 w-3" />}
+        {estado === 'AUSENTE' && <Ban className="mr-1 h-3 w-3" />}
+        {estado}
+      </Badge>
+    );
   };
 
   if (!esNutricionista && !esAdmin) {
@@ -304,6 +258,29 @@ export function TurnosProfesional() {
     );
   }
 
+  // El endpoint /hoy es para nutricionistas; admin sigue con su flujo
+  // de disponibilidad por fecha (out of scope en PR #1).
+  if (esAdmin) {
+    return (
+      <div className="pb-10">
+        <Card className="rounded-2xl border-0 shadow-lg ring-1 ring-border/50">
+          <CardHeader className="bg-blue-50/50 pt-8">
+            <CardTitle className="text-2xl text-blue-600">
+              Vista de administración
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-8">
+            <p className="text-muted-foreground">
+              La nueva agenda del día con metadata clínica (ficha
+              actualizada, consulta) se entrega únicamente al nutricionista.
+              El flujo admin se mantiene en la pantalla anterior.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 pb-10 animate-in fade-in duration-500">
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-orange-500/10 via-rose-500/10 to-transparent p-8 border border-orange-500/20 shadow-sm">
@@ -311,62 +288,12 @@ export function TurnosProfesional() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 to-rose-600 bg-clip-text text-transparent flex items-center gap-3">
               <CalendarDays className="h-8 w-8 text-orange-500" />
-              Gestión de Turnos
+              Mi Agenda de Hoy
             </h1>
             <p className="mt-2 text-muted-foreground max-w-2xl text-base">
-              {esNutricionista
-                ? 'Administra la disponibilidad y turnos del día.'
-                : 'Consulta la agenda diaria de los nutricionistas.'}
+              Turnos del {format(fechaSeleccionada ?? new Date(), 'dd/MM/yyyy')}.
+              Gestioná la asistencia y abrí cada consulta desde acá.
             </p>
-          </div>
-
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-            {esAdmin && (
-              <div className="w-full sm:w-[280px]">
-                <label htmlFor="nutricionista-select" className="mb-1.5 block text-sm font-medium text-slate-700">
-                  Nutricionista
-                </label>
-                <div className="relative">
-                  <Users className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <select
-                    id="nutricionista-select"
-                    className="flex h-10 w-full appearance-none rounded-xl border border-input bg-background py-2 pl-10 pr-8 text-sm outline-none ring-offset-background transition-colors focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    value={nutricionistaSeleccionadoId ?? ''}
-                    onChange={(event) =>
-                      setNutricionistaSeleccionadoId(
-                        event.target.value ? Number(event.target.value) : null,
-                      )
-                    }
-                    disabled={cargandoNutricionistas || nutricionistas.length === 0}
-                  >
-                    {nutricionistas.length === 0 ? (
-                      <option value="">Sin nutricionistas activos</option>
-                    ) : (
-                      nutricionistas.map((nutricionista) => (
-                        <option
-                          key={nutricionista.idPersona}
-                          value={nutricionista.idPersona}
-                        >
-                          {nutricionista.nombre} {nutricionista.apellido}
-                        </option>
-                      ))
-                    )}
-                  </select>
-                </div>
-              </div>
-            )}
-
-            <div className="w-full sm:w-[220px]">
-              <span className="mb-1.5 block text-sm font-medium text-slate-700">
-                Fecha de agenda
-              </span>
-              <DatePicker
-                date={fechaSeleccionada}
-                setDate={setFechaSeleccionada}
-                placeholder="Seleccionar fecha"
-                className="w-full rounded-xl"
-              />
-            </div>
           </div>
         </div>
         <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-orange-500/10 blur-3xl" />
@@ -378,210 +305,187 @@ export function TurnosProfesional() {
         <CardHeader className="border-b bg-slate-50/50 pb-6 pt-8">
           <CardTitle className="flex items-center text-xl font-bold">
             <CalendarDays className="mr-3 h-6 w-6 text-orange-500" />
-            Agenda del {format(fechaSeleccionada ?? new Date(), 'dd/MM/yyyy')}
-            {esAdmin && nutricionistaSeleccionado ? (
-              <span className="ml-2 font-normal text-muted-foreground">
-                | {nutricionistaSeleccionado.nombre}{' '}
-                {nutricionistaSeleccionado.apellido}
-              </span>
-            ) : null}
+            Turnos del {format(fechaSeleccionada ?? new Date(), 'dd/MM/yyyy')}
           </CardTitle>
         </CardHeader>
 
         <CardContent className="p-6 sm:p-8">
-          {esAdmin && cargandoNutricionistas ? (
-            <div className="flex h-40 flex-col items-center justify-center space-y-4">
-              <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
-              <p className="text-sm font-medium text-muted-foreground">
-                Cargando profesionales...
-              </p>
-            </div>
-          ) : esAdmin && nutricionistas.length === 0 ? (
-            <div className="flex h-40 flex-col items-center justify-center rounded-2xl border border-dashed text-center">
-              <Users className="mb-2 h-8 w-8 text-muted-foreground/50" />
-              <p className="text-sm text-muted-foreground">
-                No hay nutricionistas activos para consultar.
-              </p>
-            </div>
-          ) : esAdmin && !nutricionistaSeleccionadoId ? (
-            <div className="flex h-40 flex-col items-center justify-center rounded-2xl border border-dashed text-center">
-              <User className="mb-2 h-8 w-8 text-muted-foreground/50" />
-              <p className="text-sm text-muted-foreground">
-                Selecciona un profesional para ver sus turnos.
-              </p>
-            </div>
-          ) : cargando ? (
+          {cargando ? (
             <div className="flex h-40 flex-col items-center justify-center space-y-4">
               <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
               <p className="animate-pulse text-sm font-medium text-muted-foreground">
-                Cargando disponibilidad...
+                Cargando agenda...
               </p>
             </div>
-          ) : slots.length === 0 ? (
+          ) : turnos.length === 0 ? (
             <div className="flex min-h-[300px] animate-in zoom-in-95 flex-col items-center justify-center rounded-2xl border border-dashed p-8 text-center duration-500">
               <div className="mb-4 rounded-full bg-orange-100 p-4 shadow-inner">
                 <CalendarX2 className="h-10 w-10 text-orange-500" />
               </div>
               <h3 className="mb-2 text-xl font-bold tracking-tight text-slate-800">
-                Sin turnos disponibles
+                Sin turnos para hoy
               </h3>
               <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
-                {esNutricionista
-                  ? 'No hay horarios configurados o disponibles para este día. Asegúrate de revisar tu configuración de agenda semanal.'
-                  : 'El profesional seleccionado no tiene configurada disponibilidad para esta fecha.'}
+                No tenés turnos asignados para esta fecha. Si esperás un turno
+                nuevo, esperá a que un socio o administrador lo registre.
               </p>
             </div>
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {slots.map((slot) => {
-                const estadoVisual = obtenerEstadoVisualSlotAgenda(slot);
-                const turnoIdBloqueado =
-                  typeof slot.turnoId === 'number' ? slot.turnoId : null;
+              {turnos.map((turno) => {
+                const estado = turno.estadoTurno;
+                const procesandoKey = `${estado}-${turno.idTurno}`;
 
                 return (
                   <div
-                    key={slot.horaInicio}
+                    key={turno.idTurno}
                     className={`group relative flex flex-col overflow-hidden rounded-2xl border bg-card p-5 shadow-sm transition-all hover:shadow-md ${
-                      estadoVisual === 'BLOQUEADO'
+                      estado === 'AUSENTE' || estado === 'CANCELADO'
                         ? 'border-rose-100 bg-rose-50/30'
-                        : estadoVisual === 'LIBRE'
-                          ? 'border-slate-200'
-                          : 'border-blue-100 bg-blue-50/20'
+                        : estado === 'REALIZADO'
+                          ? 'border-emerald-100 bg-emerald-50/20'
+                          : estado === 'EN_CURSO'
+                            ? 'border-violet-100 bg-violet-50/20'
+                            : 'border-blue-100 bg-blue-50/20'
                     }`}
                   >
-                    {estadoVisual !== 'LIBRE' && (
-                      <div
-                        className={`absolute bottom-0 left-0 top-0 w-1.5 ${
-                          estadoVisual === 'BLOQUEADO' ||
-                          estadoVisual === 'CANCELADO' ||
-                          estadoVisual === 'AUSENTE'
-                            ? 'bg-rose-400'
-                            : estadoVisual === 'REALIZADO'
-                              ? 'bg-emerald-400'
-                              : estadoVisual === 'PROGRAMADO'
-                                ? 'bg-amber-400'
-                                : estadoVisual === 'EN_CURSO'
-                                  ? 'bg-violet-400'
+                    <div
+                      className={`absolute bottom-0 left-0 top-0 w-1.5 ${
+                        estado === 'AUSENTE' || estado === 'CANCELADO'
+                          ? 'bg-rose-400'
+                          : estado === 'REALIZADO'
+                            ? 'bg-emerald-400'
+                            : estado === 'PROGRAMADO'
+                              ? 'bg-amber-400'
+                              : estado === 'EN_CURSO'
+                                ? 'bg-violet-400'
                                 : 'bg-blue-400'
-                        }`}
-                      />
-                    )}
+                      }`}
+                    />
 
                     <div className="mb-4 flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-muted-foreground" />
                         <span className="text-xl font-bold tracking-tight">
-                          {slot.horaInicio}
+                          {turno.horaTurno}
                         </span>
                       </div>
-                      {getEstadoBadge(slot)}
+                      {getEstadoBadge(estado)}
                     </div>
 
                     <div className="mb-5 min-h-[3.5rem] flex-1 text-sm">
-                      {slot.socio ? (
-                        <div className="flex items-center gap-3 rounded-xl bg-background/60 p-3 shadow-sm ring-1 ring-border/50">
-                          <AvatarPaciente
-                            fotoUrl={slot.socio.fotoPerfilUrl}
-                            nombreCompleto={slot.socio.nombre}
-                            size="md"
-                          />
-                          <div className="min-w-0 flex-1">
-                            <span className="font-semibold block truncate">{slot.socio.nombre}</span>
-                            <span className="flex items-center text-xs text-muted-foreground">
-                              <User className="mr-1 h-3 w-3" />
-                              DNI: {slot.socio.dni}
+                      <div className="flex items-start gap-3 rounded-xl bg-background/60 p-3 shadow-sm ring-1 ring-border/50">
+                        <AvatarPaciente
+                          fotoUrl={null}
+                          nombreCompleto={turno.socio.nombreCompleto}
+                          size="md"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold block truncate">
+                              {turno.socio.nombreCompleto}
                             </span>
+                            {turno.fichaActualizada && (
+                              <Badge
+                                className="border-emerald-200 bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
+                                title="La ficha de salud se actualizó después de la última consulta"
+                              >
+                                <FileCheck className="mr-1 h-3 w-3" />
+                                Ficha actualizada
+                              </Badge>
+                            )}
                           </div>
+                          <span className="flex items-center text-xs text-muted-foreground">
+                            <User className="mr-1 h-3 w-3" />
+                            DNI: {turno.socio.dni}
+                          </span>
                         </div>
-                      ) : estadoVisual === 'BLOQUEADO' ? (
-                        <div className="flex items-center pt-2 text-muted-foreground">
-                          <ShieldBan className="mr-2 h-4 w-4" />
-                          <span className="italic">Horario no disponible</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center pt-2 font-medium text-emerald-600">
-                          <CheckCircle2 className="mr-2 h-4 w-4" />
-                          <span>Espacio disponible</span>
-                        </div>
-                      )}
+                      </div>
                     </div>
 
-                    {esNutricionista && (
-                      <div className="mt-auto flex gap-2">
-                        {estadoVisual === 'LIBRE' && (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="flex-1 border-orange-200 text-orange-600 hover:bg-orange-50 hover:text-orange-700"
-                              onClick={() => abrirModalAsignar(slot.horaInicio)}
-                              disabled={Boolean(procesando)}
-                            >
-                              <UserPlus className="mr-2 h-3 w-3" />
-                              Asignar
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="flex-1 border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                              onClick={() => void bloquearTurno(slot.horaInicio)}
-                              disabled={Boolean(procesando)}
-                            >
-                              {procesando === slot.horaInicio ? (
-                                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                              ) : (
-                                <ShieldBan className="mr-2 h-3 w-3" />
-                              )}
-                              Bloquear
-                            </Button>
-                          </>
-                        )}
-
-                        {estadoVisual === 'BLOQUEADO' &&
-                          turnoIdBloqueado !== null && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full text-slate-600 hover:bg-slate-100"
-                              onClick={() => void desbloquearTurno(turnoIdBloqueado)}
-                              disabled={Boolean(procesando)}
-                            >
-                              {procesando === `id-${turnoIdBloqueado}` ? (
-                                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                              ) : (
-                                <CheckCircle2 className="mr-2 h-3 w-3" />
-                              )}
-                              Habilitar
-                            </Button>
-                          )}
-
-                        {slot.estado === 'PRESENTE' && slot.turnoId && (
+                    {/* Botones contextuales por estado (TASK-1.16). */}
+                    <div className="mt-auto flex flex-col gap-2">
+                      {estado === 'PROGRAMADO' && (
+                        <>
                           <Button
                             size="sm"
                             className="w-full bg-gradient-to-r from-orange-500 to-rose-500 text-white shadow-sm hover:from-orange-600 hover:to-rose-600"
-                            onClick={() =>
-                              navigate({
-                                to: `/profesional/consulta/${slot.turnoId}`,
-                              })
-                            }
+                            onClick={() => void marcarPresente(turno.idTurno)}
+                            disabled={Boolean(procesando)}
                           >
-                            <PlayCircle className="mr-2 h-4 w-4" />
-                            Iniciar consulta
+                            {procesando === procesandoKey ? (
+                              <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                            ) : (
+                              <User className="mr-2 h-3 w-3" />
+                            )}
+                            Marcar presente
                           </Button>
-                        )}
-
-                        {slot.estado === 'PROGRAMADO' && slot.socio && (
                           <Button
-                            variant="secondary"
+                            variant="outline"
                             size="sm"
-                            className="w-full bg-slate-100 text-slate-700 hover:bg-slate-200"
-                            disabled
+                            className="w-full border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                            onClick={() => abrirModalAusente(turno.idTurno)}
+                            disabled={Boolean(procesando)}
                           >
-                            Ver detalles
+                            <Ban className="mr-2 h-3 w-3" />
+                            Marcar ausente
                           </Button>
-                        )}
-                      </div>
-                    )}
+                        </>
+                      )}
+
+                      {estado === 'PRESENTE' && (
+                        <Button
+                          size="sm"
+                          className="w-full bg-gradient-to-r from-orange-500 to-rose-500 text-white shadow-sm hover:from-orange-600 hover:to-rose-600"
+                          onClick={() =>
+                            navigate({
+                              to: `/profesional/consulta/${turno.idTurno}`,
+                            })
+                          }
+                        >
+                          <PlayCircle className="mr-2 h-4 w-4" />
+                          Iniciar consulta
+                        </Button>
+                      )}
+
+                      {estado === 'EN_CURSO' && (
+                        <Button
+                          size="sm"
+                          className="w-full bg-gradient-to-r from-violet-500 to-indigo-500 text-white shadow-sm hover:from-violet-600 hover:to-indigo-600"
+                          onClick={() =>
+                            navigate({
+                              to: `/profesional/consulta/${turno.idTurno}`,
+                            })
+                          }
+                        >
+                          <PlayCircle className="mr-2 h-4 w-4" />
+                          Continuar consulta
+                        </Button>
+                      )}
+
+                      {estado === 'REALIZADO' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                          onClick={() =>
+                            navigate({
+                              to: `/profesional/consulta/${turno.idTurno}`,
+                            })
+                          }
+                        >
+                          <Eye className="mr-2 h-3 w-3" />
+                          Ver consulta
+                        </Button>
+                      )}
+
+                      {(estado === 'AUSENTE' || estado === 'CANCELADO') && (
+                        <div className="flex items-center justify-center gap-2 rounded-md border border-rose-200 bg-rose-50 p-2 text-xs text-rose-700">
+                          <ShieldBan className="h-3 w-3" />
+                          <span>No requiere acción</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -590,16 +494,21 @@ export function TurnosProfesional() {
         </CardContent>
       </Card>
 
-      {/* Modal de asignar turno */}
-      {esNutricionista && personaId && token && (
-        <AsignarTurnoModal
-          isOpen={modalAsignarOpen}
-          onClose={() => setModalAsignarOpen(false)}
-          fecha={fecha}
-          hora={horaSeleccionadaModal}
-          nutricionistaId={personaId}
+      {/* Modal de marcar ausente manual (TASK-1.17). */}
+      {esNutricionista && personaId && token && turnoIdAusente !== null && (
+        <MarcarAusenteManualModal
+          isOpen={modalAusenteOpen}
+          onClose={() => {
+            setModalAusenteOpen(false);
+            setTurnoIdAusente(null);
+          }}
+          turnoId={turnoIdAusente}
           token={token}
-          onAsignado={() => void cargarDisponibilidad()}
+          onConfirmado={async () => {
+            setModalAusenteOpen(false);
+            setTurnoIdAusente(null);
+            await cargarAgenda();
+          }}
         />
       )}
     </div>
