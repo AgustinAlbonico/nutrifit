@@ -1,12 +1,28 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from '@tanstack/react-router';
-import { ArrowLeft, Mail, Phone, MapPin, Award, Clock, DollarSign, Calendar, UserCircle } from 'lucide-react';
+import {
+  ArrowLeft,
+  Award,
+  Calendar,
+  DollarSign,
+  GraduationCap,
+  MapPin,
+  UserCircle,
+  Clock,
+} from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { apiRequest } from '@/lib/api';
+import { apiRequest, obtenerUrlFoto } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+} from '@/components/ui/avatar';
+import { CalendarioEmbed } from '@/components/catalogo/CalendarioEmbed';
+import type { SlotDisponible } from '@/components/catalogo/CalendarioEmbed';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -21,6 +37,12 @@ interface HorarioProfesional {
   duracionTurno: number;
 }
 
+interface FormacionProfesional {
+  titulo: string;
+  institucion: string;
+  anio: number;
+}
+
 interface PerfilNutricionista {
   idPersona: number;
   nombre: string;
@@ -31,13 +53,11 @@ interface PerfilNutricionista {
   añosExperiencia: number;
   tarifaSesion: number;
   matricula: string;
-  email: string;
-  telefono: string;
-  direccion: string;
-  genero: string;
-  biografia: string | null;
-  calificacionPromedio: number | null;
-  totalOpiniones: number;
+  presentacion: string | null;
+  certificaciones: string | null;
+  fotoUrl: string | null;
+  duracionTurnoMin: number;
+  formacionAcademica: FormacionProfesional[];
   horarios: HorarioProfesional[];
 }
 
@@ -60,6 +80,25 @@ const DIAS_TRADUCIDOS: Record<string, string> = {
   SABADO: 'Sábado',
   DOMINGO: 'Domingo',
 };
+
+function obtenerIniciales(nombre: string, apellido: string): string {
+  const inicialN = nombre.trim().charAt(0).toUpperCase();
+  const inicialA = apellido.trim().charAt(0).toUpperCase();
+  return `${inicialN}${inicialA}`;
+}
+
+function formatearTarifa(tarifa: number): { texto: string; esGratis: boolean } {
+  if (tarifa <= 0) {
+    return { texto: 'A convenir', esGratis: true };
+  }
+  return {
+    texto: `$${tarifa.toLocaleString('es-AR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`,
+    esGratis: false,
+  };
+}
 
 export function PerfilNutricionista() {
   const { token, rol } = useAuth();
@@ -88,7 +127,8 @@ export function PerfilNutricionista() {
 
         setPerfil(response.data);
       } catch (err) {
-        const mensaje = err instanceof Error ? err.message : 'No se pudo cargar el perfil';
+        const mensaje =
+          err instanceof Error ? err.message : 'No se pudo cargar el perfil';
         setError(mensaje);
       } finally {
         setCargando(false);
@@ -98,11 +138,12 @@ export function PerfilNutricionista() {
     void cargarPerfil();
   }, [token, id]);
 
-  const horariosOrdenados = perfil?.horarios
-    ? [...perfil.horarios].sort(
-        (a, b) => (DIAS_ORDENADOS[a.dia] ?? 99) - (DIAS_ORDENADOS[b.dia] ?? 99),
-      )
-    : [];
+  const handleSlotSelect = (slot: SlotDisponible) => {
+    // Por ahora solo log; se integrará con el flujo de reserva
+    if (!perfil) return;
+    const url = `/turnos/agendar?nutricionistaId=${perfil.idPersona}&fechaHora=${encodeURIComponent(slot.fechaHora)}`;
+    window.location.href = url;
+  };
 
   if (rol !== 'SOCIO' && rol !== 'ADMIN') {
     return (
@@ -116,28 +157,29 @@ export function PerfilNutricionista() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-10">
       <div className="flex items-center gap-4">
         <Button asChild variant="outline" size="sm">
-          <Link to="/turnos/agendar">
+          <Link to="/nutricionistas/catalogo">
             <ArrowLeft className="h-4 w-4" />
-            Volver
+            Volver al catálogo
           </Link>
         </Button>
       </div>
 
+      {/* Header con gradiente */}
       <div className="relative overflow-hidden rounded-2xl border border-orange-500/20 bg-gradient-to-r from-orange-500/10 via-rose-500/10 to-transparent p-8">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-rose-500/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
+        <div className="absolute top-0 right-0 h-64 w-64 rounded-full bg-orange-500/30 blur-3xl -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 h-48 w-48 rounded-full bg-rose-500/20 blur-3xl translate-y-1/2 -translate-x-1/2" />
         <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-3">
             <UserCircle className="h-8 w-8 text-orange-500" />
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-rose-600 bg-clip-text text-transparent">
+            <h1 className="bg-gradient-to-r from-orange-600 to-rose-600 bg-clip-text text-3xl font-bold text-transparent">
               Perfil del Nutricionista
             </h1>
           </div>
-          <p className="text-muted-foreground">
-            Información profesional y horarios de atención.
+          <p className="mt-2 text-muted-foreground">
+            Información profesional, formación y disponibilidad.
           </p>
         </div>
       </div>
@@ -150,132 +192,187 @@ export function PerfilNutricionista() {
         </Card>
       ) : error ? (
         <Card>
-          <CardContent className="py-10 text-center text-destructive">{error}</CardContent>
+          <CardContent className="py-10 text-center text-destructive">
+            {error}
+          </CardContent>
         </Card>
       ) : perfil ? (
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Información principal */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-2xl">
-                    {perfil.nombre} {perfil.apellido}
-                  </CardTitle>
-                  <p className="text-muted-foreground">{perfil.especialidad}</p>
-                </div>
-                <Badge variant="secondary" className="text-lg">
-                  <DollarSign className="mr-1 h-4 w-4" />$
-                  {perfil.tarifaSesion.toLocaleString('es-AR')}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Datos de contacto */}
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="flex items-start gap-3">
-                  <Mail className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
+        <div className="space-y-6">
+          {/* Header del perfil con foto y sticky button */}
+          <div className="grid gap-6 lg:grid-cols-[1fr_auto]">
+            <Card>
+              <CardContent className="flex flex-col gap-6 pt-6 sm:flex-row sm:items-start">
+                <Avatar className="size-[200px] shrink-0 ring-2 ring-border/60">
+                  {perfil.fotoUrl && (
+                    <AvatarImage
+                      src={obtenerUrlFoto(perfil.fotoUrl) ?? undefined}
+                      alt={`${perfil.nombre} ${perfil.apellido}`}
+                      className="object-cover object-center"
+                    />
+                  )}
+                  <AvatarFallback className="bg-primary/10 text-4xl font-medium text-primary">
+                    {obtenerIniciales(perfil.nombre, perfil.apellido)}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="flex-1 space-y-3">
                   <div>
-                    <p className="text-sm font-medium">Email</p>
-                    <p className="text-sm text-muted-foreground">{perfil.email}</p>
+                    <h2 className="text-2xl font-bold">
+                      {perfil.nombre} {perfil.apellido}
+                    </h2>
+                    <p className="text-muted-foreground">{perfil.especialidad}</p>
                   </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="secondary" className="gap-1">
+                      <Award className="h-3 w-3" />
+                      Mat. {perfil.matricula}
+                    </Badge>
+                    <Badge variant="secondary" className="gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {perfil.añosExperiencia} años de experiencia
+                    </Badge>
+                    <Badge variant="secondary" className="gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {perfil.ciudad}, {perfil.provincia}
+                    </Badge>
+                  </div>
+
+                  {(() => {
+                    const tarifa = formatearTarifa(perfil.tarifaSesion);
+                    return (
+                      <Badge
+                        variant={tarifa.esGratis ? 'outline' : 'default'}
+                        className={`gap-1 ${tarifa.esGratis ? 'text-muted-foreground' : 'text-base'}`}
+                      >
+                        <DollarSign className="h-4 w-4" />
+                        {tarifa.texto}
+                      </Badge>
+                    );
+                  })()}
                 </div>
+              </CardContent>
+            </Card>
 
-                <div className="flex items-start gap-3">
-                  <Phone className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">Teléfono</p>
-                    <p className="text-sm text-muted-foreground">{perfil.telefono}</p>
-                  </div>
-                </div>
+            {/* Sticky button "Reservar turno" */}
+            <div className="lg:sticky lg:top-4 lg:self-start">
+              <Button
+                asChild
+                size="lg"
+                className="w-full lg:w-auto"
+              >
+                <Link
+                  to="/turnos/agendar"
+                  search={{ nutricionistaId: perfil.idPersona }}
+                >
+                  <Calendar className="h-5 w-5" />
+                  Reservar turno
+                </Link>
+              </Button>
+            </div>
+          </div>
 
-                <div className="flex items-start gap-3 sm:col-span-2">
-                  <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">Ubicación</p>
-                    <p className="text-sm text-muted-foreground">
-                      {perfil.direccion}, {perfil.ciudad}, {perfil.provincia}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Información profesional */}
-              <div className="border-t pt-4">
-                <h3 className="mb-3 font-semibold">Información profesional</h3>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-md border p-3">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Award className="h-4 w-4" />
-                      <span className="text-xs">Matrícula</span>
-                    </div>
-                    <p className="mt-1 font-medium">{perfil.matricula}</p>
-                  </div>
-
-                  <div className="rounded-md border p-3">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Clock className="h-4 w-4" />
-                      <span className="text-xs">Experiencia</span>
-                    </div>
-                    <p className="mt-1 font-medium">{perfil.añosExperiencia} años</p>
-                  </div>
-
-                  <div className="rounded-md border p-3">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Calendar className="h-4 w-4" />
-                      <span className="text-xs">Género</span>
-                    </div>
-                    <p className="mt-1 font-medium capitalize">
-                      {perfil.genero.toLowerCase()}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Biografía */}
-              {perfil.biografia && (
-                <div className="border-t pt-4">
-                  <h3 className="mb-2 font-semibold">Acerca de</h3>
-                  <p className="text-sm text-muted-foreground">{perfil.biografia}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Horarios de atención */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Horarios de atención</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {horariosOrdenados.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  No hay horarios configurados.
+          {/* Sobre el profesional */}
+          {perfil.presentacion && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Sobre el profesional</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="whitespace-pre-line text-sm text-muted-foreground">
+                  {perfil.presentacion}
                 </p>
-              ) : (
-                <div className="space-y-3">
-                  {horariosOrdenados.map((horario, index) => (
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Certificaciones */}
+          {perfil.certificaciones && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Certificaciones</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="whitespace-pre-line text-sm text-muted-foreground">
+                  {perfil.certificaciones}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Formación académica */}
+          {perfil.formacionAcademica.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <GraduationCap className="h-5 w-5 text-orange-500" />
+                  Formación académica
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {perfil.formacionAcademica.map((formacion, idx) => (
                     <div
-                      key={`${horario.dia}-${index}`}
-                      className="flex items-center justify-between rounded-md border p-3"
+                      key={`${formacion.titulo}-${idx}`}
+                      className="rounded-md border p-3"
                     >
-                      <span className="font-medium">
-                        {DIAS_TRADUCIDOS[horario.dia] ?? horario.dia}
-                      </span>
-                      <div className="text-right text-sm">
-                        <p className="font-medium">
-                          {horario.horaInicio} - {horario.horaFin}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Turnos de {horario.duracionTurno} min
-                        </p>
-                      </div>
+                      <p className="font-medium">{formacion.titulo}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formacion.institucion} · {formacion.anio}
+                      </p>
                     </div>
                   ))}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Horarios semanales */}
+          {perfil.horarios.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Clock className="h-5 w-5 text-orange-500" />
+                  Horarios de atención
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {[...perfil.horarios]
+                    .sort(
+                      (a, b) =>
+                        (DIAS_ORDENADOS[a.dia] ?? 99) -
+                        (DIAS_ORDENADOS[b.dia] ?? 99),
+                    )
+                    .map((horario, index) => (
+                      <div
+                        key={`${horario.dia}-${index}`}
+                        className="flex items-center justify-between rounded-md border p-3"
+                      >
+                        <span className="font-medium">
+                          {DIAS_TRADUCIDOS[horario.dia] ?? horario.dia}
+                        </span>
+                        <div className="text-right text-sm">
+                          <p className="font-medium">
+                            {horario.horaInicio.slice(0, 5)} - {horario.horaFin.slice(0, 5)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Turnos de {horario.duracionTurno} min
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Calendario embebido para reservar slots */}
+          <CalendarioEmbed
+            nutricionistaId={perfil.idPersona}
+            duracionMin={perfil.duracionTurnoMin}
+            onSeleccionarSlot={handleSlotSelect}
+          />
         </div>
       ) : null}
     </div>
