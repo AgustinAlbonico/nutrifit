@@ -10,6 +10,7 @@ import { AuthLayoutComponent } from '@/components/auth/AuthLayoutComponent';
 import { Login } from '@/pages/Login';
 import { Dashboard } from '@/pages/Dashboard';
 import { GestionNutricionistas } from '@/pages/GestionNutricionistas';
+import { NutricionistasCatalogo } from '@/pages/NutricionistasCatalogo';
 import { PerfilNutricionista } from '@/pages/PerfilNutricionista';
 import { Permisos } from '@/pages/Permisos';
 import { Agenda } from '@/pages/Agenda';
@@ -128,6 +129,13 @@ const nutricionistasRoute = createRoute({
   getParentRoute: () => authLayoutRoute,
   path: '/nutricionistas',
   component: GestionNutricionistas,
+});
+
+// Catálogo público de nutricionistas (socio)
+const nutricionistasCatalogoRoute = createRoute({
+  getParentRoute: () => authLayoutRoute,
+  path: '/nutricionistas/catalogo',
+  component: NutricionistasCatalogo,
 });
 
 // Perfil nutricionista route (para socios)
@@ -328,6 +336,7 @@ const routeTree = rootRoute.addChildren([
   authLayoutRoute.addChildren([
     dashboardRoute,
     nutricionistasRoute,
+    nutricionistasCatalogoRoute,
     recepcionistasRoute,
     perfilNutricionistaRoute,
     sociosRoute,

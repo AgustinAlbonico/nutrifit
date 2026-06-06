@@ -71,6 +71,12 @@ export function Sidebar() {
       roles: ['ADMIN'],
     },
     {
+      to: '/nutricionistas/catalogo',
+      label: 'Nutricionistas',
+      icon: Users,
+      roles: ['SOCIO'],
+    },
+    {
       to: '/recepcionistas',
       label: 'Recepcionistas',
       icon: UserCog,
