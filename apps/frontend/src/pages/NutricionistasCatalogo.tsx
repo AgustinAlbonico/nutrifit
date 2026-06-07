@@ -1,6 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Link } from '@tanstack/react-router';
-import { format, addDays, startOfDay } from 'date-fns';
 import {
   Calendar,
   Search,

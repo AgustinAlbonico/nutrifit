@@ -122,6 +122,8 @@ export function GestionNutricionistas() {
   const [errorGeneralCreacion, setErrorGeneralCreacion] = useState<string | null>(null);
   const [fotoCreacion, setFotoCreacion] = useState<EstadoFoto>(null);
   const [fotoEdicion, setFotoEdicion] = useState<EstadoFoto>(null);
+  const [nutricionistaFormEdicion, setNutricionistaFormEdicion] = useState<CrearNutricionistaDto>(FORMULARIO_NUTRICIONISTA_INICIAL);
+  const [erroresEdicion, setErroresEdicion] = useState<ErroresFormularioCreacion>({});
 
   const [mostrarConfirmacionEliminar, setMostrarConfirmacionEliminar] = useState(false);
   const [nutricionistaAEliminar, setNutricionistaAEliminar] = useState<Nutricionista | null>(null);

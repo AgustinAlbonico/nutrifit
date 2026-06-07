@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { addDays, addHours, isBefore, format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { addHours, isBefore, format } from 'date-fns';
 import { Calendar, Clock, AlertCircle } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -59,7 +58,6 @@ export function CalendarioEmbed({
   const [error, setError] = useState<string | null>(null);
 
   const fechaMin = useMemo(() => addHours(new Date(), 2), []);
-  const fechaMax = useMemo(() => addDays(new Date(), 60), []);
 
   const cargarSlots = useCallback(
     async (fecha: Date) => {
@@ -117,7 +115,6 @@ export function CalendarioEmbed({
           date={fechaSeleccionada}
           setDate={(d) => d && setFechaSeleccionada(d)}
           minDate={fechaMin}
-          maxDate={fechaMax}
           className="w-full max-w-sm"
         />
 
