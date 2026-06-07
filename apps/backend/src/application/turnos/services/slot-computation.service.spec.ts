@@ -217,7 +217,7 @@ describe('SlotComputationService', () => {
         idTurno: 99,
         fechaTurno: fechaBloque,
         horaTurno: '10:00:00',
-        estadoTurno: EstadoTurno.CONFIRMADO,
+        estadoTurno: EstadoTurno.PROGRAMADO,
       },
     ]);
 

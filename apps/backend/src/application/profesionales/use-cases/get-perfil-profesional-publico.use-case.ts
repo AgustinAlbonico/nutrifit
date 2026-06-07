@@ -69,7 +69,7 @@ export class GetPerfilProfesionalPublicoUseCase implements BaseUseCase {
         const dto = new FormacionAcademicaPublicaDto();
         dto.titulo = f.titulo;
         dto.institucion = f.institucion;
-        dto.anio = f.anioFin;
+        dto.anio = f.añoFin;
         return dto;
       },
     );

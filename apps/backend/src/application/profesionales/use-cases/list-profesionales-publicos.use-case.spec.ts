@@ -7,6 +7,7 @@ import {
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 import { APP_LOGGER_SERVICE } from 'src/domain/services/logger.service';
 import { SlotComputationService } from 'src/application/turnos/services/slot-computation.service';
+import { NutricionistaEntity } from 'src/domain/entities/Persona/Nutricionista/nutricionista.entity';
 
 describe('ListProfesionalesPublicosUseCase', () => {
   let useCase: ListProfesionalesPublicosUseCase;
@@ -116,12 +117,13 @@ describe('ListProfesionalesPublicosUseCase', () => {
 
 function crearNutri(overrides: {
   idPersona: number;
-  fechaBaja: Date | null;
+  fechaBaja?: Date | null;
   nombre?: string;
   apellido?: string;
-}): unknown {
+}): NutricionistaEntity {
   return {
     idPersona: overrides.idPersona,
+    idPersonaNullable: overrides.idPersona,
     nombre: overrides.nombre ?? 'Test',
     apellido: overrides.apellido ?? 'Nutri',
     fechaNacimiento: new Date('1990-01-01'),
@@ -142,13 +144,14 @@ function crearNutri(overrides: {
         horaInicio: '09:00',
         horaFin: '13:00',
         duracionTurno: 30,
+        fechaBaja: null,
       },
     ],
     formacionAcademica: [],
     turnos: [],
     fotoPerfilKey: null,
     gimnasioId: 1,
-    fechaBaja: overrides.fechaBaja,
+    fechaBaja: overrides.fechaBaja ?? null,
     presentacion: 'Hola',
     certificaciones: null,
   };
