@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppLoggerModule } from 'src/infrastructure/common/logger/app-logger.module';
 import { PasswordEncrypterModule } from 'src/infrastructure/services/bcrypt/bcrypt.module';
 import { MinioModule } from 'src/infrastructure/services/minio/minio.module';
+import { TurnosModule } from 'src/application/turnos/turnos.module';
 import {
   GrupoPermisoOrmEntity,
   NutricionistaOrmEntity,
@@ -35,6 +36,7 @@ import {
     AppLoggerModule,
     PasswordEncrypterModule,
     MinioModule,
+    TurnosModule,
   ],
   providers: [
     CreateNutricionistaUseCase,

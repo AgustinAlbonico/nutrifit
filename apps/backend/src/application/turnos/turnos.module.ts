@@ -49,6 +49,7 @@ import {
   ReservarTurnoSocioUseCase,
   UpsertFichaSaludSocioUseCase,
 } from './use-cases';
+import { SlotComputationService } from './services/slot-computation.service';
 import { AuditoriaModule } from 'src/infrastructure/services/auditoria/auditoria.module';
 import { AdjuntoClinicoModule } from 'src/infrastructure/services/adjunto-clinico/adjunto-clinico.module';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
@@ -108,6 +109,7 @@ import { NotificacionOrmEntity } from 'src/infrastructure/persistence/typeorm/en
     RegistrarAsistenciaTurnoUseCase,
     ReservarTurnoSocioUseCase,
     UpsertFichaSaludSocioUseCase,
+    SlotComputationService,
     NotificacionesService,
   ],
   exports: [
@@ -142,6 +144,7 @@ import { NotificacionOrmEntity } from 'src/infrastructure/persistence/typeorm/en
     RegistrarAsistenciaTurnoUseCase,
     ReservarTurnoSocioUseCase,
     UpsertFichaSaludSocioUseCase,
+    SlotComputationService,
   ],
 })
 export class TurnosModule {}
