@@ -43,8 +43,9 @@ interface ApiResponse<T> {
 
 export function RecepcionTurnosPage() {
   const { token, rol } = useAuth();
-  const esRecepcionista = rol === 'RECEPCIONISTA';
 
+  const esRecepcionista = rol === 'RECEPCIONISTA';
+  const esAdmin = rol === 'ADMIN';
   const [fechaSeleccionada, setFechaSeleccionada] = useState<Date | undefined>(
     new Date(),
   );
@@ -128,16 +129,17 @@ export function RecepcionTurnosPage() {
   };
 
   const puedeHacerCheckIn = (turno: TurnoRecepcion) => {
+    if (!esRecepcionista) return false;
     return puedeHacerCheckInTurno(turno.estadoTurno);
   };
 
-  if (!esRecepcionista) {
+  if (!esRecepcionista && !esAdmin) {
     return (
       <Card>
         <CardHeader>
           <CardTitle>Acceso denegado</CardTitle>
         </CardHeader>
-        <CardContent>Solo para personal de recepción.</CardContent>
+        <CardContent>Solo para personal de recepción o administración.</CardContent>
       </Card>
     );
   }
