@@ -3,6 +3,7 @@ export * from './accion.entity';
 export * from './alimento.entity';
 export * from './auditoria.entity';
 export * from './adjunto-clinico.entity';
+export * from './excepcion-disponibilidad.entity';
 export * from './ficha-salud.entity';
 export * from './ficha-salud-version.entity';
 export * from './foto-progreso.entity';

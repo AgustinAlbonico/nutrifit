@@ -21,7 +21,7 @@ import {
   ListProfesionalesPublicQueryDto,
   NutricionistaResponseDto,
   PerfilProfesionalPublicoResponseDto,
-  ProfesionalPublicoResponseDto,
+  CatalogoProfesionalResponseDto,
   UpdateNutricionistaDto,
 } from 'src/application/profesionales/dtos';
 import {
@@ -119,7 +119,7 @@ export class ProfesionalController {
   @Rol(RolEnum.SOCIO)
   async findDisponiblesForSocio(
     @Query() query: ListProfesionalesPublicQueryDto,
-  ): Promise<ProfesionalPublicoResponseDto[]> {
+  ): Promise<CatalogoProfesionalResponseDto> {
     this.logger.log('Listando profesionales activos para socio');
     return this.listProfesionalesPublicosUseCase.execute(query);
   }
