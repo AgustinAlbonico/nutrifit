@@ -102,9 +102,15 @@ export function Sidebar() {
     },
     {
       to: '/turnos-profesional',
+      label: 'Mi agenda del dia',
+      icon: Users,
+      roles: ['NUTRICIONISTA'],
+    },
+    {
+      to: '/recepcion/turnos',
       label: 'Turnos del dia',
       icon: Users,
-      roles: ['ADMIN', 'NUTRICIONISTA'],
+      roles: ['ADMIN'],
     },
     {
       to: '/pacientes',

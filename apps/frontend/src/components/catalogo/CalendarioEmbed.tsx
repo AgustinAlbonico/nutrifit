@@ -67,12 +67,11 @@ export function CalendarioEmbed({
         setCargando(true);
         setError(null);
 
-        // Solicitamos ventana 60d pero filtramos client-side al día seleccionado
-        const fechaDesde = format(fecha, 'yyyy-MM-dd');
-        const fechaHasta = fechaDesde;
+        // El endpoint acepta ?fecha=YYYY-MM-DD (un solo dia). El usuario navega dia por dia con el DatePicker.
+        const fechaStr = format(fecha, 'yyyy-MM-dd');
 
         const response = await apiRequest<ApiResponse<DisponibilidadAmpliada>>(
-          `/turnos/socio/profesional/${nutricionistaId}/disponibilidad?fechaDesde=${fechaDesde}&fechaHasta=${fechaHasta}`,
+          `/turnos/socio/profesional/${nutricionistaId}/disponibilidad?fecha=${fechaStr}`,
           { token },
         );
 
