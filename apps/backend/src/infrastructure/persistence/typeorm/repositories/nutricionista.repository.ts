@@ -69,7 +69,7 @@ export class NutricionistaRepositoryImplementation implements NutricionistaRepos
     existing.fotoPerfilKey = entity.fotoPerfilKey;
     existing.matricula = entity.matricula;
     existing.tarifaSesion = entity.tarifaSesion;
-    existing.añosExperiencia = entity.añosExperiencia;
+    existing.aniosExperiencia = entity.aniosExperiencia;
     existing.fechaBaja = entity.fechaBaja;
     existing.presentacion = entity.presentacion;
     existing.certificaciones = entity.certificaciones;
@@ -176,7 +176,7 @@ export class NutricionistaRepositoryImplementation implements NutricionistaRepos
       fotoPerfilKey: nutricionista.fotoPerfilKey,
       matricula: nutricionista.matricula,
       tarifaSesion: nutricionista.tarifaSesion,
-      añosExperiencia: nutricionista.añosExperiencia,
+      aniosExperiencia: nutricionista.aniosExperiencia,
       formacionAcademica: nutricionista.formacionAcademica || [],
       turnos: nutricionista.turnos || [],
       fechaBaja: nutricionista.fechaBaja,
@@ -205,7 +205,7 @@ export class NutricionistaRepositoryImplementation implements NutricionistaRepos
       orm.ciudad,
       orm.provincia,
       orm.dni ?? '',
-      orm.añosExperiencia,
+      orm.aniosExperiencia,
       orm.tarifaSesion,
       orm.agenda || [],
       [],

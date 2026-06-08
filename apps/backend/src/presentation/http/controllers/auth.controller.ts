@@ -1,6 +1,8 @@
-import { Body, Controller, Get, Inject, UseGuards, Post } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Put, UseGuards, Post } from '@nestjs/common';
 import { LoginDto } from 'src/application/auth/dtos/login.dto';
 import { LoginUseCase } from 'src/application/auth/login.use-case';
+import { CambiarContrasenaUseCase } from 'src/application/auth/cambiar-contrasena.use-case';
+import { CambiarContrasenaDto } from 'src/application/auth/dtos/cambiar-contrasena.dto';
 import {
   APP_LOGGER_SERVICE,
   IAppLoggerService,
@@ -21,6 +23,7 @@ import {
 export class AuthController {
   constructor(
     private readonly loginUseCase: LoginUseCase,
+    private readonly cambiarContrasenaUseCase: CambiarContrasenaUseCase,
     private readonly permisosService: PermisosService,
     @Inject(USUARIO_REPOSITORY)
     private readonly usuarioRepository: UsuarioRepository,
@@ -41,6 +44,15 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async getPermissions(@CurrentUserId() userId: number) {
     return this.permisosService.getAccionesEfectivasUsuario(userId);
+  }
+
+  @Put('cambiar-contrasena')
+  @UseGuards(JwtAuthGuard)
+  async cambiarContrasena(
+    @CurrentUserId() userId: number,
+    @Body() body: CambiarContrasenaDto,
+  ) {
+    return this.cambiarContrasenaUseCase.execute(userId, body);
   }
 
   @Get('perfil')

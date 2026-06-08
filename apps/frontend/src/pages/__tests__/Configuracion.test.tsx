@@ -3,16 +3,12 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Configuracion } from '@/pages/Configuracion';
 
-// Mock useAuth
-const mockUseAuth = vi.hoisted(() => ({
-  __esModule: true,
-  default: () => ({
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({
     esSuperadmin: false,
     token: 'mock-token',
   }),
 }));
-
-vi.mock('@/contexts/AuthContext', mockUseAuth);
 
 // Mock apiRequest
 const mockApiRequest = vi.hoisted(() => vi.fn());
@@ -31,9 +27,9 @@ describe('Configuracion - Cambio de contraseña', () => {
   };
 
   const fillPasswordForm = async (user: ReturnType<typeof userEvent.setup>, currentPassword: string, newPassword: string, confirmPassword: string) => {
-    const currentInput = screen.getByLabelText(/contraseña actual/i);
-    const newInput = screen.getByLabelText(/nueva contraseña/i);
-    const confirmInput = screen.getByLabelText(/confirmar nueva contraseña/i);
+    const currentInput = screen.getByLabelText(/^contraseña actual$/i);
+    const newInput = screen.getByLabelText(/^nueva contraseña$/i);
+    const confirmInput = screen.getByLabelText(/^confirmar nueva contraseña$/i);
 
     await user.type(currentInput, currentPassword);
     await user.type(newInput, newPassword);
@@ -43,9 +39,9 @@ describe('Configuracion - Cambio de contraseña', () => {
   it('debe renderizar el formulario de cambio de contraseña', () => {
     renderForm();
 
-    expect(screen.getByLabelText(/contraseña actual/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/nueva contraseña/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/confirmar nueva contraseña/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^contraseña actual$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^nueva contraseña$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^confirmar nueva contraseña$/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /guardar cambios/i })).toBeInTheDocument();
   });
 

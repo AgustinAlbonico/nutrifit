@@ -12,7 +12,7 @@ export interface Nutricionista {
   ciudad: string;
   provincia: string;
   matricula: string;
-  añosExperiencia: number;
+  aniosExperiencia: number;
   tarifaSesion: number;
   email: string;
   fechaBaja: string | null;
@@ -32,7 +32,7 @@ export interface CrearNutricionistaDto {
   provincia: string;
   email: string;
   matricula: string;
-  añosExperiencia: number;
+  aniosExperiencia: number;
   tarifaSesion: number;
   contrasena: string;
 }

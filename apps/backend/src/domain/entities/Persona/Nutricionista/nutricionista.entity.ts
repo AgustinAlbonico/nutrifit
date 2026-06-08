@@ -8,7 +8,7 @@ import { AuditableEntity } from '../../../shared/auditable.entity';
 export class NutricionistaEntity extends PersonaEntity {
   matricula: string;
   tarifaSesion: number;
-  añosExperiencia: number;
+  aniosExperiencia: number;
   agendas: AgendaEntity[];
   formacionAcademica: FormacionAcademicaEntity[];
   turnos: TurnoEntity[];
@@ -53,7 +53,7 @@ export class NutricionistaEntity extends PersonaEntity {
       1,
     );
     this.tarifaSesion = tarifaSesion;
-    this.añosExperiencia = experiencia;
+    this.aniosExperiencia = experiencia;
     this.agendas = agendas;
     this.formacionAcademica = formacionAcademica;
     this.turnos = turnos;

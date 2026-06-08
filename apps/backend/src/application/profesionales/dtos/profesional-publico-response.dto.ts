@@ -21,7 +21,7 @@ export class ProfesionalPublicoResponseDto {
   matricula: string;
   ciudad: string;
   provincia: string;
-  añosExperiencia: number;
+  aniosExperiencia: number;
   tarifaSesion: number;
   // Campos nuevos (spec 10 / spec 15)
   fotoUrl: string | null;
@@ -39,8 +39,10 @@ export class PerfilProfesionalPublicoResponseDto extends ProfesionalPublicoRespo
 
 export class CatalogoProfesionalResponseDto {
   items: ProfesionalPublicoResponseDto[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+  pagination: {
+    total: number;
+    page: number;
+    per_page: number;
+    total_pages: number;
+  };
 }

@@ -3,7 +3,6 @@ import {
   Get,
   Query,
   UseGuards,
-  BadRequestException,
 } from '@nestjs/common';
 import { Rol as RolEnum } from 'src/domain/entities/Usuario/Rol';
 import { AccionAuditoria } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
@@ -11,6 +10,7 @@ import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditori
 import { JwtAuthGuard } from 'src/infrastructure/auth/guards/auth.guard';
 import { RolesGuard } from 'src/infrastructure/auth/guards/roles.guard';
 import { Rol } from 'src/infrastructure/auth/decorators/role.decorator';
+import { CurrentUser, UsuarioAutenticadoPayload } from 'src/infrastructure/auth/decorators/current-user.decorator';
 
 interface FiltrosAuditoriaDto {
   fechaDesde?: string;
@@ -40,16 +40,16 @@ export class AdminAuditoriaController {
   constructor(private readonly auditoriaService: AuditoriaService) {}
 
   @Get()
-  @Rol(RolEnum.ADMIN)
+  @Rol(RolEnum.ADMIN, RolEnum.SUPERADMIN)
   async listarAuditoria(
     @Query() filtros: FiltrosAuditoriaDto,
+    @CurrentUser() usuario: UsuarioAutenticadoPayload,
   ): Promise<RegistroAuditoria[]> {
-    // Admin audit listing REQUIRES explicit gimnasioId to prevent data leaks
-    if (filtros.gimnasioId === undefined) {
-      throw new BadRequestException(
-        'Para listar auditoria como admin debes especificar el parametro gimnasioId',
-      );
-    }
+    const esSuperadmin = usuario.rol === RolEnum.SUPERADMIN;
+
+    // Admin usa su propio gimnasioId si no se especificó otro
+    // SUPERADMIN puede ver todo (sin filtro de gimnasio)
+    const gimnasioId = filtros.gimnasioId ?? (!esSuperadmin ? usuario.gimnasioId : undefined);
 
     return this.auditoriaService.listarConFiltros({
       fechaDesde: filtros.fechaDesde ? new Date(filtros.fechaDesde) : undefined,
@@ -57,7 +57,7 @@ export class AdminAuditoriaController {
       accion: filtros.accion,
       entidad: filtros.entidad,
       usuarioId: filtros.usuarioId,
-      gimnasioId: filtros.gimnasioId,
+      gimnasioId,
     });
   }
 }

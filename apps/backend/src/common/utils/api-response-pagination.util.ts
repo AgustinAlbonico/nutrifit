@@ -7,15 +7,15 @@ export class ResponseUtil {
     page: number,
     limit: number,
   ): IPaginatedData<T> {
-    const totalPages = Math.ceil(total / limit);
+    const total_pages = Math.ceil(total / limit);
 
     const paginatedData: IPaginatedData<T> = {
       items: data,
       pagination: {
         total,
         page,
-        limit,
-        totalPages,
+        per_page: limit,
+        total_pages,
         hasNext: page * limit < total,
         hasPrev: page > 1,
       },

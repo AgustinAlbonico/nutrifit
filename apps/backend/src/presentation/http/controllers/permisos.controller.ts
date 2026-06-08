@@ -30,21 +30,21 @@ export class PermisosController {
   constructor(private readonly permisosService: PermisosService) {}
 
   @Get('actions')
-  @Rol(RolEnum.ADMIN)
+  @Rol(RolEnum.ADMIN, RolEnum.SUPERADMIN)
   @Actions('auth.permissions.read')
   async listarAcciones() {
     return this.permisosService.listarAcciones();
   }
 
   @Post('actions')
-  @Rol(RolEnum.ADMIN)
+  @Rol(RolEnum.ADMIN, RolEnum.SUPERADMIN)
   @Actions('auth.permissions.write')
   async crearAccion(@Body() dto: CreateAccionDto) {
     return this.permisosService.crearAccion(dto);
   }
 
   @Put('actions/:id')
-  @Rol(RolEnum.ADMIN)
+  @Rol(RolEnum.ADMIN, RolEnum.SUPERADMIN)
   @Actions('auth.permissions.write')
   async editarAccion(
     @Param('id', ParseIntPipe) actionId: number,
@@ -54,21 +54,21 @@ export class PermisosController {
   }
 
   @Get('groups')
-  @Rol(RolEnum.ADMIN)
+  @Rol(RolEnum.ADMIN, RolEnum.SUPERADMIN)
   @Actions('auth.permissions.read')
   async listarGrupos() {
     return this.permisosService.listarGrupos();
   }
 
   @Post('groups')
-  @Rol(RolEnum.ADMIN)
+  @Rol(RolEnum.ADMIN, RolEnum.SUPERADMIN)
   @Actions('auth.permissions.write')
   async crearGrupo(@Body() dto: CreateGrupoPermisoDto) {
     return this.permisosService.crearGrupo(dto);
   }
 
   @Put('groups/:id')
-  @Rol(RolEnum.ADMIN)
+  @Rol(RolEnum.ADMIN, RolEnum.SUPERADMIN)
   @Actions('auth.permissions.write')
   async editarGrupo(
     @Param('id', ParseIntPipe) groupId: number,
@@ -78,7 +78,7 @@ export class PermisosController {
   }
 
   @Put('groups/:id/actions')
-  @Rol(RolEnum.ADMIN)
+  @Rol(RolEnum.ADMIN, RolEnum.SUPERADMIN)
   @Actions('auth.permissions.assign')
   async asignarAccionesAGrupo(
     @Param('id', ParseIntPipe) groupId: number,
@@ -88,7 +88,7 @@ export class PermisosController {
   }
 
   @Put('users/:id/groups')
-  @Rol(RolEnum.ADMIN)
+  @Rol(RolEnum.ADMIN, RolEnum.SUPERADMIN)
   @Actions('auth.permissions.assign')
   async asignarGruposAUsuario(
     @Param('id', ParseIntPipe) userId: number,
@@ -98,7 +98,7 @@ export class PermisosController {
   }
 
   @Put('users/:id/actions')
-  @Rol(RolEnum.ADMIN)
+  @Rol(RolEnum.ADMIN, RolEnum.SUPERADMIN)
   @Actions('auth.permissions.assign')
   async asignarAccionesAUsuario(
     @Param('id', ParseIntPipe) userId: number,
@@ -108,14 +108,14 @@ export class PermisosController {
   }
 
   @Get('users/:id/actions')
-  @Rol(RolEnum.ADMIN)
+  @Rol(RolEnum.ADMIN, RolEnum.SUPERADMIN)
   @Actions('auth.permissions.read')
   async accionesDeUsuario(@Param('id', ParseIntPipe) userId: number) {
     return this.permisosService.getAccionesEfectivasUsuario(userId);
   }
 
   @Get('users')
-  @Rol(RolEnum.ADMIN)
+  @Rol(RolEnum.ADMIN, RolEnum.SUPERADMIN)
   @Actions('auth.permissions.read')
   async buscarUsuarios(
     @Query('page') pageRaw?: string,

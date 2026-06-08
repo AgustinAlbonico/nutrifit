@@ -50,7 +50,7 @@ interface PerfilNutricionista {
   especialidad: string;
   ciudad: string;
   provincia: string;
-  añosExperiencia: number;
+  aniosExperiencia: number;
   tarifaSesion: number;
   matricula: string;
   presentacion: string | null;
@@ -230,7 +230,7 @@ export function PerfilNutricionista() {
                     </Badge>
                     <Badge variant="secondary" className="gap-1">
                       <Calendar className="h-3 w-3" />
-                      {perfil.añosExperiencia} años de experiencia
+                      {perfil.aniosExperiencia} años de experiencia
                     </Badge>
                     <Badge variant="secondary" className="gap-1">
                       <MapPin className="h-3 w-3" />

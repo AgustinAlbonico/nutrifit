@@ -57,7 +57,7 @@ export class GetPerfilProfesionalPublicoUseCase implements BaseUseCase {
     response.especialidad = 'Nutricionista';
     response.ciudad = nutricionista.ciudad;
     response.provincia = nutricionista.provincia;
-    response.añosExperiencia = nutricionista.añosExperiencia;
+    response.aniosExperiencia = nutricionista.aniosExperiencia;
     response.tarifaSesion = nutricionista.tarifaSesion;
     response.matricula = nutricionista.matricula;
     response.presentacion = nutricionista.presentacion ?? null;

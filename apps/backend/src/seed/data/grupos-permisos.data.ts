@@ -45,6 +45,14 @@ export const GRUPOS_PERMISOS: Record<string, GrupoPermisoData> = {
       ACCIONES.TURNOS_VER,
     ],
   },
+  PROFESIONAL: {
+    clave: 'PROFESIONAL',
+    nombre: 'Profesional',
+    descripcion: 'Permisos base para profesionales del gimnasio',
+    acciones: [
+      'profesionales.*',
+    ],
+  },
   SOCIO: {
     clave: 'SOCIO',
     nombre: 'Socio',

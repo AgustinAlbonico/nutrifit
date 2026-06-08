@@ -51,6 +51,21 @@ CREDENTIALS.md
 skills-lock.json
 openspec/
 
+# Playwright MCP artifacts
+.playwright-mcp/
+
 # Temporary files
 *.tmp
 *.temp
+
+# Temporary test files
+apps/backend/test*.ts
+
+# Screenshots
+final-*.png
+
+# Planning docs
+docs/iteraciones/
+
+# Utility scripts
+replace.js

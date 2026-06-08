@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { UsuarioOrmEntity } from '../entities/usuario.entity';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UsuarioEntity } from 'src/domain/entities/Usuario/usuario.entity';
+import { Rol } from 'src/domain/entities/Usuario/Rol';
 import {
   PerfilUsuario,
   UsuarioRepository,
@@ -26,6 +27,8 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
   ) {}
 
   async findByEmail(email: string): Promise<UsuarioEntity | null> {
+    if (!email) return null;
+
     const user = await this.userRepository.findOne({
       where: { email },
       relations: {
@@ -160,6 +163,23 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
     return formatedUser;
   }
 
+  async findAdminByGimnasioId(
+    gimnasioId: number,
+  ): Promise<UsuarioEntity | null> {
+    const user = await this.userRepository.findOne({
+      where: {
+        rol: Rol.ADMIN,
+        persona: {
+          gimnasioId,
+          fechaBaja: IsNull(),
+        },
+      },
+      order: { idUsuario: 'ASC' },
+    });
+
+    return user ? this.findByEmail(user.email) : null;
+  }
+
   async findPersonaIdByUserId(userId: number): Promise<number | null> {
     const user = await this.userRepository.findOne({
       where: { idUsuario: userId },
@@ -230,6 +250,12 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
   }
 
   async update(id: number, entity: UsuarioEntity): Promise<UsuarioEntity> {
+    await this.userRepository.update(id, {
+      email: entity.email,
+      contraseña: entity.contraseña,
+      rol: entity.rol,
+    });
+
     return entity;
   }
 

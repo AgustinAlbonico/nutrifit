@@ -19,7 +19,6 @@ import {
   obtenerGimnasio,
   actualizarGimnasio,
   eliminarGimnasio,
-  impersonarGimnasio,
   listarAdminsDeGimnasio,
 } from '@/services/gimnasio.service';
 import { Button } from '@/components/ui/button';
@@ -51,13 +50,17 @@ const editarSchema = z.object({
   nombre: z.string().min(3).max(100),
   direccion: z.string().min(5).max(200),
   telefono: z.string().optional(),
-  email: z.string().email().optional().or(z.literal('')),
+  email: z.email().optional().or(z.literal('')),
 });
 
 type EditarFormData = z.infer<typeof editarSchema>;
 
-function formatDate(date: Date | string): string {
+function formatDate(date?: Date | string): string {
+  if (!date) return '-';
+
   const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return '-';
+
   return d.toLocaleDateString('es-AR', {
     day: '2-digit',
     month: '2-digit',
@@ -67,7 +70,7 @@ function formatDate(date: Date | string): string {
 
 export function GimnasioDetailPage() {
   const { id } = useParams({ strict: false }) as { id: string };
-  const { token, rol } = useAuth();
+  const { token, rol, impersonarGimnasio } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [modoEditar, setModoEditar] = useState(false);
@@ -121,6 +124,7 @@ export function GimnasioDetailPage() {
     mutationFn: () => eliminarGimnasio(gimnasioId, token!),
     onSuccess: () => {
       toast.success('Gimnasio eliminado correctamente');
+      queryClient.invalidateQueries({ queryKey: ['gimnasios'] });
       navigate({ to: '/admin/gimnasios' });
     },
     onError: (err: Error) => {
@@ -129,17 +133,10 @@ export function GimnasioDetailPage() {
   });
 
   const mutationImpersonar = useMutation({
-    mutationFn: () => impersonarGimnasio(gimnasioId, token!),
-    onSuccess: (result) => {
-      toast.success(`Ahora operás como ADMIN de "${result.gimnasio.nombre}"`);
-      localStorage.setItem(
-        'nutrifit.auth.impersonated',
-        JSON.stringify({
-          token: result.token,
-          gimnasioId: result.gimnasio.id,
-          gimnasioNombre: result.gimnasio.nombre,
-        }),
-      );
+    mutationFn: () => impersonarGimnasio(gimnasioId),
+    onSuccess: () => {
+      toast.success(`Ahora operás como ADMIN de "${gimnasio?.nombre ?? 'este gimnasio'}"`);
+      queryClient.invalidateQueries({ queryKey: ['gimnasios'] });
       window.location.reload();
     },
     onError: (err: Error) => {

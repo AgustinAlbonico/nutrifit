@@ -15,7 +15,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
   listarGimnasios,
   eliminarGimnasio,
-  impersonarGimnasio,
 } from '@/services/gimnasio.service';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -41,8 +40,12 @@ import {
 import { toast } from 'sonner';
 import type { Gimnasio } from '@/types/gimnasio';
 
-function formatDate(date: Date | string): string {
+function formatDate(date?: Date | string): string {
+  if (!date) return '-';
+
   const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return '-';
+
   return d.toLocaleDateString('es-AR', {
     day: '2-digit',
     month: '2-digit',
@@ -51,7 +54,7 @@ function formatDate(date: Date | string): string {
 }
 
 export function GimnasiosListPage() {
-  const { token, rol } = useAuth();
+  const { token, rol, impersonarGimnasio } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [mostrarModalEliminar, setMostrarModalEliminar] = useState(false);
@@ -83,21 +86,14 @@ export function GimnasiosListPage() {
 
   const mutationImpersonar = useMutation({
     mutationFn: async (id: number) => {
-      const result = await impersonarGimnasio(id, token!);
-      localStorage.setItem(
-        'nutrifit.auth.impersonated',
-        JSON.stringify({
-          token: result.token,
-          gimnasioId: result.gimnasio.id,
-          gimnasioNombre: result.gimnasio.nombre,
-        }),
-      );
-      return result;
+      await impersonarGimnasio(id);
+      return gimnasios?.find((gimnasio) => gimnasio.id === id) ?? null;
     },
-    onSuccess: (result) => {
+    onSuccess: (gimnasio) => {
       toast.success(
-        `Ahora operás como ADMIN de "${result.gimnasio.nombre}"`,
+        `Ahora operás como ADMIN de "${gimnasio?.nombre ?? 'este gimnasio'}"`,
       );
+      queryClient.invalidateQueries({ queryKey: ['gimnasios'] });
       window.location.reload();
     },
     onError: (err: Error) => {

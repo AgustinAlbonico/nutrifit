@@ -42,7 +42,7 @@ interface NutricionistaCard {
   matricula: string;
   ciudad: string;
   provincia: string;
-  añosExperiencia: number;
+  aniosExperiencia: number;
   tarifaSesion: number;
   fotoUrl: string | null;
   presentacion: string | null;
@@ -352,7 +352,7 @@ function NutricionistaCardItem({ nutri }: { nutri: NutricionistaCard }) {
         <div className="mt-auto flex flex-wrap items-center gap-2 pt-2">
           <Badge variant="secondary" className="gap-1">
             <Award className="h-3 w-3" />
-            {nutri.añosExperiencia} años
+            {nutri.aniosExperiencia} años
           </Badge>
           {nutri.slotsProximos7Dias > 0 && (
             <Badge

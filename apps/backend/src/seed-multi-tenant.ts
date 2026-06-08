@@ -231,20 +231,43 @@ async function runSeedMultiTenant() {
       const gimnasioIds = new Map<string, number>();
 
       for (const gimnasio of gimnasios) {
-        const resultado: unknown = await dataSource.query(
-          `INSERT INTO gimnasio (nombre, direccion, telefono, email, activo, fecha_creacion)
-           VALUES (?, ?, ?, ?, TRUE, NOW())
-           ON DUPLICATE_KEY UPDATE id_gimnasio = LAST_INSERT_ID(id_gimnasio)`,
-          [
-            gimnasio.nombre,
-            gimnasio.direccion,
-            gimnasio.telefono,
-            gimnasio.email,
-          ],
-        );
+        const existentes = (await dataSource.query(
+          `SELECT id_gimnasio FROM gimnasio WHERE nombre = ? LIMIT 1`,
+          [gimnasio.nombre],
+        )) as { id_gimnasio: number }[];
 
-        const fila = resultado as { insertId: number };
-        const idGimnasio = fila.insertId;
+        let idGimnasio = existentes[0]?.id_gimnasio;
+
+        if (idGimnasio) {
+          await dataSource.query(
+            `UPDATE gimnasio
+             SET direccion = ?, telefono = ?, ciudad = ?, email_notificaciones = ?, email_habilitado = TRUE
+             WHERE id_gimnasio = ?`,
+            [
+              gimnasio.direccion,
+              gimnasio.telefono,
+              'Rosario',
+              gimnasio.email,
+              idGimnasio,
+            ],
+          );
+        } else {
+          const resultado: unknown = await dataSource.query(
+            `INSERT INTO gimnasio (nombre, direccion, telefono, ciudad, email_notificaciones, email_habilitado)
+             VALUES (?, ?, ?, ?, ?, TRUE)`,
+            [
+              gimnasio.nombre,
+              gimnasio.direccion,
+              gimnasio.telefono,
+              'Rosario',
+              gimnasio.email,
+            ],
+          );
+
+          const fila = resultado as { insertId: number };
+          idGimnasio = fila.insertId;
+        }
+
         gimnasioIds.set(gimnasio.nombre, idGimnasio);
         console.log(`Gimnasio creado: ${gimnasio.nombre} (ID: ${idGimnasio})`);
       }
@@ -355,9 +378,9 @@ async function runSeedMultiTenant() {
 
       // Asignar grupo
       await dataSource.query(
-        `INSERT INTO usuario_grupo_permiso (id_usuario, id_grupo_permiso, fecha_asignacion)
-         VALUES (?, ?, NOW())
-         ON DUPLICATE KEY UPDATE id_usuario = id_usuario`,
+        `INSERT INTO usuario_grupo_permiso (usuarioIdUsuario, grupoPermisoId, id_gimnasio, fecha_asignacion)
+         VALUES (?, ?, NULL, NOW())
+         ON DUPLICATE KEY UPDATE usuarioIdUsuario = usuarioIdUsuario`,
         [idUsuario, idGrupo],
       );
 
@@ -368,8 +391,8 @@ async function runSeedMultiTenant() {
       const contraseniaHash = await bcrypt.hash('123456', 10);
 
       const resultadoPersona: unknown = await dataSource.query(
-        `INSERT INTO persona (nombre, apellido, tipo_persona)
-         VALUES (?, ?, 'AsistenteOrmEntity')
+        `INSERT INTO persona (nombre, apellido, fecha_nacimiento, genero, telefono, direccion, ciudad, provincia, id_gimnasio, tipo_persona)
+         VALUES (?, ?, '1990-01-01', 'OTRO', '341-000-0000', 'Sin direccion', 'Rosario', 'Santa Fe', NULL, 'RecepcionistaOrmEntity')
          ON DUPLICATE KEY UPDATE id_persona = LAST_INSERT_ID(id_persona)`,
         [superAdmin.nombre, superAdmin.apellido],
       );
@@ -407,8 +430,8 @@ async function runSeedMultiTenant() {
         }
 
         const resultadoPersona: unknown = await dataSource.query(
-          `INSERT INTO persona (nombre, apellido, gimnasio_id, tipo_persona)
-           VALUES (?, ?, ?, 'AsistenteOrmEntity')
+          `INSERT INTO persona (nombre, apellido, fecha_nacimiento, genero, telefono, direccion, ciudad, provincia, id_gimnasio, tipo_persona)
+           VALUES (?, ?, '1990-01-01', 'OTRO', '341-000-0000', 'Sin direccion', 'Rosario', 'Santa Fe', ?, 'RecepcionistaOrmEntity')
            ON DUPLICATE KEY UPDATE id_persona = LAST_INSERT_ID(id_persona)`,
           [admin.nombre, admin.apellido, idGimnasio],
         );
@@ -446,8 +469,8 @@ async function runSeedMultiTenant() {
         }
 
         const resultadoPersona: unknown = await dataSource.query(
-          `INSERT INTO persona (nombre, apellido, gimnasio_id, matricula, presentacion, certificaciones, tipo_persona)
-           VALUES (?, ?, ?, ?, ?, ?, 'NutricionistaOrmEntity')
+          `INSERT INTO persona (nombre, apellido, fecha_nacimiento, genero, telefono, direccion, ciudad, provincia, id_gimnasio, matricula, anios_experiencia, tarifa_sesion, presentacion, certificaciones, tipo_persona)
+           VALUES (?, ?, '1990-01-01', 'OTRO', '341-000-0000', 'Sin direccion', 'Rosario', 'Santa Fe', ?, ?, 5, 0, ?, ?, 'NutricionistaOrmEntity')
            ON DUPLICATE KEY UPDATE id_persona = LAST_INSERT_ID(id_persona)`,
           [
             nutri.nombre,
@@ -492,8 +515,8 @@ async function runSeedMultiTenant() {
         }
 
         const resultadoPersona: unknown = await dataSource.query(
-          `INSERT INTO persona (nombre, apellido, gimnasio_id, dni, fecha_alta, tipo_persona)
-           VALUES (?, ?, ?, ?, NOW(), 'SocioOrmEntity')
+          `INSERT INTO persona (nombre, apellido, fecha_nacimiento, genero, telefono, direccion, ciudad, provincia, id_gimnasio, dni, fecha_alta, tipo_persona)
+           VALUES (?, ?, '1990-01-01', 'OTRO', '341-000-0000', 'Sin direccion', 'Rosario', 'Santa Fe', ?, ?, NOW(), 'SocioOrmEntity')
            ON DUPLICATE KEY UPDATE id_persona = LAST_INSERT_ID(id_persona)`,
           [socio.nombre, socio.apellido, idGimnasio, socio.dni],
         );

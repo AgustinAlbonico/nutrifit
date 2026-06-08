@@ -44,7 +44,7 @@ export abstract class PersonaOrmEntity extends AuditableOrmEntity {
   @Column({ name: 'genero', type: 'enum', enum: Genero })
   genero: Genero;
 
-  @Column({ name: 'telefono', type: 'varchar', length: 15 })
+  @Column({ name: 'telefono', type: 'varchar', length: 30 })
   telefono: string;
 
   @Column({ name: 'direccion', type: 'varchar', length: 255 })
@@ -112,7 +112,7 @@ export class NutricionistaOrmEntity extends PersonaOrmEntity {
   matricula: string;
 
   @Column({ name: 'anios_experiencia', type: 'int' })
-  añosExperiencia: number;
+  aniosExperiencia: number;
 
   @Column({ name: 'tarifa_sesion', type: 'decimal', precision: 10, scale: 2 })
   tarifaSesion: number;

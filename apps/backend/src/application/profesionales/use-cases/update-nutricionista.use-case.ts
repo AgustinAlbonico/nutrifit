@@ -114,8 +114,8 @@ export class UpdateNutricionistaUseCase implements BaseUseCase {
     if (payload.matricula) nutricionista.matricula = payload.matricula;
     if (payload.tarifaSesion !== undefined)
       nutricionista.tarifaSesion = payload.tarifaSesion;
-    if (payload.añosExperiencia !== undefined)
-      nutricionista.añosExperiencia = payload.añosExperiencia;
+    if (payload.aniosExperiencia !== undefined)
+      nutricionista.aniosExperiencia = payload.aniosExperiencia;
 
     // Update foto de perfil if provided
     if (fotoPerfilKey) {

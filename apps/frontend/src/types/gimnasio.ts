@@ -7,7 +7,7 @@ export interface Gimnasio {
   telefono?: string;
   email?: string;
   activo: boolean;
-  fechaCreacion: Date;
+  fechaCreacion?: Date | string;
 }
 
 export interface CrearGimnasioRequest {
@@ -41,7 +41,7 @@ export interface AdminUser {
   rol: Rol;
   gimnasioId: number;
   activo: boolean;
-  fechaCreacion: Date;
+  fechaCreacion?: Date | string;
 }
 
 export interface ApiResponse<T> {

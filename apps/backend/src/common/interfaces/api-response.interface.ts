@@ -1,8 +1,10 @@
-export interface IApiResponse<T> {
+export interface IApiResponse<T = any> {
   success: boolean;
-  message: string;
-  data: T;
-  timestamp: string;
+  message?: string;
+  data: T | null;
+  error?: any | null;
+  errors?: any[];
+  meta: any | null;
 }
 
 export interface IPaginatedData<T> {
@@ -10,8 +12,8 @@ export interface IPaginatedData<T> {
   pagination: {
     total: number;
     page: number;
-    limit: number;
-    totalPages: number;
+    per_page: number;
+    total_pages: number;
     hasNext: boolean;
     hasPrev: boolean;
   };

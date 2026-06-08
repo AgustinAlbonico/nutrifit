@@ -71,7 +71,7 @@ export class SocioController {
 
   @Post()
   @Rol(RolEnum.ADMIN)
-  @Actions('socios.registrar')
+  @Actions('socios.crear')
   @UseInterceptors(FileInterceptor('foto'))
   async registrarSocio(
     @Body() registrarSocioDto: RegistrarSocioDto,

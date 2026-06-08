@@ -102,12 +102,12 @@ export function Permisos() {
 
   // Permisos derivados
   const puedeGestionarPermisos = useMemo(
-    () => rol === 'ADMIN' && hasPermission('auth.permissions.write'),
+    () => (rol === 'ADMIN' || rol === 'SUPERADMIN') && hasPermission('auth.permissions.write'),
     [hasPermission, rol],
   );
 
   const puedeLeerPermisos = useMemo(
-    () => rol === 'ADMIN' && hasPermission('auth.permissions.read'),
+    () => (rol === 'ADMIN' || rol === 'SUPERADMIN') && hasPermission('auth.permissions.read'),
     [hasPermission, rol],
   );
 

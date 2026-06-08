@@ -114,6 +114,7 @@ export function Socios() {
   const [socioForm, setSocioForm] = useState<CrearSocioDto>(FORMULARIO_SOCIO_INICIAL);
   const [erroresCreacion, setErroresCreacion] = useState<ErroresFormularioCreacion>({});
   const [errorGeneralCreacion, setErrorGeneralCreacion] = useState<string | null>(null);
+  const [enviandoCreacion, setEnviandoCreacion] = useState(false);
 
   const [socioFormEdicion, setSocioFormEdicion] = useState<CrearSocioDto>(FORMULARIO_SOCIO_INICIAL);
   const [erroresEdicion, setErroresEdicion] = useState<ErroresFormularioEdicion>({});
@@ -133,11 +134,6 @@ export function Socios() {
     setSocioSeleccionado(socio);
     setMostrarModalDetalles(true);
   };
-
-  const erroresContrasenia = useMemo(
-    () => obtenerErroresContrasenia(socioForm.contrasena),
-    [socioForm.contrasena],
-  );
 
   const requisitosContrasenia = useMemo(
     () => [
@@ -298,34 +294,47 @@ export function Socios() {
     }
   }, [ciudadesDisponibles, filtroCiudad]);
 
-  const actualizarCampoCreacion = useCallback(
-    <K extends CampoFormularioCreacion>(campo: K, valor: CrearSocioDto[K]) => {
-      setSocioForm((prev) => ({ ...prev, [campo]: valor }));
-      setErroresCreacion((prev) => ({ ...prev, [campo]: undefined }));
-      setErrorGeneralCreacion(null);
+  const validarFormularioCreacion = useCallback(
+    (datos: CrearSocioDto): ErroresFormularioCreacion => {
+      const errores: ErroresFormularioCreacion = {};
+
+      if (!datos.nombre.trim()) errores.nombre = 'Ingresá el nombre.';
+      if (!datos.apellido.trim()) errores.apellido = 'Ingresá el apellido.';
+      if (!REGEX_DNI.test(datos.dni.trim())) errores.dni = 'El DNI debe tener exactamente 8 dígitos.';
+      if (!datos.fechaNacimiento) errores.fechaNacimiento = 'Seleccioná la fecha de nacimiento.';
+      if (!REGEX_TELEFONO.test(datos.telefono.trim())) errores.telefono = 'Ingresá un teléfono válido (8 a 20 caracteres).';
+      if (!datos.direccion.trim()) errores.direccion = 'Ingresá la dirección.';
+      if (!datos.ciudad.trim()) errores.ciudad = 'Ingresá la ciudad.';
+      if (!datos.provincia.trim()) errores.provincia = 'Ingresá la provincia.';
+      if (!REGEX_EMAIL.test(datos.email.trim())) errores.email = 'Ingresá un email válido.';
+
+      if (obtenerErroresContrasenia(datos.contrasena).length > 0) {
+        errores.contrasena = 'La contraseña no cumple los requisitos mínimos de seguridad.';
+      }
+
+      return errores;
     },
     [],
   );
 
-  const validarFormularioCreacion = useCallback((): ErroresFormularioCreacion => {
-    const errores: ErroresFormularioCreacion = {};
+  const actualizarCampoCreacion = useCallback(
+    <K extends CampoFormularioCreacion>(campo: K, valor: CrearSocioDto[K]) => {
+      const nuevoForm = { ...socioForm, [campo]: valor };
+      setSocioForm(nuevoForm);
+      setErrorGeneralCreacion(null);
 
-    if (!socioForm.nombre.trim()) errores.nombre = 'Ingresá el nombre.';
-    if (!socioForm.apellido.trim()) errores.apellido = 'Ingresá el apellido.';
-    if (!REGEX_DNI.test(socioForm.dni.trim())) errores.dni = 'El DNI debe tener exactamente 8 dígitos.';
-    if (!socioForm.fechaNacimiento) errores.fechaNacimiento = 'Seleccioná la fecha de nacimiento.';
-    if (!REGEX_TELEFONO.test(socioForm.telefono.trim())) errores.telefono = 'Ingresá un teléfono válido (8 a 20 caracteres).';
-    if (!socioForm.direccion.trim()) errores.direccion = 'Ingresá la dirección.';
-    if (!socioForm.ciudad.trim()) errores.ciudad = 'Ingresá la ciudad.';
-    if (!socioForm.provincia.trim()) errores.provincia = 'Ingresá la provincia.';
-    if (!REGEX_EMAIL.test(socioForm.email.trim())) errores.email = 'Ingresá un email válido.';
-
-    if (erroresContrasenia.length > 0) {
-      errores.contrasena = 'La contraseña no cumple los requisitos mínimos de seguridad.';
-    }
-
-    return errores;
-  }, [erroresContrasenia.length, socioForm]);
+      const erroresCompletos = validarFormularioCreacion(nuevoForm);
+      setErroresCreacion((prev) => {
+        const resultado: ErroresFormularioCreacion = {};
+        for (const key of Object.keys(prev) as CampoFormularioCreacion[]) {
+          if (erroresCompletos[key]) resultado[key] = erroresCompletos[key];
+        }
+        if (erroresCompletos[campo]) resultado[campo] = erroresCompletos[campo];
+        return resultado;
+      });
+    },
+    [socioForm, validarFormularioCreacion],
+  );
 
   const validarFormularioEdicion = useCallback((): ErroresFormularioEdicion => {
     const errores: ErroresFormularioEdicion = {};
@@ -348,6 +357,7 @@ export function Socios() {
     setErroresCreacion({});
     setErrorGeneralCreacion(null);
     setFotoCreacion(null);
+    setEnviandoCreacion(false);
   }, []);
 
   const cargarSocios = useCallback(async () => {
@@ -379,9 +389,9 @@ export function Socios() {
 
   const crearSocio = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!token) return;
+    if (!token || enviandoCreacion) return;
 
-    const errores = validarFormularioCreacion();
+    const errores = validarFormularioCreacion(socioForm);
 
     if (Object.keys(errores).length > 0) {
       setErroresCreacion(errores);
@@ -389,8 +399,9 @@ export function Socios() {
       return;
     }
 
+    setEnviandoCreacion(true);
+
     try {
-      // Usar FormData si hay foto nueva, sino JSON normal
       if (fotoCreacion instanceof File) {
         const formData = new FormData();
         formData.append('foto', fotoCreacion);
@@ -419,6 +430,8 @@ export function Socios() {
       const errorMessage = err instanceof Error ? err.message : 'No se pudo crear el socio';
       setErrorGeneralCreacion(errorMessage);
       toast.error(errorMessage);
+    } finally {
+      setEnviandoCreacion(false);
     }
   };
 
@@ -1102,7 +1115,12 @@ export function Socios() {
               >
                 Cancelar
               </Button>
-              <Button type="submit">Crear socio</Button>
+              <Button
+                type="submit"
+                disabled={Object.keys(erroresCreacion).length > 0 || enviandoCreacion}
+              >
+                {enviandoCreacion ? 'Creando…' : 'Crear socio'}
+              </Button>
             </div>
           </form>
         </DialogContent>

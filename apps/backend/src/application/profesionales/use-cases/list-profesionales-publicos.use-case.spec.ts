@@ -54,10 +54,10 @@ describe('ListProfesionalesPublicosUseCase', () => {
     const result = await useCase.execute({});
 
     expect(result.items).toEqual([]);
-    expect(result.total).toBe(0);
-    expect(result.page).toBe(1);
-    expect(result.limit).toBe(12);
-    expect(result.totalPages).toBe(1);
+    expect(result.pagination.total).toBe(0);
+    expect(result.pagination.page).toBe(1);
+    expect(result.pagination.per_page).toBe(12);
+    expect(result.pagination.total_pages).toBe(1);
   });
 
   it('incluye solo nutricionistas activos (excluye fechaBaja) y no expone datos sensibles', async () => {
@@ -69,7 +69,7 @@ describe('ListProfesionalesPublicosUseCase', () => {
     const result = await useCase.execute({});
 
     expect(result.items).toHaveLength(1);
-    expect(result.total).toBe(1);
+    expect(result.pagination.total).toBe(1);
     expect(result.items[0].idPersona).toBe(1);
 
     // Validar ausencia de campos sensibles
@@ -108,10 +108,10 @@ describe('ListProfesionalesPublicosUseCase', () => {
     const result = await useCase.execute({ page: 2, limit: 1 });
 
     expect(result.items).toHaveLength(1);
-    expect(result.page).toBe(2);
-    expect(result.limit).toBe(1);
-    expect(result.total).toBe(3);
-    expect(result.totalPages).toBe(3);
+    expect(result.pagination.page).toBe(2);
+    expect(result.pagination.per_page).toBe(1);
+    expect(result.pagination.total).toBe(3);
+    expect(result.pagination.total_pages).toBe(3);
   });
 });
 
@@ -136,7 +136,7 @@ function crearNutri(overrides: {
     email: 'test@nutrifit.com',
     matricula: `MN-${overrides.idPersona}`,
     tarifaSesion: 10000,
-    añosExperiencia: 3,
+    aniosExperiencia: 3,
     agendas: [
       {
         idAgenda: 1,

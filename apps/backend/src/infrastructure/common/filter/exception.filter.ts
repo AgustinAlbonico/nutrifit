@@ -110,12 +110,14 @@ export class AppErrorFilter implements ExceptionFilter {
     // ===== Respuesta JSON unificada =====
     res.status(statusCode).json({
       success: false,
-      message,
+      data: null,
       error: {
         code: errorCode,
-        path: req.url,
+        message,
+        ...(details && details.length > 0 ? { details } : {}),
+      },
+      meta: {
         timestamp: new Date().toISOString(),
-        ...(details ? { details } : {}), // solo agregamos details si existen
       },
     });
   }

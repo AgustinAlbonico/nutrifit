@@ -12,13 +12,16 @@ import { GIMNASIO_REPOSITORY } from 'src/domain/entities/Gimnasio/gimnasio.repos
 import { GimnasioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/gimnasio.entity';
 import { JwtAuthGuard } from 'src/infrastructure/auth/guards/auth.guard';
 import { RolesGuard } from 'src/infrastructure/auth/guards/roles.guard';
-import { UsuarioRepository } from 'src/domain/entities/Usuario/usuario.repository';
-import { IJwtService, JWT_SERVICE } from 'src/domain/services/jwt.service';
+import { AuthModule } from 'src/application/auth/auth.module';
+import { RepositoriesModule } from 'src/infrastructure/persistence/typeorm/repositories/repositories.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([GimnasioOrmEntity])],
+  imports: [
+    TypeOrmModule.forFeature([GimnasioOrmEntity]),
+    AuthModule,
+    RepositoriesModule,
+  ],
   providers: [
-    GimnasiosController,
     // Use Cases
     CrearGimnasioUseCase,
     ListarGimnasiosUseCase,
@@ -34,9 +37,6 @@ import { IJwtService, JWT_SERVICE } from 'src/domain/services/jwt.service';
     // Guards
     JwtAuthGuard,
     RolesGuard,
-    // External dependencies for ImpersonarUsuarioUseCase
-    { provide: UsuarioRepository, useValue: {} },
-    { provide: JWT_SERVICE, useValue: {} },
   ],
   controllers: [GimnasiosController],
   exports: [GIMNASIO_REPOSITORY],

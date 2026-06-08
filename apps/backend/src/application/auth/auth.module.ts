@@ -3,6 +3,7 @@ import type { StringValue } from 'ms';
 
 import { PasswordEncrypterService } from 'src/infrastructure/services/bcrypt/bcrypt.service';
 import { LoginUseCase } from './login.use-case';
+import { CambiarContrasenaUseCase } from './cambiar-contrasena.use-case';
 import { PASSWORD_ENCRYPTER_SERVICE } from 'src/domain/services/password-encrypter.service';
 import { JWT_SERVICE } from 'src/domain/services/jwt.service';
 import { JwtServiceImpl } from 'src/infrastructure/services/jwt/jwt.service';
@@ -41,7 +42,14 @@ import { EnvironmentConfigService } from 'src/infrastructure/config/environment-
     },
     { provide: USUARIO_REPOSITORY, useClass: UsuarioRepositoryImplementation },
     LoginUseCase,
+    CambiarContrasenaUseCase,
   ],
-  exports: [LoginUseCase, JwtModule, JWT_SERVICE, USUARIO_REPOSITORY],
+  exports: [
+    LoginUseCase,
+    CambiarContrasenaUseCase,
+    JwtModule,
+    JWT_SERVICE,
+    USUARIO_REPOSITORY,
+  ],
 })
 export class AuthModule {}

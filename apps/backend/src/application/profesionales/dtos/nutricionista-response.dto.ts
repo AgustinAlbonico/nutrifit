@@ -11,7 +11,7 @@ export class NutricionistaResponseDto {
   dni: string;
   matricula: string;
   tarifaSesion: number;
-  añosExperiencia: number;
+  aniosExperiencia: number;
   email: string;
   fechaBaja: Date | null;
   activo: boolean;

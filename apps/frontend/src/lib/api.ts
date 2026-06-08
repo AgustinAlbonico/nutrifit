@@ -58,6 +58,7 @@ interface ErrorResponse {
   message?: string;
   error?: {
     code?: string;
+    message?: string;
     path?: string;
     timestamp?: string;
     details?: string[];
@@ -71,11 +72,12 @@ function obtenerMensajeLegible(
 ): { mensaje: string; detalles: string[] | null } {
   const status = response.status;
   const detalles = errorBody?.error?.details ?? null;
+  const mensajeBackend = errorBody?.error?.message || errorBody?.message;
 
   if (status === 401) {
     if (isAuthEndpoint) {
       return {
-        mensaje: errorBody?.message || 'Email o contraseña incorrectos.',
+        mensaje: mensajeBackend || 'Email o contraseña incorrectos.',
         detalles,
       };
     }
@@ -89,7 +91,7 @@ function obtenerMensajeLegible(
     // Error de tenant - el usuario no tiene acceso a este gimnasio
     return {
       mensaje:
-        errorBody?.message ||
+        mensajeBackend ||
         'No tenés permisos para este espacio de trabajo.',
       detalles,
     };
@@ -97,7 +99,7 @@ function obtenerMensajeLegible(
 
   if (status === 404) {
     return {
-      mensaje: 'No se encontró el recurso solicitado.',
+      mensaje: mensajeBackend || 'No se encontró el recurso solicitado.',
       detalles,
     };
   }
@@ -107,7 +109,7 @@ function obtenerMensajeLegible(
       return { mensaje: detalles.join(' • '), detalles };
     }
     return {
-      mensaje: errorBody?.message || 'Revisá los datos ingresados.',
+      mensaje: mensajeBackend || 'Revisá los datos ingresados.',
       detalles,
     };
   }
@@ -121,7 +123,7 @@ function obtenerMensajeLegible(
   }
 
   return {
-    mensaje: errorBody?.message || 'No se pudo completar la operación.',
+    mensaje: mensajeBackend || 'No se pudo completar la operación.',
     detalles,
   };
 }

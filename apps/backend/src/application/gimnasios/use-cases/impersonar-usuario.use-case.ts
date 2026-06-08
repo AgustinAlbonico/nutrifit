@@ -1,6 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { BaseUseCase } from '../../shared/use-case.base';
-import { UsuarioRepository } from 'src/domain/entities/Usuario/usuario.repository';
+import {
+  USUARIO_REPOSITORY,
+  UsuarioRepository,
+} from 'src/domain/entities/Usuario/usuario.repository';
 import {
   GimnasioRepository,
   GIMNASIO_REPOSITORY,
@@ -36,7 +39,7 @@ export interface ImpersonarResultado {
 @Injectable()
 export class ImpersonarUsuarioUseCase implements BaseUseCase {
   constructor(
-    @Inject(UsuarioRepository)
+    @Inject(USUARIO_REPOSITORY)
     private readonly usuarioRepository: UsuarioRepository,
     @Inject(GIMNASIO_REPOSITORY)
     private readonly gimnasioRepository: GimnasioRepository,
@@ -47,7 +50,7 @@ export class ImpersonarUsuarioUseCase implements BaseUseCase {
   async execute(
     superadminId: number,
     gimnasioId: number,
-    email: string,
+    email?: string,
   ): Promise<ImpersonarResultado> {
     // 1. Verificar que el gimnasio existe
     const gimnasio = await this.gimnasioRepository.findById(gimnasioId);
@@ -55,10 +58,13 @@ export class ImpersonarUsuarioUseCase implements BaseUseCase {
       throw new NotFoundError('Gimnasio', String(gimnasioId));
     }
 
-    // 2. Buscar el usuario a impersonar
-    const usuario = await this.usuarioRepository.findByEmail(email);
+    // 2. Buscar el usuario a impersonar. Si no se envía email,
+    // se impersona al ADMIN activo principal del gimnasio.
+    const usuario = email
+      ? await this.usuarioRepository.findByEmail(email)
+      : await this.usuarioRepository.findAdminByGimnasioId(gimnasioId);
     if (!usuario) {
-      throw new NotFoundError('Usuario', email);
+      throw new NotFoundError('Usuario', email ?? `ADMIN gimnasio ${gimnasioId}`);
     }
 
     // 3. Validar: no se puede impersonar a otro SUPERADMIN

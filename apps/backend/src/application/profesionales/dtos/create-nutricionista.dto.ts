@@ -64,9 +64,11 @@ export class CreateNutricionistaDto {
 
   @IsNumber()
   @IsNotEmpty()
+  @Type(() => Number)
   tarifaSesion: number;
 
   @IsNumber()
   @IsNotEmpty()
-  añosExperiencia: number;
+  @Type(() => Number)
+  aniosExperiencia: number;
 }

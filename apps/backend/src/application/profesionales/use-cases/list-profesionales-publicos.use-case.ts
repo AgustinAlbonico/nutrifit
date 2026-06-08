@@ -124,7 +124,7 @@ export class ListProfesionalesPublicosUseCase implements BaseUseCase {
         dto.especialidad = 'Nutricionista';
         dto.ciudad = nutri.ciudad;
         dto.provincia = nutri.provincia;
-        dto.añosExperiencia = nutri.añosExperiencia;
+        dto.aniosExperiencia = nutri.aniosExperiencia;
         dto.tarifaSesion = nutri.tarifaSesion;
         dto.fotoUrl = fotoUrl;
         dto.presentacion = nutri.presentacion ?? null;
@@ -136,10 +136,12 @@ export class ListProfesionalesPublicosUseCase implements BaseUseCase {
 
     return {
       items,
-      total,
-      page,
-      limit,
-      totalPages,
+      pagination: {
+        total,
+        page,
+        per_page: limit,
+        total_pages: totalPages,
+      },
     };
   }
 

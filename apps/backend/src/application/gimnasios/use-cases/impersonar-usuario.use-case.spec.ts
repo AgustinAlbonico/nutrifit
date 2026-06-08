@@ -5,7 +5,10 @@ import {
   BadRequestError,
 } from 'src/domain/exceptions/custom-exceptions';
 import { Rol } from 'src/domain/entities/Usuario/Rol';
-import { UsuarioRepository } from 'src/domain/entities/Usuario/usuario.repository';
+import {
+  USUARIO_REPOSITORY,
+  UsuarioRepository,
+} from 'src/domain/entities/Usuario/usuario.repository';
 import {
   GimnasioRepository,
   GIMNASIO_REPOSITORY,
@@ -53,6 +56,7 @@ describe('ImpersonarUsuarioUseCase', () => {
   beforeEach(async () => {
     mockUsuarioRepository = {
       findByEmail: jest.fn(),
+      findAdminByGimnasioId: jest.fn(),
       findPerfilByUserId: jest.fn(),
       save: jest.fn(),
       update: jest.fn(),
@@ -79,7 +83,7 @@ describe('ImpersonarUsuarioUseCase', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ImpersonarUsuarioUseCase,
-        { provide: UsuarioRepository, useValue: mockUsuarioRepository },
+        { provide: USUARIO_REPOSITORY, useValue: mockUsuarioRepository },
         { provide: GIMNASIO_REPOSITORY, useValue: mockGimnasioRepository },
         { provide: JWT_SERVICE, useValue: mockJwtService },
       ],
@@ -117,6 +121,26 @@ describe('ImpersonarUsuarioUseCase', () => {
           rol: Rol.ADMIN,
         }),
       );
+    });
+
+    it('debe impersonar al ADMIN activo del gimnasio cuando no se envia email', async () => {
+      const superadminId = 1;
+      const gimnasioId = 5;
+      const gimnasio = mockGimnasioEntity(gimnasioId, 'Gym Central');
+      const admin = mockUsuarioEntity({ idUsuario: 10, rol: Rol.ADMIN });
+
+      mockGimnasioRepository.findById.mockResolvedValue(gimnasio as any);
+      mockUsuarioRepository.findAdminByGimnasioId.mockResolvedValue(admin as any);
+      mockJwtService.sign.mockReturnValue('jwt-token-admin-gimnasio');
+
+      const result = await useCase.execute(superadminId, gimnasioId);
+
+      expect(mockUsuarioRepository.findByEmail).not.toHaveBeenCalled();
+      expect(mockUsuarioRepository.findAdminByGimnasioId).toHaveBeenCalledWith(
+        gimnasioId,
+      );
+      expect(result.token).toBe('jwt-token-admin-gimnasio');
+      expect(result.usuario.rol).toBe(Rol.ADMIN);
     });
 
     it('debe lanzar NotFoundError si el gimnasio no existe', async () => {

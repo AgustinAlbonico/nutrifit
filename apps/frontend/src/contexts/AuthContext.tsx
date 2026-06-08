@@ -10,7 +10,9 @@ import {
 } from 'react';
 
 import { apiRequest } from '@/lib/api';
+import { listarGimnasios } from '@/services/gimnasio.service';
 import type { LoginResponse, Rol } from '@/types/auth';
+import type { Gimnasio } from '@/types/gimnasio';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -26,6 +28,9 @@ interface AuthState {
   rol: Rol;
   permissions: string[];
   personaId: number | null;
+  gimnasioId: number | null;
+  impersonatedBy: number | null;
+  gimnasioActual: { id: number; nombre: string } | null;
   email: string | null;
   nombre: string | null;
   apellido: string | null;
@@ -37,19 +42,53 @@ interface AuthContextValue {
   rol: Rol | null;
   permissions: string[];
   personaId: number | null;
+  gimnasioId: number | null;
+  impersonatedBy: number | null;
+  gimnasioActual: { id: number; nombre: string } | null;
+  listaGimnasios: Gimnasio[];
   email: string | null;
   nombre: string | null;
   apellido: string | null;
   fotoPerfilUrl: string | null;
   isAuthenticated: boolean;
+  esSuperadmin: boolean;
+  estaImpersonando: boolean;
   login: (email: string, contrasenia: string) => Promise<void>;
   logout: () => void;
+  impersonarGimnasio: (gimnasioId: number) => Promise<void>;
+  salirDeImpersonacion: () => void;
+  cargarGimnasios: () => Promise<void>;
   refreshPermissions: () => Promise<void>;
   hasPermission: (action: string) => boolean;
   hasAllPermissions: (actions: string[]) => boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+const AUTH_BACKUP_STORAGE_KEY = 'nutrifit.auth.superadmin';
+
+interface JwtPayloadCliente {
+  acciones?: string[];
+  personaId?: number | null;
+  gimnasioId?: number | null;
+  impersonatedBy?: number | null;
+}
+
+function decodificarPayloadJwt(token: string): JwtPayloadCliente {
+  const payload = token.split('.')[1];
+  if (!payload) return {};
+
+  try {
+    const normalizado = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const relleno = normalizado.padEnd(
+      Math.ceil(normalizado.length / 4) * 4,
+      '=',
+    );
+    return JSON.parse(atob(relleno)) as JwtPayloadCliente;
+  } catch {
+    return {};
+  }
+}
 
 function readStoredAuth(): AuthState | null {
   const raw = localStorage.getItem(AUTH_STORAGE_KEY);
@@ -71,6 +110,11 @@ function readStoredAuth(): AuthState | null {
       permissions: parsed.permissions ?? [],
       personaId:
         typeof parsed.personaId === 'number' ? parsed.personaId : null,
+      gimnasioId:
+        typeof parsed.gimnasioId === 'number' ? parsed.gimnasioId : null,
+      impersonatedBy:
+        typeof parsed.impersonatedBy === 'number' ? parsed.impersonatedBy : null,
+      gimnasioActual: parsed.gimnasioActual ?? null,
       email: typeof parsed.email === 'string' ? parsed.email : null,
       nombre: typeof parsed.nombre === 'string' ? parsed.nombre : null,
       apellido: typeof parsed.apellido === 'string' ? parsed.apellido : null,
@@ -84,6 +128,7 @@ function readStoredAuth(): AuthState | null {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [auth, setAuth] = useState<AuthState | null>(() => readStoredAuth());
+  const [listaGimnasios, establecerListaGimnasios] = useState<Gimnasio[]>([]);
 
   useEffect(() => {
     if (!auth) {
@@ -143,6 +188,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         rol: response.data.rol,
         permissions: response.data.acciones ?? [],
         personaId,
+        gimnasioId: null,
+        impersonatedBy: null,
+        gimnasioActual: null,
         email: profile.data.email,
         nombre: profile.data.nombre,
         apellido: profile.data.apellido,
@@ -161,6 +209,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       rol: response.data.rol,
       permissions: response.data.acciones ?? [],
       personaId,
+      gimnasioId: null,
+      impersonatedBy: null,
+      gimnasioActual: null,
       email,
       nombre: null,
       apellido: null,
@@ -175,9 +226,79 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuth(null);
     // Limpiar localStorage para asegurar que no quede rastro
     localStorage.removeItem(AUTH_STORAGE_KEY);
+    localStorage.removeItem(AUTH_BACKUP_STORAGE_KEY);
     // Redirigir a login
     window.location.href = '/login';
   }, []);
+
+  const impersonarGimnasio = useCallback(
+    async (gimnasioId: number) => {
+      if (!auth || auth.rol !== 'SUPERADMIN') {
+        throw new Error('Solo SUPERADMIN puede impersonar gimnasios');
+      }
+
+      const response = await apiRequest<
+        ApiResponse<{
+          token: string;
+          usuario: { id: number; email: string; rol: Rol };
+          gimnasio: { id: number; nombre: string };
+          impersonatedBy: number;
+        }>
+      >(`/gimnasios/${gimnasioId}/impersonar`, {
+        method: 'POST',
+        token: auth.token,
+        body: {},
+      });
+
+      const payload = decodificarPayloadJwt(response.data.token);
+      localStorage.setItem(AUTH_BACKUP_STORAGE_KEY, JSON.stringify(auth));
+
+      const siguienteAuth: AuthState = {
+        token: response.data.token,
+        rol: response.data.usuario.rol,
+        permissions: payload.acciones ?? [],
+        personaId: payload.personaId ?? null,
+        gimnasioId: response.data.gimnasio.id,
+        impersonatedBy: response.data.impersonatedBy,
+        gimnasioActual: response.data.gimnasio,
+        email: response.data.usuario.email,
+        nombre: null,
+        apellido: null,
+        fotoPerfilUrl: null,
+      };
+
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(siguienteAuth));
+      setAuth(siguienteAuth);
+    },
+    [auth],
+  );
+
+  const salirDeImpersonacion = useCallback(() => {
+    const backup = localStorage.getItem(AUTH_BACKUP_STORAGE_KEY);
+    if (!backup) {
+      logout();
+      return;
+    }
+
+    try {
+      const authOriginal = JSON.parse(backup) as AuthState;
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authOriginal));
+      localStorage.removeItem(AUTH_BACKUP_STORAGE_KEY);
+      setAuth(authOriginal);
+    } catch {
+      logout();
+    }
+  }, [logout]);
+
+  const cargarGimnasios = useCallback(async () => {
+    if (!auth?.token || auth.rol !== 'SUPERADMIN') {
+      establecerListaGimnasios([]);
+      return;
+    }
+
+    const gimnasios = await listarGimnasios(auth.token);
+    establecerListaGimnasios(gimnasios);
+  }, [auth?.rol, auth?.token]);
 
   const value = useMemo<AuthContextValue>(() => {
     const esAdmin = auth?.rol === 'ADMIN' || auth?.rol === 'SUPERADMIN';
@@ -188,19 +309,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       rol: auth?.rol ?? null,
       permissions: auth?.permissions ?? [],
       personaId: auth?.personaId ?? null,
+      gimnasioId: auth?.gimnasioId ?? null,
+      impersonatedBy: auth?.impersonatedBy ?? null,
+      gimnasioActual: auth?.gimnasioActual ?? null,
+      listaGimnasios,
       email: auth?.email ?? null,
       nombre: auth?.nombre ?? null,
       apellido: auth?.apellido ?? null,
       fotoPerfilUrl: auth?.fotoPerfilUrl ?? null,
       isAuthenticated: Boolean(auth?.token),
+      esSuperadmin: auth?.rol === 'SUPERADMIN',
+      estaImpersonando: Boolean(auth?.impersonatedBy),
       login,
       logout,
+      impersonarGimnasio,
+      salirDeImpersonacion,
+      cargarGimnasios,
       refreshPermissions,
       hasPermission: (action: string) => esAdmin || permissionsSet.has(action),
       hasAllPermissions: (actions: string[]) =>
         esAdmin || actions.every((action) => permissionsSet.has(action)),
     };
-  }, [auth, login, logout, refreshPermissions]);
+  }, [
+    auth,
+    cargarGimnasios,
+    impersonarGimnasio,
+    listaGimnasios,
+    login,
+    logout,
+    refreshPermissions,
+    salirDeImpersonacion,
+  ]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

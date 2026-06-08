@@ -19,12 +19,33 @@ export class ApiResponse<T> implements NestInterceptor<T, IApiResponse<T>> {
 
     return next.handle().pipe(
       map(
-        (data: T): IApiResponse<T> => ({
-          success: true,
-          message: this.getSuccessMessage(request.method),
-          data,
-          timestamp: new Date().toISOString(),
-        }),
+        (data: any): IApiResponse<any> => {
+          const isPaginated =
+            data &&
+            typeof data === 'object' &&
+            'items' in data &&
+            'pagination' in data;
+
+          if (isPaginated) {
+            return {
+              success: true,
+              data: data.items,
+              error: null,
+              meta: {
+                timestamp: new Date().toISOString(),
+                pagination: data.pagination,
+              },
+            };
+          }
+
+          return {
+            success: true,
+            message: this.getSuccessMessage(request.method),
+            data: data ?? null,
+            meta: null,
+            errors: [],
+          };
+        },
       ),
     );
   }

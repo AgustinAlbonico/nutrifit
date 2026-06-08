@@ -114,6 +114,7 @@ export function Recepcionistas() {
   const [recepcionistaForm, setRecepcionistaForm] = useState<CrearRecepcionistaDto>(FORMULARIO_RECEPCIONISTA_INICIAL);
   const [erroresCreacion, setErroresCreacion] = useState<ErroresFormularioCreacion>({});
   const [errorGeneralCreacion, setErrorGeneralCreacion] = useState<string | null>(null);
+  const [enviandoCreacion, setEnviandoCreacion] = useState(false);
   const [fotoCreacion, setFotoCreacion] = useState<EstadoFoto>(null);
 
   const [recepcionistaFormEdicion, setRecepcionistaFormEdicion] = useState<CrearRecepcionistaDto>(FORMULARIO_RECEPCIONISTA_INICIAL);
@@ -130,11 +131,6 @@ export function Recepcionistas() {
     setRecepcionistaSeleccionado(recepcionista);
     setMostrarModalDetalles(true);
   };
-
-  const erroresContrasenia = useMemo(
-    () => obtenerErroresContrasenia(recepcionistaForm.contrasena),
-    [recepcionistaForm.contrasena],
-  );
 
   const requisitosContrasenia = useMemo(
     () => [
@@ -295,34 +291,47 @@ export function Recepcionistas() {
     }
   }, [ciudadesDisponibles, filtroCiudad]);
 
-  const actualizarCampoCreacion = useCallback(
-    <K extends CampoFormularioCreacion>(campo: K, valor: CrearRecepcionistaDto[K]) => {
-      setRecepcionistaForm((prev) => ({ ...prev, [campo]: valor }));
-      setErroresCreacion((prev) => ({ ...prev, [campo]: undefined }));
-      setErrorGeneralCreacion(null);
+  const validarFormularioCreacion = useCallback(
+    (datos: CrearRecepcionistaDto): ErroresFormularioCreacion => {
+      const errores: ErroresFormularioCreacion = {};
+
+      if (!datos.nombre.trim()) errores.nombre = 'Ingresá el nombre.';
+      if (!datos.apellido.trim()) errores.apellido = 'Ingresá el apellido.';
+      if (!REGEX_DNI.test(datos.dni.trim())) errores.dni = 'El DNI debe tener exactamente 8 dígitos.';
+      if (!datos.fechaNacimiento) errores.fechaNacimiento = 'Seleccioná la fecha de nacimiento.';
+      if (!REGEX_TELEFONO.test(datos.telefono.trim())) errores.telefono = 'Ingresá un teléfono válido (8 a 20 caracteres).';
+      if (!datos.direccion.trim()) errores.direccion = 'Ingresá la dirección.';
+      if (!datos.ciudad.trim()) errores.ciudad = 'Ingresá la ciudad.';
+      if (!datos.provincia.trim()) errores.provincia = 'Ingresá la provincia.';
+      if (!REGEX_EMAIL.test(datos.email.trim())) errores.email = 'Ingresá un email válido.';
+
+      if (obtenerErroresContrasenia(datos.contrasena).length > 0) {
+        errores.contrasena = 'La contraseña no cumple los requisitos mínimos de seguridad.';
+      }
+
+      return errores;
     },
     [],
   );
 
-  const validarFormularioCreacion = useCallback((): ErroresFormularioCreacion => {
-    const errores: ErroresFormularioCreacion = {};
+  const actualizarCampoCreacion = useCallback(
+    <K extends CampoFormularioCreacion>(campo: K, valor: CrearRecepcionistaDto[K]) => {
+      const nuevoForm = { ...recepcionistaForm, [campo]: valor };
+      setRecepcionistaForm(nuevoForm);
+      setErrorGeneralCreacion(null);
 
-    if (!recepcionistaForm.nombre.trim()) errores.nombre = 'Ingresá el nombre.';
-    if (!recepcionistaForm.apellido.trim()) errores.apellido = 'Ingresá el apellido.';
-    if (!REGEX_DNI.test(recepcionistaForm.dni.trim())) errores.dni = 'El DNI debe tener exactamente 8 dígitos.';
-    if (!recepcionistaForm.fechaNacimiento) errores.fechaNacimiento = 'Seleccioná la fecha de nacimiento.';
-    if (!REGEX_TELEFONO.test(recepcionistaForm.telefono.trim())) errores.telefono = 'Ingresá un teléfono válido (8 a 20 caracteres).';
-    if (!recepcionistaForm.direccion.trim()) errores.direccion = 'Ingresá la dirección.';
-    if (!recepcionistaForm.ciudad.trim()) errores.ciudad = 'Ingresá la ciudad.';
-    if (!recepcionistaForm.provincia.trim()) errores.provincia = 'Ingresá la provincia.';
-    if (!REGEX_EMAIL.test(recepcionistaForm.email.trim())) errores.email = 'Ingresá un email válido.';
-
-    if (erroresContrasenia.length > 0) {
-      errores.contrasena = 'La contraseña no cumple los requisitos mínimos de seguridad.';
-    }
-
-    return errores;
-  }, [erroresContrasenia.length, recepcionistaForm]);
+      const erroresCompletos = validarFormularioCreacion(nuevoForm);
+      setErroresCreacion((prev) => {
+        const resultado: ErroresFormularioCreacion = {};
+        for (const key of Object.keys(prev) as CampoFormularioCreacion[]) {
+          if (erroresCompletos[key]) resultado[key] = erroresCompletos[key];
+        }
+        if (erroresCompletos[campo]) resultado[campo] = erroresCompletos[campo];
+        return resultado;
+      });
+    },
+    [recepcionistaForm, validarFormularioCreacion],
+  );
 
   const validarFormularioEdicion = useCallback((): ErroresFormularioEdicion => {
     const errores: ErroresFormularioEdicion = {};
@@ -345,6 +354,7 @@ export function Recepcionistas() {
     setErroresCreacion({});
     setErrorGeneralCreacion(null);
     setFotoCreacion(null);
+    setEnviandoCreacion(false);
   }, []);
 
   const cargarRecepcionistas = useCallback(async () => {
@@ -376,15 +386,17 @@ export function Recepcionistas() {
 
   const crearRecepcionista = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!token) return;
+    if (!token || enviandoCreacion) return;
 
-    const errores = validarFormularioCreacion();
+    const errores = validarFormularioCreacion(recepcionistaForm);
 
     if (Object.keys(errores).length > 0) {
       setErroresCreacion(errores);
       setErrorGeneralCreacion('Revisá los campos marcados antes de continuar.');
       return;
     }
+
+    setEnviandoCreacion(true);
 
     try {
       if (fotoCreacion instanceof File) {
@@ -415,6 +427,8 @@ export function Recepcionistas() {
       const errorMessage = err instanceof Error ? err.message : 'No se pudo crear el recepcionista';
       setErrorGeneralCreacion(errorMessage);
       toast.error(errorMessage);
+    } finally {
+      setEnviandoCreacion(false);
     }
   };
 
@@ -464,32 +478,24 @@ export function Recepcionistas() {
       );
       const recepcionistaTeniaFoto = recepcionistaSiendoEditado?.fotoPerfilUrl;
 
-      if (esFile || (esNull && recepcionistaTeniaFoto)) {
-        const formData = new FormData();
-        if (esFile) {
-          formData.append('foto', fotoEdicion);
-        }
-        if (esNull && recepcionistaTeniaFoto) {
-          formData.append('eliminarFoto', 'true');
-        }
-        Object.entries(payload).forEach(([key, value]) => {
-          if (key !== 'contrasena' || value) {
-            formData.append(key, String(value));
-          }
-        });
-
-        await apiRequest(`/recepcionistas/${idRecepcionistaEditando}`, {
-          method: 'PUT',
-          token,
-          formData,
-        });
-      } else {
-        await apiRequest(`/recepcionistas/${idRecepcionistaEditando}`, {
-          method: 'PUT',
-          token,
-          body: payload,
-        });
+      const formData = new FormData();
+      if (esFile) {
+        formData.append('foto', fotoEdicion);
       }
+      if (esNull && recepcionistaTeniaFoto) {
+        formData.append('eliminarFoto', 'true');
+      }
+      Object.entries(payload).forEach(([key, value]) => {
+        if (key !== 'contrasena' || value) {
+          formData.append(key, String(value));
+        }
+      });
+
+      await apiRequest(`/recepcionistas/${idRecepcionistaEditando}`, {
+        method: 'PUT',
+        token,
+        formData,
+      });
 
       toast.success('Recepcionista actualizado exitosamente');
       setMostrarFormularioEdicion(false);
@@ -1095,7 +1101,12 @@ export function Recepcionistas() {
               >
                 Cancelar
               </Button>
-              <Button type="submit">Crear recepcionista</Button>
+              <Button
+                type="submit"
+                disabled={Object.keys(erroresCreacion).length > 0 || enviandoCreacion}
+              >
+                {enviandoCreacion ? 'Creando…' : 'Crear recepcionista'}
+              </Button>
             </div>
           </form>
         </DialogContent>

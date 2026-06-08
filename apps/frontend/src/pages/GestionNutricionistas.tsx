@@ -60,7 +60,7 @@ const FORMULARIO_NUTRICIONISTA_INICIAL: CrearNutricionistaDto = {
   provincia: '',
   email: '',
   matricula: '',
-  añosExperiencia: 0,
+  aniosExperiencia: 0,
   tarifaSesion: 0,
   contrasena: '',
 };
@@ -120,6 +120,7 @@ export function GestionNutricionistas() {
   const [nutricionistaForm, setNutricionistaForm] = useState<CrearNutricionistaDto>(FORMULARIO_NUTRICIONISTA_INICIAL);
   const [erroresCreacion, setErroresCreacion] = useState<ErroresFormularioCreacion>({});
   const [errorGeneralCreacion, setErrorGeneralCreacion] = useState<string | null>(null);
+  const [enviandoCreacion, setEnviandoCreacion] = useState(false);
   const [fotoCreacion, setFotoCreacion] = useState<EstadoFoto>(null);
   const [fotoEdicion, setFotoEdicion] = useState<EstadoFoto>(null);
   const [nutricionistaFormEdicion, setNutricionistaFormEdicion] = useState<CrearNutricionistaDto>(FORMULARIO_NUTRICIONISTA_INICIAL);
@@ -156,11 +157,6 @@ export function GestionNutricionistas() {
     }
   };
 
-  const erroresContrasenia = useMemo(
-    () => obtenerErroresContrasenia(nutricionistaForm.contrasena),
-    [nutricionistaForm.contrasena],
-  );
-
   const requisitosContrasenia = useMemo(
     () => [
       {
@@ -187,37 +183,50 @@ export function GestionNutricionistas() {
     [nutricionistaForm.contrasena],
   );
 
-  const actualizarCampoCreacion = useCallback(
-    <K extends CampoFormularioCreacion>(campo: K, valor: CrearNutricionistaDto[K]) => {
-      setNutricionistaForm((prev) => ({ ...prev, [campo]: valor }));
-      setErroresCreacion((prev) => ({ ...prev, [campo]: undefined }));
-      setErrorGeneralCreacion(null);
+  const validarFormularioCreacion = useCallback(
+    (datos: CrearNutricionistaDto): ErroresFormularioCreacion => {
+      const errores: ErroresFormularioCreacion = {};
+
+      if (!datos.nombre.trim()) errores.nombre = 'Ingresá el nombre.';
+      if (!datos.apellido.trim()) errores.apellido = 'Ingresá el apellido.';
+      if (!REGEX_DNI.test(datos.dni.trim())) errores.dni = 'El DNI debe tener exactamente 8 dígitos.';
+      if (!datos.fechaNacimiento) errores.fechaNacimiento = 'Seleccioná la fecha de nacimiento.';
+      if (!REGEX_TELEFONO.test(datos.telefono.trim())) errores.telefono = 'Ingresá un teléfono válido (8 a 20 caracteres).';
+      if (!datos.direccion.trim()) errores.direccion = 'Ingresá la dirección.';
+      if (!datos.ciudad.trim()) errores.ciudad = 'Ingresá la ciudad.';
+      if (!datos.provincia.trim()) errores.provincia = 'Ingresá la provincia.';
+      if (!REGEX_EMAIL.test(datos.email.trim())) errores.email = 'Ingresá un email válido.';
+      if (!datos.matricula.trim()) errores.matricula = 'Ingresá la matrícula.';
+      if (datos.aniosExperiencia < 0) errores.aniosExperiencia = 'Los años de experiencia no pueden ser negativos.';
+      if (datos.tarifaSesion <= 0) errores.tarifaSesion = 'La tarifa por sesión debe ser mayor a 0.';
+
+      if (obtenerErroresContrasenia(datos.contrasena).length > 0) {
+        errores.contrasena = 'La contraseña no cumple los requisitos mínimos de seguridad.';
+      }
+
+      return errores;
     },
     [],
   );
 
-  const validarFormularioCreacion = useCallback((): ErroresFormularioCreacion => {
-    const errores: ErroresFormularioCreacion = {};
+  const actualizarCampoCreacion = useCallback(
+    <K extends CampoFormularioCreacion>(campo: K, valor: CrearNutricionistaDto[K]) => {
+      const nuevoForm = { ...nutricionistaForm, [campo]: valor };
+      setNutricionistaForm(nuevoForm);
+      setErrorGeneralCreacion(null);
 
-    if (!nutricionistaForm.nombre.trim()) errores.nombre = 'Ingresá el nombre.';
-    if (!nutricionistaForm.apellido.trim()) errores.apellido = 'Ingresá el apellido.';
-    if (!REGEX_DNI.test(nutricionistaForm.dni.trim())) errores.dni = 'El DNI debe tener exactamente 8 dígitos.';
-    if (!nutricionistaForm.fechaNacimiento) errores.fechaNacimiento = 'Seleccioná la fecha de nacimiento.';
-    if (!REGEX_TELEFONO.test(nutricionistaForm.telefono.trim())) errores.telefono = 'Ingresá un teléfono válido (8 a 20 caracteres).';
-    if (!nutricionistaForm.direccion.trim()) errores.direccion = 'Ingresá la dirección.';
-    if (!nutricionistaForm.ciudad.trim()) errores.ciudad = 'Ingresá la ciudad.';
-    if (!nutricionistaForm.provincia.trim()) errores.provincia = 'Ingresá la provincia.';
-    if (!REGEX_EMAIL.test(nutricionistaForm.email.trim())) errores.email = 'Ingresá un email válido.';
-    if (!nutricionistaForm.matricula.trim()) errores.matricula = 'Ingresá la matrícula.';
-    if (nutricionistaForm.añosExperiencia < 0) errores.añosExperiencia = 'Los años de experiencia no pueden ser negativos.';
-    if (nutricionistaForm.tarifaSesion <= 0) errores.tarifaSesion = 'La tarifa por sesión debe ser mayor a 0.';
-
-    if (erroresContrasenia.length > 0) {
-      errores.contrasena = 'La contraseña no cumple los requisitos mínimos de seguridad.';
-    }
-
-    return errores;
-  }, [erroresContrasenia.length, nutricionistaForm]);
+      const erroresCompletos = validarFormularioCreacion(nuevoForm);
+      setErroresCreacion((prev) => {
+        const resultado: ErroresFormularioCreacion = {};
+        for (const key of Object.keys(prev) as CampoFormularioCreacion[]) {
+          if (erroresCompletos[key]) resultado[key] = erroresCompletos[key];
+        }
+        if (erroresCompletos[campo]) resultado[campo] = erroresCompletos[campo];
+        return resultado;
+      });
+    },
+    [nutricionistaForm, validarFormularioCreacion],
+  );
 
   const validarFormularioEdicion = useCallback((): ErroresFormularioEdicion => {
     const errores: ErroresFormularioEdicion = {};
@@ -232,7 +241,7 @@ export function GestionNutricionistas() {
     if (!nutricionistaFormEdicion.provincia.trim()) errores.provincia = 'Ingresá la provincia.';
     if (!REGEX_EMAIL.test(nutricionistaFormEdicion.email.trim())) errores.email = 'Ingresá un email válido.';
     if (!nutricionistaFormEdicion.matricula.trim()) errores.matricula = 'Ingresá la matrícula.';
-    if (nutricionistaFormEdicion.añosExperiencia < 0) errores.añosExperiencia = 'Los años de experiencia no pueden ser negativos.';
+    if (nutricionistaFormEdicion.aniosExperiencia < 0) errores.aniosExperiencia = 'Los años de experiencia no pueden ser negativos.';
     if (nutricionistaFormEdicion.tarifaSesion <= 0) errores.tarifaSesion = 'La tarifa por sesión debe ser mayor a 0.';
 
     return errores;
@@ -243,6 +252,7 @@ export function GestionNutricionistas() {
     setErroresCreacion({});
     setErrorGeneralCreacion(null);
     setFotoCreacion(null);
+    setEnviandoCreacion(false);
   }, []);
 
   const provinciasDisponibles = useMemo(() => {
@@ -287,7 +297,7 @@ export function GestionNutricionistas() {
         const coincideCiudad = filtroCiudad === 'TODAS' || nutricionista.ciudad === filtroCiudad;
 
         const coincideAntiguedad = cumpleFiltroAntiguedad(
-          nutricionista.añosExperiencia,
+          nutricionista.aniosExperiencia,
           filtroAntiguedad,
         );
 
@@ -309,7 +319,7 @@ export function GestionNutricionistas() {
             return estadoA.localeCompare(estadoB) * multiplicador;
           }
           case 'EXPERIENCIA':
-            return (a.añosExperiencia - b.añosExperiencia) * multiplicador;
+            return (a.aniosExperiencia - b.aniosExperiencia) * multiplicador;
           case 'NOMBRE':
           default: {
             const nombreA = `${a.apellido} ${a.nombre}`;
@@ -416,15 +426,17 @@ export function GestionNutricionistas() {
 
   const crearNutricionista = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!token) return;
+    if (!token || enviandoCreacion) return;
 
-    const errores = validarFormularioCreacion();
+    const errores = validarFormularioCreacion(nutricionistaForm);
 
     if (Object.keys(errores).length > 0) {
       setErroresCreacion(errores);
       setErrorGeneralCreacion('Revisá los campos marcados antes de continuar.');
       return;
     }
+
+    setEnviandoCreacion(true);
 
     try {
       if (fotoCreacion instanceof File) {
@@ -454,6 +466,8 @@ export function GestionNutricionistas() {
       const errorMessage = err instanceof Error ? err.message : 'No se pudo crear el nutricionista';
       setErrorGeneralCreacion(errorMessage);
       toast.error(errorMessage);
+    } finally {
+      setEnviandoCreacion(false);
     }
   };
 
@@ -473,7 +487,7 @@ export function GestionNutricionistas() {
       provincia: nutricionista.provincia,
       email: nutricionista.email,
       matricula: nutricionista.matricula,
-      añosExperiencia: nutricionista.añosExperiencia,
+      aniosExperiencia: nutricionista.aniosExperiencia,
       tarifaSesion: nutricionista.tarifaSesion,
       contrasena: '',
     });
@@ -824,7 +838,7 @@ export function GestionNutricionistas() {
                         </TableCell>
                         <TableCell className="font-mono text-sm">{nutricionista.matricula}</TableCell>
                         <TableCell className="text-sm">{nutricionista.email}</TableCell>
-                        <TableCell className="text-center text-sm">{nutricionista.añosExperiencia} años</TableCell>
+                        <TableCell className="text-center text-sm">{nutricionista.aniosExperiencia} años</TableCell>
                         <TableCell className="text-sm font-medium">${nutricionista.tarifaSesion}</TableCell>
                         <TableCell>
                           {nutricionista.activo ? (
@@ -1124,12 +1138,12 @@ export function GestionNutricionistas() {
                       id="crear-anios"
                       type="number"
                       min={0}
-                      value={nutricionistaForm.añosExperiencia}
-                      onChange={(e) => actualizarCampoCreacion('añosExperiencia', parseInt(e.target.value, 10) || 0)}
-                      aria-invalid={Boolean(erroresCreacion.añosExperiencia)}
+                      value={nutricionistaForm.aniosExperiencia}
+                      onChange={(e) => actualizarCampoCreacion('aniosExperiencia', parseInt(e.target.value, 10) || 0)}
+                      aria-invalid={Boolean(erroresCreacion.aniosExperiencia)}
                       required
                     />
-                    {erroresCreacion.añosExperiencia && <p className="text-xs font-medium text-destructive">{erroresCreacion.añosExperiencia}</p>}
+                    {erroresCreacion.aniosExperiencia && <p className="text-xs font-medium text-destructive">{erroresCreacion.aniosExperiencia}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="crear-tarifa" required>Tarifa por sesión</Label>
@@ -1189,7 +1203,12 @@ export function GestionNutricionistas() {
               >
                 Cancelar
               </Button>
-              <Button type="submit">Crear nutricionista</Button>
+              <Button
+                type="submit"
+                disabled={Object.keys(erroresCreacion).length > 0 || enviandoCreacion}
+              >
+                {enviandoCreacion ? 'Creando…' : 'Crear nutricionista'}
+              </Button>
             </div>
           </form>
         </DialogContent>
@@ -1340,7 +1359,7 @@ export function GestionNutricionistas() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="editar-anios">Años de experiencia</Label>
-                    <Input id="editar-anios" type="number" min={0} value={nutricionistaFormEdicion.añosExperiencia} onChange={(e) => setNutricionistaFormEdicion({ ...nutricionistaFormEdicion, añosExperiencia: parseInt(e.target.value) || 0 })} required />
+                    <Input id="editar-anios" type="number" min={0} value={nutricionistaFormEdicion.aniosExperiencia} onChange={(e) => setNutricionistaFormEdicion({ ...nutricionistaFormEdicion, aniosExperiencia: parseInt(e.target.value) || 0 })} required />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="editar-tarifa">Tarifa por sesión</Label>
@@ -1448,7 +1467,7 @@ export function GestionNutricionistas() {
                         Años de experiencia
                       </p>
                       <p className="text-sm font-medium">
-                        {nutricionistaSeleccionado.añosExperiencia} años
+                        {nutricionistaSeleccionado.aniosExperiencia} años
                       </p>
                     </div>
                     <div className="col-span-2">

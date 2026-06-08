@@ -67,9 +67,19 @@ export async function eliminarGimnasio(
 export async function impersonarGimnasio(
   id: number,
   token: string,
-): Promise<{ token: string; gimnasio: Gimnasio; expiraEn: string }> {
+): Promise<{
+  token: string;
+  gimnasio: Gimnasio;
+  usuario: { id: number; email: string; rol: string };
+  expiraEn: string;
+}> {
   const response = await apiRequest<
-    ApiResponse<{ token: string; gimnasio: Gimnasio; expiraEn: string }>
+    ApiResponse<{
+      token: string;
+      gimnasio: Gimnasio;
+      usuario: { id: number; email: string; rol: string };
+      expiraEn: string;
+    }>
   >(`${API_PATH}/${id}/impersonar`, {
     method: 'POST',
     token,

@@ -83,7 +83,7 @@ export class CreateNutricionistaUseCase implements BaseUseCase {
       dni,
       matricula,
       tarifaSesion,
-      añosExperiencia,
+      aniosExperiencia,
     } = payload;
 
     // Create NutricionistaEntity
@@ -98,7 +98,7 @@ export class CreateNutricionistaUseCase implements BaseUseCase {
       ciudad,
       provincia,
       dni,
-      añosExperiencia,
+      aniosExperiencia,
       tarifaSesion,
       [],
       [],

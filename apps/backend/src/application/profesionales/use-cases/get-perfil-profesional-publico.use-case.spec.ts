@@ -58,7 +58,7 @@ describe('GetPerfilProfesionalPublicoUseCase', () => {
       email: 'ana@nutrifit.com',
       matricula: 'MN-100',
       tarifaSesion: 12000,
-      añosExperiencia: 5,
+      aniosExperiencia: 5,
       agendas: [
         {
           idAgenda: 1,
@@ -122,7 +122,7 @@ describe('GetPerfilProfesionalPublicoUseCase', () => {
       email: '',
       matricula: 'MN-200',
       tarifaSesion: 0,
-      añosExperiencia: 0,
+      aniosExperiencia: 0,
       agendas: [],
       formacionAcademica: [],
       turnos: [],
@@ -151,7 +151,7 @@ describe('GetPerfilProfesionalPublicoUseCase', () => {
       email: '',
       matricula: 'MN-300',
       tarifaSesion: 0,
-      añosExperiencia: 0,
+      aniosExperiencia: 0,
       agendas: [],
       formacionAcademica: [],
       turnos: [],

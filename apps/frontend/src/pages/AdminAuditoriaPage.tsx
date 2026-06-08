@@ -86,7 +86,7 @@ export function AdminAuditoriaPage() {
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
 
   // Verificar que sea admin
-  const esAdmin = rol === 'ADMIN';
+  const esAdmin = rol === 'ADMIN' || rol === 'SUPERADMIN';
 
   const cargarAuditoria = useCallback(async () => {
     if (!token) return;

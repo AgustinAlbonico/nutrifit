@@ -32,7 +32,7 @@ describe('NutricionistaRepositoryImplementation - tenant scoping', () => {
     fechaBaja: null,
     matricula: 'MAT-123',
     tarifaSesion: 500,
-    añosExperiencia: 10,
+    aniosExperiencia: 10,
     usuario: { email: 'nutri@test.com' } as any,
   });
 

@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from 'react';
+import { useId, useRef, useState, useEffect } from 'react';
 import type { ChangeEvent, DragEvent } from 'react';
 import { Upload, X } from 'lucide-react';
 
@@ -30,6 +30,32 @@ export function SelectorImagen({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const idInput = useId();
   const idError = `${idInput}-error`;
+
+  const [urlPreviewLocal, setUrlPreviewLocal] = useState<string | null>(null);
+  const prevValorActual = useRef(valorActual);
+  const seleccionandoFotoLocal = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      if (urlPreviewLocal) {
+        URL.revokeObjectURL(urlPreviewLocal);
+      }
+    };
+  }, [urlPreviewLocal]);
+
+  useEffect(() => {
+    if (valorActual !== prevValorActual.current) {
+      if (seleccionandoFotoLocal.current) {
+        seleccionandoFotoLocal.current = false;
+      } else {
+        if (urlPreviewLocal) {
+          URL.revokeObjectURL(urlPreviewLocal);
+          setUrlPreviewLocal(null);
+        }
+      }
+      prevValorActual.current = valorActual;
+    }
+  }, [valorActual, urlPreviewLocal]);
 
   const mensajeError = error ?? errorValidacion;
 
@@ -68,6 +94,14 @@ export function SelectorImagen({
   const confirmarZoom = (archivoProcesado: File) => {
     setDialogoAbierto(false);
     setArchivoEnEdicion(null);
+
+    seleccionandoFotoLocal.current = true;
+    const url = URL.createObjectURL(archivoProcesado);
+    setUrlPreviewLocal((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return url;
+    });
+
     alCambiarFoto(archivoProcesado);
   };
 
@@ -79,6 +113,10 @@ export function SelectorImagen({
   const quitarFoto = () => {
     if (deshabilitado) {
       return;
+    }
+    if (urlPreviewLocal) {
+      URL.revokeObjectURL(urlPreviewLocal);
+      setUrlPreviewLocal(null);
     }
     alCambiarFoto(null);
   };
@@ -107,10 +145,10 @@ export function SelectorImagen({
           deshabilitado && 'cursor-not-allowed opacity-60',
         )}
       >
-        {valorActual ? (
+        {(valorActual || urlPreviewLocal) ? (
           <div className="relative inline-block">
             <img
-              src={valorActual}
+              src={urlPreviewLocal || valorActual || ''}
               alt={etiqueta}
               style={{
                 width: tamanoPreview,
