@@ -77,6 +77,7 @@ import { NotificacionOrmEntity } from 'src/infrastructure/persistence/typeorm/en
     AdjuntoClinicoModule,
   ],
   providers: [
+    AbrirFichaDesdeTurnoUseCase,
     AsignarTurnoManualUseCase,
     BloquearTurnoUseCase,
     CancelarTurnoSocioUseCase,
