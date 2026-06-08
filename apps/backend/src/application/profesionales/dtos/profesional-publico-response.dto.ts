@@ -18,6 +18,7 @@ export class ProfesionalPublicoResponseDto {
   nombre: string;
   apellido: string;
   especialidad: string;
+  matricula: string;
   ciudad: string;
   provincia: string;
   añosExperiencia: number;

@@ -39,6 +39,7 @@ interface NutricionistaCard {
   nombre: string;
   apellido: string;
   especialidad: string;
+  matricula: string;
   ciudad: string;
   provincia: string;
   añosExperiencia: number;
@@ -329,9 +330,15 @@ function NutricionistaCardItem({ nutri }: { nutri: NutricionistaCard }) {
               {nutri.nombre} {nutri.apellido}
             </h3>
             <p className="text-xs text-muted-foreground">{nutri.especialidad}</p>
-            <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-              <MapPin className="h-3 w-3" />
-              {nutri.ciudad}, {nutri.provincia}
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Award className="h-3 w-3" />
+                {nutri.matricula}
+              </span>
+              <span className="flex items-center gap-1">
+                <MapPin className="h-3 w-3" />
+                {nutri.ciudad}, {nutri.provincia}
+              </span>
             </div>
           </div>
         </div>

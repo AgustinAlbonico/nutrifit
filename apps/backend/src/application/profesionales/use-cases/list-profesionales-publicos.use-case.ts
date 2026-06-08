@@ -120,6 +120,7 @@ export class ListProfesionalesPublicosUseCase implements BaseUseCase {
         dto.idPersona = nutri.idPersona ?? 0;
         dto.nombre = nutri.nombre;
         dto.apellido = nutri.apellido;
+        dto.matricula = nutri.matricula;
         dto.especialidad = 'Nutricionista';
         dto.ciudad = nutri.ciudad;
         dto.provincia = nutri.provincia;
