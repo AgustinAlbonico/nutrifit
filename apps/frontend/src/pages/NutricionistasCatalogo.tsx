@@ -29,9 +29,17 @@ import {
 
 interface ApiResponse<T> {
   success: boolean;
-  message: string;
   data: T;
-  timestamp: string;
+  error: string | null;
+  meta: {
+    timestamp: string;
+    pagination?: {
+      total: number;
+      page: number;
+      per_page: number;
+      total_pages: number;
+    };
+  } | null;
 }
 
 interface NutricionistaCard {
@@ -104,12 +112,19 @@ export function NutricionistasCatalogo() {
       params.set('limit', String(limit));
 
       const qs = params.toString();
-      const response = await apiRequest<ApiResponse<CatalogoResponse>>(
+      const response = await apiRequest<ApiResponse<NutricionistaCard[]>>(
         `/profesional/publico/disponibles${qs ? `?${qs}` : ''}`,
         { token },
       );
 
-      setCatalogo(response.data);
+      const pag = response.meta?.pagination;
+      setCatalogo({
+        items: response.data,
+        total: pag?.total ?? 0,
+        page: pag?.page ?? 1,
+        limit: pag?.per_page ?? 0,
+        totalPages: pag?.total_pages ?? 0,
+      });
     } catch (err) {
       const mensaje =
         err instanceof Error
