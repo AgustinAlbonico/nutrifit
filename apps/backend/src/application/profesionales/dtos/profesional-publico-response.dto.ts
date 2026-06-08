@@ -31,9 +31,7 @@ export class ProfesionalPublicoResponseDto {
 }
 
 export class PerfilProfesionalPublicoResponseDto extends ProfesionalPublicoResponseDto {
-  matricula: string;
-  // NO se exponen email, telefono, direccion, genero, biografia,
-  // calificacionPromedio, totalOpiniones (data leak)
+  // matricula se hereda de ProfesionalPublicoResponseDto
   certificaciones: string | null;
   formacionAcademica: FormacionAcademicaPublicaDto[];
   horarios: HorarioProfesionalPublicoDto[];
