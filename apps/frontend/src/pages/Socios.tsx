@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/table';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -128,6 +129,7 @@ export function Socios() {
   
 
   const [mostrarModalDetalles, setMostrarModalDetalles] = useState(false);
+  const [mostrarFotoAmpliada, setMostrarFotoAmpliada] = useState(false);
   const [socioSeleccionado, setSocioSeleccionado] = useState<Socio | null>(null);
 
   const abrirModalDetalles = (socio: Socio) => {
@@ -1320,7 +1322,8 @@ export function Socios() {
                   <div className="flex items-center gap-4">
                     <Avatar
                       size="lg"
-                      className="h-32 w-32 ring-2 ring-primary/20 sm:h-36 sm:w-36"
+                      className={`h-32 w-32 ring-2 ring-primary/20 sm:h-36 sm:w-36${socioSeleccionado.fotoPerfilUrl ? ' cursor-pointer' : ''}`}
+                      onClick={() => socioSeleccionado.fotoPerfilUrl && setMostrarFotoAmpliada(true)}
                     >
                       {socioSeleccionado.fotoPerfilUrl && (
                         <AvatarImage
@@ -1446,6 +1449,20 @@ export function Socios() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Lightbox foto ampliada */}
+      {socioSeleccionado?.fotoPerfilUrl && (
+        <Dialog open={mostrarFotoAmpliada} onOpenChange={setMostrarFotoAmpliada}>
+          <DialogContent className="max-w-[90vw] max-h-[90vh] border-0 bg-black/95 p-0">
+            <DialogClose className="text-white/80 hover:text-white" />
+            <img
+              src={obtenerUrlFoto(socioSeleccionado.fotoPerfilUrl) ?? ''}
+              alt={`${socioSeleccionado.nombre} ${socioSeleccionado.apellido}`}
+              className="mx-auto max-h-[85vh] w-auto object-contain"
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

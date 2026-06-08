@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/table';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -130,6 +131,7 @@ export function GestionNutricionistas() {
   const [nutricionistaAEliminar, setNutricionistaAEliminar] = useState<Nutricionista | null>(null);
 
   const [mostrarModalDetalles, setMostrarModalDetalles] = useState(false);
+  const [mostrarFotoAmpliada, setMostrarFotoAmpliada] = useState(false);
   const [nutricionistaSeleccionado, setNutricionistaSeleccionado] = useState<Nutricionista | null>(null);
 
   const abrirModalDetalles = (nutricionista: Nutricionista) => {
@@ -1404,7 +1406,8 @@ export function GestionNutricionistas() {
                   <div className="flex items-center gap-4">
                     <Avatar
                       size="lg"
-                      className="h-32 w-32 ring-2 ring-primary/20 sm:h-36 sm:w-36"
+                      className={`h-32 w-32 ring-2 ring-primary/20 sm:h-36 sm:w-36${nutricionistaSeleccionado.fotoPerfilUrl ? ' cursor-pointer' : ''}`}
+                      onClick={() => nutricionistaSeleccionado.fotoPerfilUrl && setMostrarFotoAmpliada(true)}
                     >
                       {nutricionistaSeleccionado.fotoPerfilUrl && (
                         <AvatarImage
@@ -1579,6 +1582,20 @@ export function GestionNutricionistas() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Lightbox foto ampliada */}
+      {nutricionistaSeleccionado?.fotoPerfilUrl && (
+        <Dialog open={mostrarFotoAmpliada} onOpenChange={setMostrarFotoAmpliada}>
+          <DialogContent className="max-w-[90vw] max-h-[90vh] border-0 bg-black/95 p-0">
+            <DialogClose className="text-white/80 hover:text-white" />
+            <img
+              src={obtenerUrlFoto(nutricionistaSeleccionado.fotoPerfilUrl) ?? ''}
+              alt={`${nutricionistaSeleccionado.nombre} ${nutricionistaSeleccionado.apellido}`}
+              className="mx-auto max-h-[85vh] w-auto object-contain"
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
