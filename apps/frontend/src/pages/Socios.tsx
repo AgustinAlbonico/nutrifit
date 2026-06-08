@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect, useCallback, useMemo, type FormEvent } from 'react';
 import { toast } from 'sonner';
-import { AlertCircle, CheckCircle2, Users } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Search, Users, XIcon } from 'lucide-react';
 import { format as formatearFechaIso } from 'date-fns';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -1320,22 +1320,35 @@ export function Socios() {
               <section className="rounded-xl border bg-card p-4 sm:p-5">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-4">
-                    <Avatar
-                      size="lg"
-                      className={`h-32 w-32 ring-2 ring-primary/20 sm:h-36 sm:w-36${socioSeleccionado.fotoPerfilUrl ? ' cursor-pointer' : ''}`}
-                      onClick={() => socioSeleccionado.fotoPerfilUrl && setMostrarFotoAmpliada(true)}
-                    >
+                    <div className="relative">
+                      <Avatar
+                        size="lg"
+                        className="h-32 w-32 ring-2 ring-primary/20 sm:h-36 sm:w-36"
+                      >
+                        {socioSeleccionado.fotoPerfilUrl && (
+                          <AvatarImage
+                            src={obtenerUrlFoto(socioSeleccionado.fotoPerfilUrl) ?? undefined}
+                            alt={`${socioSeleccionado.nombre} ${socioSeleccionado.apellido}`}
+                            className="object-cover object-center"
+                          />
+                        )}
+                        <AvatarFallback className="bg-primary/10 text-2xl font-bold text-primary">
+                          {obtenerIniciales(socioSeleccionado.nombre, socioSeleccionado.apellido)}
+                        </AvatarFallback>
+                      </Avatar>
                       {socioSeleccionado.fotoPerfilUrl && (
-                        <AvatarImage
-                          src={obtenerUrlFoto(socioSeleccionado.fotoPerfilUrl) ?? undefined}
-                          alt={`${socioSeleccionado.nombre} ${socioSeleccionado.apellido}`}
-                          className="object-cover object-center"
-                        />
+                        <div
+                          className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-black/30 opacity-0 transition-opacity hover:opacity-100"
+                          onClick={() => setMostrarFotoAmpliada(true)}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => e.key === 'Enter' && setMostrarFotoAmpliada(true)}
+                          aria-label="Ver foto ampliada"
+                        >
+                          <Search className="h-8 w-8 text-white drop-shadow-lg" />
+                        </div>
                       )}
-                      <AvatarFallback className="bg-primary/10 text-2xl font-bold text-primary">
-                        {obtenerIniciales(socioSeleccionado.nombre, socioSeleccionado.apellido)}
-                      </AvatarFallback>
-                    </Avatar>
+                    </div>
                     <div className="space-y-1">
                       <h3 className="text-xl font-bold text-foreground">
                         {socioSeleccionado.nombre} {socioSeleccionado.apellido}
@@ -1453,8 +1466,10 @@ export function Socios() {
       {/* Lightbox foto ampliada */}
       {socioSeleccionado?.fotoPerfilUrl && (
         <Dialog open={mostrarFotoAmpliada} onOpenChange={setMostrarFotoAmpliada}>
-          <DialogContent className="max-w-[90vw] max-h-[90vh] border-0 bg-black/95 p-0">
-            <DialogClose className="text-white/80 hover:text-white" />
+          <DialogContent className="max-w-[90vw] max-h-[90vh] border-0 bg-black/95 p-0" showCloseButton={false}>
+            <DialogClose className="absolute top-3 right-3 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80">
+              <XIcon className="h-6 w-6" />
+            </DialogClose>
             <img
               src={obtenerUrlFoto(socioSeleccionado.fotoPerfilUrl) ?? ''}
               alt={`${socioSeleccionado.nombre} ${socioSeleccionado.apellido}`}
