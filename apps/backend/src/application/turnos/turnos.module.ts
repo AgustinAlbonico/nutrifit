@@ -54,6 +54,7 @@ import {
   UpsertFichaSaludSocioUseCase,
 } from './use-cases';
 import { SlotComputationService } from './services/slot-computation.service';
+import { ValidacionesCreacionTurno } from './helpers/validaciones-creacion-turno.helper';
 import { AuditoriaModule } from 'src/infrastructure/services/auditoria/auditoria.module';
 import { AdjuntoClinicoModule } from 'src/infrastructure/services/adjunto-clinico/adjunto-clinico.module';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
@@ -118,6 +119,7 @@ import { NotificacionOrmEntity } from 'src/infrastructure/persistence/typeorm/en
     RevertirAusenteTurnoUseCase,
     UpsertFichaSaludSocioUseCase,
     SlotComputationService,
+    ValidacionesCreacionTurno,
     NotificacionesService,
   ],
   exports: [
@@ -157,6 +159,7 @@ import { NotificacionOrmEntity } from 'src/infrastructure/persistence/typeorm/en
     RevertirAusenteTurnoUseCase,
     UpsertFichaSaludSocioUseCase,
     SlotComputationService,
+    ValidacionesCreacionTurno,
   ],
 })
 export class TurnosModule {}
