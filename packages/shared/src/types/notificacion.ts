@@ -11,6 +11,12 @@ export enum TipoNotificacion {
   PLAN_EDITADO = 'PLAN_EDITADO',
   PLAN_ELIMINADO = 'PLAN_ELIMINADO',
   CONSULTA_FINALIZADA = 'CONSULTA_FINALIZADA',
+  // === Reservados por el spec `crear-turno-en-nombre-del-socio-endpoint.md` ===
+  // Mantener paridad con el enum del backend. Ver nota en
+  // `apps/backend/src/domain/entities/Notificacion/tipo-notificacion.enum.ts`.
+  TURNO_CREADO_POR_RECEPCION = 'TURNO_CREADO_POR_RECEPCION',
+  TURNO_CREADO_POR_ADMIN = 'TURNO_CREADO_POR_ADMIN',
+  TURNO_CREADO_POR_NUTRICIONISTA = 'TURNO_CREADO_POR_NUTRICIONISTA',
 }
 
 export enum EstadoNotificacion {

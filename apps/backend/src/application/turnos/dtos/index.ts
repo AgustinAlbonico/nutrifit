@@ -6,6 +6,8 @@ export * from './aviso-llegada-tarde.dto';
 export * from './bloquear-turno.dto';
 export * from './cancelar-turno-socio.dto';
 export * from './confirmar-turno-token.dto';
+export * from './crear-turno-en-nombre-de-socio.dto';
+export * from './crear-turno-en-nombre-de-socio-response.dto';
 export * from './datos-turno-response.dto';
 export * from './datos-turno-socio-response.dto';
 export * from './datos-version-ficha-salud.dto';
