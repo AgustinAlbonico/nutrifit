@@ -36,6 +36,34 @@ function renderCalendario(props: {
   );
 }
 
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({
+    token: 'test-token',
+    rol: 'RECEPCIONISTA',
+    permissions: [],
+    personaId: 1,
+    gimnasioId: 1,
+    email: 'test@test.com',
+    nombre: 'Test',
+    apellido: 'User',
+    fotoPerfilUrl: null,
+    isAuthenticated: true,
+    esSuperadmin: false,
+    estaImpersonando: false,
+    login: vi.fn(),
+    logout: vi.fn(),
+    impersonarGimnasio: vi.fn(),
+    salirDeImpersonacion: vi.fn(),
+    cargarGimnasios: vi.fn(),
+    refreshPermissions: vi.fn(),
+    hasPermission: () => true,
+    hasAllPermissions: () => true,
+    gimnasioActual: null,
+    listaGimnasios: [],
+    impersonatedBy: null,
+  }),
+}));
+
 beforeEach(() => {
   vi.clearAllMocks();
   server.resetHandlers();

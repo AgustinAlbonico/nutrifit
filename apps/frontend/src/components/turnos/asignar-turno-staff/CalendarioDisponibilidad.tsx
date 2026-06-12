@@ -139,7 +139,7 @@ export function CalendarioDisponibilidad({
                       ? 'Ocupado'
                       : motivo
                         ? motivo
-                        : seleccionada
+                        : seleccionado
                           ? 'Seleccionado'
                           : 'Disponible'}
                   </span>

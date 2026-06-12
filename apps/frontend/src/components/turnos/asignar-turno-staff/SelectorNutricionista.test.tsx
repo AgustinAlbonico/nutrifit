@@ -51,6 +51,34 @@ const nutri2 = {
   especialidad: 'Nutricion Deportiva',
 };
 
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({
+    token: 'test-token',
+    rol: 'RECEPCIONISTA',
+    permissions: [],
+    personaId: 1,
+    gimnasioId: 1,
+    email: 'test@test.com',
+    nombre: 'Test',
+    apellido: 'User',
+    fotoPerfilUrl: null,
+    isAuthenticated: true,
+    esSuperadmin: false,
+    estaImpersonando: false,
+    login: vi.fn(),
+    logout: vi.fn(),
+    impersonarGimnasio: vi.fn(),
+    salirDeImpersonacion: vi.fn(),
+    cargarGimnasios: vi.fn(),
+    refreshPermissions: vi.fn(),
+    hasPermission: () => true,
+    hasAllPermissions: () => true,
+    gimnasioActual: null,
+    listaGimnasios: [],
+    impersonatedBy: null,
+  }),
+}));
+
 beforeEach(() => {
   vi.clearAllMocks();
   server.resetHandlers();
@@ -124,7 +152,7 @@ describe('SelectorNutricionista', () => {
     });
   });
 
-  it('respeta el atributo disabled cuando se pasa', () => {
+  it('respeta el atributo disabled cuando se pasa', async () => {
     server.use(
       http.get('*/profesional', () =>
         HttpResponse.json({
@@ -138,6 +166,7 @@ describe('SelectorNutricionista', () => {
 
     renderSelector({ value: 10, onChange: vi.fn(), disabled: true });
 
-    expect(screen.getByTestId('select-nutricionista')).toBeDisabled();
+    const select = await screen.findByTestId('select-nutricionista');
+    expect(select).toBeDisabled();
   });
 });
