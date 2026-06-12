@@ -480,7 +480,7 @@ export class TurnosController {
   }
 
   @Get('admin/profesional/:nutricionistaId/disponibilidad')
-  @Rol(RolEnum.ADMIN)
+  @Rol(RolEnum.ADMIN, RolEnum.RECEPCIONISTA)
   @Actions('turnos.ver')
   async getDisponibilidadProfesionalParaAdmin(
     @Param('nutricionistaId', ParseIntPipe) nutricionistaId: number,

@@ -63,7 +63,7 @@ export class SocioController {
   }
 
   @Get('buscar-con-ficha')
-  @Rol(RolEnum.NUTRICIONISTA)
+  @Rol(RolEnum.ADMIN, RolEnum.RECEPCIONISTA, RolEnum.NUTRICIONISTA)
   async buscarSociosConFicha(@Query('q') busqueda?: string) {
     this.logger.log(`Buscando socios con ficha: ${busqueda ?? 'todos'}`);
     return this.buscarSociosConFichaUseCase.execute(busqueda);

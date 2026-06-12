@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SocioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/persona.entity';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 export interface SocioConFichaDto {
   idPersona: number;
@@ -17,13 +18,23 @@ export class BuscarSociosConFichaUseCase {
   constructor(
     @InjectRepository(SocioOrmEntity)
     private readonly socioRepository: Repository<SocioOrmEntity>,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(busqueda?: string): Promise<SocioConFichaDto[]> {
+    const gimnasioId = this.tenantContext.gimnasioId;
+
     const queryBuilder = this.socioRepository
       .createQueryBuilder('socio')
       .leftJoinAndSelect('socio.fichaSalud', 'fichaSalud')
+      .distinct(true)
       .where('socio.fechaBaja IS NULL');
+
+    if (gimnasioId !== null) {
+      queryBuilder.andWhere('socio.gimnasioId = :gimnasioId', {
+        gimnasioId,
+      });
+    }
 
     if (busqueda && busqueda.trim()) {
       const termino = `%${busqueda.trim().toLowerCase()}%`;
