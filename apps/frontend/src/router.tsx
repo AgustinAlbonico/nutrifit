@@ -39,6 +39,7 @@ import { GimnasioDetailPage } from '@/pages/admin/GimnasioDetailPage';
 import { UsuarioPermisosPage } from '@/pages/admin/UsuarioPermisosPage';
 import { Recepcionistas } from '@/pages/Recepcionistas';
 import { MiPerfilNutricionista } from '@/pages/MiPerfilNutricionista';
+import { AsignarTurnoPage } from '@/pages/AsignarTurnoPage';
 
 // Definir el tipo del context del router
 declare module '@tanstack/react-router' {
@@ -186,6 +187,20 @@ const agendarTurnoRoute = createRoute({
   getParentRoute: () => authLayoutRoute,
   path: '/turnos/agendar',
   component: AgendarTurno,
+});
+
+/**
+ * Ruta del change `crear-turno-en-nombre-del-socio` (PR-3). Cierra
+ * el bug 404 que devolvia el boton "Asignar Turno" del dashboard
+ * de recepcion (ver `AccionesRapidasRecepcionCard.tsx`).
+ *
+ * El permission gating vive en el componente (SOCIO ve "Acceso
+ * denegado" inline) — la ruta solo verifica que haya sesion.
+ */
+const asignarTurnoRoute = createRoute({
+  getParentRoute: () => authLayoutRoute,
+  path: '/turnos/nuevo',
+  component: AsignarTurnoPage,
 });
 
 const fichaSaludSocioRoute = createRoute({
@@ -359,6 +374,7 @@ const routeTree = rootRoute.addChildren([
     agendaRoute,
     turnosRoute,
     agendarTurnoRoute,
+    asignarTurnoRoute,
     fichaSaludSocioRoute,
     turnoConfirmadoRoute,
     turnosProfesionalRoute,
