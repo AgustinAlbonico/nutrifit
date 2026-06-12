@@ -10,6 +10,17 @@ function obtenerParte(
 }
 
 function convertirAFecha(valor: string | Date): Date | null {
+  if (typeof valor === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(valor)) {
+    const [anio, mes, dia] = valor.split('-').map(Number);
+    const fechaSoloDia = new Date(anio, mes - 1, dia, 12, 0, 0, 0);
+
+    if (Number.isNaN(fechaSoloDia.getTime())) {
+      return null;
+    }
+
+    return fechaSoloDia;
+  }
+
   const fecha = valor instanceof Date ? valor : new Date(valor);
 
   if (Number.isNaN(fecha.getTime())) {

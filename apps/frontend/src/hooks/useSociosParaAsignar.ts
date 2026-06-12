@@ -37,7 +37,7 @@ export function useSociosParaAsignar(busqueda: string) {
   });
 
   return {
-    data: habilitada ? query.data : [],
+    data: habilitada ? (query.data ?? []) : [],
     isLoading: habilitada ? query.isLoading : false,
     error: query.error,
   };

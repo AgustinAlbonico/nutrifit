@@ -17,12 +17,12 @@ import { useAuth } from '@/contexts/AuthContext';
  * Cache de 5 minutos (staleTime) — la lista de nutricionistas del
  * gimnasio cambia muy rara vez.
  */
-export function useNutricionistasParaAsignar() {
+export function useNutricionistasParaAsignar(habilitado = true) {
   const { token } = useAuth();
 
-  return useQuery<NutricionistaActivo[]>({
+  const query = useQuery<NutricionistaActivo[]>({
     queryKey: ['nutricionistas-activos-asignar', token],
-    enabled: Boolean(token),
+    enabled: habilitado && Boolean(token),
     staleTime: 5 * 60_000,
     queryFn: async () => {
       const response = await apiRequest<ApiResponse<NutricionistaActivo[]>>(
@@ -42,4 +42,10 @@ export function useNutricionistasParaAsignar() {
       }));
     },
   });
+
+  return {
+    data: habilitado ? (query.data ?? []) : [],
+    isLoading: habilitado ? query.isLoading : false,
+    error: query.error,
+  };
 }

@@ -10,7 +10,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 
 import { ModalConfirmacion } from './ModalConfirmacion';
 import type { SocioConFicha, NutricionistaActivo } from '@/types/asignar-turno';

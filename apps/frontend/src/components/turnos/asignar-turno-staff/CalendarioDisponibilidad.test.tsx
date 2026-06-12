@@ -11,7 +11,6 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
-import React from 'react';
 
 import { server } from '@/mocks/server';
 import { CalendarioDisponibilidad } from './CalendarioDisponibilidad';
@@ -21,7 +20,7 @@ function renderCalendario(props: {
   fecha: Date | undefined;
   slotSeleccionado: { horaInicio: string; horaFin: string } | null;
   onFechaChange: (fecha: Date | undefined) => void;
-  onSeleccionar: ReturnType<typeof vi.fn>;
+  onSeleccionar: (slot: { horaInicio: string; horaFin: string }) => void;
 }) {
   const queryClient = new QueryClient({
     defaultOptions: {

@@ -28,7 +28,7 @@ export function useSlotsDisponibles(
   const fechaApi = fecha ? format(fecha, 'yyyy-MM-dd') : null;
   const habilitado = Boolean(nutricionistaId) && Boolean(fechaApi) && Boolean(token);
 
-  return useQuery<TurnoDisponibleSlot[]>({
+  const query = useQuery<TurnoDisponibleSlot[]>({
     queryKey: [
       'slots-disponibles-asignar',
       rol,
@@ -56,4 +56,10 @@ export function useSlotsDisponibles(
       return deduplicarTurnos(response.data ?? []) as TurnoDisponibleSlot[];
     },
   });
+
+  return {
+    data: habilitado ? (query.data ?? []) : [],
+    isLoading: habilitado ? query.isLoading : false,
+    error: query.error,
+  };
 }

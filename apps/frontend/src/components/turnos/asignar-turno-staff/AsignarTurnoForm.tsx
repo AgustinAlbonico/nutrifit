@@ -20,7 +20,14 @@ export interface AsignarTurnoFormProps {
    * Callback al confirmar exitosamente la creacion del turno.
    * La page lo usa para navegar a la pantalla de origen.
    */
-  onExito?: (resultado: { socioId: number; warning?: 'socio_sin_ficha' }) => void;
+  onExito?: (resultado: {
+    idTurno: number;
+    socioId: number;
+    socioNombre: string;
+    fechaTurno: string;
+    horaTurno: string;
+    warning?: 'socio_sin_ficha';
+  }) => void;
 }
 
 /**
@@ -36,17 +43,24 @@ export interface AsignarTurnoFormProps {
  * `AsignarTurnoPage`. El form solo maneja state interno del wizard.
  */
 export function AsignarTurnoForm({ onExito }: AsignarTurnoFormProps) {
-  const { rol, personaId } = useAuth();
-  const { data: nutricionistas = [] } = useNutricionistasParaAsignar();
+  const { rol, personaId, nombre, apellido } = useAuth();
+  const [socioSeleccionado, setSocioSeleccionado] =
+    useState<SocioConFicha | null>(null);
+  const { data: nutricionistas = [] } = useNutricionistasParaAsignar(
+    Boolean(socioSeleccionado) && rol !== 'NUTRICIONISTA',
+  );
   const crearTurno = useCrearTurnoEnNombreDeSocio();
+
+  const rolActor =
+    rol === 'RECEPCIONISTA' || rol === 'ADMIN' || rol === 'NUTRICIONISTA'
+      ? rol
+      : null;
 
   // Para NUTRICIONISTA, nutricionistaId se autocompleta con personaId
   // y el selector de nutricionista esta oculto.
   const [nutricionistaId, setNutricionistaId] = useState<number | null>(
     rol === 'NUTRICIONISTA' ? personaId : null,
   );
-  const [socioSeleccionado, setSocioSeleccionado] =
-    useState<SocioConFicha | null>(null);
   const [fecha, setFecha] = useState<Date | undefined>(undefined);
   const [slot, setSlot] = useState<
     { horaInicio: string; horaFin: string } | null
@@ -58,8 +72,8 @@ export function AsignarTurnoForm({ onExito }: AsignarTurnoFormProps) {
       ? null
       : (nutricionistas.find((n) => n.idPersona === nutricionistaId) ?? {
           idPersona: nutricionistaId,
-          nombre: '',
-          apellido: '',
+          nombre: rol === 'NUTRICIONISTA' ? (nombre ?? '') : '',
+          apellido: rol === 'NUTRICIONISTA' ? (apellido ?? '') : '',
         });
 
   const handleConfirmar = () => {
@@ -80,14 +94,21 @@ export function AsignarTurnoForm({ onExito }: AsignarTurnoFormProps) {
         fechaTurno,
         horaTurno: slot.horaInicio,
       },
-      {
-        onSuccess: (data) => {
-          setModalAbierto(false);
-          onExito?.({
-            socioId: data.socioId,
-            warning: data.warning,
-          });
-        },
+        {
+          onSuccess: (data) => {
+            setModalAbierto(false);
+            const socioNombre =
+              socioSeleccionado.nombreCompleto ??
+              `${socioSeleccionado.nombre} ${socioSeleccionado.apellido}`.trim();
+            onExito?.({
+              idTurno: data.idTurno,
+              socioId: data.socioId,
+              socioNombre,
+              fechaTurno: data.fechaTurno,
+              horaTurno: data.horaTurno,
+              warning: data.warning,
+            });
+          },
         onError: () => {
           // El componente `ModalConfirmacion` se mantiene abierto
           // para mostrar el error (el padre lo lee via
@@ -109,11 +130,11 @@ export function AsignarTurnoForm({ onExito }: AsignarTurnoFormProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <BuscadorSocio
-            rolActor={rol}
-            socioSeleccionado={socioSeleccionado}
-            onSeleccionar={setSocioSeleccionado}
-            onLimpiar={() => {
+            <BuscadorSocio
+              rolActor={rolActor}
+              socioSeleccionado={socioSeleccionado}
+              onSeleccionar={setSocioSeleccionado}
+              onLimpiar={() => {
               setSocioSeleccionado(null);
               setSlot(null);
             }}
