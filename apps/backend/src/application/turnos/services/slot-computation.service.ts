@@ -93,9 +93,7 @@ export class SlotComputationService {
       );
     }
     if (desde >= hasta) {
-      throw new BadRequestError(
-        'fechaDesde debe ser anterior a fechaHasta.',
-      );
+      throw new BadRequestError('fechaDesde debe ser anterior a fechaHasta.');
     }
 
     const nutricionista = await this.nutricionistaRepository.findOne({
@@ -116,12 +114,11 @@ export class SlotComputationService {
 
     const duracionMin = bloques[0].duracionTurno;
 
-    const excepciones =
-      await this.excepcionRepository.findVigentesEnVentana(
-        nutricionistaId,
-        desde,
-        hasta,
-      );
+    const excepciones = await this.excepcionRepository.findVigentesEnVentana(
+      nutricionistaId,
+      desde,
+      hasta,
+    );
 
     const turnosOcupados = await this.turnoRepository.find({
       where: {

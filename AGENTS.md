@@ -49,6 +49,7 @@ Invoke the appropriate skill before starting any task. Match by **file context**
 | Code review | `requesting-code-review` | `.agents/skills/requesting-code-review/SKILL.md` |
 | Bug diagnosis | `interactive-bug` | `C:\Users\agust\.agents\skills\interactive-bug/SKILL.md` |
 | E2E testing | `e2e-qa-tester` or `playwright-e2e-testing` | `.agents/skills/e2e-qa-tester/SKILL.md` |
+| Spec verificación visual (Playwright) | `playwright-spec-verifier` | `.agents/skills/playwright-spec-verifier/SKILL.md` |
 
 ---
 
@@ -131,7 +132,7 @@ NODE_ENV=dev
 ## Local Skills
 
 Project-local skills exist in `.agents/skills/` — these override generic skills when matched by file context:
-- `frontend-design/`, `nestjs-best-practices/`, `tailwind-v4-shadcn/`, `shadcn/`, `vite/`, `vitest/`, `accessibility/`
+- `frontend-design/`, `nestjs-best-practices/`, `tailwind-v4-shadcn/`, `shadcn/`, `vite/`, `vitest/`, `accessibility/`, `playwright-spec-verifier/`
 
 ## Rule Files
 
@@ -154,6 +155,7 @@ When performing these actions, ALWAYS invoke the corresponding skill FIRST:
 | Onboarding de proyecto existente | `project-onboarding` |
 | Regenerating AGENTS.md skill routing tables | `skill-sync` |
 | requesting-code-review | `requesting-code-review` |
+| Spec verificación visual (Playwright) | `playwright-spec-verifier` |
 | Setup inicial de skills | `project-onboarding` |
 | Updating skill metadata | `skill-sync` |
 | Writing Dockerfiles | `docker-expert` |

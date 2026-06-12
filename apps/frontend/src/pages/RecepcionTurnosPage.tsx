@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
+import type { ApiResponse } from '@/types/api';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { ClipboardCheck } from 'lucide-react';
+import { ClipboardCheck, Clock, History } from 'lucide-react';
 
 import type { EstadoTurno } from '@nutrifit/shared';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,6 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { RevertirAusenteModal } from '@/components/turnos/RevertirAusenteModal';
 
 interface TurnoRecepcion {
   idTurno: number;
@@ -32,14 +34,10 @@ interface TurnoRecepcion {
   nombreSocio: string;
   nombreNutricionista: string;
   dniSocio: string;
+  llegadaTardeMin?: number | null;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp: string;
-}
+
 
 export function RecepcionTurnosPage() {
   const { token, rol } = useAuth();
@@ -54,6 +52,7 @@ export function RecepcionTurnosPage() {
   const [turnoSeleccionado, setTurnoSeleccionado] =
     useState<TurnoRecepcion | null>(null);
   const [procesandoCheckIn, setProcesandoCheckIn] = useState(false);
+  const [turnoARevertir, setTurnoARevertir] = useState<TurnoRecepcion | null>(null);
 
   const fecha = format(fechaSeleccionada ?? new Date(), 'yyyy-MM-dd');
 
@@ -207,7 +206,15 @@ export function RecepcionTurnosPage() {
                       className="border-b hover:bg-accent/50 transition-colors"
                     >
                       <td className="p-3">
-                        <span className="font-semibold">{turno.horaTurno}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">{turno.horaTurno}</span>
+                          {turno.llegadaTardeMin && turno.llegadaTardeMin > 0 && (
+                            <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50">
+                              <Clock className="w-3 h-3 mr-1" />
+                              Llega {turno.llegadaTardeMin}m tarde
+                            </Badge>
+                          )}
+                        </div>
                       </td>
                       <td className="p-3">
                         {turno.nombreSocio}
@@ -222,20 +229,32 @@ export function RecepcionTurnosPage() {
                       </td>
                       <td className="p-3">{getEstadoBadge(turno.estadoTurno)}</td>
                       <td className="p-3">
-                        {puedeHacerCheckIn(turno) ? (
-                          <Button
-                            size="sm"
-                            onClick={() => abrirModalCheckIn(turno)}
-                            className="gap-2"
-                          >
-                            <ClipboardCheck className="h-4 w-4" />
-                            Check-in
-                          </Button>
-                        ) : (
-                          <span className="text-xs text-muted-foreground italic">
-                            No disponible
-                          </span>
-                        )}
+                        <div className="flex gap-2">
+                          {puedeHacerCheckIn(turno) ? (
+                            <Button
+                              size="sm"
+                              onClick={() => abrirModalCheckIn(turno)}
+                              className="gap-2"
+                            >
+                              <ClipboardCheck className="h-4 w-4" />
+                              Check-in
+                            </Button>
+                          ) : turno.estadoTurno === 'AUSENTE' ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setTurnoARevertir(turno)}
+                              className="gap-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200"
+                            >
+                              <History className="h-4 w-4" />
+                              Revertir
+                            </Button>
+                          ) : (
+                            <span className="text-xs text-muted-foreground italic">
+                              No disponible
+                            </span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -298,6 +317,16 @@ export function RecepcionTurnosPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <RevertirAusenteModal
+        isOpen={Boolean(turnoARevertir)}
+        onClose={() => setTurnoARevertir(null)}
+        turnoId={turnoARevertir?.idTurno ?? null}
+        onSuccess={() => {
+          setTurnoARevertir(null);
+          void cargarTurnosDelDia();
+        }}
+      />
     </div>
   );
 }

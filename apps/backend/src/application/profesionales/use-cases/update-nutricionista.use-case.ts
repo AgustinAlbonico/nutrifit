@@ -26,6 +26,8 @@ import {
   IObjectStorageService,
   OBJECT_STORAGE_SERVICE,
 } from 'src/domain/services/object-storage.service';
+import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
+import { AccionAuditoria } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
 
 @Injectable()
 export class UpdateNutricionistaUseCase implements BaseUseCase {
@@ -39,6 +41,7 @@ export class UpdateNutricionistaUseCase implements BaseUseCase {
     private readonly passwordEncrypter: IPasswordEncrypterService,
     @Inject(OBJECT_STORAGE_SERVICE)
     private readonly objectStorage: IObjectStorageService,
+    private readonly auditoriaService: AuditoriaService,
   ) {}
 
   async execute(
@@ -46,6 +49,7 @@ export class UpdateNutricionistaUseCase implements BaseUseCase {
     payload: UpdateNutricionistaDto,
     fotoPerfilKey?: string,
     eliminarFoto: boolean = false,
+    usuarioEditorId?: number,
   ): Promise<NutricionistaEntity> {
     // Find existing nutricionista
     const nutricionista = await this.nutricionistaRepository.findById(id);
@@ -116,6 +120,8 @@ export class UpdateNutricionistaUseCase implements BaseUseCase {
       nutricionista.tarifaSesion = payload.tarifaSesion;
     if (payload.aniosExperiencia !== undefined)
       nutricionista.aniosExperiencia = payload.aniosExperiencia;
+    if (payload.presentacion !== undefined)
+      nutricionista.presentacion = payload.presentacion;
 
     // Update foto de perfil if provided
     if (fotoPerfilKey) {
@@ -152,6 +158,18 @@ export class UpdateNutricionistaUseCase implements BaseUseCase {
     this.logger.log(
       `Nutricionista ${id} actualizado: ${nutricionistaActualizado.nombre}`,
     );
+
+    await this.auditoriaService.registrar({
+      usuarioId: usuarioEditorId ?? null,
+      accion: AccionAuditoria.PERFIL_NUTRICIONISTA_ACTUALIZADO,
+      entidad: 'Nutricionista',
+      entidadId: nutricionistaActualizado.idPersona,
+      metadata: {
+        camposModificados: Object.keys(payload).filter(
+          (k) => (payload as Record<string, unknown>)[k] !== undefined,
+        ),
+      },
+    });
 
     return nutricionistaActualizado;
   }

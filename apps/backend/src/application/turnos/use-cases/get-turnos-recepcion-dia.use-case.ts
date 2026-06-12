@@ -42,7 +42,7 @@ export class GetTurnosRecepcionDiaUseCase implements BaseUseCase {
       })
       .andWhere('DATE(turno.fechaTurno) = :targetDate', { targetDate })
       .andWhere('turno.estadoTurno IN (:...estados)', {
-        estados: ['PROGRAMADO', 'PRESENTE', 'EN_CURSO'],
+        estados: ['PROGRAMADO', 'PRESENTE', 'EN_CURSO', 'AUSENTE'],
       })
       .orderBy('turno.horaTurno', 'ASC');
 
@@ -64,6 +64,9 @@ export class GetTurnosRecepcionDiaUseCase implements BaseUseCase {
       response.nombreNutricionista =
         `${turno.nutricionista.nombre} ${turno.nutricionista.apellido}`.trim();
       response.dniSocio = turno.socio?.dni ?? '';
+      response.ausenteAt = turno.ausenteAt;
+      response.ausenteMotivo = turno.ausenteMotivo;
+      response.llegadaTardeMin = turno.llegadaTardeMin;
 
       return response;
     });

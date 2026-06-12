@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/api';
+import type { ApiResponse } from '@/types/api';
 
 export interface Usuario {
   idUsuario: number;
@@ -31,13 +32,6 @@ export interface GetUsuariosParams {
   isActive?: boolean;
 }
 
-export interface ApiResponseWrapper<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp: string;
-}
-
 export interface PaginatedUsuariosResponse {
   data: Usuario[];
   pagination?: {
@@ -64,7 +58,7 @@ export const useUsuarios = (params?: GetUsuariosParams) => {
       if (params?.search) searchParams.append('search', params.search);
       if (params?.isActive !== undefined) searchParams.append('isActive', params.isActive.toString());
 
-      const response = await apiRequest<ApiResponseWrapper<PaginatedUsuariosResponse>>(`/permissions/users?${searchParams.toString()}`, {
+      const response = await apiRequest<ApiResponse<PaginatedUsuariosResponse>>(`/permissions/users?${searchParams.toString()}`, {
         method: 'GET',
         token: params?.token,
       });

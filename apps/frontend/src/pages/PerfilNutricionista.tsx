@@ -23,12 +23,9 @@ import {
 } from '@/components/ui/avatar';
 import { CalendarioEmbed } from '@/components/catalogo/CalendarioEmbed';
 import type { SlotDisponible } from '@/components/catalogo/CalendarioEmbed';
+import type { ApiResponse } from '@/types/api';
 
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-}
+
 
 interface HorarioProfesional {
   dia: string;

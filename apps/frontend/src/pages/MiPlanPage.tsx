@@ -30,13 +30,11 @@ import {
 
 import { ExportPlanPDFButton } from '@/components/plan/ExportPlanPDFButton';
 import type { ComidaEnPlan } from '@/components/plan/WeeklyPlanGrid';
+import type { ApiResponse } from '@/types/api';
 
 // ── Tipos que coinciden con el backend ────────────────────────────────────────
 
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-}
+
 
 interface Alimento {
   idAlimento: number;

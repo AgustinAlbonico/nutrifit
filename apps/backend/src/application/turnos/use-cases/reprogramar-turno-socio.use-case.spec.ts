@@ -137,7 +137,10 @@ describe('ReprogramarTurnoSocioUseCase', () => {
         },
         {
           provide: AuditoriaService,
-          useValue: { registrar: jest.fn() },
+          useValue: {
+            registrar: jest.fn(),
+            contarReprogramacionesSocioEnMes: jest.fn().mockResolvedValue(0),
+          },
         },
         {
           provide: TenantContextService,
@@ -422,6 +425,76 @@ describe('ReprogramarTurnoSocioUseCase', () => {
           }),
         }),
       );
+    });
+
+    it('debe permitir reprogramar si el socio esta por debajo del limite de 3 en el mes', async () => {
+      const mockTurno = buildMockTurno();
+      mockTurno.gimnasio = { idGimnasio: 1 } as GimnasioOrmEntity;
+      usuarioRepository.findOne.mockResolvedValue(mockUsuario);
+      socioRepository.findOne.mockResolvedValue(mockSocio);
+      turnoRepository.findOne.mockResolvedValue(mockTurno);
+      politicaRepository.getPlazoReprogramacion.mockResolvedValue(24);
+      agendaRepository.find.mockResolvedValue([
+        {
+          dia: 5,
+          horaInicio: '09:00',
+          horaFin: '17:00',
+          duracionTurno: 60,
+        } as unknown as AgendaOrmEntity,
+      ]);
+      turnoRepository.findOne
+        .mockResolvedValueOnce(mockTurno)
+        .mockResolvedValueOnce(null);
+      turnoRepository.save.mockImplementation(
+        async (turno) => turno as TurnoOrmEntity,
+      );
+      // socio con 2 reprogramaciones previas, puede hacer la tercera
+      (
+        auditoriaService.contarReprogramacionesSocioEnMes as jest.Mock
+      ).mockResolvedValue(2);
+
+      const nextFriday = getNextFriday();
+      const payload: ReprogramarTurnoSocioDto = {
+        fechaTurno: formatDateLocal(nextFriday),
+        horaTurno: '11:00',
+      };
+
+      await expect(useCase.execute(100, 1, payload)).resolves.toBeDefined();
+    });
+
+    it('debe rechazar reprogramacion si el socio ya realizo 3 en el mes', async () => {
+      const mockTurno = buildMockTurno();
+      mockTurno.gimnasio = { idGimnasio: 1 } as GimnasioOrmEntity;
+      usuarioRepository.findOne.mockResolvedValue(mockUsuario);
+      socioRepository.findOne.mockResolvedValue(mockSocio);
+      turnoRepository.findOne.mockResolvedValue(mockTurno);
+      politicaRepository.getPlazoReprogramacion.mockResolvedValue(24);
+      agendaRepository.find.mockResolvedValue([
+        {
+          dia: 5,
+          horaInicio: '09:00',
+          horaFin: '17:00',
+          duracionTurno: 60,
+        } as unknown as AgendaOrmEntity,
+      ]);
+      // 4ta reprogramacion -> rechaza antes de tocar agenda
+      (
+        auditoriaService.contarReprogramacionesSocioEnMes as jest.Mock
+      ).mockResolvedValue(3);
+
+      const nextFriday = getNextFriday();
+      const payload: ReprogramarTurnoSocioDto = {
+        fechaTurno: formatDateLocal(nextFriday),
+        horaTurno: '11:00',
+      };
+
+      await expect(useCase.execute(100, 1, payload)).rejects.toBeInstanceOf(
+        ConflictError,
+      );
+      // Y debe contar la del mes en curso del gimnasio
+      expect(
+        auditoriaService.contarReprogramacionesSocioEnMes,
+      ).toHaveBeenCalledWith(100, 1, expect.any(Date));
     });
   });
 });

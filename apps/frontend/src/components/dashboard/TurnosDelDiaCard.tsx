@@ -9,6 +9,7 @@ import {
   obtenerEtiquetaEstadoTurno,
 } from '@/lib/turnos/estadoTurno';
 import { useAuth } from '@/contexts/AuthContext';
+import type { ApiResponse } from '@/types/api';
 
 interface TurnoDelDia {
   idTurno: number;
@@ -24,12 +25,7 @@ interface TurnoDelDia {
   };
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp: string;
-}
+
 
 export function TurnosDelDiaCard() {
   const { token, personaId } = useAuth();

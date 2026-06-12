@@ -1,4 +1,5 @@
-export type Rol = 'ADMIN' | 'SUPERADMIN' | 'NUTRICIONISTA' | 'SOCIO' | 'RECEPCIONISTA';
+import type { Rol } from '@nutrifit/shared';
+export type { Rol };
 
 export interface LoginResponse {
   token: string;

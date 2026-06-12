@@ -1,4 +1,5 @@
-export type Genero = 'MASCULINO' | 'FEMENINO' | 'OTRO';
+import type { Genero } from './genero';
+export type { Genero };
 
 export interface Nutricionista {
   idPersona: number;
@@ -18,6 +19,7 @@ export interface Nutricionista {
   fechaBaja: string | null;
   activo: boolean;
   fotoPerfilUrl: string | null;
+  presentacion: string | null;
 }
 
 export interface CrearNutricionistaDto {
@@ -35,4 +37,5 @@ export interface CrearNutricionistaDto {
   aniosExperiencia: number;
   tarifaSesion: number;
   contrasena: string;
+  presentacion?: string;
 }

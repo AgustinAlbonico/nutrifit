@@ -73,7 +73,7 @@ export class AgendaRepositoryImplementation implements IAgendaRepository {
 
     await this.agendaRepository
       .createQueryBuilder()
-      .softDelete()
+      .delete()
       .from(AgendaOrmEntity)
       .where('id_nutricionista = :nutricionistaId', { nutricionistaId })
       .execute();

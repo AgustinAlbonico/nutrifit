@@ -124,4 +124,49 @@ export class AuditoriaService {
 
     return queryBuilder.getMany();
   }
+
+  /**
+   * Cuenta las reprogramaciones hechas por un socio en un gimnasio durante el
+   * mes natural (Argentina) que contiene a la fecha de referencia.
+   *
+   * Considera registros de `TURNO_ESTADO_CAMBIO` con `metadata.tipo = 'REPROGRAMACION'`.
+   */
+  async contarReprogramacionesSocioEnMes(
+    socioUsuarioId: number,
+    gimnasioId: number,
+    fechaReferencia: Date,
+  ): Promise<number> {
+    const { inicioMes, finMes } = this.calcularRangoMesNaturalArgentina(
+      fechaReferencia,
+    );
+
+    return this.auditoriaRepository
+      .createQueryBuilder('auditoria')
+      .where('auditoria.usuarioId = :socioUsuarioId', { socioUsuarioId })
+      .andWhere('auditoria.gimnasioId = :gimnasioId', { gimnasioId })
+      .andWhere('auditoria.accion = :accion', {
+        accion: 'TURNO_ESTADO_CAMBIO',
+      })
+      .andWhere('auditoria.entidad = :entidad', { entidad: 'Turno' })
+      .andWhere('auditoria.timestamp >= :inicioMes', { inicioMes })
+      .andWhere('auditoria.timestamp < :finMes', { finMes })
+      .andWhere("JSON_EXTRACT(auditoria.metadata, '$.tipo') = :tipo", {
+        tipo: 'REPROGRAMACION',
+      })
+      .getCount();
+  }
+
+  private calcularRangoMesNaturalArgentina(referencia: Date): {
+    inicioMes: Date;
+    finMes: Date;
+  } {
+    const inicio = new Date(referencia);
+    inicio.setHours(0, 0, 0, 0);
+    inicio.setDate(1);
+
+    const fin = new Date(inicio);
+    fin.setMonth(fin.getMonth() + 1);
+
+    return { inicioMes: inicio, finMes: fin };
+  }
 }

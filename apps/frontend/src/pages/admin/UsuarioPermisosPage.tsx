@@ -18,6 +18,7 @@ import {
 
 import { useAuth } from '@/contexts/AuthContext';
 import { permisosService } from '@/services/permisos.service';
+import { normalizarTexto } from '@/lib/text';
 import type { GroupDto, ActionDto } from '@/types/permissions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -82,19 +83,19 @@ export function UsuarioPermisosPage() {
 
   // Filtrar acciones por busqueda
   const accionesFiltradasPorCategoria = useMemo(() => {
-    if (!busquedaAccion.trim()) {
+    const termino = normalizarTexto(busquedaAccion);
+    if (!termino) {
       return accionesPorCategoria;
     }
-    const busqueda = busquedaAccion.toLowerCase();
     const resultado: Record<string, string[]> = {};
     for (const [categoria, acciones] of Object.entries(accionesPorCategoria)) {
       const filtradas = acciones.filter((codigo) => {
         const meta = metadataAcciones[codigo];
-        if (!meta) return codigo.toLowerCase().includes(busqueda);
+        if (!meta) return normalizarTexto(codigo).includes(termino);
         return (
-          codigo.toLowerCase().includes(busqueda) ||
-          meta.descripcion.toLowerCase().includes(busqueda) ||
-          meta.categoria.toLowerCase().includes(busqueda)
+          normalizarTexto(codigo).includes(termino) ||
+          normalizarTexto(meta.descripcion).includes(termino) ||
+          normalizarTexto(meta.categoria).includes(termino)
         );
       });
       if (filtradas.length > 0) {

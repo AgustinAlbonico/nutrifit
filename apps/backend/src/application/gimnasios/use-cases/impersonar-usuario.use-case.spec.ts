@@ -130,7 +130,9 @@ describe('ImpersonarUsuarioUseCase', () => {
       const admin = mockUsuarioEntity({ idUsuario: 10, rol: Rol.ADMIN });
 
       mockGimnasioRepository.findById.mockResolvedValue(gimnasio as any);
-      mockUsuarioRepository.findAdminByGimnasioId.mockResolvedValue(admin as any);
+      mockUsuarioRepository.findAdminByGimnasioId.mockResolvedValue(
+        admin as any,
+      );
       mockJwtService.sign.mockReturnValue('jwt-token-admin-gimnasio');
 
       const result = await useCase.execute(superadminId, gimnasioId);

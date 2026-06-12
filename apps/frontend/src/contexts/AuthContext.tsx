@@ -11,15 +11,12 @@ import {
 
 import { apiRequest } from '@/lib/api';
 import { listarGimnasios } from '@/services/gimnasio.service';
+import { tienePermiso, tieneTodosLosPermisos } from '@/lib/permissions';
 import type { LoginResponse, Rol } from '@/types/auth';
 import type { Gimnasio } from '@/types/gimnasio';
+import type { ApiResponse } from '@/types/api';
 
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp: string;
-}
+
 
 const AUTH_STORAGE_KEY = 'nutrifit.auth';
 
@@ -302,12 +299,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AuthContextValue>(() => {
     const esAdmin = auth?.rol === 'ADMIN' || auth?.rol === 'SUPERADMIN';
-    const permissionsSet = new Set(auth?.permissions ?? []);
+    const permisos = auth?.permissions ?? [];
 
     return {
       token: auth?.token ?? null,
       rol: auth?.rol ?? null,
-      permissions: auth?.permissions ?? [],
+      permissions: permisos,
       personaId: auth?.personaId ?? null,
       gimnasioId: auth?.gimnasioId ?? null,
       impersonatedBy: auth?.impersonatedBy ?? null,
@@ -326,9 +323,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       salirDeImpersonacion,
       cargarGimnasios,
       refreshPermissions,
-      hasPermission: (action: string) => esAdmin || permissionsSet.has(action),
+      hasPermission: (action: string) => esAdmin || tienePermiso(action, permisos),
       hasAllPermissions: (actions: string[]) =>
-        esAdmin || actions.every((action) => permissionsSet.has(action)),
+        esAdmin || tieneTodosLosPermisos(actions, permisos),
     };
   }, [
     auth,

@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Users, Circle } from 'lucide-react';
 import { apiRequest } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import type { ApiResponse } from '@/types/api';
 
 interface Profesional {
   idPersona: number;
@@ -13,12 +14,7 @@ interface Profesional {
   activo: boolean;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp: string;
-}
+
 
 export function AgendaProfesionalesCard() {
   const { token } = useAuth();

@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { apiRequest } from '@/lib/api';
 import { toast } from 'sonner';
+import type { ApiResponse } from '@/types/api';
 
 interface SocioConFicha {
   idPersona: number;
@@ -21,12 +22,7 @@ interface SocioConFicha {
   nombreCompleto: string;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp: string;
-}
+
 
 interface AsignarTurnoModalProps {
   isOpen: boolean;

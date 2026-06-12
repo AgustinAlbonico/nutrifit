@@ -8,23 +8,15 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import type { TurnoDisponible } from '@/lib/turnos-disponibles';
+import { deduplicarTurnos } from '@/lib/turnos-disponibles';
+import type { ApiResponse } from '@/types/api';
 
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp: string;
-}
+
 
 export interface SlotDisponible {
   fechaHora: string;
   disponible: boolean;
-}
-
-export interface DisponibilidadAmpliada {
-  nutricionistaId: number;
-  duracionMin: number;
-  slots: SlotDisponible[];
 }
 
 interface CalendarioEmbedProps {
@@ -70,13 +62,17 @@ export function CalendarioEmbed({
         // El endpoint acepta ?fecha=YYYY-MM-DD (un solo dia). El usuario navega dia por dia con el DatePicker.
         const fechaStr = format(fecha, 'yyyy-MM-dd');
 
-        const response = await apiRequest<ApiResponse<DisponibilidadAmpliada>>(
+        const response = await apiRequest<ApiResponse<TurnoDisponible[]>>(
           `/turnos/socio/profesional/${nutricionistaId}/disponibilidad?fecha=${fechaStr}`,
           { token },
         );
 
-        const data = response.data;
-        setSlots(data?.slots ?? []);
+        const turnos = deduplicarTurnos(response.data ?? []);
+        const convertidos: SlotDisponible[] = turnos.map((t) => ({
+          fechaHora: `${fechaStr}T${t.horaInicio}`,
+          disponible: t.estado === 'LIBRE',
+        }));
+        setSlots(convertidos);
       } catch (err) {
         const mensaje =
           err instanceof Error

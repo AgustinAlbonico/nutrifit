@@ -2,12 +2,9 @@ import { ACCIONES_METADATA, getCategoriasAcciones, getAccionesPorCategoria } fro
 import type { AccionDescripcion } from '@nutrifit/shared';
 import { apiRequest } from '@/lib/api';
 import type { GroupDto, ActionDto } from '@/types/permissions';
+import type { ApiResponse } from '@/types/api';
 
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-}
+
 
 /**
  * Servicio para gestionar permisos de usuarios.

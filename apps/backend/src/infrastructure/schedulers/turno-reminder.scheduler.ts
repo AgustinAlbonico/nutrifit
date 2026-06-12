@@ -100,9 +100,11 @@ export class TurnoReminderScheduler {
     turno: TurnoOrmEntity,
   ): TipoRecordatorio | null {
     const ahora = new Date();
-    const turnoFecha = new Date(
-      `${turno.fechaTurno.toISOString().split('T')[0]}T${turno.horaTurno}:00`,
-    );
+    const fechaStr =
+      typeof turno.fechaTurno === 'string'
+        ? turno.fechaTurno
+        : turno.fechaTurno.toISOString().split('T')[0];
+    const turnoFecha = new Date(`${fechaStr}T${turno.horaTurno}:00`);
     const diffHoras = (turnoFecha.getTime() - ahora.getTime()) / 36e5;
 
     if (diffHoras <= 24 && diffHoras >= 0) return TipoRecordatorio.REMINDER_24H;

@@ -4,6 +4,8 @@ import { AppLoggerModule } from 'src/infrastructure/common/logger/app-logger.mod
 import { PasswordEncrypterModule } from 'src/infrastructure/services/bcrypt/bcrypt.module';
 import { MinioModule } from 'src/infrastructure/services/minio/minio.module';
 import { TurnosModule } from 'src/application/turnos/turnos.module';
+import { AuditoriaModule } from 'src/infrastructure/services/auditoria/auditoria.module';
+import { TenantContextModule } from 'src/infrastructure/auth/tenant-context.module';
 import {
   GrupoPermisoOrmEntity,
   NutricionistaOrmEntity,
@@ -19,6 +21,7 @@ import {
   DeleteNutricionistaUseCase,
   GetPerfilProfesionalPublicoUseCase,
   GetNutricionistaUseCase,
+  GetMiPerfilNutricionistaUseCase,
   ListNutricionistasUseCase,
   ListProfesionalesPublicosUseCase,
   ReactivarNutricionistaUseCase,
@@ -37,6 +40,8 @@ import {
     PasswordEncrypterModule,
     MinioModule,
     TurnosModule,
+    AuditoriaModule,
+    TenantContextModule,
   ],
   providers: [
     CreateNutricionistaUseCase,
@@ -44,6 +49,7 @@ import {
     DeleteNutricionistaUseCase,
     GetPerfilProfesionalPublicoUseCase,
     GetNutricionistaUseCase,
+    GetMiPerfilNutricionistaUseCase,
     ListNutricionistasUseCase,
     ListProfesionalesPublicosUseCase,
     ReactivarNutricionistaUseCase,
@@ -62,6 +68,7 @@ import {
     DeleteNutricionistaUseCase,
     GetPerfilProfesionalPublicoUseCase,
     GetNutricionistaUseCase,
+    GetMiPerfilNutricionistaUseCase,
     ListNutricionistasUseCase,
     ListProfesionalesPublicosUseCase,
     ReactivarNutricionistaUseCase,

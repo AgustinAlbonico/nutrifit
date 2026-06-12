@@ -1,8 +1,6 @@
 # 13 — Cancelar turno
 
 > **Source of truth**: `01-iteracion-base-nutricional.md` §CU-13
-> **Estado**: Por implementar
-> **Prioridad**: Alta
 > **Dependencias**: `11-reservar-turno.md`, `notificaciones.md`
 
 ## Descripción

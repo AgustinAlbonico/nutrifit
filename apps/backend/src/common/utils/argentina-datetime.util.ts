@@ -12,25 +12,21 @@ function getPart(parts: Intl.DateTimeFormatPart[], type: string): string {
 }
 
 function resolveDateInput(dateValue: Date | string): Date {
+  let parsed: Date;
+
   if (dateValue instanceof Date) {
-    return dateValue;
+    parsed = dateValue;
+  } else if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+    parsed = new Date(`${dateValue}T00:00:00${ARGENTINA_UTC_OFFSET}`);
+  } else {
+    parsed = new Date(dateValue);
   }
 
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
-    const parsedDate = new Date(`${dateValue}T00:00:00${ARGENTINA_UTC_OFFSET}`);
-
-    if (!Number.isNaN(parsedDate.getTime())) {
-      return parsedDate;
-    }
-  }
-
-  const parsedDate = new Date(dateValue);
-
-  if (Number.isNaN(parsedDate.getTime())) {
+  if (Number.isNaN(parsed.getTime())) {
     throw new Error(`Fecha invalida recibida: ${dateValue}`);
   }
 
-  return parsedDate;
+  return parsed;
 }
 
 export function normalizeTimeToHHmm(time: string): string {

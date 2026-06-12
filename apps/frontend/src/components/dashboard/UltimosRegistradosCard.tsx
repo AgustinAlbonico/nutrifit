@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UserPlus } from 'lucide-react';
 import { apiRequest } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import type { ApiResponse } from '@/types/api';
 
 interface Socio {
   idPersona: number;
@@ -12,12 +13,7 @@ interface Socio {
   fechaCreacion?: string;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp: string;
-}
+
 
 export function UltimosRegistradosCard() {
   const { token } = useAuth();

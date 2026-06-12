@@ -29,9 +29,7 @@ import { TenantContextService } from 'src/infrastructure/auth/tenant-context.ser
  * RBs: RB13 (vincular nutricionista-socio por turno), RB50.
  */
 @Injectable()
-export class ListarHistorialFichaSaludNutricionistaUseCase
-  implements BaseUseCase
-{
+export class ListarHistorialFichaSaludNutricionistaUseCase implements BaseUseCase {
   constructor(
     @InjectRepository(SocioOrmEntity)
     private readonly socioRepository: Repository<SocioOrmEntity>,
@@ -69,10 +67,9 @@ export class ListarHistorialFichaSaludNutricionistaUseCase
       throw new NotFoundError('No se encontraron fichas de salud');
     }
 
-    const versiones =
-      await this.fichaSaludVersionRepository.findByFichaId(
-        socio.fichaSalud.idFichaSalud ?? 0,
-      );
+    const versiones = await this.fichaSaludVersionRepository.findByFichaId(
+      socio.fichaSalud.idFichaSalud ?? 0,
+    );
 
     this.logger.log(
       `Historial de ficha de salud listado por nutricionista ${nutricionistaId} para socio ${socioId}. Versiones=${versiones.length}.`,

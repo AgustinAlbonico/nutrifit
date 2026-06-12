@@ -1,8 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddAusenteMotivoToTurno1770820000000
-  implements MigrationInterface
-{
+export class AddAusenteMotivoToTurno1770820000000 implements MigrationInterface {
   name = 'AddAusenteMotivoToTurno1770820000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {

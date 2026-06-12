@@ -84,6 +84,8 @@ export class CreateNutricionistaUseCase implements BaseUseCase {
       matricula,
       tarifaSesion,
       aniosExperiencia,
+      presentacion,
+      email,
     } = payload;
 
     // Create NutricionistaEntity
@@ -103,6 +105,9 @@ export class CreateNutricionistaUseCase implements BaseUseCase {
       [],
       [],
       [],
+      null,
+      email,
+      presentacion ?? null,
     );
 
     // Add matricula to entity

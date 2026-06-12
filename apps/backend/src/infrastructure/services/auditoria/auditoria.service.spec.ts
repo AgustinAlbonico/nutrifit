@@ -184,4 +184,68 @@ describe('AuditoriaService', () => {
       );
     });
   });
+
+  describe('contarReprogramacionesSocioEnMes', () => {
+    const mockCountQueryBuilder = (count: number) => {
+      const qb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(count),
+      };
+      return qb;
+    };
+
+    it('debe devolver la cantidad contada por el query builder', async () => {
+      const qb = mockCountQueryBuilder(3);
+      repository.createQueryBuilder.mockReturnValue(qb as any);
+
+      const result = await service.contarReprogramacionesSocioEnMes(
+        100,
+        1,
+        new Date('2026-06-15T12:00:00Z'),
+      );
+
+      expect(result).toBe(3);
+      expect(qb.where).toHaveBeenCalledWith(
+        'auditoria.usuarioId = :socioUsuarioId',
+        { socioUsuarioId: 100 },
+      );
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        'auditoria.gimnasioId = :gimnasioId',
+        { gimnasioId: 1 },
+      );
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        'auditoria.accion = :accion',
+        { accion: 'TURNO_ESTADO_CAMBIO' },
+      );
+    });
+
+    it('debe acotar la query al mes natural de la fecha de referencia', async () => {
+      const qb = mockCountQueryBuilder(0);
+      repository.createQueryBuilder.mockReturnValue(qb as any);
+
+      await service.contarReprogramacionesSocioEnMes(
+        100,
+        1,
+        new Date('2026-06-15T12:00:00Z'),
+      );
+
+      // Capturamos el andWhere del rango de fechas (5to en la cadena).
+      const andWhereCalls = (qb.andWhere as jest.Mock).mock.calls;
+      const callInicio = andWhereCalls.find(
+        ([sql]) => typeof sql === 'string' && sql.includes('inicioMes'),
+      );
+      const callFin = andWhereCalls.find(
+        ([sql]) => typeof sql === 'string' && sql.includes('finMes'),
+      );
+      expect(callInicio).toBeDefined();
+      expect(callFin).toBeDefined();
+      const paramsInicio = (callInicio as [string, { inicioMes: Date }])[1];
+      const paramsFin = (callFin as [string, { finMes: Date }])[1];
+
+      // Verificamos el shape inspeccionando el ISO string del Date.
+      expect(paramsInicio.inicioMes.toISOString()).toMatch(/^2026-06-01/);
+      expect(paramsFin.finMes.toISOString()).toMatch(/^2026-07-01/);
+    });
+  });
 });

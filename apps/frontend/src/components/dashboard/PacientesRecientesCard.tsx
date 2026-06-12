@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AvatarPaciente } from '@/components/ui/avatar-paciente';
 import { apiRequest } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import type { ApiResponse } from '@/types/api';
 
 interface Paciente {
   idSocio: number;
@@ -13,12 +14,7 @@ interface Paciente {
   fotoPerfilUrl: string | null;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp: string;
-}
+
 
 export function PacientesRecientesCard() {
   const { token, personaId } = useAuth();

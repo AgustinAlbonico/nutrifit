@@ -13,6 +13,7 @@ import {
 
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRequest } from '@/lib/api';
+import { normalizarTexto } from '@/lib/text';
 import { useQuery } from '@tanstack/react-query';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { ApiResponse } from '@/types/api';
 
 // ── Tipos ─────────────────────────────────────────────────────────────
 
@@ -37,10 +39,7 @@ interface Paciente {
   proximoTurno: string | null;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-}
+
 
 // ── Componente Principal ──────────────────────────────────────────────
 
@@ -63,9 +62,9 @@ export function PacientesPage() {
 
   // Filtrar pacientes por búsqueda
   const pacientesFiltrados = pacientes?.filter((paciente) => {
-    if (!busqueda) return true;
-    const termino = busqueda.toLowerCase();
-    const nombreCompleto = (paciente.nombreCompleto || '').toLowerCase();
+    const termino = normalizarTexto(busqueda);
+    if (!termino) return true;
+    const nombreCompleto = normalizarTexto(paciente.nombreCompleto || '');
     const dni = paciente.dni || '';
     return (
       nombreCompleto.includes(termino) ||

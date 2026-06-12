@@ -3,15 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ExcepcionDisponibilidadOrmEntity } from '../entities/excepcion-disponibilidad.entity';
 import { ExcepcionDisponibilidadEntity } from 'src/domain/entities/Agenda/excepcion-disponibilidad.entity';
-import {
-  ExcepcionDisponibilidadRepository,
-} from 'src/domain/entities/Agenda/excepcion-disponibilidad.repository';
+import { ExcepcionDisponibilidadRepository } from 'src/domain/entities/Agenda/excepcion-disponibilidad.repository';
 import { NutricionistaEntity } from 'src/domain/entities/Persona/Nutricionista/nutricionista.entity';
 
 @Injectable()
-export class ExcepcionDisponibilidadRepositoryImpl
-  implements ExcepcionDisponibilidadRepository
-{
+export class ExcepcionDisponibilidadRepositoryImpl implements ExcepcionDisponibilidadRepository {
   constructor(
     @InjectRepository(ExcepcionDisponibilidadOrmEntity)
     private readonly repository: Repository<ExcepcionDisponibilidadOrmEntity>,
@@ -29,7 +25,9 @@ export class ExcepcionDisponibilidadRepositoryImpl
     id: number,
     entity: ExcepcionDisponibilidadEntity,
   ): Promise<ExcepcionDisponibilidadEntity> {
-    const existing = await this.repository.findOne({ where: { idExcepcion: id } });
+    const existing = await this.repository.findOne({
+      where: { idExcepcion: id },
+    });
     if (!existing) {
       throw new Error(`ExcepcionDisponibilidad ${id} not found`);
     }

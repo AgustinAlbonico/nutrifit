@@ -1,11 +1,12 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/api';
+import type { ApiResponse } from '@/types/api';
 import type {
-  RespuestaIA,
   RecomendacionComida,
   PlanSemanalIA,
   SustitucionAlimento,
   AnalisisNutricional,
+  RespuestaIA,
   ParametrosRecomendacion,
   ParametrosPlanSemanal,
   ParametrosSustitucion,
@@ -18,17 +19,12 @@ interface UseIaOptions {
   token: string | null;
 }
 
-interface ApiResponseWrapper<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp?: string;
-}
+
 
 export function useGenerarRecomendacion({ token }: UseIaOptions) {
   return useMutation({
     mutationFn: async (params: ParametrosRecomendacion): Promise<RespuestaIA<RecomendacionComida[]>> => {
-      const response = await apiRequest<ApiResponseWrapper<RespuestaIA<RecomendacionComida[]>>>(
+      const response = await apiRequest<ApiResponse<RespuestaIA<RecomendacionComida[]>>>(
         '/ia/recomendacion',
         {
         method: 'POST',
@@ -44,7 +40,7 @@ export function useGenerarRecomendacion({ token }: UseIaOptions) {
 export function useGenerarPlanSemanal({ token }: UseIaOptions) {
   return useMutation({
     mutationFn: async (params: ParametrosPlanSemanal): Promise<RespuestaIA<PlanSemanalIA>> => {
-      const response = await apiRequest<ApiResponseWrapper<RespuestaIA<PlanSemanalIA>>>(
+      const response = await apiRequest<ApiResponse<RespuestaIA<PlanSemanalIA>>>(
         '/ia/plan-semanal',
         {
         method: 'POST',
@@ -60,7 +56,7 @@ export function useGenerarPlanSemanal({ token }: UseIaOptions) {
 export function useSugerirSustitucion({ token }: UseIaOptions) {
   return useMutation({
     mutationFn: async (params: ParametrosSustitucion): Promise<RespuestaIA<SustitucionAlimento>> => {
-      const response = await apiRequest<ApiResponseWrapper<RespuestaIA<SustitucionAlimento>>>(
+      const response = await apiRequest<ApiResponse<RespuestaIA<SustitucionAlimento>>>(
         '/ia/sustitucion',
         {
         method: 'POST',
@@ -76,7 +72,7 @@ export function useSugerirSustitucion({ token }: UseIaOptions) {
 export function useAnalizarPlan({ token }: UseIaOptions) {
   return useMutation({
     mutationFn: async (params: ParametrosAnalisis): Promise<RespuestaIA<AnalisisNutricional>> => {
-      const response = await apiRequest<ApiResponseWrapper<RespuestaIA<AnalisisNutricional>>>(
+      const response = await apiRequest<ApiResponse<RespuestaIA<AnalisisNutricional>>>(
         '/ia/analisis',
         {
         method: 'POST',

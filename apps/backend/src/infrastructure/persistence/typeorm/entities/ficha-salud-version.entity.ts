@@ -1,4 +1,11 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { FichaSaludOrmEntity } from './ficha-salud.entity';
 import { PersonaOrmEntity } from './persona.entity';
 import { UsuarioOrmEntity } from './usuario.entity';
@@ -35,7 +42,10 @@ export class FichaSaludVersionOrmEntity {
   @Column({ name: 'id_ficha_salud', type: 'int' })
   idFichaSalud: number;
 
-  @ManyToOne(() => FichaSaludOrmEntity, { nullable: false, onDelete: 'CASCADE' })
+  @ManyToOne(() => FichaSaludOrmEntity, {
+    nullable: false,
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'id_ficha_salud' })
   fichaSalud?: FichaSaludOrmEntity;
 

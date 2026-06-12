@@ -19,9 +19,11 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import {
   AgendaSlotDto,
   AsignarTurnoManualDto,
+  AvisoLlegadaTardeDto,
   BloquearTurnoDto,
   CancelarTurnoSocioDto,
   DatosTurnoResponseDto,
+  DatosTurnoSocioResponseDto,
   DatosVersionFichaSaludDto,
   FichaSaludPacienteResponseDto,
   FichaSaludSocioResponseDto,
@@ -41,12 +43,15 @@ import {
   ConfirmarTurnoTokenDto,
   RegistrarAsistenciaTurnoDto,
   ReservarTurnoSocioDto,
+  RevertirAusenteDto,
   TurnoDelDiaResponseDto,
   TurnoOperacionResponseDto,
   UpsertFichaSaludSocioDto,
 } from 'src/application/turnos/dtos';
 import {
+  AbrirFichaDesdeTurnoUseCase,
   AsignarTurnoManualUseCase,
+  AvisoLlegadaTardeUseCase,
   BloquearTurnoUseCase,
   CancelarTurnoSocioUseCase,
   CheckInTurnoUseCase,
@@ -58,6 +63,7 @@ import {
   GetFichaSaludSocioUseCase,
   GetHistorialConsultasPacienteUseCase,
   GetTurnoByIdUseCase,
+  GetTurnoSocioByIdUseCase,
   GetTurnosDelDiaUseCase,
   GetTurnosRecepcionDiaUseCase,
   GetHistorialMedicionesUseCase,
@@ -70,11 +76,13 @@ import {
   ListMisTurnosUseCase,
   ListPacientesProfesionalUseCase,
   MarcarAusenteManualUseCase,
+  NotificarSocioInasistenciaUseCase,
   ObtenerVersionFichaSaludNutricionistaUseCase,
   ObtenerVersionFichaSaludSocioUseCase,
   ReprogramarTurnoSocioUseCase,
   RegistrarAsistenciaTurnoUseCase,
   ReservarTurnoSocioUseCase,
+  RevertirAusenteTurnoUseCase,
   UpsertFichaSaludSocioUseCase,
 } from 'src/application/turnos/use-cases';
 import { Rol as RolEnum } from 'src/domain/entities/Usuario/Rol';
@@ -110,6 +118,7 @@ export class TurnosController {
     private readonly getAgendaDiariaUseCase: GetAgendaDiariaUseCase,
     private readonly getTurnosRecepcionDiaUseCase: GetTurnosRecepcionDiaUseCase,
     private readonly asignarTurnoManualUseCase: AsignarTurnoManualUseCase,
+    private readonly avisoLlegadaTardeUseCase: AvisoLlegadaTardeUseCase,
     private readonly bloquearTurnoUseCase: BloquearTurnoUseCase,
     private readonly desbloquearTurnoUseCase: DesbloquearTurnoUseCase,
     private readonly cancelarTurnoSocioUseCase: CancelarTurnoSocioUseCase,
@@ -122,6 +131,7 @@ export class TurnosController {
     private readonly getHistorialMedicionesUseCase: GetHistorialMedicionesUseCase,
     private readonly getResumenProgresoUseCase: GetResumenProgresoUseCase,
     private readonly getTurnoByIdUseCase: GetTurnoByIdUseCase,
+    private readonly getTurnoSocioByIdUseCase: GetTurnoSocioByIdUseCase,
     private readonly guardarMedicionesUseCase: GuardarMedicionesUseCase,
     private readonly guardarObservacionesUseCase: GuardarObservacionesUseCase,
     private readonly iniciarConsultaUseCase: IniciarConsultaUseCase,
@@ -130,11 +140,13 @@ export class TurnosController {
     private readonly listMisTurnosUseCase: ListMisTurnosUseCase,
     private readonly listPacientesProfesionalUseCase: ListPacientesProfesionalUseCase,
     private readonly marcarAusenteManualUseCase: MarcarAusenteManualUseCase,
+    private readonly notificarSocioInasistenciaUseCase: NotificarSocioInasistenciaUseCase,
     private readonly obtenerVersionFichaSaludNutricionistaUseCase: ObtenerVersionFichaSaludNutricionistaUseCase,
     private readonly obtenerVersionFichaSaludSocioUseCase: ObtenerVersionFichaSaludSocioUseCase,
     private readonly reprogramarTurnoSocioUseCase: ReprogramarTurnoSocioUseCase,
     private readonly registrarAsistenciaTurnoUseCase: RegistrarAsistenciaTurnoUseCase,
     private readonly reservarTurnoSocioUseCase: ReservarTurnoSocioUseCase,
+    private readonly revertirAusenteTurnoUseCase: RevertirAusenteTurnoUseCase,
     private readonly upsertFichaSaludSocioUseCase: UpsertFichaSaludSocioUseCase,
     private readonly adjuntoClinicoService: AdjuntoClinicoService,
     private readonly tenantContext: TenantContextService,
@@ -154,6 +166,19 @@ export class TurnosController {
     );
 
     return this.getTurnosDelDiaUseCase.execute(nutricionistaId, query);
+  }
+
+  @Get('socio/turno/:id')
+  @Rol(RolEnum.SOCIO)
+  async getTurnoSocioById(
+    @CurrentUserId() userId: number,
+    @Param('id', ParseIntPipe) turnoId: number,
+  ): Promise<DatosTurnoSocioResponseDto> {
+    this.logger.log(
+      `Consultando turno ${turnoId} para socio usuario=${userId}.`,
+    );
+
+    return this.getTurnoSocioByIdUseCase.execute(userId, turnoId);
   }
 
   @Get(':id')
@@ -458,6 +483,23 @@ export class TurnosController {
     return this.reprogramarTurnoSocioUseCase.execute(userId, turnoId, payload);
   }
 
+  @Patch(':turnoId/reprogramar')
+  @Rol(RolEnum.NUTRICIONISTA, RolEnum.RECEPCIONISTA, RolEnum.ADMIN)
+  @UseGuards(TurnoNutricionistaAccessGuard)
+  async reprogramarTurnoStaff(
+    @CurrentUserId() userId: number,
+    @Param('turnoId', ParseIntPipe) turnoId: number,
+    @Body() payload: ReprogramarTurnoSocioDto,
+  ): Promise<TurnoOperacionResponseDto> {
+    this.logger.log(
+      `Reprogramando turno ${turnoId} por staff usuario=${userId}.`,
+    );
+
+    return this.reprogramarTurnoSocioUseCase.execute(userId, turnoId, payload, {
+      esStaff: true,
+    });
+  }
+
   @Patch('socio/:turnoId/cancelar')
   @Rol(RolEnum.SOCIO)
   async cancelarTurnoSocio(
@@ -571,6 +613,58 @@ export class TurnosController {
     );
 
     return this.marcarAusenteManualUseCase.execute(turnoId, payload);
+  }
+
+  @Patch(':id/revertir-ausente')
+  @Rol(RolEnum.RECEPCIONISTA, RolEnum.ADMIN, RolEnum.NUTRICIONISTA)
+  @UseGuards(TurnoNutricionistaAccessGuard)
+  async revertirAusente(
+    @Param('id', ParseIntPipe) turnoId: number,
+    @Body() dto: RevertirAusenteDto,
+    @CurrentUserId() userId: number,
+  ): Promise<{ success: boolean; estadoFinal: string; hizoCheckIn: boolean }> {
+    this.logger.log(
+      `Revertir ausente turno ${turnoId} por usuario ${userId} (llegadaTardeMin=${dto.llegadaTardeMin ?? 'n/a'})`,
+    );
+    const resultado = await this.revertirAusenteTurnoUseCase.execute(
+      turnoId,
+      dto.motivoReversion,
+      userId,
+      dto.llegadaTardeMin,
+    );
+    return {
+      success: true,
+      estadoFinal: resultado.estadoFinal,
+      hizoCheckIn: resultado.hizoCheckIn,
+    };
+  }
+
+  @Post(':id/notificar-inasistencia')
+  @Rol(RolEnum.RECEPCIONISTA, RolEnum.ADMIN)
+  async notificarInasistencia(
+    @Param('id', ParseIntPipe) turnoId: number,
+  ): Promise<{ success: boolean }> {
+    this.logger.log(`Notificando inasistencia para turno ${turnoId}`);
+    await this.notificarSocioInasistenciaUseCase.execute(turnoId);
+    return { success: true };
+  }
+
+  @Post('socio/:id/aviso-llegada-tarde')
+  @Rol(RolEnum.SOCIO)
+  async avisoLlegadaTarde(
+    @CurrentUserId() userId: number,
+    @Param('id', ParseIntPipe) turnoId: number,
+    @Body() dto: AvisoLlegadaTardeDto,
+  ): Promise<{ success: boolean }> {
+    this.logger.log(
+      `Socio ${userId} avisa llegada tarde para turno ${turnoId}`,
+    );
+    await this.avisoLlegadaTardeUseCase.execute(
+      turnoId,
+      dto.minutosTarde,
+      userId,
+    );
+    return { success: true };
   }
 
   @Post(':id/mediciones')

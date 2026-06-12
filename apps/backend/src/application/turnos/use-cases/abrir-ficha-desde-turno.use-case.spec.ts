@@ -57,7 +57,9 @@ describe('AbrirFichaDesdeTurnoUseCase', () => {
       ],
     }).compile();
 
-    useCase = module.get<AbrirFichaDesdeTurnoUseCase>(AbrirFichaDesdeTurnoUseCase);
+    useCase = module.get<AbrirFichaDesdeTurnoUseCase>(
+      AbrirFichaDesdeTurnoUseCase,
+    );
     turnoRepository = module.get(getRepositoryToken(TurnoOrmEntity));
     fichaSaludRepository = module.get(getRepositoryToken(FichaSaludOrmEntity));
     tenantContext = module.get<TenantContextService>(TenantContextService);
@@ -82,7 +84,9 @@ describe('AbrirFichaDesdeTurnoUseCase', () => {
     expect(result.fichaId).toBe(7);
     expect(result.revisada).toBe(true);
     expect(result.revisadaAt).toBeInstanceOf(Date);
-    expect(result.revisadaAt!.getTime()).toBeGreaterThanOrEqual(before.getTime());
+    expect(result.revisadaAt!.getTime()).toBeGreaterThanOrEqual(
+      before.getTime(),
+    );
     expect(result.revisadaAt!.getTime()).toBeLessThanOrEqual(after.getTime());
 
     expect(fichaSaludRepository.update).toHaveBeenCalledWith(

@@ -16,6 +16,8 @@ import {
   FileCheck,
   Ban,
   Eye,
+  History,
+  FileText,
 } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,7 +27,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AvatarPaciente } from '@/components/ui/avatar-paciente';
 import { MarcarAusenteManualModal } from '@/components/turnos/MarcarAusenteManualModal';
+import { RevertirAusenteModal } from '@/components/turnos/RevertirAusenteModal';
 import { obtenerClasesEstadoTurno } from '@/lib/turnos/estadoTurno';
+import type { ApiResponse } from '@/types/api';
 
 interface TurnoDelDia {
   idTurno: number;
@@ -43,12 +47,7 @@ interface TurnoDelDia {
   consultaId: number | null;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp: string;
-}
+
 
 export function TurnosProfesional() {
   const { token, rol, personaId } = useAuth();
@@ -64,6 +63,10 @@ export function TurnosProfesional() {
   // Estado para el modal de marcar ausente manual
   const [modalAusenteOpen, setModalAusenteOpen] = useState(false);
   const [turnoIdAusente, setTurnoIdAusente] = useState<number | null>(null);
+
+  // Estado para el modal de revertir ausente
+  const [modalRevertirOpen, setModalRevertirOpen] = useState(false);
+  const [turnoIdRevertir, setTurnoIdRevertir] = useState<number | null>(null);
 
   const cargarAgenda = useCallback(async () => {
     if (!token || !esNutricionista || !personaId) {
@@ -376,7 +379,39 @@ export function TurnosProfesional() {
                         </Button>
                       )}
 
-                      {(estado === 'AUSENTE' || estado === 'CANCELADO') && (
+                      {estado === 'AUSENTE' && (
+                        <div className="flex flex-col gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setTurnoIdRevertir(turno.idTurno);
+                              setModalRevertirOpen(true);
+                            }}
+                            disabled={Boolean(procesando)}
+                            className="w-full border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                          >
+                            <History className="mr-2 h-3 w-3" />
+                            Revertir ausente
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              navigate({
+                                to: `/profesional/paciente/${turno.socio.idPersona}/ficha-salud`,
+                              })
+                            }
+                            disabled={Boolean(procesando)}
+                            className="w-full text-muted-foreground hover:text-foreground"
+                          >
+                            <FileText className="mr-2 h-3 w-3" />
+                            Ver ficha del paciente
+                          </Button>
+                        </div>
+                      )}
+
+                      {estado === 'CANCELADO' && (
                         <div className="flex items-center justify-center gap-2 rounded-md border border-rose-200 bg-rose-50 p-2 text-xs text-rose-700">
                           <ShieldBan className="h-3 w-3" />
                           <span>No requiere acción</span>
@@ -404,6 +439,23 @@ export function TurnosProfesional() {
           onConfirmado={async () => {
             setModalAusenteOpen(false);
             setTurnoIdAusente(null);
+            await cargarAgenda();
+          }}
+        />
+      )}
+
+      {/* Modal de revertir ausente (incluye opción de check-in directo). */}
+      {esNutricionista && token && turnoIdRevertir !== null && (
+        <RevertirAusenteModal
+          isOpen={modalRevertirOpen}
+          onClose={() => {
+            setModalRevertirOpen(false);
+            setTurnoIdRevertir(null);
+          }}
+          turnoId={turnoIdRevertir}
+          onSuccess={async () => {
+            setModalRevertirOpen(false);
+            setTurnoIdRevertir(null);
             await cargarAgenda();
           }}
         />

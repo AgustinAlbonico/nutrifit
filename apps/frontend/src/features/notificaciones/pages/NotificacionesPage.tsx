@@ -9,8 +9,8 @@ export function NotificacionesPage() {
   return (
     <div className="space-y-3">
       <h1 className="text-xl font-semibold">Notificaciones</h1>
-      {lista.data?.data?.length ? (
-        lista.data.data.map((notificacion) => (
+      {lista.data?.data?.data?.length ? (
+        lista.data.data.data.map((notificacion) => (
           <button
             key={notificacion.idNotificacion}
             type="button"

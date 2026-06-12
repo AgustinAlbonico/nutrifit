@@ -44,9 +44,4 @@ export interface AdminUser {
   fechaCreacion?: Date | string;
 }
 
-export interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp: string;
-}
+export type { ApiResponse } from './api';

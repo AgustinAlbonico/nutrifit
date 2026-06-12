@@ -1,8 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddPresentacionCertificacionesNutricionista1770900000000
-  implements MigrationInterface
-{
+export class AddPresentacionCertificacionesNutricionista1770900000000 implements MigrationInterface {
   name = 'AddPresentacionCertificacionesNutricionista1770900000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -17,7 +15,9 @@ export class AddPresentacionCertificacionesNutricionista1770900000000
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query('ALTER TABLE `persona` DROP COLUMN `certificaciones`');
+    await queryRunner.query(
+      'ALTER TABLE `persona` DROP COLUMN `certificaciones`',
+    );
     await queryRunner.query('ALTER TABLE `persona` DROP COLUMN `presentacion`');
   }
 }

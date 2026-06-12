@@ -64,7 +64,10 @@ export class ImpersonarUsuarioUseCase implements BaseUseCase {
       ? await this.usuarioRepository.findByEmail(email)
       : await this.usuarioRepository.findAdminByGimnasioId(gimnasioId);
     if (!usuario) {
-      throw new NotFoundError('Usuario', email ?? `ADMIN gimnasio ${gimnasioId}`);
+      throw new NotFoundError(
+        'Usuario',
+        email ?? `ADMIN gimnasio ${gimnasioId}`,
+      );
     }
 
     // 3. Validar: no se puede impersonar a otro SUPERADMIN

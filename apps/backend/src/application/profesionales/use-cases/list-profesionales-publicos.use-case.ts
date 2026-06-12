@@ -67,19 +67,21 @@ export class ListProfesionalesPublicosUseCase implements BaseUseCase {
     let filtrados = itemsConSlots;
 
     if (query.nombre?.trim()) {
-      const termino = query.nombre.trim().toLowerCase();
+      const normalizar = (s: string) =>
+        s
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '');
+      const termino = normalizar(query.nombre.trim());
       filtrados = filtrados.filter(({ nutri }) => {
-        const fullName =
-          `${nutri.nombre} ${nutri.apellido}`.trim().toLowerCase();
+        const fullName = normalizar(`${nutri.nombre} ${nutri.apellido}`.trim());
         return fullName.includes(termino);
       });
     }
 
     if (query.especialidad?.trim()) {
       const termino = query.especialidad.trim().toLowerCase();
-      filtrados = filtrados.filter(() =>
-        'nutricionista'.includes(termino),
-      );
+      filtrados = filtrados.filter(() => 'nutricionista'.includes(termino));
     }
 
     if (query.disponible === true) {
@@ -115,7 +117,10 @@ export class ListProfesionalesPublicosUseCase implements BaseUseCase {
           nutri.agendas && nutri.agendas.length > 0
             ? nutri.agendas[0].duracionTurno
             : 30;
-        const fotoUrl = this.construirFotoUrl(nutri.idPersona, nutri.fotoPerfilKey);
+        const fotoUrl = this.construirFotoUrl(
+          nutri.idPersona,
+          nutri.fotoPerfilKey,
+        );
         const dto = new ProfesionalPublicoResponseDto();
         dto.idPersona = nutri.idPersona ?? 0;
         dto.nombre = nutri.nombre;

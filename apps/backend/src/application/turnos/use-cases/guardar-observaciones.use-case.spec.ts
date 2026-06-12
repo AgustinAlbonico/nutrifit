@@ -1,6 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { OptimisticLockVersionMismatchError, Repository, SelectQueryBuilder } from 'typeorm';
+import {
+  OptimisticLockVersionMismatchError,
+  Repository,
+  SelectQueryBuilder,
+} from 'typeorm';
 import { GuardarObservacionesUseCase } from './guardar-observaciones.use-case';
 import { GuardarObservacionesDto } from '../dtos/guardar-observaciones.dto';
 import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/turno.entity';
@@ -282,13 +286,11 @@ describe('GuardarObservacionesUseCase', () => {
     };
 
     jest.spyOn(turnoRepository, 'findOne').mockResolvedValue(turno);
-    jest.spyOn(observacionRepository, 'save').mockRejectedValue(
-      new OptimisticLockVersionMismatchError(
-        'observacion_clinica',
-        1,
-        2,
-      ),
-    );
+    jest
+      .spyOn(observacionRepository, 'save')
+      .mockRejectedValue(
+        new OptimisticLockVersionMismatchError('observacion_clinica', 1, 2),
+      );
 
     await expect(useCase.execute(1, dto)).rejects.toThrow(ConflictError);
     await expect(useCase.execute(1, dto)).rejects.toThrow(

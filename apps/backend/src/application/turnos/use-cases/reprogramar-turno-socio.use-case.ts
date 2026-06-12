@@ -67,8 +67,15 @@ export class ReprogramarTurnoSocioUseCase implements BaseUseCase {
     userId: number,
     turnoId: number,
     payload: ReprogramarTurnoSocioDto,
+    opciones?: { esStaff?: boolean },
   ): Promise<TurnoOperacionResponseDto> {
-    const socio = await this.resolveSocioByUserId(userId);
+    const esStaff = opciones?.esStaff ?? false;
+
+    let socio: SocioOrmEntity | null = null;
+
+    if (!esStaff) {
+      socio = await this.resolveSocioByUserId(userId);
+    }
 
     const turno = await this.turnoRepository.findOne({
       where: {
@@ -85,16 +92,22 @@ export class ReprogramarTurnoSocioUseCase implements BaseUseCase {
       throw new NotFoundError('Turno', String(turnoId));
     }
 
-    if (turno.socio.idPersona !== socio.idPersona) {
-      throw new ForbiddenError(
-        'No tiene permisos para reprogramar este turno.',
-      );
+    if (!esStaff) {
+      if (turno.socio.idPersona !== socio!.idPersona) {
+        throw new ForbiddenError(
+          'No tiene permisos para reprogramar este turno.',
+        );
+      }
     }
 
     if (turno.estadoTurno !== EstadoTurno.PROGRAMADO) {
       throw new BadRequestError(
         'Solo se pueden reprogramar turnos en estado PROGRAMADO.',
       );
+    }
+
+    if (!esStaff) {
+      await this.validateReprogramacionesLimit(turno.socio.idPersona ?? 0);
     }
 
     await this.validatePolicyRule(turno);
@@ -165,17 +178,25 @@ export class ReprogramarTurnoSocioUseCase implements BaseUseCase {
     }
 
     if (turno.nutricionista.idPersona) {
+      const tituloNotif = esStaff
+        ? 'Turno reprogramado por el staff'
+        : 'Turno reprogramado por socio';
+      const mensajeNotif = esStaff
+        ? `El turno #${turno.idTurno} fue reprogramado por el staff para el ${formatArgentinaDate(updatedTurno.fechaTurno)} a las ${normalizeTimeToHHmm(updatedTurno.horaTurno)}.`
+        : `El socio reprogramó el turno #${turno.idTurno} para el ${formatArgentinaDate(updatedTurno.fechaTurno)} a las ${normalizeTimeToHHmm(updatedTurno.horaTurno)}.`;
+
       await this.notificacionesService.crear({
         destinatarioId: turno.nutricionista.idPersona,
         tipo: TipoNotificacion.TURNO_REPROGRAMADO,
-        titulo: 'Turno reprogramado por socio',
-        mensaje: `El socio reprogramó el turno #${turno.idTurno} para el ${formatArgentinaDate(updatedTurno.fechaTurno)} a las ${normalizeTimeToHHmm(updatedTurno.horaTurno)}.`,
+        titulo: tituloNotif,
+        mensaje: mensajeNotif,
         metadata: { turnoId: updatedTurno.idTurno },
       });
     }
 
+    const actorLabel = esStaff ? 'staff' : 'socio';
     this.logger.log(
-      `Turno ${turnoId} reprogramado por socio ${socio.idPersona}.`,
+      `Turno ${turnoId} reprogramado por ${actorLabel} usuario=${userId}.`,
     );
 
     return this.toResponseDto(updatedTurno);
@@ -225,6 +246,41 @@ export class ReprogramarTurnoSocioUseCase implements BaseUseCase {
         `Solo se puede reprogramar con al menos ${plazoHoras} horas de anticipacion.`,
       );
     }
+  }
+
+  private async validateReprogramacionesLimit(
+    socioIdPersona: number,
+  ): Promise<void> {
+    const gimnasioId = this.tenantContext.gimnasioId;
+    const usuarioSocioId = await this.resolveUsuarioIdBySocioId(socioIdPersona);
+
+    if (!usuarioSocioId) {
+      // Si no hay usuario asociado (caso raro), no bloqueamos por el límite,
+      // pero los siguientes chequeos del flujo van a fallar de forma más clara.
+      return;
+    }
+
+    const reprogramaciones =
+      await this.auditoriaService.contarReprogramacionesSocioEnMes(
+        usuarioSocioId,
+        gimnasioId,
+        new Date(),
+      );
+
+    if (reprogramaciones >= 3) {
+      throw new ConflictError(
+        'Alcanzaste el límite de 3 reprogramaciones en el mes. Esperá al próximo mes para reprogramar.',
+      );
+    }
+  }
+
+  private async resolveUsuarioIdBySocioId(
+    socioIdPersona: number,
+  ): Promise<number | null> {
+    const usuario = await this.usuarioRepository.findOne({
+      where: { persona: { idPersona: socioIdPersona } },
+    });
+    return usuario?.idUsuario ?? null;
   }
 
   private async validateAgendaAvailability(

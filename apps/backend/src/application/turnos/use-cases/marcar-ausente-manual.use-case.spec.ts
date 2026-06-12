@@ -65,7 +65,9 @@ describe('MarcarAusenteManualUseCase', () => {
       ],
     }).compile();
 
-    useCase = module.get<MarcarAusenteManualUseCase>(MarcarAusenteManualUseCase);
+    useCase = module.get<MarcarAusenteManualUseCase>(
+      MarcarAusenteManualUseCase,
+    );
     turnoRepository = module.get<Repository<TurnoOrmEntity>>(
       getRepositoryToken(TurnoOrmEntity),
     );
@@ -101,18 +103,18 @@ describe('MarcarAusenteManualUseCase', () => {
     const turno = mockTurno({ estadoTurno: EstadoTurno.REALIZADO });
     jest.spyOn(turnoRepository, 'findOne').mockResolvedValue(turno);
 
-    await expect(
-      useCase.execute(1, { motivo: 'X' }),
-    ).rejects.toThrow(ConflictError);
+    await expect(useCase.execute(1, { motivo: 'X' })).rejects.toThrow(
+      ConflictError,
+    );
     expect(turnoRepository.save).not.toHaveBeenCalled();
   });
 
   it('lanza NotFoundError si el turno es de otro gimnasio (RB25)', async () => {
     jest.spyOn(turnoRepository, 'findOne').mockResolvedValue(null);
 
-    await expect(
-      useCase.execute(99, { motivo: 'X' }),
-    ).rejects.toThrow(NotFoundError);
+    await expect(useCase.execute(99, { motivo: 'X' })).rejects.toThrow(
+      NotFoundError,
+    );
   });
 
   it('RECEPCIONISTA cross-gym no encuentra el turno (NotFoundError)', async () => {
@@ -127,9 +129,9 @@ describe('MarcarAusenteManualUseCase', () => {
     });
     jest.spyOn(turnoRepository, 'findOne').mockResolvedValue(null);
 
-    await expect(
-      useCase.execute(99, { motivo: 'X' }),
-    ).rejects.toThrow(NotFoundError);
+    await expect(useCase.execute(99, { motivo: 'X' })).rejects.toThrow(
+      NotFoundError,
+    );
   });
 
   it('ADMIN del mismo gym puede marcar ausente aunque no sea dueno del turno', async () => {
@@ -168,9 +170,9 @@ describe('MarcarAusenteManualUseCase', () => {
       configurable: true,
     });
 
-    await expect(
-      useCase.execute(1, { motivo: 'X' }),
-    ).rejects.toThrow(ForbiddenError);
+    await expect(useCase.execute(1, { motivo: 'X' })).rejects.toThrow(
+      ForbiddenError,
+    );
   });
 });
 

@@ -9,7 +9,7 @@ export function NotificationCenter() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <div>
-          <NotificationBell totalNoLeidas={noLeidas.data?.total ?? 0} onClick={() => {}} />
+          <NotificationBell totalNoLeidas={noLeidas.data?.data?.total ?? 0} onClick={() => {}} />
         </div>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-96">
@@ -18,8 +18,8 @@ export function NotificationCenter() {
           <button className="text-xs text-primary" onClick={() => marcarTodasLeidas.mutate()}>Marcar todas</button>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {lista.data?.data?.length ? (
-          lista.data.data.map((notificacion) => (
+        {lista.data?.data?.data?.length ? (
+          lista.data.data.data.map((notificacion) => (
             <DropdownMenuItem key={notificacion.idNotificacion} onClick={() => marcarLeida.mutate(notificacion.idNotificacion)}>
               <div className="flex flex-col gap-1">
                 <span className="text-sm font-medium">{notificacion.titulo}</span>

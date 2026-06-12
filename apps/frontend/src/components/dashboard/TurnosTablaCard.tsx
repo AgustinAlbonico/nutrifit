@@ -28,6 +28,7 @@ import {
 } from '@/lib/turnos/estadoTurno';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import type { ApiResponse } from '@/types/api';
 
 interface TurnoRecepcion {
   idTurno: number;
@@ -39,12 +40,7 @@ interface TurnoRecepcion {
   dniSocio: string;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp: string;
-}
+
 
 const ESTADOS_TURNO: Array<{ valor: EstadoTurno | 'TODOS'; etiqueta: string }> = [
   { valor: 'TODOS', etiqueta: 'Todos' },

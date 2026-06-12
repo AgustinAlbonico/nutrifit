@@ -60,6 +60,9 @@ export class TurnoOrmEntity extends AuditableOrmEntity {
   @Column({ name: 'fecha_original', type: 'datetime', nullable: true })
   fechaOriginal: Date | null;
 
+  @Column({ name: 'llegada_tarde_min', type: 'int', nullable: true })
+  llegadaTardeMin: number | null;
+
   @Column({
     name: 'token_confirmacion',
     type: 'varchar',

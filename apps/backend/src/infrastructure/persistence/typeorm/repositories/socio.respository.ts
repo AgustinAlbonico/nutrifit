@@ -113,9 +113,14 @@ export class SocioRepositoryImplementation implements SocioRepository {
   }
 
   async findById(id: number): Promise<SocioEntity | null> {
-    const gimnasioId = this.gimnasioIdActual;
+    const whereClause: any = { idPersona: id };
+
+    if (this.tenantContext?.isInitialized) {
+      whereClause.gimnasioId = this.gimnasioIdActual;
+    }
+
     const socio = await this.socioRepository.findOne({
-      where: { idPersona: id, gimnasioId },
+      where: whereClause,
     });
     return socio ? this.toEntity(socio) : null;
   }
@@ -143,7 +148,9 @@ export class SocioRepositoryImplementation implements SocioRepository {
 
   private toEntity(orm: SocioOrmEntity): SocioEntity {
     if (orm.gimnasioId == null) {
-      throw new Error(`Socio ${orm.idPersona} sin gimnasio asociado en base de datos`);
+      throw new Error(
+        `Socio ${orm.idPersona} sin gimnasio asociado en base de datos`,
+      );
     }
 
     // Pasar el gimnnasioId del ORM al entity (SocioEntity lo necesita para tenant isolation)

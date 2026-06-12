@@ -36,7 +36,7 @@ import {
   TurnoOrmEntity,
   UsuarioOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
-import { Not, Repository } from 'typeorm';
+import { In, Not, Repository } from 'typeorm';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
@@ -92,21 +92,23 @@ export class ReservarTurnoSocioUseCase implements BaseUseCase {
       horaTurno,
     );
 
-    const existingSameDay = await this.turnoRepository.findOne({
+    const activeReserva = await this.turnoRepository.findOne({
       where: {
         socio: {
           idPersona: socio.idPersona ?? 0,
           gimnasioId: this.tenantContext.gimnasioId,
         },
-        nutricionista: { idPersona: payload.nutricionistaId },
-        fechaTurno,
-        estadoTurno: Not(EstadoTurno.CANCELADO),
+        estadoTurno: In([
+          EstadoTurno.PROGRAMADO,
+          EstadoTurno.PRESENTE,
+          EstadoTurno.EN_CURSO,
+        ]),
       },
     });
 
-    if (existingSameDay) {
+    if (activeReserva) {
       throw new ConflictError(
-        'Ya tiene un turno con este profesional para la fecha seleccionada.',
+        'Ya tenés una reserva activa. Cancelá tu turno actual o esperá a que finalice antes de reservar otro.',
       );
     }
 

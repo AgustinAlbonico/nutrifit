@@ -21,6 +21,7 @@ import {
   type CrearAlimentoDto,
   type ActualizarAlimentoDto,
 } from '@/lib/api/alimentos';
+import { normalizarTexto } from '@/lib/text';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
@@ -168,11 +169,11 @@ export function GestionAlimentosPage() {
 
   // Filtrar alimentos por búsqueda
   const alimentosFiltrados = alimentos?.filter((alimento) => {
-    if (!busqueda) return true;
-    const termino = busqueda.toLowerCase();
+    const termino = normalizarTexto(busqueda);
+    if (!termino) return true;
     return (
-      alimento.nombre.toLowerCase().includes(termino) ||
-      alimento.grupoAlimenticio?.descripcion?.toLowerCase().includes(termino)
+      normalizarTexto(alimento.nombre).includes(termino) ||
+      normalizarTexto(alimento.grupoAlimenticio?.descripcion ?? '').includes(termino)
     );
   });
 

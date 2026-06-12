@@ -6,6 +6,7 @@ import { NutricionistaEntity } from 'src/domain/entities/Persona/Nutricionista/n
 import { IPasswordEncrypterService } from 'src/domain/services/password-encrypter.service';
 import { IAppLoggerService } from 'src/domain/services/logger.service';
 import { Genero } from 'src/domain/entities/Persona/Genero';
+import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
 
 describe('UpdateNutricionistaUseCase — limpieza de foto de perfil', () => {
   const buildUseCase = () => {
@@ -46,18 +47,26 @@ describe('UpdateNutricionistaUseCase — limpieza de foto de perfil', () => {
       encryptPassword: jest.fn(),
     } as unknown as jest.Mocked<IPasswordEncrypterService>;
 
+    const auditoriaService: jest.Mocked<AuditoriaService> = {
+      registrar: jest.fn(),
+      listarConFiltros: jest.fn(),
+    } as unknown as jest.Mocked<AuditoriaService>;
+
     const useCase = new UpdateNutricionistaUseCase(
       nutricionistaRepository,
       usuarioRepository,
       logger,
       passwordEncrypter,
       objectStorage,
+      auditoriaService,
     );
 
     return { useCase, nutricionistaRepository, objectStorage };
   };
 
-  const buildNutricionista = (fotoPerfilKey: string | null): NutricionistaEntity => {
+  const buildNutricionista = (
+    fotoPerfilKey: string | null,
+  ): NutricionistaEntity => {
     const nutricionista = new NutricionistaEntity(
       1,
       'Ana',
@@ -78,9 +87,13 @@ describe('UpdateNutricionistaUseCase — limpieza de foto de perfil', () => {
 
   it('elimina la foto anterior de MinIO cuando llega una nueva', async () => {
     const { useCase, nutricionistaRepository, objectStorage } = buildUseCase();
-    const nutricionistaExistente = buildNutricionista('perfiles/nutricionistas/vieja.png');
+    const nutricionistaExistente = buildNutricionista(
+      'perfiles/nutricionistas/vieja.png',
+    );
     nutricionistaRepository.findById.mockResolvedValue(nutricionistaExistente);
-    nutricionistaRepository.update.mockImplementation(async (_id, entity) => entity);
+    nutricionistaRepository.update.mockImplementation(
+      async (_id, entity) => entity,
+    );
     nutricionistaRepository.findByDni.mockResolvedValue(null);
     nutricionistaRepository.findByMatricula.mockResolvedValue(null);
     nutricionistaRepository.findAll.mockResolvedValue([]);
@@ -99,9 +112,13 @@ describe('UpdateNutricionistaUseCase — limpieza de foto de perfil', () => {
 
   it('elimina la foto anterior cuando eliminarFoto=true aunque no llegue foto nueva', async () => {
     const { useCase, nutricionistaRepository, objectStorage } = buildUseCase();
-    const nutricionistaExistente = buildNutricionista('perfiles/nutricionistas/vieja.png');
+    const nutricionistaExistente = buildNutricionista(
+      'perfiles/nutricionistas/vieja.png',
+    );
     nutricionistaRepository.findById.mockResolvedValue(nutricionistaExistente);
-    nutricionistaRepository.update.mockImplementation(async (_id, entity) => entity);
+    nutricionistaRepository.update.mockImplementation(
+      async (_id, entity) => entity,
+    );
     nutricionistaRepository.findByDni.mockResolvedValue(null);
     nutricionistaRepository.findByMatricula.mockResolvedValue(null);
     nutricionistaRepository.findAll.mockResolvedValue([]);
@@ -117,7 +134,9 @@ describe('UpdateNutricionistaUseCase — limpieza de foto de perfil', () => {
     const { useCase, nutricionistaRepository, objectStorage } = buildUseCase();
     const nutricionistaExistente = buildNutricionista(null);
     nutricionistaRepository.findById.mockResolvedValue(nutricionistaExistente);
-    nutricionistaRepository.update.mockImplementation(async (_id, entity) => entity);
+    nutricionistaRepository.update.mockImplementation(
+      async (_id, entity) => entity,
+    );
     nutricionistaRepository.findByDni.mockResolvedValue(null);
     nutricionistaRepository.findByMatricula.mockResolvedValue(null);
     nutricionistaRepository.findAll.mockResolvedValue([]);
@@ -129,9 +148,13 @@ describe('UpdateNutricionistaUseCase — limpieza de foto de perfil', () => {
 
   it('NO elimina si no hay foto nueva y eliminarFoto=false (caso edición normal)', async () => {
     const { useCase, nutricionistaRepository, objectStorage } = buildUseCase();
-    const nutricionistaExistente = buildNutricionista('perfiles/nutricionistas/vieja.png');
+    const nutricionistaExistente = buildNutricionista(
+      'perfiles/nutricionistas/vieja.png',
+    );
     nutricionistaRepository.findById.mockResolvedValue(nutricionistaExistente);
-    nutricionistaRepository.update.mockImplementation(async (_id, entity) => entity);
+    nutricionistaRepository.update.mockImplementation(
+      async (_id, entity) => entity,
+    );
     nutricionistaRepository.findByDni.mockResolvedValue(null);
     nutricionistaRepository.findByMatricula.mockResolvedValue(null);
     nutricionistaRepository.findAll.mockResolvedValue([]);
@@ -143,9 +166,13 @@ describe('UpdateNutricionistaUseCase — limpieza de foto de perfil', () => {
 
   it('NO falla el update si la eliminación de la foto vieja falla en MinIO', async () => {
     const { useCase, nutricionistaRepository, objectStorage } = buildUseCase();
-    const nutricionistaExistente = buildNutricionista('perfiles/nutricionistas/vieja.png');
+    const nutricionistaExistente = buildNutricionista(
+      'perfiles/nutricionistas/vieja.png',
+    );
     nutricionistaRepository.findById.mockResolvedValue(nutricionistaExistente);
-    nutricionistaRepository.update.mockImplementation(async (_id, entity) => entity);
+    nutricionistaRepository.update.mockImplementation(
+      async (_id, entity) => entity,
+    );
     nutricionistaRepository.findByDni.mockResolvedValue(null);
     nutricionistaRepository.findByMatricula.mockResolvedValue(null);
     nutricionistaRepository.findAll.mockResolvedValue([]);

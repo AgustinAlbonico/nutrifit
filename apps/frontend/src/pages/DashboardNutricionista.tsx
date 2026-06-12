@@ -7,13 +7,9 @@ import { AccionesRapidasCard } from '@/components/dashboard/AccionesRapidasCard'
 import { PacienteDestacadoCard } from '@/components/dashboard/PacienteDestacadoCard';
 import { TurnosDelDiaCard } from '@/components/dashboard/TurnosDelDiaCard';
 import { PacientesRecientesCard } from '@/components/dashboard/PacientesRecientesCard';
+import type { ApiResponse } from '@/types/api';
 
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp: string;
-}
+
 
 interface Paciente {
   idSocio: number;

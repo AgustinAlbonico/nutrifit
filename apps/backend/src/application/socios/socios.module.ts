@@ -8,6 +8,7 @@ import { ReactivarSocioUseCase } from './reactivarSocio.use-case';
 import { AppLoggerModule } from 'src/infrastructure/common/logger/app-logger.module';
 import { PasswordEncrypterModule } from 'src/infrastructure/services/bcrypt/bcrypt.module';
 import { MinioModule } from 'src/infrastructure/services/minio/minio.module';
+import { TenantContextModule } from 'src/infrastructure/auth/tenant-context.module';
 import {
   SocioOrmEntity,
   UsuarioOrmEntity,
@@ -30,6 +31,7 @@ import {
     AppLoggerModule,
     PasswordEncrypterModule,
     MinioModule,
+    TenantContextModule,
   ],
   providers: [
     RegistrarSocioUseCase,

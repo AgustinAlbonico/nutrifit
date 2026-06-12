@@ -105,9 +105,14 @@ export class NutricionistaRepositoryImplementation implements NutricionistaRepos
   }
 
   async findById(id: number): Promise<NutricionistaEntity | null> {
-    const gimnasioId = this.gimnasioIdActual;
+    const whereClause: any = { idPersona: id };
+
+    if (this.tenantContext?.isInitialized) {
+      whereClause.gimnasioId = this.gimnasioIdActual;
+    }
+
     const nutricionista = await this.nutricionistaRepository.findOne({
-      where: { idPersona: id, gimnasioId },
+      where: whereClause,
       relations: {
         usuario: true,
         agenda: true,

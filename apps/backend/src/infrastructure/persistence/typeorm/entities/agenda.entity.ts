@@ -5,11 +5,13 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
 } from 'typeorm';
 import { NutricionistaOrmEntity } from './persona.entity';
 import { AuditableOrmEntity } from '../common/auditable.orm-entity';
 
 @Entity('agenda')
+@Unique('UQ_AGENDA_NUTRI_DIA_HORARIO', ['nutricionista', 'dia', 'horaInicio', 'horaFin'])
 export class AgendaOrmEntity extends AuditableOrmEntity {
   @PrimaryGeneratedColumn({ name: 'id_agenda' })
   idAgenda: number;

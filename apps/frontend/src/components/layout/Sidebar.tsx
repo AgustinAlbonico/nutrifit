@@ -62,7 +62,7 @@ export function Sidebar() {
       to: '/dashboard',
       label: 'Dashboard',
       icon: LayoutDashboard,
-      roles: ['ADMIN', 'NUTRICIONISTA', 'SOCIO'],
+      roles: ['ADMIN', 'NUTRICIONISTA', 'SOCIO', 'RECEPCIONISTA'],
     },
     {
       to: '/nutricionistas',
@@ -110,7 +110,7 @@ export function Sidebar() {
       to: '/recepcion/turnos',
       label: 'Turnos del dia',
       icon: Users,
-      roles: ['ADMIN'],
+      roles: ['ADMIN', 'RECEPCIONISTA'],
     },
     {
       to: '/pacientes',
@@ -166,12 +166,6 @@ export function Sidebar() {
       icon: Building2,
       roles: ['SUPERADMIN'],
     },
-    {
-      to: '/recepcion/turnos',
-      label: 'Recepcion',
-      icon: UserCheck,
-      roles: ['RECEPCIONISTA'],
-    },
   ];
 
   const bottomLinks = [
@@ -179,7 +173,7 @@ export function Sidebar() {
       to: '/configuracion',
       label: 'Configuracion',
       icon: Settings,
-      roles: ['ADMIN', 'NUTRICIONISTA', 'SOCIO', 'SUPERADMIN'],
+      roles: ['ADMIN', 'NUTRICIONISTA', 'SOCIO', 'SUPERADMIN', 'RECEPCIONISTA'],
     },
   ];
 

@@ -1,4 +1,5 @@
-export type Genero = 'MASCULINO' | 'FEMENINO' | 'OTRO';
+import type { Genero } from './genero';
+export type { Genero };
 
 export interface Recepcionista {
   idPersona: number;

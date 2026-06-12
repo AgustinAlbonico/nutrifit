@@ -1,9 +1,7 @@
 import { apiRequest } from '@/lib/api';
+import type { ApiResponse } from '@/types/api';
 
-interface ApiResponse<T> {
-  success?: boolean;
-  data: T;
-}
+
 
 function extraerDatos<T>(respuesta: T | ApiResponse<T>): T {
   if (typeof respuesta === 'object' && respuesta !== null && 'data' in respuesta) {

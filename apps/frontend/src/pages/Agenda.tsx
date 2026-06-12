@@ -1,5 +1,6 @@
 import type { EstadoTurno } from '@nutrifit/shared';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import type { ApiResponse } from '@/types/api';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { 
@@ -40,12 +41,7 @@ interface AgendaItem {
   duracionTurno: number;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp: string;
-}
+
 
 // Tipos para configuración de horario
 const DIA_SEMANA_OPTIONS = [

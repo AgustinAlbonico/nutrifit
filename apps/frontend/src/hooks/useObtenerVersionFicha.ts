@@ -15,13 +15,9 @@ import { useQuery } from '@tanstack/react-query';
 
 import { apiRequest } from '@/lib/api';
 import type { DatosVersion } from '@/types/ficha-salud';
+import type { ApiResponse } from '@/types/api';
 
-interface ApiResponseWrapper<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp?: string;
-}
+
 
 interface ParametrosObtenerVersion {
   token: string | null;
@@ -35,7 +31,7 @@ export function useObtenerVersionFicha({ token, n }: ParametrosObtenerVersion) {
       if (n == null) {
         throw new Error('Versión no especificada');
       }
-      const respuesta = await apiRequest<ApiResponseWrapper<DatosVersion>>(
+      const respuesta = await apiRequest<ApiResponse<DatosVersion>>(
         `/turnos/socio/ficha-salud/version/${n}`,
         { method: 'GET', token },
       );

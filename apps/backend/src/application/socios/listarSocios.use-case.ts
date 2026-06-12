@@ -6,15 +6,30 @@ import {
   SocioRepository,
 } from 'src/domain/entities/Persona/Socio/socio.repository';
 import { Inject } from '@nestjs/common';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
+import { Rol } from 'src/domain/entities/Usuario/Rol';
 
 @Injectable()
 export class ListarSociosUseCase implements BaseUseCase {
   constructor(
     @Inject(SOCIO_REPOSITORY) private readonly socioRepository: SocioRepository,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(): Promise<SocioEntity[]> {
-    return this.socioRepository.findAll();
+    const socios = await this.socioRepository.findAll();
+
+    const rol = this.tenantContext.rol;
+    if (rol === Rol.ADMIN || rol === Rol.SUPERADMIN) {
+      return socios;
+    }
+
+    const gimnasioId = this.tenantContext.gimnasioId;
+    if (gimnasioId === null) {
+      return [];
+    }
+
+    return socios.filter((socio) => socio.gimnasioId === gimnasioId);
   }
 
   async findById(id: number): Promise<SocioEntity | null> {

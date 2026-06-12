@@ -62,7 +62,10 @@ describe('ListProfesionalesPublicosUseCase', () => {
 
   it('incluye solo nutricionistas activos (excluye fechaBaja) y no expone datos sensibles', async () => {
     const activo = crearNutri({ idPersona: 1, fechaBaja: null });
-    const inactivo = crearNutri({ idPersona: 2, fechaBaja: new Date('2025-01-01') });
+    const inactivo = crearNutri({
+      idPersona: 2,
+      fechaBaja: new Date('2025-01-01'),
+    });
     nutricionistaRepository.findAll.mockResolvedValue([activo, inactivo]);
     slotComputation.contarSlotsProximos.mockResolvedValue(5);
 

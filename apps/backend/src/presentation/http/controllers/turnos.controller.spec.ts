@@ -62,10 +62,7 @@ describe('TurnosController — RB16 (RECEPCIONISTA no ve ficha-salud)', () => {
    * Helper: simula un ExecutionContext con un usuario autenticado del
    * rol indicado. Devuelve true/false según la decisión del guard.
    */
-  const ejecutarGuardComo = (
-    handler: Function,
-    rol: Rol,
-  ): boolean => {
+  const ejecutarGuardComo = (handler: Function, rol: Rol): boolean => {
     const httpHost = {
       getRequest: () => ({
         user: {
@@ -117,16 +114,22 @@ describe('TurnosController — RB16 (RECEPCIONISTA no ve ficha-salud)', () => {
       },
     );
 
-    it.each(endpointsSocio)('%s: SOCIO → permitido (RolesGuard retorna true)', (handlerName) => {
-      const handler = controllerHandlers[handlerName];
-      const allowed = ejecutarGuardComo(handler, Rol.SOCIO);
-      expect(allowed).toBe(true);
-    });
+    it.each(endpointsSocio)(
+      '%s: SOCIO → permitido (RolesGuard retorna true)',
+      (handlerName) => {
+        const handler = controllerHandlers[handlerName];
+        const allowed = ejecutarGuardComo(handler, Rol.SOCIO);
+        expect(allowed).toBe(true);
+      },
+    );
   });
 
   describe('Endpoints de ficha-salud para NUTRICIONISTA', () => {
     const endpointsNutri = [
-      ['getFichaSaludPaciente', 'GET /turnos/profesional/:n/pacientes/:s/ficha-salud'],
+      [
+        'getFichaSaludPaciente',
+        'GET /turnos/profesional/:n/pacientes/:s/ficha-salud',
+      ],
       [
         'listarHistorialFichaSaludPaciente',
         'GET /turnos/profesional/:n/pacientes/:s/ficha-salud/historial',
@@ -172,9 +175,7 @@ describe('TurnosController — RB16 (RECEPCIONISTA no ve ficha-salud)', () => {
         // declarativo para RB16.
         const allowed = ejecutarGuardComo(handler, Rol.RECEPCIONISTA);
         if (allowed) {
-          throw new Error(
-            `Endpoint ${name} acepta RECEPCIONISTA — viola RB16`,
-          );
+          throw new Error(`Endpoint ${name} acepta RECEPCIONISTA — viola RB16`);
         }
       }
     });

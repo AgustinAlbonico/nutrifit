@@ -16,7 +16,10 @@ import {
   APP_LOGGER_SERVICE,
   IAppLoggerService,
 } from 'src/domain/services/logger.service';
-import { SocioOrmEntity, TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities';
+import {
+  SocioOrmEntity,
+  TurnoOrmEntity,
+} from 'src/infrastructure/persistence/typeorm/entities';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 @Injectable()

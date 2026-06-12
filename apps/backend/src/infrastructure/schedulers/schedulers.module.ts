@@ -7,7 +7,9 @@ import { AlimentosSyncScheduler } from './alimentos-sync.scheduler';
 import { AusenciaTurnoScheduler } from './ausencia-turno.scheduler';
 import { RepositoriesModule } from '../persistence/typeorm/repositories/repositories.module';
 import { RecordatorioEnviadoOrmEntity } from '../persistence/typeorm/entities/recordatorio-enviado.entity';
+import { NotificacionOrmEntity } from '../persistence/typeorm/entities/notificacion.entity';
 import { TurnoReminderScheduler } from './turno-reminder.scheduler';
+import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import {
   EmailService,
   EMAIL_PROVIDER,
@@ -22,12 +24,14 @@ import { ConfigService } from '@nestjs/config';
       TurnoOrmEntity,
       AlimentoOrmEntity,
       RecordatorioEnviadoOrmEntity,
+      NotificacionOrmEntity,
     ]),
     RepositoriesModule,
   ],
   providers: [
     AusenciaTurnoScheduler,
     TurnoReminderScheduler,
+    NotificacionesService,
     AlimentosSyncService,
     AlimentosSyncScheduler,
     EmailService,

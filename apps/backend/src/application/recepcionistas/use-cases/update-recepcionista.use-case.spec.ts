@@ -41,7 +41,9 @@ describe('UpdateRecepcionistaUseCase — limpieza de foto de perfil', () => {
     return { useCase, recepcionistaRepository, objectStorage };
   };
 
-  const buildRecepcionista = (fotoPerfilKey: string | null): RecepcionistaEntity => {
+  const buildRecepcionista = (
+    fotoPerfilKey: string | null,
+  ): RecepcionistaEntity => {
     const recepcionista = new RecepcionistaEntity(
       1,
       'María',
@@ -60,9 +62,13 @@ describe('UpdateRecepcionistaUseCase — limpieza de foto de perfil', () => {
 
   it('elimina la foto anterior de MinIO cuando llega una nueva', async () => {
     const { useCase, recepcionistaRepository, objectStorage } = buildUseCase();
-    const recepcionistaExistente = buildRecepcionista('perfiles/recepcionistas/vieja.png');
+    const recepcionistaExistente = buildRecepcionista(
+      'perfiles/recepcionistas/vieja.png',
+    );
     recepcionistaRepository.findById.mockResolvedValue(recepcionistaExistente);
-    recepcionistaRepository.update.mockImplementation(async (_id, entity) => entity);
+    recepcionistaRepository.update.mockImplementation(
+      async (_id, entity) => entity,
+    );
 
     await useCase.execute(
       1,
@@ -78,9 +84,13 @@ describe('UpdateRecepcionistaUseCase — limpieza de foto de perfil', () => {
 
   it('elimina la foto anterior cuando eliminarFoto=true aunque no llegue foto nueva', async () => {
     const { useCase, recepcionistaRepository, objectStorage } = buildUseCase();
-    const recepcionistaExistente = buildRecepcionista('perfiles/recepcionistas/vieja.png');
+    const recepcionistaExistente = buildRecepcionista(
+      'perfiles/recepcionistas/vieja.png',
+    );
     recepcionistaRepository.findById.mockResolvedValue(recepcionistaExistente);
-    recepcionistaRepository.update.mockImplementation(async (_id, entity) => entity);
+    recepcionistaRepository.update.mockImplementation(
+      async (_id, entity) => entity,
+    );
 
     await useCase.execute(1, {} as any, undefined, true);
 
@@ -93,7 +103,9 @@ describe('UpdateRecepcionistaUseCase — limpieza de foto de perfil', () => {
     const { useCase, recepcionistaRepository, objectStorage } = buildUseCase();
     const recepcionistaExistente = buildRecepcionista(null);
     recepcionistaRepository.findById.mockResolvedValue(recepcionistaExistente);
-    recepcionistaRepository.update.mockImplementation(async (_id, entity) => entity);
+    recepcionistaRepository.update.mockImplementation(
+      async (_id, entity) => entity,
+    );
 
     await useCase.execute(1, {} as any, undefined, true);
 
@@ -102,9 +114,13 @@ describe('UpdateRecepcionistaUseCase — limpieza de foto de perfil', () => {
 
   it('NO elimina si no hay foto nueva y eliminarFoto=false (caso edición normal)', async () => {
     const { useCase, recepcionistaRepository, objectStorage } = buildUseCase();
-    const recepcionistaExistente = buildRecepcionista('perfiles/recepcionistas/vieja.png');
+    const recepcionistaExistente = buildRecepcionista(
+      'perfiles/recepcionistas/vieja.png',
+    );
     recepcionistaRepository.findById.mockResolvedValue(recepcionistaExistente);
-    recepcionistaRepository.update.mockImplementation(async (_id, entity) => entity);
+    recepcionistaRepository.update.mockImplementation(
+      async (_id, entity) => entity,
+    );
 
     await useCase.execute(1, {} as any, undefined, false);
 
@@ -113,9 +129,13 @@ describe('UpdateRecepcionistaUseCase — limpieza de foto de perfil', () => {
 
   it('NO falla el update si la eliminación de la foto vieja falla en MinIO', async () => {
     const { useCase, recepcionistaRepository, objectStorage } = buildUseCase();
-    const recepcionistaExistente = buildRecepcionista('perfiles/recepcionistas/vieja.png');
+    const recepcionistaExistente = buildRecepcionista(
+      'perfiles/recepcionistas/vieja.png',
+    );
     recepcionistaRepository.findById.mockResolvedValue(recepcionistaExistente);
-    recepcionistaRepository.update.mockImplementation(async (_id, entity) => entity);
+    recepcionistaRepository.update.mockImplementation(
+      async (_id, entity) => entity,
+    );
     objectStorage.eliminarArchivo.mockRejectedValue(new Error('MinIO down'));
 
     await expect(

@@ -38,6 +38,7 @@ import {
   type NivelActividadFisicaValue,
 } from '@nutrifit/shared';
 import type { FichaSaludSocio as FichaSaludSocioDto } from '@/types/ficha-salud';
+import type { ApiResponse } from '@/types/api';
 
 type ConsumoAlcoholValue =
   | 'Nunca'
@@ -45,12 +46,7 @@ type ConsumoAlcoholValue =
   | 'Moderado'
   | 'Frecuente';
 
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp: string;
-}
+
 
 type FrecuenciaComidasForm = FrecuenciaComidasValue | '';
 type ConsumoAlcoholForm = ConsumoAlcoholValue | '';

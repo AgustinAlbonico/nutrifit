@@ -12,6 +12,7 @@ import {
   formatearFechaArgentinaParaInput,
 } from '@/lib/fechasArgentina';
 import { REGEX_DNI, REGEX_TELEFONO, REGEX_EMAIL, obtenerErroresContrasenia } from '@/lib/validaciones';
+import { normalizarTexto } from '@/lib/text';
 import type { Socio, CrearSocioDto, Genero } from '@/types/socio';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
@@ -42,6 +43,7 @@ import {
   AvatarFallback,
 } from '@/components/ui/avatar';
 import { SelectorImagen } from '@/components/imagen/SelectorImagen';
+import type { ApiResponse } from '@/types/api';
 
 type CampoFormularioCreacion = keyof CrearSocioDto;
 type CampoFormularioEdicion = keyof CrearSocioDto;
@@ -63,10 +65,7 @@ const FORMULARIO_SOCIO_INICIAL: CrearSocioDto = {
   contrasena: '',
 };
 
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-}
+
 
 const parsearFechaInput = (fecha: string): Date | undefined => {
   if (!fecha) {
@@ -162,8 +161,6 @@ export function Socios() {
     ],
     [socioForm.contrasena],
   );
-
-  const normalizarTexto = (valor: string) => valor.trim().toLowerCase();
 
   const provinciasDisponibles = useMemo(() => {
     return Array.from(

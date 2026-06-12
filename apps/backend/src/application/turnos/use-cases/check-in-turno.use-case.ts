@@ -7,6 +7,10 @@ import { BadRequestError } from 'src/domain/exceptions/custom-exceptions';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
+import {
+  combineArgentinaDateAndTime,
+  getArgentinaNow,
+} from 'src/common/utils/argentina-datetime.util';
 
 @Injectable()
 export class CheckInTurnoUseCase {
@@ -38,8 +42,26 @@ export class CheckInTurnoUseCase {
       );
     }
 
+    const ahora = getArgentinaNow();
+    const horaTurnoReal = combineArgentinaDateAndTime(
+      turno.fechaTurno,
+      turno.horaTurno,
+    );
+    const diffMs = ahora.getTime() - horaTurnoReal.getTime();
+    const diffMinutos = Math.floor(diffMs / 60000);
+
+    if (diffMinutos < -10 || diffMinutos > 30) {
+      throw new BadRequestError(
+        'El check-in solo se permite entre 10 min antes y 30 min después del horario del turno.',
+      );
+    }
+
     turno.estadoTurno = EstadoTurno.PRESENTE;
-    turno.checkInAt = new Date();
+    turno.checkInAt = ahora;
+    
+    if (diffMinutos > 0) {
+      turno.llegadaTardeMin = diffMinutos;
+    }
 
     await this.turnoRepository.save(turno);
 

@@ -352,7 +352,9 @@ describe('ReservarTurnoSocioUseCase - Multi-Tenant Isolation', () => {
 
     it('bloquea si la ficha de salud es null (cubierto por lógica RB14)', async () => {
       // Arrange
-      jest.mocked(usuarioRepository.findOne).mockResolvedValue(mockUsuarioConPersona);
+      jest
+        .mocked(usuarioRepository.findOne)
+        .mockResolvedValue(mockUsuarioConPersona);
       jest
         .mocked(socioRepository.findOne)
         .mockResolvedValue(buildMockSocio(null));
@@ -369,7 +371,9 @@ describe('ReservarTurnoSocioUseCase - Multi-Tenant Isolation', () => {
 
     it('bloquea si la ficha existe pero completada=false', async () => {
       // Arrange
-      jest.mocked(usuarioRepository.findOne).mockResolvedValue(mockUsuarioConPersona);
+      jest
+        .mocked(usuarioRepository.findOne)
+        .mockResolvedValue(mockUsuarioConPersona);
       jest
         .mocked(socioRepository.findOne)
         .mockResolvedValue(
@@ -388,7 +392,9 @@ describe('ReservarTurnoSocioUseCase - Multi-Tenant Isolation', () => {
 
     it('permite si la ficha existe y completada=true', async () => {
       // Arrange
-      jest.mocked(usuarioRepository.findOne).mockResolvedValue(mockUsuarioConPersona);
+      jest
+        .mocked(usuarioRepository.findOne)
+        .mockResolvedValue(mockUsuarioConPersona);
       jest
         .mocked(socioRepository.findOne)
         .mockResolvedValue(

@@ -10,9 +10,7 @@ import { EstadoTurno } from 'src/domain/entities/Turno/EstadoTurno';
 import { DiaSemana } from 'src/domain/entities/Agenda/dia-semana';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 import { EXCEPCION_DISPONIBILIDAD_REPOSITORY } from 'src/domain/entities/Agenda/excepcion-disponibilidad.repository';
-import {
-  BadRequestError,
-} from 'src/domain/exceptions/custom-exceptions';
+import { BadRequestError } from 'src/domain/exceptions/custom-exceptions';
 import {
   getArgentinaNow,
   combineArgentinaDateAndTime,

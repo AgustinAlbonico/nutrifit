@@ -23,11 +23,17 @@ export const GRUPOS_PERMISOS: Record<string, GrupoPermisoData> = {
     nombre: 'Recepcionista',
     descripcion: 'Gestion de socios, nutricionistas y turnos',
     acciones: [
-      'socios.*', // todas las acciones de socios
+      ACCIONES.SOCIOS_CREAR,
+      ACCIONES.SOCIOS_EDITAR,
+      ACCIONES.SOCIOS_ELIMINAR,
+      ACCIONES.SOCIOS_VER,
       ACCIONES.NUTRICIONISTAS_CREAR,
       ACCIONES.NUTRICIONISTAS_EDITAR,
       ACCIONES.NUTRICIONISTAS_VER,
-      'turnos.*', // todas las acciones de turnos
+      ACCIONES.TURNOS_CREAR,
+      ACCIONES.TURNOS_EDITAR,
+      ACCIONES.TURNOS_CANCELAR,
+      ACCIONES.TURNOS_VER,
       ACCIONES.RECEPCIONISTAS_VER,
     ],
   },
@@ -49,9 +55,7 @@ export const GRUPOS_PERMISOS: Record<string, GrupoPermisoData> = {
     clave: 'PROFESIONAL',
     nombre: 'Profesional',
     descripcion: 'Permisos base para profesionales del gimnasio',
-    acciones: [
-      'profesionales.*',
-    ],
+    acciones: ['profesionales.*'],
   },
   SOCIO: {
     clave: 'SOCIO',

@@ -17,6 +17,7 @@ import { Agenda } from '@/pages/Agenda';
 import { Turnos } from '@/pages/Turnos';
 import { AgendarTurno } from '@/pages/AgendarTurno';
 import { FichaSaludSocio } from '@/pages/FichaSaludSocio';
+import { TurnoConfirmadoPage } from '@/pages/TurnoConfirmadoPage';
 import { TurnosProfesional } from '@/pages/TurnosProfesional';
 import { Configuracion } from '@/pages/Configuracion';
 import { Socios } from '@/pages/Socios';
@@ -37,6 +38,7 @@ import { GimnasioWizardPage } from '@/pages/admin/GimnasioWizardPage';
 import { GimnasioDetailPage } from '@/pages/admin/GimnasioDetailPage';
 import { UsuarioPermisosPage } from '@/pages/admin/UsuarioPermisosPage';
 import { Recepcionistas } from '@/pages/Recepcionistas';
+import { MiPerfilNutricionista } from '@/pages/MiPerfilNutricionista';
 
 // Definir el tipo del context del router
 declare module '@tanstack/react-router' {
@@ -192,6 +194,12 @@ const fichaSaludSocioRoute = createRoute({
   component: FichaSaludSocio,
 });
 
+const turnoConfirmadoRoute = createRoute({
+  getParentRoute: () => authLayoutRoute,
+  path: '/turnos/$idTurno/confirmado',
+  component: TurnoConfirmadoPage,
+});
+
 // Turnos Profesional route (Nutricionistas)
 const turnosProfesionalRoute = createRoute({
   getParentRoute: () => authLayoutRoute,
@@ -283,6 +291,13 @@ const auditoriaRoute = createRoute({
   component: AdminAuditoriaPage,
 });
 
+// Mi perfil nutricionista (nutricionista)
+const miPerfilNutricionistaRoute = createRoute({
+  getParentRoute: () => authLayoutRoute,
+  path: '/profesional/mi-perfil',
+  component: MiPerfilNutricionista,
+});
+
 const notificacionesRoute = createRoute({
   getParentRoute: () => authLayoutRoute,
   path: '/notificaciones',
@@ -345,6 +360,7 @@ const routeTree = rootRoute.addChildren([
     turnosRoute,
     agendarTurnoRoute,
     fichaSaludSocioRoute,
+    turnoConfirmadoRoute,
     turnosProfesionalRoute,
     configuracionRoute,
     recepcionTurnosRoute,
@@ -358,6 +374,7 @@ const routeTree = rootRoute.addChildren([
     planesRoute,
     alimentosRoute,
     auditoriaRoute,
+    miPerfilNutricionistaRoute,
     notificacionesRoute,
     gimnasiosListRoute,
     gimnasioNuevoRoute,

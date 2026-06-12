@@ -12,10 +12,12 @@ import {
   formatearFechaArgentinaParaInput,
 } from '@/lib/fechasArgentina';
 import { REGEX_DNI, REGEX_TELEFONO, REGEX_EMAIL, obtenerErroresContrasenia } from '@/lib/validaciones';
+import { normalizarTexto } from '@/lib/text';
 import type { Nutricionista, CrearNutricionistaDto, Genero } from '@/types/nutricionista';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
@@ -42,6 +44,7 @@ import {
   AvatarFallback,
 } from '@/components/ui/avatar';
 import { SelectorImagen } from '@/components/imagen/SelectorImagen';
+import type { ApiResponse } from '@/types/api';
 
 type CampoFormularioCreacion = keyof CrearNutricionistaDto;
 type CampoFormularioEdicion = keyof CrearNutricionistaDto;
@@ -64,12 +67,10 @@ const FORMULARIO_NUTRICIONISTA_INICIAL: CrearNutricionistaDto = {
   aniosExperiencia: 0,
   tarifaSesion: 0,
   contrasena: '',
+  presentacion: '',
 };
 
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-}
+
 
 const parsearFechaInput = (fecha: string): Date | undefined => {
   if (!fecha) {
@@ -138,8 +139,6 @@ export function GestionNutricionistas() {
     setNutricionistaSeleccionado(nutricionista);
     setMostrarModalDetalles(true);
   };
-
-  const normalizarTexto = (valor: string) => valor.trim().toLowerCase();
 
   const cumpleFiltroAntiguedad = (
     aniosExperiencia: number,
@@ -491,6 +490,7 @@ export function GestionNutricionistas() {
       matricula: nutricionista.matricula,
       aniosExperiencia: nutricionista.aniosExperiencia,
       tarifaSesion: nutricionista.tarifaSesion,
+      presentacion: nutricionista.presentacion ?? '',
       contrasena: '',
     });
     setErroresEdicion({});
@@ -1161,7 +1161,17 @@ export function GestionNutricionistas() {
                     />
                     {erroresCreacion.tarifaSesion && <p className="text-xs font-medium text-destructive">{erroresCreacion.tarifaSesion}</p>}
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="crear-presentacion">Presentación (opcional)</Label>
+                    <Textarea
+                      id="crear-presentacion"
+                      value={nutricionistaForm.presentacion || ''}
+                      onChange={(e) => actualizarCampoCreacion('presentacion', e.target.value)}
+                      placeholder="Breve biografía o presentación del profesional..."
+                      className="min-h-[100px]"
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="crear-password" required>Contraseña temporal</Label>
                     <Input
                       id="crear-password"
@@ -1367,7 +1377,11 @@ export function GestionNutricionistas() {
                     <Label htmlFor="editar-tarifa">Tarifa por sesión</Label>
                     <Input id="editar-tarifa" type="number" min={0} step="0.01" value={nutricionistaFormEdicion.tarifaSesion} onChange={(e) => setNutricionistaFormEdicion({ ...nutricionistaFormEdicion, tarifaSesion: parseFloat(e.target.value) || 0 })} required />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="editar-presentacion">Presentación (opcional)</Label>
+                    <Textarea id="editar-presentacion" value={nutricionistaFormEdicion.presentacion || ''} onChange={(e) => setNutricionistaFormEdicion({ ...nutricionistaFormEdicion, presentacion: e.target.value })} placeholder="Breve biografía o presentación del profesional..." className="min-h-[100px]" />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="editar-password">Nueva contraseña (opcional)</Label>
                     <Input id="editar-password" type="password" autoComplete="new-password" value={nutricionistaFormEdicion.contrasena} onChange={(e) => setNutricionistaFormEdicion({ ...nutricionistaFormEdicion, contrasena: e.target.value })} />
                   </div>

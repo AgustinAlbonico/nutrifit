@@ -5,6 +5,7 @@ import {
   IsEnum,
   IsNotEmpty,
   IsNumber,
+  IsOptional,
   IsString,
   MinLength,
 } from 'class-validator';
@@ -71,4 +72,8 @@ export class CreateNutricionistaDto {
   @IsNotEmpty()
   @Type(() => Number)
   aniosExperiencia: number;
+
+  @IsString()
+  @IsOptional()
+  presentacion?: string;
 }

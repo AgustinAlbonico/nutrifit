@@ -41,10 +41,7 @@ export class ObtenerVersionFichaSaludSocioUseCase implements BaseUseCase {
     private readonly tenantContext: TenantContextService,
   ) {}
 
-  async execute(
-    userId: number,
-    n: number,
-  ): Promise<DatosVersionFichaSaludDto> {
+  async execute(userId: number, n: number): Promise<DatosVersionFichaSaludDto> {
     if (!Number.isInteger(n) || n < 1) {
       throw new NotFoundError('Versión no encontrada');
     }

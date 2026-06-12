@@ -53,7 +53,9 @@ export class UpsertFichaSaludSocioDto {
   nivelActividadFisica: NivelActividadFisica;
 
   @IsString({ message: 'El objetivo personal es obligatorio' })
-  @MaxLength(500, { message: 'El objetivo personal no puede superar los 500 caracteres' })
+  @MaxLength(500, {
+    message: 'El objetivo personal no puede superar los 500 caracteres',
+  })
   objetivoPersonal: string;
 
   // --- Alergias y patologías ---
@@ -71,23 +73,32 @@ export class UpsertFichaSaludSocioDto {
 
   // --- Medicación y suplementos ---
   @IsString({ message: 'La medicación actual debe ser un texto' })
-  @MaxLength(1000, { message: 'La medicación actual no puede superar los 1000 caracteres' })
+  @MaxLength(1000, {
+    message: 'La medicación actual no puede superar los 1000 caracteres',
+  })
   @IsOptional()
   medicacionActual?: string;
 
   @IsString({ message: 'Los suplementos actuales deben ser un texto' })
-  @MaxLength(500, { message: 'Los suplementos actuales no pueden superar los 500 caracteres' })
+  @MaxLength(500, {
+    message: 'Los suplementos actuales no pueden superar los 500 caracteres',
+  })
   @IsOptional()
   suplementosActuales?: string;
 
   // --- Historial médico ---
   @IsString({ message: 'Las cirugías previas deben ser un texto' })
-  @MaxLength(1000, { message: 'Las cirugías previas no pueden superar los 1000 caracteres' })
+  @MaxLength(1000, {
+    message: 'Las cirugías previas no pueden superar los 1000 caracteres',
+  })
   @IsOptional()
   cirugiasPrevias?: string;
 
   @IsString({ message: 'Los antecedentes familiares deben ser un texto' })
-  @MaxLength(1000, { message: 'Los antecedentes familiares no pueden superar los 1000 caracteres' })
+  @MaxLength(1000, {
+    message:
+      'Los antecedentes familiares no pueden superar los 1000 caracteres',
+  })
   @IsOptional()
   antecedentesFamiliares?: string;
 
@@ -104,12 +115,17 @@ export class UpsertFichaSaludSocioDto {
     { message: 'El consumo de agua diario debe ser un número válido' },
   )
   @Min(0, { message: 'El consumo de agua diario no puede ser negativo' })
-  @Max(10, { message: 'El consumo de agua diario no puede superar los 10 litros' })
+  @Max(10, {
+    message: 'El consumo de agua diario no puede superar los 10 litros',
+  })
   @IsOptional()
   consumoAguaDiario?: number;
 
   @IsString({ message: 'Las restricciones alimentarias deben ser un texto' })
-  @MaxLength(500, { message: 'Las restricciones alimentarias no pueden superar los 500 caracteres' })
+  @MaxLength(500, {
+    message:
+      'Las restricciones alimentarias no pueden superar los 500 caracteres',
+  })
   @IsOptional()
   restriccionesAlimentarias?: string;
 
@@ -132,13 +148,23 @@ export class UpsertFichaSaludSocioDto {
   horasSueno?: number;
 
   // --- Contacto de emergencia ---
-  @IsString({ message: 'El nombre del contacto de emergencia debe ser un texto' })
-  @MaxLength(100, { message: 'El nombre del contacto de emergencia no puede superar los 100 caracteres' })
+  @IsString({
+    message: 'El nombre del contacto de emergencia debe ser un texto',
+  })
+  @MaxLength(100, {
+    message:
+      'El nombre del contacto de emergencia no puede superar los 100 caracteres',
+  })
   @IsOptional()
   contactoEmergenciaNombre?: string;
 
-  @IsString({ message: 'El teléfono del contacto de emergencia debe ser un texto' })
-  @MaxLength(20, { message: 'El teléfono del contacto de emergencia no puede superar los 20 caracteres' })
+  @IsString({
+    message: 'El teléfono del contacto de emergencia debe ser un texto',
+  })
+  @MaxLength(20, {
+    message:
+      'El teléfono del contacto de emergencia no puede superar los 20 caracteres',
+  })
   @IsOptional()
   contactoEmergenciaTelefono?: string;
 

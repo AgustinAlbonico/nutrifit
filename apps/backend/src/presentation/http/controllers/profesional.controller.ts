@@ -28,6 +28,7 @@ import {
   CreateNutricionistaUseCase,
   DeleteNutricionistaUseCase,
   GetNutricionistaUseCase,
+  GetMiPerfilNutricionistaUseCase,
   GetPerfilProfesionalPublicoUseCase,
   ListNutricionistasUseCase,
   ListProfesionalesPublicosUseCase,
@@ -48,6 +49,7 @@ import { Actions } from 'src/infrastructure/auth/decorators/actions.decorator';
 import { ACCIONES } from '@nutrifit/shared';
 import { Public } from 'src/infrastructure/auth/decorators/public.decorator';
 import { Rol } from 'src/infrastructure/auth/decorators/role.decorator';
+import { CurrentUserId } from 'src/infrastructure/auth/decorators/current-user.decorator';
 import { ActionsGuard } from 'src/infrastructure/auth/guards/actions.guard';
 import { JwtAuthGuard } from 'src/infrastructure/auth/guards/auth.guard';
 import { RolesGuard } from 'src/infrastructure/auth/guards/roles.guard';
@@ -58,6 +60,7 @@ export class ProfesionalController {
   constructor(
     private readonly createNutricionistaUseCase: CreateNutricionistaUseCase,
     private readonly getNutricionistaUseCase: GetNutricionistaUseCase,
+    private readonly getMiPerfilNutricionistaUseCase: GetMiPerfilNutricionistaUseCase,
     private readonly listNutricionistasUseCase: ListNutricionistasUseCase,
     private readonly listProfesionalesPublicosUseCase: ListProfesionalesPublicosUseCase,
     private readonly getPerfilProfesionalPublicoUseCase: GetPerfilProfesionalPublicoUseCase,
@@ -70,14 +73,17 @@ export class ProfesionalController {
   ) {}
 
   @Post()
-  @Rol(RolEnum.ADMIN)
+  @Rol(RolEnum.ADMIN, RolEnum.RECEPCIONISTA)
   @Actions(ACCIONES.NUTRICIONISTAS_CREAR)
   @UseInterceptors(FileInterceptor('foto'))
   async create(
     @Body() createNutricionistaDto: CreateNutricionistaDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
-    console.log('--- RAW BODY RECIBIDO EN CREATE NUTRICIONISTA ---', createNutricionistaDto);
+    console.log(
+      '--- RAW BODY RECIBIDO EN CREATE NUTRICIONISTA ---',
+      createNutricionistaDto,
+    );
     this.logger.log(
       `Creando profesional con email: ${createNutricionistaDto.email}`,
     );
@@ -106,7 +112,7 @@ export class ProfesionalController {
   }
 
   @Get()
-  @Rol(RolEnum.ADMIN)
+  @Rol(RolEnum.ADMIN, RolEnum.RECEPCIONISTA)
   @Actions(ACCIONES.NUTRICIONISTAS_VER)
   async findAll(): Promise<NutricionistaResponseDto[]> {
     this.logger.log('Listando todos los profesionales');
@@ -134,8 +140,19 @@ export class ProfesionalController {
     return this.getPerfilProfesionalPublicoUseCase.execute(id);
   }
 
+  @Get('mi-perfil')
+  @Rol(RolEnum.NUTRICIONISTA)
+  async getMiPerfil(
+    @CurrentUserId() usuarioId: number,
+  ): Promise<NutricionistaResponseDto> {
+    this.logger.log(`Obteniendo mi-perfil para usuario ${usuarioId}`);
+    const nutricionista =
+      await this.getMiPerfilNutricionistaUseCase.execute(usuarioId);
+    return this.mapToResponseDto(nutricionista);
+  }
+
   @Get(':id')
-  @Rol(RolEnum.ADMIN)
+  @Rol(RolEnum.ADMIN, RolEnum.RECEPCIONISTA)
   @Actions(ACCIONES.NUTRICIONISTAS_VER)
   async findOne(
     @Param('id', ParseIntPipe) id: number,
@@ -146,7 +163,7 @@ export class ProfesionalController {
   }
 
   @Put(':id')
-  @Rol(RolEnum.ADMIN)
+  @Rol(RolEnum.ADMIN, RolEnum.RECEPCIONISTA, RolEnum.NUTRICIONISTA)
   @Actions(ACCIONES.NUTRICIONISTAS_EDITAR)
   @UseInterceptors(FileInterceptor('foto'))
   async update(
@@ -154,6 +171,7 @@ export class ProfesionalController {
     @Body() updateNutricionistaDto: UpdateNutricionistaDto,
     @UploadedFile() file?: Express.Multer.File,
     @Body('eliminarFoto') eliminarFotoRaw?: string,
+    @CurrentUserId() usuarioEditorId?: number,
   ): Promise<NutricionistaResponseDto> {
     this.logger.log(`Actualizando profesional con ID: ${id}`);
 
@@ -180,6 +198,7 @@ export class ProfesionalController {
       updateNutricionistaDto,
       fotoPerfilKey,
       eliminarFoto,
+      usuarioEditorId,
     );
     return this.mapToResponseDto(nutricionista);
   }
@@ -214,7 +233,7 @@ export class ProfesionalController {
   }
 
   @Delete(':id')
-  @Rol(RolEnum.ADMIN)
+  @Rol(RolEnum.ADMIN, RolEnum.RECEPCIONISTA)
   @Actions(ACCIONES.NUTRICIONISTAS_ELIMINAR)
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     this.logger.log(`Dando de baja profesional con ID: ${id}`);
@@ -222,7 +241,7 @@ export class ProfesionalController {
   }
 
   @Post(':id/reactivar')
-  @Rol(RolEnum.ADMIN)
+  @Rol(RolEnum.ADMIN, RolEnum.RECEPCIONISTA)
   @Actions(ACCIONES.NUTRICIONISTAS_EDITAR)
   async reactivar(@Param('id', ParseIntPipe) id: number): Promise<void> {
     this.logger.log(`Reactivando profesional con ID: ${id}`);

@@ -1,8 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddExcepcionDisponibilidad1770910000000
-  implements MigrationInterface
-{
+export class AddExcepcionDisponibilidad1770910000000 implements MigrationInterface {
   name = 'AddExcepcionDisponibilidad1770910000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {

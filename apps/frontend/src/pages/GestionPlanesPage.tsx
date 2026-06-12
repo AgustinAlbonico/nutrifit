@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { ApiResponse } from '@/types/api';
 import { Link, useNavigate } from '@tanstack/react-router';
 import {
   Search,
@@ -20,6 +21,7 @@ import {
 
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRequest, obtenerUrlFoto } from '@/lib/api';
+import { normalizarTexto } from '@/lib/text';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
@@ -73,10 +75,7 @@ interface PlanAlimentacion {
   }>;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-}
+
 
 // ── Componente Principal ──────────────────────────────────────────────
 
@@ -169,9 +168,9 @@ export function GestionPlanesPage() {
       return false;
     }
     // Filtrar por búsqueda
-    if (!busquedaPaciente) return true;
-    const termino = busquedaPaciente.toLowerCase();
-    return paciente.nombreCompleto.toLowerCase().includes(termino);
+    const termino = normalizarTexto(busquedaPaciente);
+    if (!termino) return true;
+    return normalizarTexto(paciente.nombreCompleto).includes(termino);
   });
 
   // Manejar selección de paciente para crear plan
@@ -182,11 +181,11 @@ export function GestionPlanesPage() {
   };
   // Filtrar planes por búsqueda
   const planesFiltrados = planes?.filter((plan) => {
-    if (!busqueda) return true;
-    const termino = busqueda.toLowerCase();
-    const objetivo = (plan.objetivoNutricional || '').toLowerCase();
-    const nombre = (plan.socio?.nombre || '').toLowerCase();
-    const apellido = (plan.socio?.apellido || '').toLowerCase();
+    const termino = normalizarTexto(busqueda);
+    if (!termino) return true;
+    const objetivo = normalizarTexto(plan.objetivoNutricional || '');
+    const nombre = normalizarTexto(plan.socio?.nombre || '');
+    const apellido = normalizarTexto(plan.socio?.apellido || '');
     const dni = plan.socio?.dni || '';
     return (
       objetivo.includes(termino) ||

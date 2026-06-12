@@ -5,6 +5,7 @@ import { Utensils, Coffee, Apple, Soup, Moon, ExternalLink } from 'lucide-react'
 import { apiRequest } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from '@tanstack/react-router';
+import type { ApiResponse } from '@/types/api';
 
 interface Comida {
   tipo: 'DESAYUNO' | 'ALMUERZO' | 'MERIENDA' | 'CENA' | 'COLACION';
@@ -19,12 +20,7 @@ interface PlanActivo {
   caloriasTotales: number;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp: string;
-}
+
 
 const ICONOS_COMIDA = {
   DESAYUNO: Coffee,

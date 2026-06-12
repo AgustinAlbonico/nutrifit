@@ -50,7 +50,7 @@ describe('calcularDiffFicha', () => {
 
   it('helper es 100% puro (sin imports de NestJS o TypeORM)', () => {
     // Verificación estática: el archivo no debe tener imports de frameworks
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+
     const fs = require('fs');
     const path = require('path');
     const filePath = path.join(__dirname, 'calcular-diff-ficha.helper.ts');

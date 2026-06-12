@@ -1,8 +1,5 @@
 # 12 — Crear turno en nombre del socio
 
-> **Source of truth**: `01-iteracion-base-nutricional.md` §CU-12
-> **Estado**: Por implementar
-> **Prioridad**: Alta
 > **Dependencias**: `11-reservar-turno.md`
 
 ## Descripción

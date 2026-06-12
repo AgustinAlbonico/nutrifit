@@ -14,6 +14,7 @@ import { TurnosTablaCard } from '@/components/dashboard/TurnosTablaCard';
 import { AgendaProfesionalesCard } from '@/components/dashboard/AgendaProfesionalesCard';
 import { AccionesRapidasRecepcionCard } from '@/components/dashboard/AccionesRapidasRecepcionCard';
 import { UltimosRegistradosCard } from '@/components/dashboard/UltimosRegistradosCard';
+import type { ApiResponse } from '@/types/api';
 
 interface TurnoRecepcion {
   idTurno: number;
@@ -25,12 +26,7 @@ interface TurnoRecepcion {
   dniSocio: string;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp: string;
-}
+
 
 export function DashboardRecepcionista() {
   const { token } = useAuth();

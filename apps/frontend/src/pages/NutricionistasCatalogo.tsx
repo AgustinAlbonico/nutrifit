@@ -12,10 +12,11 @@ import {
   Filter,
   ChevronLeft,
   ChevronRight,
+  Clock,
 } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { apiRequest } from '@/lib/api';
+import { apiRequest, obtenerUrlFoto } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -331,7 +332,7 @@ function NutricionistaCardItem({ nutri }: { nutri: NutricionistaCard }) {
           <Avatar className="size-20 ring-1 ring-border/60">
             {nutri.fotoUrl && (
               <AvatarImage
-                src={nutri.fotoUrl}
+                src={obtenerUrlFoto(nutri.fotoUrl) ?? undefined}
                 alt={`${nutri.nombre} ${nutri.apellido}`}
                 className="object-cover object-center"
               />
@@ -378,6 +379,10 @@ function NutricionistaCardItem({ nutri }: { nutri: NutricionistaCard }) {
               {nutri.slotsProximos7Dias} slots esta semana
             </Badge>
           )}
+          <Badge variant="outline" className="gap-1">
+            <Clock className="h-3 w-3" />
+            {nutri.duracionTurnoMin} min
+          </Badge>
           <Badge
             variant={tarifa.esGratis ? 'outline' : 'secondary'}
             className={tarifa.esGratis ? 'text-muted-foreground' : ''}

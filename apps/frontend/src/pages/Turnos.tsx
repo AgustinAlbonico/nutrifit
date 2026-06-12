@@ -1,12 +1,18 @@
 import type { EstadoTurno } from '@nutrifit/shared';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from '@tanstack/react-router';
-import { CalendarDays, CalendarPlus } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { CalendarDays, CalendarPlus, Clock } from 'lucide-react';
 import { addHours, format as formatearFechaIso, isToday } from 'date-fns';
 import { toast } from 'sonner';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRequest } from '@/lib/api';
+import { normalizarTexto } from '@/lib/text';
+import {
+  deduplicarTurnos,
+  type TurnoDisponible,
+} from '@/lib/turnos-disponibles';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,7 +31,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ModalFichaRequeridaSocio } from '@/components/ficha-salud/ModalFichaRequeridaSocio';
+import { AvisoLlegadaTardeModal } from '@/components/turnos/AvisoLlegadaTardeModal';
 import { useEstadoFichaRequerida } from '@/hooks/useEstadoFichaRequerida';
+import type { ApiResponse } from '@/types/api';
 
 interface MiTurno {
   idTurno: number;
@@ -42,12 +50,6 @@ interface MiTurno {
   };
 }
 
-interface TurnoDisponible {
-  horaInicio: string;
-  horaFin: string;
-  estado: 'LIBRE' | 'OCUPADO';
-}
-
 interface TurnoOperacionResponse {
   idTurno: number;
   fechaTurno: string;
@@ -55,20 +57,22 @@ interface TurnoOperacionResponse {
   estadoTurno: EstadoTurno;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp: string;
-}
+
 
 export function Turnos() {
   const { token, rol } = useAuth();
   const { fichaCargada, cargando: cargandoFicha } =
     useEstadoFichaRequerida({ token });
-  const [turnos, setTurnos] = useState<MiTurno[]>([]);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  const { data: turnosResponse, isLoading: cargando, error: queryError } = useQuery({
+    queryKey: ['mis-turnos', token],
+    queryFn: () => apiRequest<ApiResponse<MiTurno[]>>('/turnos/socio/mis-turnos', { token }),
+    enabled: !!token && rol === 'SOCIO' && fichaCargada !== false && !cargandoFicha,
+  });
+
+  const turnos = Array.isArray(turnosResponse) ? turnosResponse : (turnosResponse?.data ?? []);
+  const error = queryError instanceof Error ? queryError.message : null;
 
   const [textoBusqueda, setTextoBusqueda] = useState('');
   const [estadoSeleccionado, setEstadoSeleccionado] = useState('TODOS');
@@ -97,6 +101,7 @@ export function Turnos() {
   const [errorReprogramacion, setErrorReprogramacion] = useState<string | null>(
     null,
   );
+  const [turnoAvisoLlegadaTarde, setTurnoAvisoLlegadaTarde] = useState<number | null>(null);
 
   const obtenerNombreProfesional = (turno: MiTurno) => {
     if (turno.profesionalNombreCompleto?.trim()) {
@@ -144,7 +149,7 @@ export function Turnos() {
       case 'CANCELADO':
         return 'Este turno fue cancelado.';
       case 'AUSENTE':
-        return 'No registraste asistencia a este turno.';
+        return 'Tu turno fue marcado como ausente. Para revertirlo, contactate con recepción del gimnasio. Si querés reservar un nuevo turno, usá el botón "Ir a agendar turno".';
       default:
         return 'Estado actualizado del turno.';
     }
@@ -163,23 +168,6 @@ export function Turnos() {
     }
 
     return null;
-  };
-
-  const actualizarTurnoEnListado = (turnoActualizado: TurnoOperacionResponse) => {
-    setTurnos((previos) =>
-      previos.map((turno) => {
-        if (turno.idTurno !== turnoActualizado.idTurno) {
-          return turno;
-        }
-
-        return {
-          ...turno,
-          fechaTurno: turnoActualizado.fechaTurno,
-          horaTurno: turnoActualizado.horaTurno,
-          estadoTurno: turnoActualizado.estadoTurno,
-        };
-      }),
-    );
   };
 
   const limpiarEstadoReprogramacion = () => {
@@ -239,7 +227,7 @@ export function Turnos() {
           { token },
         );
 
-        setHorariosReprogramacion(response.data ?? []);
+        setHorariosReprogramacion(deduplicarTurnos(response.data ?? []));
       } catch (requestError) {
         const message =
           requestError instanceof Error
@@ -324,7 +312,7 @@ export function Turnos() {
       );
 
       if (response.data) {
-        actualizarTurnoEnListado(response.data);
+        queryClient.invalidateQueries({ queryKey: ['mis-turnos'] });
       }
 
       toast.success(`Turno #${turno.idTurno} cancelado correctamente.`);
@@ -367,7 +355,7 @@ export function Turnos() {
       );
 
       if (response.data) {
-        actualizarTurnoEnListado(response.data);
+        queryClient.invalidateQueries({ queryKey: ['mis-turnos'] });
       }
 
       toast.success(`Turno #${turnoEnReprogramacion.idTurno} reprogramado correctamente.`);
@@ -389,7 +377,7 @@ export function Turnos() {
   }, [turnos]);
 
   const turnosFiltrados = useMemo(() => {
-    const textoNormalizado = textoBusqueda.trim().toLowerCase();
+    const textoNormalizado = normalizarTexto(textoBusqueda);
     const fechaDesdeFiltro = fechaDesde
       ? formatearFechaIso(fechaDesde, 'yyyy-MM-dd')
       : '';
@@ -398,14 +386,14 @@ export function Turnos() {
       : '';
 
     return turnos.filter((turno) => {
-      const nombreProfesional = obtenerNombreProfesional(turno).toLowerCase();
-      const estadoTurno = turno.estadoTurno.toLowerCase();
+      const nombreProfesional = normalizarTexto(obtenerNombreProfesional(turno));
+      const estadoTurno = normalizarTexto(turno.estadoTurno);
 
       const coincideTexto =
         !textoNormalizado ||
         nombreProfesional.includes(textoNormalizado) ||
-        turno.fechaTurno.toLowerCase().includes(textoNormalizado) ||
-        turno.horaTurno.toLowerCase().includes(textoNormalizado) ||
+        normalizarTexto(turno.fechaTurno).includes(textoNormalizado) ||
+        normalizarTexto(turno.horaTurno).includes(textoNormalizado) ||
         estadoTurno.includes(textoNormalizado);
 
       const coincideEstado =
@@ -446,37 +434,6 @@ export function Turnos() {
   };
 
   useEffect(() => {
-    if (!token || rol !== 'SOCIO' || fichaCargada === false) {
-      setCargando(false);
-      return;
-    }
-
-    const cargar = async () => {
-      try {
-        setCargando(true);
-        setError(null);
-
-        const response = await apiRequest<ApiResponse<MiTurno[]>>(
-          '/turnos/socio/mis-turnos',
-          { token },
-        );
-
-        setTurnos(response.data ?? []);
-      } catch (requestError) {
-        const message =
-          requestError instanceof Error
-            ? requestError.message
-            : 'No se pudieron cargar tus turnos';
-        setError(message);
-      } finally {
-        setCargando(false);
-      }
-    };
-
-    void cargar();
-  }, [token, rol]);
-
-  useEffect(() => {
     if (!turnoEnReprogramacion || !fechaReprogramacion) {
       setHorariosReprogramacion([]);
       return;
@@ -515,12 +472,12 @@ export function Turnos() {
               <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 to-rose-600 bg-clip-text text-transparent flex items-center gap-3">
                 <CalendarDays className="h-8 w-8 text-orange-500" />
                 Mis Turnos
-            </h1>
-            <p className="mt-2 text-muted-foreground max-w-2xl text-base">
-              Historial y proximos turnos.
-            </p>
+              </h1>
+              <p className="mt-2 text-muted-foreground max-w-2xl text-base">
+                Historial y proximos turnos.
+              </p>
+            </div>
           </div>
-
           <Button asChild>
             <Link to="/turnos/agendar">
               <CalendarPlus className="h-4 w-4" />
@@ -694,6 +651,16 @@ export function Turnos() {
                                 disabled={procesandoCancelacionId === turno.idTurno}
                               >
                                 Reprogramar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-orange-600 border-orange-200 hover:bg-orange-50"
+                                onClick={() => setTurnoAvisoLlegadaTarde(turno.idTurno)}
+                                disabled={procesandoCancelacionId === turno.idTurno}
+                              >
+                                <Clock className="w-4 h-4 mr-1.5" />
+                                Aviso llegada tarde
                               </Button>
                               <Button
                                 size="sm"
@@ -875,30 +842,28 @@ export function Turnos() {
             </div>
           )}
 
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={cerrarReprogramacion}
-              disabled={procesandoReprogramacion}
-            >
-              Cerrar
+          <DialogFooter className="mt-2">
+            <Button variant="outline" onClick={cerrarReprogramacion}>
+              Cancelar
             </Button>
             <Button
               onClick={() => void confirmarReprogramacion()}
               disabled={
-                !fechaReprogramacion ||
-                !horarioSeleccionadoReprogramacion ||
-                procesandoReprogramacion
+                procesandoReprogramacion || !horarioSeleccionadoReprogramacion
               }
             >
-              {procesandoReprogramacion
-                ? 'Reprogramando...'
-                : 'Confirmar reprogramacion'}
+              {procesandoReprogramacion ? 'Reprogramando...' : 'Confirmar'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+
+      <AvisoLlegadaTardeModal
+        isOpen={Boolean(turnoAvisoLlegadaTarde)}
+        onClose={() => setTurnoAvisoLlegadaTarde(null)}
+        turnoId={turnoAvisoLlegadaTarde}
+        onSuccess={() => setTurnoAvisoLlegadaTarde(null)}
+      />
     </>
   );
 }

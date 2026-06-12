@@ -16,13 +16,9 @@ import { useQuery } from '@tanstack/react-query';
 
 import { apiRequest } from '@/lib/api';
 import type { HistorialItem } from '@/types/ficha-salud';
+import type { ApiResponse } from '@/types/api';
 
-interface ApiResponseWrapper<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp?: string;
-}
+
 
 interface ParametrosObtenerHistorial {
   token: string | null;
@@ -37,7 +33,7 @@ export function useObtenerHistorialFicha({
     queryKey: ['ficha-salud', 'historial', token],
     queryFn: async (): Promise<HistorialItem[]> => {
       const respuesta =
-        await apiRequest<ApiResponseWrapper<HistorialItem[]>>(
+        await apiRequest<ApiResponse<HistorialItem[]>>(
           '/turnos/socio/ficha-salud/historial',
           { method: 'GET', token },
         );

@@ -1,21 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { format, isToday, addHours } from 'date-fns';
 import { ArrowLeft, Calendar, CheckCircle2, FileWarning, Search, User } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRequest } from '@/lib/api';
+import { normalizarTexto } from '@/lib/text';
+import {
+  deduplicarTurnos,
+  type TurnoDisponible,
+} from '@/lib/turnos-disponibles';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
+import type { ApiResponse } from '@/types/api';
 
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp: string;
-}
+
 
 interface ProfesionalDisponible {
   idPersona: number;
@@ -25,12 +27,6 @@ interface ProfesionalDisponible {
   ciudad: string;
   provincia: string;
   tarifaSesion: number | string;
-}
-
-interface TurnoDisponible {
-  horaInicio: string;
-  horaFin: string;
-  estado: 'LIBRE' | 'OCUPADO';
 }
 
 interface FichaSaludSocio {
@@ -46,6 +42,8 @@ interface FichaSaludSocio {
 
 export function AgendarTurno() {
   const { token, rol } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [cargandoProfesionales, setCargandoProfesionales] = useState(true);
   const [errorProfesionales, setErrorProfesionales] = useState<string | null>(null);
@@ -90,19 +88,19 @@ export function AgendarTurno() {
   };
 
   const profesionalesFiltrados = useMemo(() => {
-    const termino = busquedaProfesional.trim().toLowerCase();
+    const termino = normalizarTexto(busquedaProfesional);
 
     if (!termino) {
       return profesionalesDisponibles;
     }
 
     return profesionalesDisponibles.filter((profesional) => {
-      const nombreCompleto = obtenerNombreCompletoProfesional(profesional).toLowerCase();
+      const nombreCompleto = normalizarTexto(obtenerNombreCompletoProfesional(profesional));
 
       return (
         nombreCompleto.includes(termino) ||
-        profesional.ciudad.toLowerCase().includes(termino) ||
-        profesional.provincia.toLowerCase().includes(termino)
+        normalizarTexto(profesional.ciudad).includes(termino) ||
+        normalizarTexto(profesional.provincia).includes(termino)
       );
     });
   }, [profesionalesDisponibles, busquedaProfesional]);
@@ -121,7 +119,22 @@ export function AgendarTurno() {
         { token },
       );
 
-      setProfesionalesDisponibles(response.data ?? []);
+      const profesionales = response.data ?? [];
+      setProfesionalesDisponibles(profesionales);
+
+      // Auto-seleccionar nutricionista si viene por URL
+      const params = new URLSearchParams(window.location.search);
+      const nutricionistaIdParam = params.get('nutricionistaId');
+      if (nutricionistaIdParam) {
+        const id = Number(nutricionistaIdParam);
+        const profesionalUrl = profesionales.find((p) => p.idPersona === id);
+        if (profesionalUrl) {
+          setProfesionalSeleccionado((prev) => {
+            if (!prev) return profesionalUrl;
+            return prev;
+          });
+        }
+      }
     } catch (requestError) {
       const message =
         requestError instanceof Error
@@ -169,7 +182,7 @@ export function AgendarTurno() {
           { token },
         );
 
-        setTurnosDisponibles(response.data ?? []);
+        setTurnosDisponibles(deduplicarTurnos(response.data ?? []));
       } catch (requestError) {
         const message =
           requestError instanceof Error
@@ -186,6 +199,17 @@ export function AgendarTurno() {
 
   const seleccionarProfesional = (profesional: ProfesionalDisponible) => {
     setProfesionalSeleccionado(profesional);
+    setFechaSeleccionada(undefined);
+    setTurnosDisponibles([]);
+    setErrorReserva(null);
+    setMensajeReserva(null);
+    setTurnoSeleccionado(null);
+    setDatosTurnoReservado(null);
+  };
+
+  const deseleccionarProfesional = () => {
+    setProfesionalSeleccionado(null);
+    setBusquedaProfesional('');
     setFechaSeleccionada(undefined);
     setTurnosDisponibles([]);
     setErrorReserva(null);
@@ -248,7 +272,11 @@ export function AgendarTurno() {
         profesionalNombre: obtenerNombreCompletoProfesional(profesionalSeleccionado),
       });
       setMensajeReserva('Turno reservado correctamente.');
-      await cargarTurnosDisponibles(profesionalSeleccionado.idPersona, fechaSeleccionada);
+      queryClient.invalidateQueries({ queryKey: ['mis-turnos'] });
+      void navigate({
+        to: '/turnos/$idTurno/confirmado',
+        params: { idTurno: String(response.data.idTurno) },
+      });
     } catch (requestError) {
       const message =
         requestError instanceof Error
@@ -378,7 +406,7 @@ export function AgendarTurno() {
           </Button>
         </div>
         <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-orange-500/10 blur-3xl" />
-        <div className="absolute -bottom-10 right-20 h-32 w-32 rounded-full bg-rose-500/10 blur-3xl" />
+        <div className="absolute -bottom-10 right:20 h-32 w-32 rounded-full bg-rose-500/10 blur-3xl" />
       </div>
 
       <div className="grid gap-3 lg:grid-cols-3">
@@ -449,69 +477,117 @@ export function AgendarTurno() {
           <CardTitle>1) Profesional</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              className="pl-9"
-              placeholder="Buscar por nombre, ciudad o provincia"
-              value={busquedaProfesional}
-              onChange={(event) => setBusquedaProfesional(event.target.value)}
-            />
-          </div>
-
-          {errorProfesionales && (
-            <p className="text-sm text-destructive">{errorProfesionales}</p>
-          )}
-
-          {cargandoProfesionales ? (
-            <p className="text-sm text-muted-foreground">
-              Cargando profesionales disponibles...
-            </p>
-          ) : profesionalesFiltrados.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No hay profesionales para la busqueda actual.
-            </p>
-          ) : (
-            <div className="max-h-[320px] space-y-2 overflow-y-auto pr-1">
-              {profesionalesFiltrados.map((profesional) => {
-                const nombreProfesional = obtenerNombreCompletoProfesional(profesional);
-                const estaSeleccionado =
-                  profesionalSeleccionado?.idPersona === profesional.idPersona;
-
-                return (
-                  <div
-                    key={profesional.idPersona}
-                    className="flex items-center gap-2"
-                  >
-                    <Button
-                      variant={estaSeleccionado ? 'default' : 'outline'}
-                      className="h-auto flex-1 justify-start py-3 text-left"
-                      onClick={() => seleccionarProfesional(profesional)}
-                    >
-                      <div className="flex flex-col">
-                        <span className="font-medium">{nombreProfesional}</span>
-                        <span className="text-xs opacity-90">
-                          {profesional.especialidad} · {profesional.ciudad}, {profesional.provincia}
-                        </span>
-                        <span className="text-xs opacity-90">
-                          Tarifa: ${formatearTarifa(profesional.tarifaSesion)}
-                        </span>
-                      </div>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      asChild
-                      title="Ver perfil completo"
-                    >
-                      <a href={`/nutricionistas/${profesional.idPersona}/perfil`}>
-                        <User className="h-4 w-4" />
-                      </a>
-                    </Button>
+          {profesionalSeleccionado ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 rounded-md border bg-muted/40 p-2">
+                <Button
+                  variant="default"
+                  className="h-auto flex-1 justify-start py-3 text-left"
+                  disabled
+                >
+                  <div className="flex flex-col">
+                    <span className="font-medium">
+                      {obtenerNombreCompletoProfesional(profesionalSeleccionado)}
+                    </span>
+                    <span className="text-xs opacity-90">
+                      {profesionalSeleccionado.especialidad} ·{' '}
+                      {profesionalSeleccionado.ciudad},{' '}
+                      {profesionalSeleccionado.provincia}
+                    </span>
+                    <span className="text-xs opacity-90">
+                      Tarifa: ${formatearTarifa(profesionalSeleccionado.tarifaSesion)}
+                    </span>
                   </div>
-                );
-              })}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  asChild
+                  title="Ver perfil completo"
+                >
+                  <a href={`/nutricionistas/${profesionalSeleccionado.idPersona}/perfil`}>
+                    <User className="h-4 w-4" />
+                  </a>
+                </Button>
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={deseleccionarProfesional}
+                >
+                  Cambiar de profesional
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Si querés reservar con otro profesional, primero desmarcá este.
+              </p>
             </div>
+          ) : (
+            <>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  className="pl-9"
+                  placeholder="Buscar por nombre, ciudad o provincia"
+                  value={busquedaProfesional}
+                  onChange={(event) => setBusquedaProfesional(event.target.value)}
+                />
+              </div>
+
+              {errorProfesionales && (
+                <p className="text-sm text-destructive">{errorProfesionales}</p>
+              )}
+
+              {cargandoProfesionales ? (
+                <p className="text-sm text-muted-foreground">
+                  Cargando profesionales disponibles...
+                </p>
+              ) : profesionalesFiltrados.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No hay profesionales para la busqueda actual.
+                </p>
+              ) : (
+                <div className="max-h-[320px] space-y-2 overflow-y-auto pr-1">
+                  {profesionalesFiltrados.map((profesional) => {
+                    const nombreProfesional =
+                      obtenerNombreCompletoProfesional(profesional);
+
+                    return (
+                      <div
+                        key={profesional.idPersona}
+                        className="flex items-center gap-2"
+                      >
+                        <Button
+                          variant="outline"
+                          className="h-auto flex-1 justify-start py-3 text-left"
+                          onClick={() => seleccionarProfesional(profesional)}
+                        >
+                          <div className="flex flex-col">
+                            <span className="font-medium">{nombreProfesional}</span>
+                            <span className="text-xs opacity-90">
+                              {profesional.especialidad} · {profesional.ciudad},{' '}
+                              {profesional.provincia}
+                            </span>
+                            <span className="text-xs opacity-90">
+                              Tarifa: ${formatearTarifa(profesional.tarifaSesion)}
+                            </span>
+                          </div>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          asChild
+                          title="Ver perfil completo"
+                        >
+                          <a href={`/nutricionistas/${profesional.idPersona}/perfil`}>
+                            <User className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>

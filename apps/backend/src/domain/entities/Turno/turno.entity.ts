@@ -11,6 +11,8 @@ export class TurnoEntity extends AuditableEntity {
   consultaIniciadaAt: Date | null;
   consultaFinalizadaAt: Date | null;
   ausenteAt: Date | null;
+  ausenteMotivo: string | null;
+  llegadaTardeMin: number | null;
   observacionClinica: ObservacionClinicaEntity | null;
   motivoCancelacion: string | null;
   fechaOriginal: Date | null;
@@ -25,6 +27,8 @@ export class TurnoEntity extends AuditableEntity {
     consultaIniciadaAt: Date | null = null,
     consultaFinalizadaAt: Date | null = null,
     ausenteAt: Date | null = null,
+    ausenteMotivo: string | null = null,
+    llegadaTardeMin: number | null = null,
     observacionClinica: ObservacionClinicaEntity | null = null,
     motivoCancelacion: string | null = null,
     fechaOriginal: Date | null = null,
@@ -40,6 +44,8 @@ export class TurnoEntity extends AuditableEntity {
     this.consultaIniciadaAt = consultaIniciadaAt;
     this.consultaFinalizadaAt = consultaFinalizadaAt;
     this.ausenteAt = ausenteAt;
+    this.ausenteMotivo = ausenteMotivo;
+    this.llegadaTardeMin = llegadaTardeMin;
     this.observacionClinica = observacionClinica;
     this.motivoCancelacion = motivoCancelacion;
     this.fechaOriginal = fechaOriginal;

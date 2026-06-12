@@ -1,16 +1,14 @@
-import {
-  Controller,
-  Get,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { Rol as RolEnum } from 'src/domain/entities/Usuario/Rol';
 import { AccionAuditoria } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
 import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
 import { JwtAuthGuard } from 'src/infrastructure/auth/guards/auth.guard';
 import { RolesGuard } from 'src/infrastructure/auth/guards/roles.guard';
 import { Rol } from 'src/infrastructure/auth/decorators/role.decorator';
-import { CurrentUser, UsuarioAutenticadoPayload } from 'src/infrastructure/auth/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  UsuarioAutenticadoPayload,
+} from 'src/infrastructure/auth/decorators/current-user.decorator';
 
 interface FiltrosAuditoriaDto {
   fechaDesde?: string;
@@ -49,7 +47,8 @@ export class AdminAuditoriaController {
 
     // Admin usa su propio gimnasioId si no se especificó otro
     // SUPERADMIN puede ver todo (sin filtro de gimnasio)
-    const gimnasioId = filtros.gimnasioId ?? (!esSuperadmin ? usuario.gimnasioId : undefined);
+    const gimnasioId =
+      filtros.gimnasioId ?? (!esSuperadmin ? usuario.gimnasioId : undefined);
 
     return this.auditoriaService.listarConFiltros({
       fechaDesde: filtros.fechaDesde ? new Date(filtros.fechaDesde) : undefined,

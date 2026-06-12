@@ -22,9 +22,7 @@ import { FichaSaludVersionRepository } from 'src/domain/entities/FichaSalud/fich
  * y este adaptador tampoco. Toda escritura es INSERT puro.
  */
 @Injectable()
-export class FichaSaludVersionRepositoryImpl
-  implements FichaSaludVersionRepository
-{
+export class FichaSaludVersionRepositoryImpl implements FichaSaludVersionRepository {
   constructor(
     @InjectRepository(FichaSaludVersionOrmEntity)
     private readonly repository: Repository<FichaSaludVersionOrmEntity>,

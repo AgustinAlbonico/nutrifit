@@ -22,6 +22,22 @@ const gruposPermisosData = require('./seed/data/grupos-permisos.data') as {
 };
 
 const shared = require('@nutrifit/shared') as { TODAS_LAS_ACCIONES: string[] };
+const {
+  generarNutricionistasSemilla,
+  generarSociosSemilla,
+  generarTurnosSemilla,
+  generarPlanesSemilla,
+} = require('./seed/data/generadores-semilla') as {
+  generarNutricionistasSemilla: (cantidad: number) => any[];
+  generarSociosSemilla: (cantidad: number) => any[];
+  generarTurnosSemilla: (
+    sociosIds: number[],
+    nutriIds: number[],
+    gymIds: number[],
+    agendas: Map<number, any[]>,
+  ) => any[];
+  generarPlanesSemilla: (nutriIds: number[], socioIds: number[]) => any[];
+};
 
 const GRUPOS_PERMISOS = gruposPermisosData.GRUPOS_PERMISOS;
 const getGrupoBasePorRol = gruposPermisosData.getGrupoBasePorRol;
@@ -47,6 +63,13 @@ interface AdminData {
   gimnasioNombre: string;
 }
 
+interface RecepcionistaData {
+  email: string;
+  nombre: string;
+  apellido: string;
+  gimnasioNombre: string;
+}
+
 interface NutricionistaData extends AdminData {
   matricula: string;
   presentacion: string;
@@ -55,6 +78,10 @@ interface NutricionistaData extends AdminData {
 
 interface SocioData extends AdminData {
   dni: string;
+}
+
+function generarDniSemilla(index: number): string {
+  return String(51001000 + index);
 }
 
 const gimnasios: GimnasioData[] = [
@@ -100,6 +127,27 @@ const admins: AdminData[] = [
   {
     email: 'admin-sur@nutrifit.com',
     nombre: 'Admin',
+    apellido: 'Sur',
+    gimnasioNombre: 'Gym Sur',
+  },
+];
+
+const recepcionistas: RecepcionistaData[] = [
+  {
+    email: 'recepcion-central@nutrifit.com',
+    nombre: 'Recepcion',
+    apellido: 'Central',
+    gimnasioNombre: 'Gym Central',
+  },
+  {
+    email: 'recepcion-norte@nutrifit.com',
+    nombre: 'Recepcion',
+    apellido: 'Norte',
+    gimnasioNombre: 'Gym Norte',
+  },
+  {
+    email: 'recepcion-sur@nutrifit.com',
+    nombre: 'Recepcion',
     apellido: 'Sur',
     gimnasioNombre: 'Gym Sur',
   },
@@ -231,10 +279,10 @@ async function runSeedMultiTenant() {
       const gimnasioIds = new Map<string, number>();
 
       for (const gimnasio of gimnasios) {
-        const existentes = (await dataSource.query(
+        const existentes = await dataSource.query(
           `SELECT id_gimnasio FROM gimnasio WHERE nombre = ? LIMIT 1`,
           [gimnasio.nombre],
-        )) as { id_gimnasio: number }[];
+        );
 
         let idGimnasio = existentes[0]?.id_gimnasio;
 
@@ -458,8 +506,51 @@ async function runSeedMultiTenant() {
 
     await crearAdmins();
 
-    const crearNutricionistas = async (): Promise<void> => {
+    const crearRecepcionistas = async (): Promise<void> => {
       const contraseniaHash = await bcrypt.hash('123456', 10);
+
+      for (const recepcionista of recepcionistas) {
+        const idGimnasio = gimnasioIds.get(recepcionista.gimnasioNombre);
+        if (!idGimnasio) {
+          console.error(`Gimnasio no encontrado: ${recepcionista.gimnasioNombre}`);
+          continue;
+        }
+
+        const resultadoPersona: unknown = await dataSource.query(
+          `INSERT INTO persona (nombre, apellido, fecha_nacimiento, genero, telefono, direccion, ciudad, provincia, id_gimnasio, tipo_persona)
+           VALUES (?, ?, '1990-01-01', 'OTRO', '341-000-0000', 'Sin direccion', 'Rosario', 'Santa Fe', ?, 'RecepcionistaOrmEntity')
+           ON DUPLICATE KEY UPDATE id_persona = LAST_INSERT_ID(id_persona)`,
+          [recepcionista.nombre, recepcionista.apellido, idGimnasio],
+        );
+
+        const filaPersona = resultadoPersona as { insertId: number };
+        const idPersona = filaPersona.insertId;
+
+        const resultadoUsuario: unknown = await dataSource.query(
+          `INSERT INTO usuario (email, contrasenia, rol, id_persona)
+           VALUES (?, ?, 'RECEPCIONISTA', ?)
+           ON DUPLICATE KEY UPDATE id_usuario = LAST_INSERT_ID(id_usuario)`,
+          [recepcionista.email, contraseniaHash, idPersona],
+        );
+
+        const filaUsuario = resultadoUsuario as { insertId: number };
+        console.log(
+          `RECEPCIONISTA creado: ${recepcionista.email} (Gimnasio: ${recepcionista.gimnasioNombre}, ID: ${filaUsuario.insertId})`,
+        );
+
+        await asignarGruposAUsuario(recepcionista.email, 'RECEPCIONISTA');
+      }
+    };
+
+    await crearRecepcionistas();
+
+    const crearNutricionistas = async (): Promise<{
+      ids: number[];
+      agendas: Map<number, any[]>;
+    }> => {
+      const contraseniaHash = await bcrypt.hash('123456', 10);
+      const ids: number[] = [];
+      const agendas = new Map<number, any[]>();
 
       for (const nutri of nutricionistas) {
         const idGimnasio = gimnasioIds.get(nutri.gimnasioNombre);
@@ -484,6 +575,7 @@ async function runSeedMultiTenant() {
 
         const filaPersona = resultadoPersona as { insertId: number };
         const idPersona = filaPersona.insertId;
+        ids.push(idPersona);
 
         const resultadoUsuario: unknown = await dataSource.query(
           `INSERT INTO usuario (email, contrasenia, rol, id_persona)
@@ -497,15 +589,86 @@ async function runSeedMultiTenant() {
           `NUTRICIONISTA creado: ${nutri.email} (Gimnasio: ${nutri.gimnasioNombre}, ID: ${filaUsuario.insertId})`,
         );
 
-        // Asignar grupo NUTRICIONISTA
         await asignarGruposAUsuario(nutri.email, 'NUTRICIONISTA');
       }
+
+      // Crear nutricionistas demo (10 por gimnasio)
+      const nutriDemo = generarNutricionistasSemilla(10);
+      for (const nutri of nutriDemo) {
+        const idGimnasio = gimnasioIds.get(nutri.gimnasioNombre);
+        if (!idGimnasio) continue;
+
+        const resultadoPersona: unknown = await dataSource.query(
+          `INSERT INTO persona (nombre, apellido, fecha_nacimiento, genero, telefono, direccion, ciudad, provincia, id_gimnasio, dni, matricula, anios_experiencia, tarifa_sesion, presentacion, certificaciones, tipo_persona)
+           VALUES (?, ?, '1990-06-15', ?, '341-555-5000', 'Av. Demo 1000', 'Rosario', 'Santa Fe', ?, ?, ?, ?, ?, ?, ?, 'NutricionistaOrmEntity')
+           ON DUPLICATE KEY UPDATE id_persona = LAST_INSERT_ID(id_persona)`,
+          [
+            nutri.nombre,
+            nutri.apellido,
+            nutri.genero,
+            idGimnasio,
+            generarDniSemilla(5000 + ids.length),
+            nutri.matricula,
+            nutri.aniosExperiencia,
+            nutri.tarifaSesion,
+            nutri.presentacion,
+            nutri.certificaciones,
+          ],
+        );
+
+        const filaPersona = resultadoPersona as { insertId: number };
+        const idPersona = filaPersona.insertId;
+        ids.push(idPersona);
+        agendas.set(idPersona, nutri.agenda);
+
+        const resultadoUsuario: unknown = await dataSource.query(
+          `INSERT INTO usuario (email, contrasenia, rol, id_persona)
+           VALUES (?, ?, 'NUTRICIONISTA', ?)
+           ON DUPLICATE KEY UPDATE id_usuario = LAST_INSERT_ID(id_usuario)`,
+          [nutri.email, contraseniaHash, idPersona],
+        );
+
+        const filaUsuario = resultadoUsuario as { insertId: number };
+        console.log(
+          `NUTRICIONISTA demo: ${nutri.email} (Gym: ${nutri.gimnasioNombre}, ID: ${filaUsuario.insertId})`,
+        );
+
+        await asignarGruposAUsuario(nutri.email, 'NUTRICIONISTA');
+      }
+
+      // Crear agendas para todos los nutricionistas demo
+      const entradasAgenda = Array.from(agendas.entries());
+      for (const [idNutri, bloques] of entradasAgenda) {
+        for (const bloque of bloques) {
+          await dataSource.query(
+            `INSERT IGNORE INTO agenda (dia, hora_inicio, hora_fin, duracion_turno, id_nutricionista)
+             VALUES (?, ?, ?, ?, ?)`,
+            [
+              bloque.dia,
+              bloque.horaInicio,
+              bloque.horaFin,
+              bloque.duracionTurno,
+              idNutri,
+            ],
+          );
+        }
+        console.log(`Agenda creada para nutricionista ID ${idNutri}: ${bloques.length} bloques`);
+      }
+
+      console.log(`Total nutricionistas: ${ids.length}`);
+      return { ids, agendas };
     };
 
-    await crearNutricionistas();
+    const { ids: idsNutricionistas, agendas: agendasNutris } =
+      await crearNutricionistas();
 
-    const crearSocios = async (): Promise<void> => {
+    const crearSocios = async (): Promise<{
+      ids: number[];
+      gymIds: number[];
+    }> => {
       const contraseniaHash = await bcrypt.hash('123456', 10);
+      const ids: number[] = [];
+      const gymIds: number[] = [];
 
       for (const socio of socios) {
         const idGimnasio = gimnasioIds.get(socio.gimnasioNombre);
@@ -523,6 +686,8 @@ async function runSeedMultiTenant() {
 
         const filaPersona = resultadoPersona as { insertId: number };
         const idPersona = filaPersona.insertId;
+        ids.push(idPersona);
+        gymIds.push(idGimnasio);
 
         const resultadoUsuario: unknown = await dataSource.query(
           `INSERT INTO usuario (email, contrasenia, rol, id_persona)
@@ -536,12 +701,124 @@ async function runSeedMultiTenant() {
           `SOCIO creado: ${socio.email} (Gimnasio: ${socio.gimnasioNombre}, ID: ${filaUsuario.insertId})`,
         );
 
-        // Asignar grupo SOCIO
         await asignarGruposAUsuario(socio.email, 'SOCIO');
       }
+
+      // Crear socios demo (10 por gimnasio)
+      const sociosDemoData = generarSociosSemilla(10);
+      for (const socio of sociosDemoData) {
+        const idGimnasio = gimnasioIds.get(socio.gimnasioNombre);
+        if (!idGimnasio) continue;
+
+        const resultadoPersona: unknown = await dataSource.query(
+          `INSERT INTO persona (nombre, apellido, fecha_nacimiento, genero, telefono, direccion, ciudad, provincia, id_gimnasio, dni, fecha_alta, tipo_persona)
+           VALUES (?, ?, '1995-03-10', ?, ?, ?, ?, 'Santa Fe', ?, ?, NOW(), 'SocioOrmEntity')
+           ON DUPLICATE KEY UPDATE id_persona = LAST_INSERT_ID(id_persona)`,
+          [
+            socio.nombre,
+            socio.apellido,
+            socio.genero,
+            socio.telefono,
+            socio.direccion,
+            socio.ciudad,
+            idGimnasio,
+            socio.dni,
+          ],
+        );
+
+        const filaPersona = resultadoPersona as { insertId: number };
+        const idPersona = filaPersona.insertId;
+        ids.push(idPersona);
+        gymIds.push(idGimnasio);
+
+        const resultadoUsuario: unknown = await dataSource.query(
+          `INSERT INTO usuario (email, contrasenia, rol, id_persona)
+           VALUES (?, ?, 'SOCIO', ?)
+           ON DUPLICATE KEY UPDATE id_usuario = LAST_INSERT_ID(id_usuario)`,
+          [socio.email, contraseniaHash, idPersona],
+        );
+
+        const filaUsuario = resultadoUsuario as { insertId: number };
+        console.log(
+          `SOCIO demo: ${socio.email} (Gym: ${socio.gimnasioNombre}, ID: ${filaUsuario.insertId})`,
+        );
+
+        await asignarGruposAUsuario(socio.email, 'SOCIO');
+      }
+
+      console.log(`Total socios: ${ids.length}`);
+      return { ids, gymIds };
     };
 
-    await crearSocios();
+    const { ids: idsSocios, gymIds: gymIdsSocios } = await crearSocios();
+
+    // Crear turnos demo
+    const crearTurnosDemo = async (): Promise<void> => {
+      const turnosData = generarTurnosSemilla(
+        idsSocios,
+        idsNutricionistas,
+        gymIdsSocios,
+        agendasNutris,
+      );
+
+      for (const turno of turnosData) {
+        await dataSource.query(
+          `INSERT INTO turno (fecha, hora_turno, estado, id_socio, id_nutricionista, id_gimnasio)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [
+            turno.fecha,
+            turno.hora,
+            turno.estado,
+            turno.idSocio,
+            turno.idNutricionista,
+            turno.idGimnasio,
+          ],
+        );
+      }
+      console.log(`Turnos creados: ${turnosData.length}`);
+    };
+
+    await crearTurnosDemo();
+
+    // Crear planes de alimentacion demo
+    const crearPlanesDemo = async (): Promise<void> => {
+      const planesData = generarPlanesSemilla(idsNutricionistas, idsSocios);
+
+      for (const plan of planesData) {
+        const resultadoPlan: unknown = await dataSource.query(
+          `INSERT INTO plan_alimentacion (fechaCreacion, objetivo_nutricional, activo, id_socio, id_nutricionista)
+           VALUES (?, ?, TRUE, ?, ?)`,
+          [
+            '2026-05-15',
+            plan.objetivoNutricional,
+            plan.idSocio,
+            plan.idNutricionista,
+          ],
+        );
+
+        const filaPlan = resultadoPlan as { insertId: number };
+        const idPlan = filaPlan.insertId;
+
+        // Crear 1 dia + 1 opcion de comida (minimo requerido)
+        const resultadoDia: unknown = await dataSource.query(
+          `INSERT INTO dia_plan (dia, orden, id_plan_alimentacion)
+           VALUES ('LUNES', 1, ?)`,
+          [idPlan],
+        );
+
+        const filaDia = resultadoDia as { insertId: number };
+        const idDia = filaDia.insertId;
+
+        await dataSource.query(
+          `INSERT INTO opcion_comida (tipo_comida, comentarios, id_dia_plan)
+           VALUES ('DESAYUNO', 'Plan de prueba generado automaticamente', ?)`,
+          [idDia],
+        );
+      }
+      console.log(`Planes de alimentacion creados: ${planesData.length}`);
+    };
+
+    await crearPlanesDemo();
 
     console.log('Seed multi-tenant completado');
   } catch (error) {

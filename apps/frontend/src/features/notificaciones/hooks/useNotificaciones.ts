@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import type { ApiResponse } from '@/types/api';
 import type { RespuestaPaginadaNotificaciones } from '@/types/notificacion';
 
 export function useNotificaciones(page = 1, limit = 20) {
@@ -9,14 +10,22 @@ export function useNotificaciones(page = 1, limit = 20) {
 
   const lista = useQuery({
     queryKey: ['notificaciones', page, limit, token],
-    queryFn: () => apiRequest<RespuestaPaginadaNotificaciones>(`/notificaciones/mias?page=${page}&limit=${limit}`, { token }),
+    queryFn: () =>
+      apiRequest<ApiResponse<RespuestaPaginadaNotificaciones>>(
+        `/notificaciones/mias?page=${page}&limit=${limit}`,
+        { token },
+      ),
     refetchInterval: 30_000,
     refetchOnWindowFocus: true,
   });
 
   const noLeidas = useQuery({
     queryKey: ['notificaciones-no-leidas', token],
-    queryFn: () => apiRequest<{ total: number }>('/notificaciones/mias/no-leidas', { token }),
+    queryFn: () =>
+      apiRequest<ApiResponse<{ total: number }>>(
+        '/notificaciones/mias/no-leidas',
+        { token },
+      ),
     refetchInterval: 30_000,
     refetchOnWindowFocus: true,
   });

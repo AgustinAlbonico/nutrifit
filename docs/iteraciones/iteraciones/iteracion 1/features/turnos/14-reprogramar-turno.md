@@ -1,8 +1,6 @@
 # 14 — Reprogramar turno
 
 > **Source of truth**: `01-iteracion-base-nutricional.md` §CU-14
-> **Estado**: Por implementar
-> **Prioridad**: Alta
 > **Dependencias**: `11-reservar-turno.md`, `13-cancelar-turno.md`, `notificaciones.md`
 
 ## Descripción

@@ -17,6 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUsuarios, type Usuario } from '@/hooks/useUsuarios';
 import type { ActionDto, GroupDto } from '@/types/permissions';
 import { apiRequest } from '@/lib/api';
+import { normalizarTexto } from '@/lib/text';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
@@ -309,22 +310,28 @@ export function Permisos() {
 
   // Filtrado
   const gruposFiltrados = useMemo(
-    () =>
-      grupos.filter(
+    () => {
+      const termino = normalizarTexto(busquedaGrupos);
+      if (!termino) return grupos;
+      return grupos.filter(
         (g) =>
-          g.nombre.toLowerCase().includes(busquedaGrupos.toLowerCase()) ||
-          g.clave.toLowerCase().includes(busquedaGrupos.toLowerCase()),
-      ),
+          normalizarTexto(g.nombre).includes(termino) ||
+          normalizarTexto(g.clave).includes(termino),
+      );
+    },
     [grupos, busquedaGrupos],
   );
 
   const accionesFiltradas = useMemo(
-    () =>
-      acciones.filter(
+    () => {
+      const termino = normalizarTexto(busquedaAcciones);
+      if (!termino) return acciones;
+      return acciones.filter(
         (a) =>
-          a.nombre.toLowerCase().includes(busquedaAcciones.toLowerCase()) ||
-          a.clave.toLowerCase().includes(busquedaAcciones.toLowerCase()),
-      ),
+          normalizarTexto(a.nombre).includes(termino) ||
+          normalizarTexto(a.clave).includes(termino),
+      );
+    },
     [acciones, busquedaAcciones],
   );
 

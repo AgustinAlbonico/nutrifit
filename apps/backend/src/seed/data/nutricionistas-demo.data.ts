@@ -378,7 +378,8 @@ const PLANTILLAS_PRESENTACION: readonly string[] = [
 ];
 
 function generarPresentacion(aniosExperiencia: number): string {
-  const base = PLANTILLAS_PRESENTACION[randomInt(0, PLANTILLAS_PRESENTACION.length - 1)];
+  const base =
+    PLANTILLAS_PRESENTACION[randomInt(0, PLANTILLAS_PRESENTACION.length - 1)];
   return `${base} ${aniosExperiencia} anos de experiencia acompaniando pacientes.`;
 }
 
@@ -391,7 +392,9 @@ const PLANTILLAS_CERTIFICACIONES: readonly string[] = [
 ];
 
 function generarCertificaciones(): string {
-  return PLANTILLAS_CERTIFICACIONES[randomInt(0, PLANTILLAS_CERTIFICACIONES.length - 1)];
+  return PLANTILLAS_CERTIFICACIONES[
+    randomInt(0, PLANTILLAS_CERTIFICACIONES.length - 1)
+  ];
 }
 
 export function generarNutricionistasDemo(): NutricionistaDemo[] {

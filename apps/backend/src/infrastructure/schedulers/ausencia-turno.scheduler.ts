@@ -8,6 +8,8 @@ import {
   POLITICA_OPERATIVA_REPOSITORY,
   IPoliticaOperativaRepository,
 } from 'src/application/politicas/politica-operativa.repository';
+import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
+import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
 
 @Injectable()
 export class AusenciaTurnoScheduler {
@@ -18,6 +20,7 @@ export class AusenciaTurnoScheduler {
     private readonly turnoRepository: Repository<TurnoOrmEntity>,
     @Inject(POLITICA_OPERATIVA_REPOSITORY)
     private readonly politicaRepository: IPoliticaOperativaRepository,
+    private readonly notificacionesService: NotificacionesService,
   ) {}
 
   @Cron('*/5 * * * *')
@@ -49,6 +52,30 @@ export class AusenciaTurnoScheduler {
         turno.ausenteAt = ahora;
         await this.turnoRepository.save(turno);
         this.logger.log(`Turno ${turno.idTurno} marcado como AUSENTE`);
+
+        // Notificaciones
+        try {
+          if (turno.socio?.idPersona) {
+            await this.notificacionesService.crear({
+              destinatarioId: turno.socio.idPersona,
+              tipo: TipoNotificacion.TURNO_AUSENTE_AUTO,
+              titulo: 'Turno ausente',
+              mensaje: `Tu turno del ${turno.fechaTurno} a las ${turno.horaTurno} fue marcado como ausente porque no te presentaste.`,
+              metadata: { turnoId: turno.idTurno },
+            });
+          }
+          if (turno.nutricionista?.idPersona) {
+            await this.notificacionesService.crear({
+              destinatarioId: turno.nutricionista.idPersona,
+              tipo: TipoNotificacion.TURNO_AUSENTE_AUTO,
+              titulo: 'Socio ausente',
+              mensaje: `El socio ${turno.socio?.nombre} ${turno.socio?.apellido} no se presentó al turno #${turno.idTurno}.`,
+              metadata: { turnoId: turno.idTurno },
+            });
+          }
+        } catch (error) {
+          this.logger.error(`Error al notificar ausencias del turno ${turno.idTurno}`, error);
+        }
       }
     }
   }

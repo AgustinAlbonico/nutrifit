@@ -84,142 +84,152 @@ export class UpsertFichaSaludSocioUseCase implements BaseUseCase {
         }
       : null;
 
-    const fichaResultado = await this.dataSource.transaction(async (manager) => {
-      const fichaRepo = manager.getRepository(FichaSaludOrmEntity);
-      const versionRepo = manager.getRepository(FichaSaludVersionOrmEntity);
+    const fichaResultado = await this.dataSource.transaction(
+      async (manager) => {
+        const fichaRepo = manager.getRepository(FichaSaludOrmEntity);
+        const versionRepo = manager.getRepository(FichaSaludVersionOrmEntity);
 
-      let ficha = socio.fichaSalud as FichaSaludOrmEntity | null;
+        let ficha = socio.fichaSalud as FichaSaludOrmEntity | null;
 
-      if (!ficha) {
-        ficha = new FichaSaludOrmEntity();
-        ficha.completada = true;
-        ficha.completadaAt = ahora;
-        ficha.consentAt = ahora;
-      } else {
-        // Edición: solo actualizamos actualizadaAt.
-        // NO tocamos consentAt (RB44: consentimiento es una sola vez).
-        ficha.actualizadaAt = ahora;
-      }
+        if (!ficha) {
+          ficha = new FichaSaludOrmEntity();
+          ficha.completada = true;
+          ficha.completadaAt = ahora;
+          ficha.consentAt = ahora;
+        } else {
+          // Edición: solo actualizamos actualizadaAt.
+          // NO tocamos consentAt (RB44: consentimiento es una sola vez).
+          ficha.actualizadaAt = ahora;
+        }
 
-      // Mapear todos los campos del payload
-      ficha.altura = payload.altura;
-      ficha.peso = payload.peso;
-      ficha.nivelActividadFisica = payload.nivelActividadFisica;
-      ficha.objetivoPersonal = payload.objetivoPersonal;
-      ficha.alergias = alergias;
-      ficha.patologias = patologias;
-      // --- Medicación y suplementos ---
-      ficha.medicacionActual = payload.medicacionActual ?? null;
-      ficha.suplementosActuales = payload.suplementosActuales ?? null;
-      // --- Historial médico ---
-      ficha.cirugiasPrevias = payload.cirugiasPrevias ?? null;
-      ficha.antecedentesFamiliares = payload.antecedentesFamiliares ?? null;
-      // --- Hábitos alimentarios ---
-      ficha.frecuenciaComidas = payload.frecuenciaComidas ?? null;
-      ficha.consumoAguaDiario = payload.consumoAguaDiario ?? null;
-      ficha.restriccionesAlimentarias =
-        payload.restriccionesAlimentarias ?? null;
-      // --- Hábitos de vida ---
-      ficha.consumoAlcohol = payload.consumoAlcohol ?? null;
-      ficha.fumaTabaco = payload.fumaTabaco ?? false;
-      ficha.horasSueno = payload.horasSueno ?? null;
-      // --- Contacto de emergencia ---
-      ficha.contactoEmergenciaNombre = payload.contactoEmergenciaNombre ?? null;
-      ficha.contactoEmergenciaTelefono =
-        payload.contactoEmergenciaTelefono ?? null;
+        // Mapear todos los campos del payload
+        ficha.altura = payload.altura;
+        ficha.peso = payload.peso;
+        ficha.nivelActividadFisica = payload.nivelActividadFisica;
+        ficha.objetivoPersonal = payload.objetivoPersonal;
+        ficha.alergias = alergias;
+        ficha.patologias = patologias;
+        // --- Medicación y suplementos ---
+        ficha.medicacionActual = payload.medicacionActual ?? null;
+        ficha.suplementosActuales = payload.suplementosActuales ?? null;
+        // --- Historial médico ---
+        ficha.cirugiasPrevias = payload.cirugiasPrevias ?? null;
+        ficha.antecedentesFamiliares = payload.antecedentesFamiliares ?? null;
+        // --- Hábitos alimentarios ---
+        ficha.frecuenciaComidas = payload.frecuenciaComidas ?? null;
+        ficha.consumoAguaDiario = payload.consumoAguaDiario ?? null;
+        ficha.restriccionesAlimentarias =
+          payload.restriccionesAlimentarias ?? null;
+        // --- Hábitos de vida ---
+        ficha.consumoAlcohol = payload.consumoAlcohol ?? null;
+        ficha.fumaTabaco = payload.fumaTabaco ?? false;
+        ficha.horasSueno = payload.horasSueno ?? null;
+        // --- Contacto de emergencia ---
+        ficha.contactoEmergenciaNombre =
+          payload.contactoEmergenciaNombre ?? null;
+        ficha.contactoEmergenciaTelefono =
+          payload.contactoEmergenciaTelefono ?? null;
 
-      const fichaGuardada = await fichaRepo.save(ficha);
+        const fichaGuardada = await fichaRepo.save(ficha);
 
-      // Calcular nueva versión con pessimistic lock para evitar race conditions.
-      // Si dos PATCH concurrentes llegan, una transacción espera a la otra
-      // y obtiene la versión siguiente.
-      const ultimaVersionRow: Array<{ max: number | null }> =
-        await manager.query(
-          `SELECT MAX(version) AS max
+        // Calcular nueva versión con pessimistic lock para evitar race conditions.
+        // Si dos PATCH concurrentes llegan, una transacción espera a la otra
+        // y obtiene la versión siguiente.
+        const ultimaVersionRow: Array<{ max: number | null }> =
+          await manager.query(
+            `SELECT MAX(version) AS max
              FROM ficha_salud_version
              WHERE id_ficha_salud = ?
              FOR UPDATE`,
-          [fichaGuardada.idFichaSalud],
+            [fichaGuardada.idFichaSalud],
+          );
+
+        const ultimaVersion = Number(ultimaVersionRow[0]?.max ?? 0);
+        const nuevaVersion = ultimaVersion + 1;
+
+        // Construir snapshot inmutable
+        const datosJson = this.construirSnapshot(
+          fichaGuardada,
+          alergias,
+          patologias,
         );
 
-      const ultimaVersion = Number(ultimaVersionRow[0]?.max ?? 0);
-      const nuevaVersion = ultimaVersion + 1;
+        const nuevaVersionEntity = versionRepo.create({
+          idFichaSalud: fichaGuardada.idFichaSalud,
+          idSocio: socio.idPersona ?? 0,
+          version: nuevaVersion,
+          datosJson,
+          createdAt: ahora,
+          createdBy: userId,
+        });
+        const versionGuardada = await versionRepo.save(nuevaVersionEntity);
 
-      // Construir snapshot inmutable
-      const datosJson = this.construirSnapshot(fichaGuardada, alergias, patologias);
+        fichaGuardada.versionActualId = versionGuardada.idFichaSaludVersion;
+        const fichaConVersion = await fichaRepo.save(fichaGuardada);
 
-      const nuevaVersionEntity = versionRepo.create({
-        idFichaSalud: fichaGuardada.idFichaSalud,
-        idSocio: socio.idPersona ?? 0,
-        version: nuevaVersion,
-        datosJson,
-        createdAt: ahora,
-        createdBy: userId,
-      });
-      const versionGuardada = await versionRepo.save(nuevaVersionEntity);
+        socio.fichaSalud = fichaConVersion;
+        await manager.getRepository(SocioOrmEntity).save(socio);
 
-      fichaGuardada.versionActualId = versionGuardada.idFichaSaludVersion;
-      const fichaConVersion = await fichaRepo.save(fichaGuardada);
+        // Auditoría RB33: shape seguro (sin datos clínicos sensibles en CREATE).
+        // Se llama DENTRO de la transacción — si falla, hace rollback junto
+        // con el resto. En CREATE el `despues_json` se reemplaza por un
+        // resumen seguro (altura, peso, counts de alergias/patologías).
+        const accion = esCreacion
+          ? AccionAuditoria.FICHA_COMPLETADA
+          : AccionAuditoria.FICHA_ACTUALIZADA;
 
-      socio.fichaSalud = fichaConVersion;
-      await manager.getRepository(SocioOrmEntity).save(socio);
+        const metadata: Record<string, unknown> = esCreacion
+          ? {
+              version: nuevaVersion,
+              fichaSaludId: fichaGuardada.idFichaSalud,
+              socioId: socio.idPersona ?? 0,
+              consentAt: fichaGuardada.consentAt,
+              resumen: {
+                altura: fichaGuardada.altura,
+                peso: fichaGuardada.peso,
+                alergiasCount: alergias.length,
+                patologiasCount: patologias.length,
+              },
+            }
+          : {
+              version: nuevaVersion,
+              versionAnterior: ultimaVersion,
+              fichaSaludId: fichaGuardada.idFichaSalud,
+              socioId: socio.idPersona ?? 0,
+              antes: {
+                altura: snapshotAnterior?.altura,
+                peso: snapshotAnterior?.peso,
+              },
+              despues: {
+                altura: fichaGuardada.altura,
+                peso: fichaGuardada.peso,
+              },
+              camposModificados: calcularDiffFicha(
+                snapshotAnterior,
+                this.construirSnapshot(fichaGuardada, alergias, patologias),
+              ),
+            };
 
-      // Auditoría RB33: shape seguro (sin datos clínicos sensibles en CREATE).
-      // Se llama DENTRO de la transacción — si falla, hace rollback junto
-      // con el resto. En CREATE el `despues_json` se reemplaza por un
-      // resumen seguro (altura, peso, counts de alergias/patologías).
-      const accion = esCreacion
-        ? AccionAuditoria.FICHA_COMPLETADA
-        : AccionAuditoria.FICHA_ACTUALIZADA;
+        await this.auditoriaService.registrar({
+          usuarioId: userId,
+          accion,
+          entidad: 'ficha_salud',
+          entidadId: fichaGuardada.idFichaSalud,
+          metadata,
+        });
 
-      const metadata: Record<string, unknown> = esCreacion
-        ? {
-            version: nuevaVersion,
-            fichaSaludId: fichaGuardada.idFichaSalud,
-            socioId: socio.idPersona ?? 0,
-            consentAt: fichaGuardada.consentAt,
-            resumen: {
-              altura: fichaGuardada.altura,
-              peso: fichaGuardada.peso,
-              alergiasCount: alergias.length,
-              patologiasCount: patologias.length,
-            },
-          }
-        : {
-            version: nuevaVersion,
-            versionAnterior: ultimaVersion,
-            fichaSaludId: fichaGuardada.idFichaSalud,
-            socioId: socio.idPersona ?? 0,
-            antes: {
-              altura: snapshotAnterior?.altura,
-              peso: snapshotAnterior?.peso,
-            },
-            despues: {
-              altura: fichaGuardada.altura,
-              peso: fichaGuardada.peso,
-            },
-            camposModificados: calcularDiffFicha(
-              snapshotAnterior,
-              this.construirSnapshot(fichaGuardada, alergias, patologias),
-            ),
-          };
-
-      await this.auditoriaService.registrar({
-        usuarioId: userId,
-        accion,
-        entidad: 'ficha_salud',
-        entidadId: fichaGuardada.idFichaSalud,
-        metadata,
-      });
-
-      return { ficha: fichaConVersion, nuevaVersion };
-    });
+        return { ficha: fichaConVersion, nuevaVersion };
+      },
+    );
 
     this.logger.log(
       `Ficha de salud guardada para socio ${socio.idPersona} por usuario ${userId}. Versión=${fichaResultado.nuevaVersion}.`,
     );
 
-    return this.toResponseDto(fichaResultado.ficha, fichaResultado.nuevaVersion);
+    return this.toResponseDto(
+      fichaResultado.ficha,
+      fichaResultado.nuevaVersion,
+    );
   }
 
   private construirSnapshot(

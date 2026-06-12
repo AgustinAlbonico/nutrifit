@@ -20,6 +20,7 @@ import {
 } from 'recharts';
 import { apiRequest } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import type { ApiResponse } from '@/types/api';
 
 interface Paciente {
   idSocio: number;
@@ -33,12 +34,7 @@ interface Medicion {
   imc?: number;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp: string;
-}
+
 
 export function PacienteDestacadoCard() {
   const { token, personaId } = useAuth();

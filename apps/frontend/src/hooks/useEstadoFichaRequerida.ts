@@ -17,13 +17,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { apiRequest } from '@/lib/api';
-
-interface ApiResponseWrapper<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp?: string;
-}
+import type { ApiResponse } from '@/types/api';
 
 interface EstadoFichaHook {
   cargando: boolean;
@@ -42,7 +36,7 @@ export function useEstadoFichaRequerida({
     queryKey: ['ficha-salud', 'estado', token],
     queryFn: async () => {
       const respuesta =
-        await apiRequest<ApiResponseWrapper<unknown | null>>(
+        await apiRequest<ApiResponse<unknown | null>>(
           '/turnos/socio/ficha-salud',
           { method: 'GET', token },
         );

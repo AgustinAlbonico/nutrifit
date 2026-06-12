@@ -48,10 +48,9 @@ export class ListarHistorialFichaSaludSocioUseCase implements BaseUseCase {
       throw new NotFoundError('No se encontraron fichas de salud');
     }
 
-    const versiones =
-      await this.fichaSaludVersionRepository.findByFichaId(
-        socio.fichaSalud.idFichaSalud ?? 0,
-      );
+    const versiones = await this.fichaSaludVersionRepository.findByFichaId(
+      socio.fichaSalud.idFichaSalud ?? 0,
+    );
 
     this.logger.log(
       `Historial de ficha de salud listado para socio ${socio.idPersona}. Versiones=${versiones.length}.`,

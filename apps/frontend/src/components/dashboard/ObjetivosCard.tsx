@@ -4,6 +4,7 @@ import { Progress } from '@/components/ui/progress';
 import { Target, CheckCircle } from 'lucide-react';
 import { apiRequest } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import type { ApiResponse } from '@/types/api';
 
 interface Objetivo {
   id: number;
@@ -14,12 +15,7 @@ interface Objetivo {
   completado: boolean;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp: string;
-}
+
 
 export function ObjetivosCard() {
   const { token, personaId } = useAuth();

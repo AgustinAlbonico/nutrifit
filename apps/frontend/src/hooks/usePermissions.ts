@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { tienePermiso, tieneTodosLosPermisos } from '@/lib/permissions';
 
 export function usePermissions() {
   const { permissions, rol } = useAuth();
@@ -8,10 +9,11 @@ export function usePermissions() {
     () => ({
       /**
        * Verifica si el usuario tiene una acción específica.
+       * Soporta wildcards (ej. 'socios.*' matchea 'socios.crear').
        * @param accion - Código de la acción a verificar (ej: 'socios.crear')
        */
       tieneAccion: (accion: string): boolean => {
-        return permissions.includes(accion);
+        return tienePermiso(accion, permissions);
       },
 
       /**
@@ -19,7 +21,7 @@ export function usePermissions() {
        * @param acciones - Array de códigos de acciones a verificar
        */
       tieneAlgunaAccion: (acciones: string[]): boolean => {
-        return acciones.some((accion) => permissions.includes(accion));
+        return acciones.some((accion) => tienePermiso(accion, permissions));
       },
 
       /**
@@ -27,7 +29,7 @@ export function usePermissions() {
        * @param acciones - Array de códigos de acciones a verificar
        */
       tieneTodasLasAcciones: (acciones: string[]): boolean => {
-        return acciones.every((accion) => permissions.includes(accion));
+        return tieneTodosLosPermisos(acciones, permissions);
       },
 
       /**

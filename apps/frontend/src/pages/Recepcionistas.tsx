@@ -12,6 +12,7 @@ import {
   formatearFechaArgentinaParaInput,
 } from '@/lib/fechasArgentina';
 import { REGEX_DNI, REGEX_TELEFONO, REGEX_EMAIL, obtenerErroresContrasenia } from '@/lib/validaciones';
+import { normalizarTexto } from '@/lib/text';
 import type { Recepcionista, CrearRecepcionistaDto, Genero } from '@/types/recepcionista';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
@@ -42,6 +43,7 @@ import {
   AvatarFallback,
 } from '@/components/ui/avatar';
 import { SelectorImagen } from '@/components/imagen/SelectorImagen';
+import type { ApiResponse } from '@/types/api';
 
 type CampoFormularioCreacion = keyof CrearRecepcionistaDto;
 type CampoFormularioEdicion = keyof CrearRecepcionistaDto;
@@ -63,10 +65,7 @@ const FORMULARIO_RECEPCIONISTA_INICIAL: CrearRecepcionistaDto = {
   contrasena: '',
 };
 
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-}
+
 
 const parsearFechaInput = (fecha: string): Date | undefined => {
   if (!fecha) {
@@ -159,8 +158,6 @@ export function Recepcionistas() {
     ],
     [recepcionistaForm.contrasena],
   );
-
-  const normalizarTexto = (valor: string) => valor.trim().toLowerCase();
 
   const provinciasDisponibles = useMemo(() => {
     return Array.from(

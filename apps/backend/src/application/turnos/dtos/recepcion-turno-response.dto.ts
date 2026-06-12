@@ -8,4 +8,7 @@ export class RecepcionTurnoResponseDto {
   nombreSocio: string;
   nombreNutricionista: string;
   dniSocio: string;
+  ausenteAt?: Date | null;
+  ausenteMotivo?: string | null;
+  llegadaTardeMin?: number | null;
 }

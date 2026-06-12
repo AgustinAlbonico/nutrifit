@@ -29,9 +29,7 @@ import { TenantContextService } from 'src/infrastructure/auth/tenant-context.ser
  * RBs: RB13 (vincular nutricionista-socio por turno), RB50.
  */
 @Injectable()
-export class ObtenerVersionFichaSaludNutricionistaUseCase
-  implements BaseUseCase
-{
+export class ObtenerVersionFichaSaludNutricionistaUseCase implements BaseUseCase {
   constructor(
     @InjectRepository(SocioOrmEntity)
     private readonly socioRepository: Repository<SocioOrmEntity>,

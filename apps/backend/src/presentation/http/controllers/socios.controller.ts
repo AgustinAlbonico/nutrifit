@@ -54,7 +54,7 @@ export class SocioController {
   ) {}
 
   @Get()
-  @Rol(RolEnum.ADMIN)
+  @Rol(RolEnum.ADMIN, RolEnum.RECEPCIONISTA)
   @Actions('socios.ver')
   async listarSocios() {
     this.logger.log('Listando todos los socios');
@@ -70,7 +70,7 @@ export class SocioController {
   }
 
   @Post()
-  @Rol(RolEnum.ADMIN)
+  @Rol(RolEnum.ADMIN, RolEnum.RECEPCIONISTA)
   @Actions('socios.crear')
   @UseInterceptors(FileInterceptor('foto'))
   async registrarSocio(
@@ -104,7 +104,7 @@ export class SocioController {
   }
 
   @Put(':id')
-  @Rol(RolEnum.ADMIN)
+  @Rol(RolEnum.ADMIN, RolEnum.RECEPCIONISTA)
   @Actions('socios.editar')
   @UseInterceptors(FileInterceptor('foto'))
   async actualizarSocio(
@@ -175,7 +175,7 @@ export class SocioController {
   }
 
   @Delete(':id')
-  @Rol(RolEnum.ADMIN)
+  @Rol(RolEnum.ADMIN, RolEnum.RECEPCIONISTA)
   @Actions('socios.eliminar')
   async eliminarSocio(@Param('id', ParseIntPipe) id: number) {
     this.logger.log(`Dando de baja socio ${id}`);
@@ -184,7 +184,7 @@ export class SocioController {
   }
 
   @Post(':id/reactivar')
-  @Rol(RolEnum.ADMIN)
+  @Rol(RolEnum.ADMIN, RolEnum.RECEPCIONISTA)
   @Actions('socios.reactivar')
   async reactivarSocio(@Param('id', ParseIntPipe) id: number) {
     this.logger.log(`Reactivando socio ${id}`);

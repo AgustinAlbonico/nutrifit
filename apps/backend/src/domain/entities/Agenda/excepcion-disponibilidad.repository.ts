@@ -4,10 +4,10 @@ export const EXCEPCION_DISPONIBILIDAD_REPOSITORY = Symbol(
   'ExcepcionDisponibilidadRepository',
 );
 
-export abstract class ExcepcionDisponibilidadRepository
-  implements BaseRepository<ExcepcionDisponibilidadEntity>
-{
-  abstract save(entity: ExcepcionDisponibilidadEntity): Promise<ExcepcionDisponibilidadEntity>;
+export abstract class ExcepcionDisponibilidadRepository implements BaseRepository<ExcepcionDisponibilidadEntity> {
+  abstract save(
+    entity: ExcepcionDisponibilidadEntity,
+  ): Promise<ExcepcionDisponibilidadEntity>;
   abstract update(
     id: number,
     entity: ExcepcionDisponibilidadEntity,

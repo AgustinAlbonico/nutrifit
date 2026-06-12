@@ -14,6 +14,7 @@ import {
 } from 'recharts';
 import { apiRequest } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import type { ApiResponse } from '@/types/api';
 
 interface Medicion {
   fecha: string;
@@ -27,12 +28,7 @@ interface Progreso {
   imc: number | null;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp: string;
-}
+
 
 export function GraficoProgresoCard() {
   const { token } = useAuth();

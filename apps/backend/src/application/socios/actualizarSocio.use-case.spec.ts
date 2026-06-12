@@ -66,7 +66,9 @@ describe('ActualizarSocioUseCase — limpieza de foto de perfil', () => {
       false,
     );
 
-    expect(objectStorage.eliminarArchivo).toHaveBeenCalledWith('perfiles/socios/vieja.png');
+    expect(objectStorage.eliminarArchivo).toHaveBeenCalledWith(
+      'perfiles/socios/vieja.png',
+    );
   });
 
   it('elimina la foto anterior cuando eliminarFoto=true aunque no llegue foto nueva', async () => {
@@ -77,7 +79,9 @@ describe('ActualizarSocioUseCase — limpieza de foto de perfil', () => {
 
     await useCase.execute(1, {} as any, undefined, true);
 
-    expect(objectStorage.eliminarArchivo).toHaveBeenCalledWith('perfiles/socios/vieja.png');
+    expect(objectStorage.eliminarArchivo).toHaveBeenCalledWith(
+      'perfiles/socios/vieja.png',
+    );
   });
 
   it('NO elimina si no hay foto previa y eliminarFoto=true (idempotente)', async () => {
