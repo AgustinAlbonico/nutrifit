@@ -1,4 +1,5 @@
 import { EstadoTurno } from 'src/domain/entities/Turno/EstadoTurno';
+import { CreadoPor } from 'src/domain/entities/Turno/creado-por.enum';
 import {
   Column,
   Entity,
@@ -28,6 +29,14 @@ export class TurnoOrmEntity extends AuditableOrmEntity {
 
   @Column({ name: 'estado', type: 'enum', enum: EstadoTurno })
   estadoTurno: EstadoTurno;
+
+  @Column({
+    name: 'creado_por',
+    type: 'varchar',
+    length: 20,
+    default: 'SOCIO',
+  })
+  creadoPor: CreadoPor;
 
   @Column({ name: 'check_in_at', type: 'datetime', nullable: true })
   checkInAt: Date | null;

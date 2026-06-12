@@ -1,5 +1,6 @@
 import { ObservacionClinicaEntity } from '../ObservacionClinica/observacion-clinica.entity';
 import { EstadoTurno } from './EstadoTurno';
+import { CreadoPor } from './creado-por.enum';
 import { AuditableEntity } from '../../shared/auditable.entity';
 
 export class TurnoEntity extends AuditableEntity {
@@ -17,6 +18,19 @@ export class TurnoEntity extends AuditableEntity {
   motivoCancelacion: string | null;
   fechaOriginal: Date | null;
   gimnasioId: number | null;
+
+  /**
+   * Origen del turno (RB33 — trazabilidad del origen). Se asigna
+   * siempre en el constructor a `CreadoPor.SOCIO` para que los
+   * call-sites existentes que no lo setean explicitamente reciban
+   * un valor consistente con el `DEFAULT 'SOCIO'` de la columna
+   * `turno.creado_por` (backfill implicito de filas pre-existentes).
+   *
+   * El use-case que crea el turno (CU-11, AsignarTurnoManual o el
+   * futuro CrearTurnoEnNombreDeSocio) sobreescribe este valor antes
+   * de persistir.
+   */
+  creadoPor: CreadoPor;
 
   constructor(
     idTurno: number | null = null,
@@ -50,5 +64,6 @@ export class TurnoEntity extends AuditableEntity {
     this.motivoCancelacion = motivoCancelacion;
     this.fechaOriginal = fechaOriginal;
     this.gimnasioId = gimnasioId;
+    this.creadoPor = CreadoPor.SOCIO;
   }
 }
