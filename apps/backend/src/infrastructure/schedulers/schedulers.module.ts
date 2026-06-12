@@ -10,13 +10,7 @@ import { RecordatorioEnviadoOrmEntity } from '../persistence/typeorm/entities/re
 import { NotificacionOrmEntity } from '../persistence/typeorm/entities/notificacion.entity';
 import { TurnoReminderScheduler } from './turno-reminder.scheduler';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
-import {
-  EmailService,
-  EMAIL_PROVIDER,
-} from 'src/application/email/email.service';
-import { ConsoleEmailProvider } from '../email/console-email.provider';
-import { SmtpEmailProvider } from '../email/smtp-email.provider';
-import { ConfigService } from '@nestjs/config';
+import { EmailModule } from 'src/application/email/email.module';
 
 @Module({
   imports: [
@@ -27,6 +21,7 @@ import { ConfigService } from '@nestjs/config';
       NotificacionOrmEntity,
     ]),
     RepositoriesModule,
+    EmailModule,
   ],
   providers: [
     AusenciaTurnoScheduler,
@@ -34,20 +29,6 @@ import { ConfigService } from '@nestjs/config';
     NotificacionesService,
     AlimentosSyncService,
     AlimentosSyncScheduler,
-    EmailService,
-    ConsoleEmailProvider,
-    SmtpEmailProvider,
-    {
-      provide: EMAIL_PROVIDER,
-      useFactory: (configService: ConfigService) => {
-        const smtpHost = configService.get<string>('SMTP_HOST');
-        if (smtpHost) {
-          return new SmtpEmailProvider(configService);
-        }
-        return new ConsoleEmailProvider();
-      },
-      inject: [ConfigService],
-    },
   ],
 })
 export class SchedulersModule {}
