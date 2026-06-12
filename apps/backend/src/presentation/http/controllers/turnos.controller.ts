@@ -4,6 +4,8 @@ import {
   Delete,
   ForbiddenException,
   Get,
+  HttpCode,
+  HttpStatus,
   Inject,
   Param,
   ParseIntPipe,
@@ -22,6 +24,8 @@ import {
   AvisoLlegadaTardeDto,
   BloquearTurnoDto,
   CancelarTurnoSocioDto,
+  CrearTurnoEnNombreDeSocioDto,
+  CrearTurnoEnNombreDeSocioResponseDto,
   DatosTurnoResponseDto,
   DatosTurnoSocioResponseDto,
   DatosVersionFichaSaludDto,
@@ -56,18 +60,19 @@ import {
   CancelarTurnoSocioUseCase,
   CheckInTurnoUseCase,
   ConfirmarTurnoSocioUseCase,
+  CrearTurnoEnNombreDeSocioUseCase,
   DesbloquearTurnoUseCase,
   FinalizarConsultaUseCase,
   GetAgendaDiariaUseCase,
   GetFichaSaludPacienteUseCase,
   GetFichaSaludSocioUseCase,
   GetHistorialConsultasPacienteUseCase,
+  GetHistorialMedicionesUseCase,
+  GetResumenProgresoUseCase,
   GetTurnoByIdUseCase,
   GetTurnoSocioByIdUseCase,
   GetTurnosDelDiaUseCase,
   GetTurnosRecepcionDiaUseCase,
-  GetHistorialMedicionesUseCase,
-  GetResumenProgresoUseCase,
   GuardarMedicionesUseCase,
   GuardarObservacionesUseCase,
   IniciarConsultaUseCase,
@@ -85,6 +90,7 @@ import {
   RevertirAusenteTurnoUseCase,
   UpsertFichaSaludSocioUseCase,
 } from 'src/application/turnos/use-cases';
+import { ActorStaff } from 'src/application/turnos/types/actor-staff';
 import { Rol as RolEnum } from 'src/domain/entities/Usuario/Rol';
 import {
   APP_LOGGER_SERVICE,
@@ -124,6 +130,7 @@ export class TurnosController {
     private readonly cancelarTurnoSocioUseCase: CancelarTurnoSocioUseCase,
     private readonly checkInTurnoUseCase: CheckInTurnoUseCase,
     private readonly confirmarTurnoSocioUseCase: ConfirmarTurnoSocioUseCase,
+    private readonly crearTurnoEnNombreDeSocioUseCase: CrearTurnoEnNombreDeSocioUseCase,
     private readonly finalizarConsultaUseCase: FinalizarConsultaUseCase,
     private readonly getFichaSaludPacienteUseCase: GetFichaSaludPacienteUseCase,
     private readonly getFichaSaludSocioUseCase: GetFichaSaludSocioUseCase,
@@ -227,6 +234,45 @@ export class TurnosController {
     );
 
     return this.asignarTurnoManualUseCase.execute(nutricionistaId, payload);
+  }
+
+  /**
+   * Endpoint unificado `POST /turnos/crear` del change
+   * `crear-turno-en-nombre-del-socio` (PR-2). Permite a un actor
+   * interno (RECEPCIONISTA / ADMIN / NUTRICIONISTA) crear un turno
+   * en nombre de un socio. La politica RB14 diferenciada (BLOCK para
+   * NUTRI, WARN para RECEPCION/ADMIN) vive en el use-case, no en el
+   * DTO.
+   *
+   * Guards:
+   *  - `RolesGuard` (clase): restringe a los 3 roles permitidos.
+   *  - `ActionsGuard` (clase): exige el permiso `turnos.crear` para
+   *    el actor (RECEPCIONISTA y NUTRI lo tienen, ADMIN lo obtiene
+   *    via el seed; SOCIO queda excluido por RolesGuard antes de
+   *    llegar a este punto).
+   *  - Validacion de scope cross-gym (B4/B6) y RB14 diferenciado
+   *    viven en `CrearTurnoEnNombreDeSocioUseCase`.
+   */
+  @Post('crear')
+  @HttpCode(HttpStatus.CREATED)
+  @Rol(RolEnum.RECEPCIONISTA, RolEnum.ADMIN, RolEnum.NUTRICIONISTA)
+  @Actions('turnos.crear')
+  async crearTurnoEnNombreDeSocio(
+    @CurrentUser() user: UsuarioAutenticadoPayload,
+    @Body() payload: CrearTurnoEnNombreDeSocioDto,
+  ): Promise<CrearTurnoEnNombreDeSocioResponseDto> {
+    const actor: ActorStaff = {
+      usuarioId: user.id,
+      personaId: user.personaId,
+      rol: user.rol,
+      gimnasioId: this.tenantContext.gimnasioId,
+    };
+
+    this.logger.log(
+      `Creando turno por ${actor.rol} (usuario=${actor.usuarioId}). Socio=${payload.socioId}, nutri=${payload.nutricionistaId}.`,
+    );
+
+    return this.crearTurnoEnNombreDeSocioUseCase.execute(actor, payload);
   }
 
   @Post('profesional/:nutricionistaId/bloquear')
