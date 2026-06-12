@@ -4,7 +4,6 @@ import { BaseUseCase } from 'src/application/shared/use-case.base';
 import { AsignarTurnoManualDto } from 'src/application/turnos/dtos/asignar-turno-manual.dto';
 import { TurnoOperacionResponseDto } from 'src/application/turnos/dtos/turno-operacion-response.dto';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
-import { DiaSemana } from 'src/domain/entities/Agenda/dia-semana';
 import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
 import { EstadoTurno } from 'src/domain/entities/Turno/EstadoTurno';
 import {
@@ -13,7 +12,6 @@ import {
 } from 'src/domain/entities/Persona/Nutricionista/nutricionista.repository';
 import {
   BadRequestError,
-  ConflictError,
   NotFoundError,
 } from 'src/domain/exceptions/custom-exceptions';
 import {
@@ -22,19 +20,17 @@ import {
 } from 'src/domain/services/logger.service';
 import {
   formatArgentinaDate,
-  getArgentinaStartOfToday,
-  getArgentinaWeekdayIndex,
   normalizeTimeToHHmm,
   parseArgentinaDateInput,
 } from 'src/common/utils/argentina-datetime.util';
 import {
-  AgendaOrmEntity,
   NutricionistaOrmEntity,
   SocioOrmEntity,
   TurnoOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
-import { Not, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
+import { ValidacionesCreacionTurno } from '../helpers/validaciones-creacion-turno.helper';
 
 @Injectable()
 export class AsignarTurnoManualUseCase implements BaseUseCase {
@@ -45,14 +41,13 @@ export class AsignarTurnoManualUseCase implements BaseUseCase {
     private readonly socioRepository: Repository<SocioOrmEntity>,
     @InjectRepository(NutricionistaOrmEntity)
     private readonly nutricionistaOrmRepository: Repository<NutricionistaOrmEntity>,
-    @InjectRepository(AgendaOrmEntity)
-    private readonly agendaRepository: Repository<AgendaOrmEntity>,
     @Inject(NUTRICIONISTA_REPOSITORY)
     private readonly nutricionistaRepository: NutricionistaRepository,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
     private readonly notificacionesService: NotificacionesService,
     private readonly tenantContext: TenantContextService,
+    private readonly validaciones: ValidacionesCreacionTurno,
   ) {}
 
   async execute(
@@ -81,7 +76,9 @@ export class AsignarTurnoManualUseCase implements BaseUseCase {
       throw new NotFoundError('Socio', String(payload.socioId));
     }
 
-    // Validación: verificar que el paciente tenga ficha de salud cargada
+    // Validación: verificar que el paciente tenga ficha de salud cargada.
+    // El chequeo de "completada" se delega al modulo de fichaSalud
+    // (no es responsabilidad de este use-case).
     if (!socio.fichaSalud) {
       throw new BadRequestError(
         'El paciente debe completar su ficha de salud antes de reservar un turno.',
@@ -90,31 +87,18 @@ export class AsignarTurnoManualUseCase implements BaseUseCase {
 
     const fechaTurno = parseArgentinaDateInput(payload.fechaTurno);
     const horaTurno = normalizeTimeToHHmm(payload.horaTurno);
-    this.validateDateNotInPast(fechaTurno);
 
-    await this.validateAgendaAvailability(
+    await this.validaciones.validarFechaNoPasadoSimple(fechaTurno);
+    await this.validaciones.validarAgendaDisponible(
       nutricionistaId,
       fechaTurno,
       horaTurno,
     );
-
-    const conflictingTurno = await this.turnoRepository.findOne({
-      where: {
-        nutricionista: {
-          idPersona: nutricionistaId,
-          gimnasioId: this.tenantContext.gimnasioId,
-        },
-        fechaTurno,
-        horaTurno,
-        estadoTurno: Not(EstadoTurno.CANCELADO),
-      },
-    });
-
-    if (conflictingTurno) {
-      throw new ConflictError(
-        'El horario seleccionado ya se encuentra ocupado para este profesional.',
-      );
-    }
+    await this.validaciones.validarNoConflictoSlot(
+      nutricionistaId,
+      fechaTurno,
+      horaTurno,
+    );
 
     const nutricionistaOrm = await this.nutricionistaOrmRepository.findOne({
       where: { idPersona: nutricionistaId },
@@ -148,89 +132,6 @@ export class AsignarTurnoManualUseCase implements BaseUseCase {
     );
 
     return this.toResponseDto(turnoCreado);
-  }
-
-  private async validateAgendaAvailability(
-    nutricionistaId: number,
-    fechaTurno: Date,
-    horaTurno: string,
-  ): Promise<void> {
-    const diaSemana = this.mapDateToDiaSemana(fechaTurno);
-
-    const agendaDelDia = await this.agendaRepository.find({
-      where: {
-        nutricionista: {
-          idPersona: nutricionistaId,
-          gimnasioId: this.tenantContext.gimnasioId,
-        },
-        dia: diaSemana,
-      },
-      order: { horaInicio: 'ASC' },
-    });
-
-    if (!agendaDelDia.length) {
-      throw new BadRequestError(
-        'El profesional no tiene disponibilidad configurada para el dia seleccionado.',
-      );
-    }
-
-    const turnoInicio = this.timeToMinutes(horaTurno);
-
-    const hasAvailableSlot = agendaDelDia.some((agenda) => {
-      const inicio = this.timeToMinutes(agenda.horaInicio);
-      const fin = this.timeToMinutes(agenda.horaFin);
-      const turnoFin = turnoInicio + agenda.duracionTurno;
-
-      return (
-        turnoInicio >= inicio &&
-        turnoFin <= fin &&
-        (turnoInicio - inicio) % agenda.duracionTurno === 0
-      );
-    });
-
-    if (!hasAvailableSlot) {
-      throw new BadRequestError(
-        'El horario seleccionado no coincide con la disponibilidad del profesional.',
-      );
-    }
-  }
-
-  private validateDateNotInPast(fechaTurno: Date): void {
-    const todayStart = getArgentinaStartOfToday();
-
-    if (fechaTurno.getTime() < todayStart.getTime()) {
-      throw new BadRequestError(
-        'No se puede asignar un turno en fechas pasadas.',
-      );
-    }
-  }
-
-  private mapDateToDiaSemana(date: Date): DiaSemana {
-    const day = getArgentinaWeekdayIndex(date);
-
-    switch (day) {
-      case 0:
-        return DiaSemana.DOMINGO;
-      case 1:
-        return DiaSemana.LUNES;
-      case 2:
-        return DiaSemana.MARTES;
-      case 3:
-        return DiaSemana.MIERCOLES;
-      case 4:
-        return DiaSemana.JUEVES;
-      case 5:
-        return DiaSemana.VIERNES;
-      case 6:
-        return DiaSemana.SABADO;
-      default:
-        throw new BadRequestError('Dia de semana invalido.');
-    }
-  }
-
-  private timeToMinutes(time: string): number {
-    const [hours, minutes] = time.split(':').map((value) => Number(value));
-    return hours * 60 + minutes;
   }
 
   private toResponseDto(turno: TurnoOrmEntity): TurnoOperacionResponseDto {
