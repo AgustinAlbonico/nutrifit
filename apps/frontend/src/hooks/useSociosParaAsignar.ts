@@ -32,7 +32,7 @@ export function useSociosParaAsignar(busqueda: string) {
         `/socio/buscar-con-ficha?q=${encodeURIComponent(busquedaDebounceada)}`,
         { token },
       );
-      return response.data ?? [];
+      return deduplicarSocios(response.data ?? []);
     },
   });
 
@@ -41,4 +41,25 @@ export function useSociosParaAsignar(busqueda: string) {
     isLoading: habilitada ? query.isLoading : false,
     error: query.error,
   };
+}
+
+function deduplicarSocios(socios: SocioConFicha[]): SocioConFicha[] {
+  const porId = new Map<number, SocioConFicha>();
+
+  for (const socio of socios) {
+    const existente = porId.get(socio.idPersona);
+
+    if (!existente) {
+      porId.set(socio.idPersona, socio);
+      continue;
+    }
+
+    // Si llegaron dos variantes del mismo socio, priorizamos la que
+    // tenga ficha completa porque es la mas util para el flujo staff.
+    if (!existente.tieneFichaSalud && socio.tieneFichaSalud) {
+      porId.set(socio.idPersona, socio);
+    }
+  }
+
+  return Array.from(porId.values());
 }
