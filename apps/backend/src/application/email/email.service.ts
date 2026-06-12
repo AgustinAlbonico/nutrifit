@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { TipoRecordatorio } from 'src/infrastructure/persistence/typeorm/entities/recordatorio-enviado.entity';
+import { CreadoPor } from 'src/domain/entities/Turno/creado-por.enum';
 import { IEmailProvider } from './contracts/email-provider.interface';
 
 export const EMAIL_PROVIDER = 'EMAIL_PROVIDER';
@@ -20,10 +21,17 @@ interface TurnoEmailData {
  * admin, o el mismo nutri desde el nuevo endpoint POST /turnos/crear)
  * agendo un turno en su agenda.
  *
- * El `nombreProfesional` es el del nutricionista destinatario; el
+ * El `nombreNutricionista` es el del profesional destinatario; el
  * `nombreSocio` y `dniSocio` permiten identificar al paciente. El
  * `creadoPor` se incluye en el cuerpo del email para que el nutri
  * sepa quien origino la reserva (recepcion/admin/el mismo).
+ *
+ * Tipamos `creadoPor` con el enum `CreadoPor` completo (4 valores
+ * posibles) aunque en la practica solo llegan 3 desde el nuevo
+ * use-case (`RECEPCION`/`ADMIN`/`NUTRICIONISTA`); asi mantenemos
+ * el shape consistente con el resto del codigo y permitimos que
+ * un futuro emisor del tipo `SOCIO` (auto-reserva) reuso este
+ * metodo sin tocar el contrato.
  */
 export interface NotificacionTurnoParaNutriData {
   email: string;
@@ -32,7 +40,7 @@ export interface NotificacionTurnoParaNutriData {
   dniSocio?: string | null;
   fecha: string;
   hora: string;
-  creadoPor: 'RECEPCION' | 'ADMIN' | 'NUTRICIONISTA';
+  creadoPor: CreadoPor;
   gimnasioId?: number;
 }
 
@@ -101,16 +109,16 @@ export class EmailService {
     });
   }
 
-  private mapearCreadoPorALugar(
-    creadoPor: 'RECEPCION' | 'ADMIN' | 'NUTRICIONISTA',
-  ): string {
+  private mapearCreadoPorALugar(creadoPor: CreadoPor): string {
     switch (creadoPor) {
-      case 'RECEPCION':
+      case CreadoPor.RECEPCION:
         return 'recepcion';
-      case 'ADMIN':
+      case CreadoPor.ADMIN:
         return 'administracion';
-      case 'NUTRICIONISTA':
+      case CreadoPor.NUTRICIONISTA:
         return 'el mismo profesional';
+      case CreadoPor.SOCIO:
+        return 'el socio';
       default:
         return 'staff del gimnasio';
     }

@@ -241,7 +241,10 @@ describe('CrearTurnoEnNombreDeSocioUseCase', () => {
     it('RECEPCION + socio con ficha completa -> creadoPor RECEPCION, sin warning, notifica socio y nutri, audita', async () => {
       setupHappyPath(socioConFichaCompleta, CreadoPor.RECEPCION);
 
-      const result = await useCase.execute(baseActor(Rol.RECEPCIONISTA), payload);
+      const result = await useCase.execute(
+        baseActor(Rol.RECEPCIONISTA),
+        payload,
+      );
 
       expect(result.idTurno).toBe(999);
       expect(result.creadoPor).toBe(CreadoPor.RECEPCION);
@@ -261,8 +264,12 @@ describe('CrearTurnoEnNombreDeSocioUseCase', () => {
         }),
       );
 
-      expect(emailService.enviarNotificacionTurnoParaNutri).toHaveBeenCalledTimes(1);
-      expect(emailService.enviarNotificacionTurnoParaNutri).toHaveBeenCalledWith(
+      expect(
+        emailService.enviarNotificacionTurnoParaNutri,
+      ).toHaveBeenCalledTimes(1);
+      expect(
+        emailService.enviarNotificacionTurnoParaNutri,
+      ).toHaveBeenCalledWith(
         expect.objectContaining({
           email: 'lopez@nutrifit.test',
           creadoPor: CreadoPor.RECEPCION,
@@ -307,7 +314,9 @@ describe('CrearTurnoEnNombreDeSocioUseCase', () => {
           metadata: expect.objectContaining({ creadoPor: CreadoPor.ADMIN }),
         }),
       );
-      expect(emailService.enviarNotificacionTurnoParaNutri).toHaveBeenCalledWith(
+      expect(
+        emailService.enviarNotificacionTurnoParaNutri,
+      ).toHaveBeenCalledWith(
         expect.objectContaining({ creadoPor: CreadoPor.ADMIN }),
       );
     });
@@ -330,7 +339,9 @@ describe('CrearTurnoEnNombreDeSocioUseCase', () => {
           }),
         }),
       );
-      expect(emailService.enviarNotificacionTurnoParaNutri).toHaveBeenCalledWith(
+      expect(
+        emailService.enviarNotificacionTurnoParaNutri,
+      ).toHaveBeenCalledWith(
         expect.objectContaining({ creadoPor: CreadoPor.NUTRICIONISTA }),
       );
     });
@@ -390,7 +401,9 @@ describe('CrearTurnoEnNombreDeSocioUseCase', () => {
       jest
         .mocked(nutricionistaRepository.findById)
         .mockResolvedValue(baseNutricionistaDominio as never);
-      jest.mocked(socioRepository.findOne).mockResolvedValue(socioFichaIncompleta);
+      jest
+        .mocked(socioRepository.findOne)
+        .mockResolvedValue(socioFichaIncompleta);
 
       await expect(
         useCase.execute(baseActor(Rol.NUTRICIONISTA), {
@@ -466,7 +479,9 @@ describe('CrearTurnoEnNombreDeSocioUseCase', () => {
       jest
         .mocked(nutricionistaRepository.findById)
         .mockResolvedValue(baseNutricionistaDominio as never);
-      jest.mocked(socioRepository.findOne).mockResolvedValue(socioConFichaCompleta);
+      jest
+        .mocked(socioRepository.findOne)
+        .mockResolvedValue(socioConFichaCompleta);
       jest.mocked(validaciones.validarFechaHoraNoPasado).mockResolvedValue();
       jest.mocked(validaciones.validarAgendaDisponible).mockResolvedValue();
       jest
@@ -506,12 +521,10 @@ describe('CrearTurnoEnNombreDeSocioUseCase', () => {
     });
 
     it('404: nutricionistaId dado de baja -> NotFoundError', async () => {
-      jest
-        .mocked(nutricionistaRepository.findById)
-        .mockResolvedValue({
-          ...baseNutricionistaDominio,
-          fechaBaja: new Date('2026-01-01'),
-        } as never);
+      jest.mocked(nutricionistaRepository.findById).mockResolvedValue({
+        ...baseNutricionistaDominio,
+        fechaBaja: new Date('2026-01-01'),
+      } as never);
 
       await expect(
         useCase.execute(baseActor(Rol.RECEPCIONISTA), {
@@ -525,7 +538,9 @@ describe('CrearTurnoEnNombreDeSocioUseCase', () => {
       jest
         .mocked(nutricionistaRepository.findById)
         .mockResolvedValue(baseNutricionistaDominio as never);
-      jest.mocked(socioRepository.findOne).mockResolvedValue(socioConFichaCompleta);
+      jest
+        .mocked(socioRepository.findOne)
+        .mockResolvedValue(socioConFichaCompleta);
       jest
         .mocked(validaciones.validarFechaHoraNoPasado)
         .mockRejectedValue(new BadRequestError('fecha pasada'));
@@ -546,7 +561,10 @@ describe('CrearTurnoEnNombreDeSocioUseCase', () => {
         .mocked(notificacionesService.crear)
         .mockRejectedValue(new Error('notif service down'));
 
-      const result = await useCase.execute(baseActor(Rol.RECEPCIONISTA), payload);
+      const result = await useCase.execute(
+        baseActor(Rol.RECEPCIONISTA),
+        payload,
+      );
 
       // El turno igual se persiste y la respuesta es OK.
       expect(result.idTurno).toBe(999);
@@ -566,7 +584,10 @@ describe('CrearTurnoEnNombreDeSocioUseCase', () => {
         .mocked(emailService.enviarNotificacionTurnoParaNutri)
         .mockRejectedValue(new Error('smtp down'));
 
-      const result = await useCase.execute(baseActor(Rol.RECEPCIONISTA), payload);
+      const result = await useCase.execute(
+        baseActor(Rol.RECEPCIONISTA),
+        payload,
+      );
 
       expect(result.idTurno).toBe(999);
       expect(turnoRepository.save).toHaveBeenCalled();
@@ -582,7 +603,10 @@ describe('CrearTurnoEnNombreDeSocioUseCase', () => {
         .mocked(auditoriaService.registrar)
         .mockRejectedValue(new Error('audit db down'));
 
-      const result = await useCase.execute(baseActor(Rol.RECEPCIONISTA), payload);
+      const result = await useCase.execute(
+        baseActor(Rol.RECEPCIONISTA),
+        payload,
+      );
 
       expect(result.idTurno).toBe(999);
       expect(logger.warn).toHaveBeenCalledWith(
@@ -600,10 +624,15 @@ describe('CrearTurnoEnNombreDeSocioUseCase', () => {
         .mocked(nutricionistaOrmRepository.findOne)
         .mockResolvedValue(nutriSinEmail);
 
-      const result = await useCase.execute(baseActor(Rol.RECEPCIONISTA), payload);
+      const result = await useCase.execute(
+        baseActor(Rol.RECEPCIONISTA),
+        payload,
+      );
 
       expect(result.idTurno).toBe(999);
-      expect(emailService.enviarNotificacionTurnoParaNutri).not.toHaveBeenCalled();
+      expect(
+        emailService.enviarNotificacionTurnoParaNutri,
+      ).not.toHaveBeenCalled();
       expect(logger.warn).toHaveBeenCalledWith(
         expect.stringContaining('sin email'),
       );

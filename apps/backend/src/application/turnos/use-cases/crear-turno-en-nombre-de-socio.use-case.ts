@@ -165,7 +165,13 @@ export class CrearTurnoEnNombreDeSocioUseCase {
     //    Operaciones best-effort: si fallan, se loguea y se continua,
     //    para no abortar la creacion del turno por un fallo secundario.
     await this.notificarSocioTurnoReservado(turnoCreado, socio, creadoPor);
-    await this.notificarNutriNuevoTurno(turnoCreado, socio, nutricionistaOrm, creadoPor, actor.gimnasioId);
+    await this.notificarNutriNuevoTurno(
+      turnoCreado,
+      socio,
+      nutricionistaOrm,
+      creadoPor,
+      actor.gimnasioId,
+    );
 
     // 9. Auditar la creacion (RB33).
     //    `socio.idPersona` es `number | null` por la definicion del PK
@@ -186,7 +192,12 @@ export class CrearTurnoEnNombreDeSocioUseCase {
       `Turno creado por ${actor.rol} (usuario=${actor.usuarioId}). Turno=${turnoCreado.idTurno}, socio=${payload.socioId}, nutri=${payload.nutricionistaId}.`,
     );
 
-    return this.toResponseDto(turnoCreado, creadoPor, actor.gimnasioId, fichaAdvertencia);
+    return this.toResponseDto(
+      turnoCreado,
+      creadoPor,
+      actor.gimnasioId,
+      fichaAdvertencia,
+    );
   }
 
   // --- Metodos privados ---
@@ -300,7 +311,8 @@ export class CrearTurnoEnNombreDeSocioUseCase {
     try {
       await this.emailService.enviarNotificacionTurnoParaNutri({
         email,
-        nombreNutricionista: `${nutricionista.nombre} ${nutricionista.apellido}`.trim(),
+        nombreNutricionista:
+          `${nutricionista.nombre} ${nutricionista.apellido}`.trim(),
         nombreSocio: `${socio.nombre} ${socio.apellido}`.trim(),
         dniSocio: socio.dni ?? null,
         fecha: formatArgentinaDate(turno.fechaTurno),
