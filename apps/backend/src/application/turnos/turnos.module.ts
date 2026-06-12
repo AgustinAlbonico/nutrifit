@@ -24,6 +24,7 @@ import {
   CancelarTurnoSocioUseCase,
   CheckInTurnoUseCase,
   ConfirmarTurnoSocioUseCase,
+  CrearTurnoEnNombreDeSocioUseCase,
   DesbloquearTurnoUseCase,
   FinalizarConsultaUseCase,
   GetAgendaDiariaUseCase,
@@ -59,6 +60,7 @@ import { AuditoriaModule } from 'src/infrastructure/services/auditoria/auditoria
 import { AdjuntoClinicoModule } from 'src/infrastructure/services/adjunto-clinico/adjunto-clinico.module';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import { NotificacionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/notificacion.entity';
+import { EmailModule } from 'src/application/email/email.module';
 
 @Module({
   imports: [
@@ -81,6 +83,7 @@ import { NotificacionOrmEntity } from 'src/infrastructure/persistence/typeorm/en
     AppLoggerModule,
     AuditoriaModule,
     AdjuntoClinicoModule,
+    EmailModule,
   ],
   providers: [
     AbrirFichaDesdeTurnoUseCase,
@@ -90,6 +93,7 @@ import { NotificacionOrmEntity } from 'src/infrastructure/persistence/typeorm/en
     CancelarTurnoSocioUseCase,
     CheckInTurnoUseCase,
     ConfirmarTurnoSocioUseCase,
+    CrearTurnoEnNombreDeSocioUseCase,
     DesbloquearTurnoUseCase,
     FinalizarConsultaUseCase,
     GetAgendaDiariaUseCase,
@@ -130,6 +134,7 @@ import { NotificacionOrmEntity } from 'src/infrastructure/persistence/typeorm/en
     CancelarTurnoSocioUseCase,
     CheckInTurnoUseCase,
     ConfirmarTurnoSocioUseCase,
+    CrearTurnoEnNombreDeSocioUseCase,
     DesbloquearTurnoUseCase,
     FinalizarConsultaUseCase,
     GetAgendaDiariaUseCase,
