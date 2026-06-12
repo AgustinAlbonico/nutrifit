@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ReservarTurnoSocioUseCase } from './reservar-turno-socio.use-case';
+import { ValidacionesCreacionTurno } from '../helpers/validaciones-creacion-turno.helper';
 import {
   TurnoOrmEntity,
   SocioOrmEntity,
@@ -127,6 +128,7 @@ describe('ReservarTurnoSocioUseCase - Multi-Tenant Isolation', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ReservarTurnoSocioUseCase,
+        ValidacionesCreacionTurno,
         {
           provide: getRepositoryToken(UsuarioOrmEntity),
           useValue: { findOne: jest.fn() },
