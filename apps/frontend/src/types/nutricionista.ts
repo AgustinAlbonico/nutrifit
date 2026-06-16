@@ -15,11 +15,13 @@ export interface Nutricionista {
   matricula: string;
   aniosExperiencia: number;
   tarifaSesion: number;
+  duracionTurnoMin: number;
   email: string;
   fechaBaja: string | null;
   activo: boolean;
   fotoPerfilUrl: string | null;
   presentacion: string | null;
+  diplomaUrl: string | null;
 }
 
 export interface CrearNutricionistaDto {
@@ -36,6 +38,11 @@ export interface CrearNutricionistaDto {
   matricula: string;
   aniosExperiencia: number;
   tarifaSesion: number;
-  contrasena: string;
+  duracionTurnoMin: number;
   presentacion?: string;
+}
+
+export interface CrearNutricionistaResponseDto {
+  nutricionista: Nutricionista;
+  contrasenaProvisional: string;
 }

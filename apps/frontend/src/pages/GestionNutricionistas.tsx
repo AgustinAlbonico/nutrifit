@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect, useCallback, useMemo, type FormEvent } from 'react';
 import { toast } from 'sonner';
-import { AlertCircle, CheckCircle2, Search, Users, XIcon } from 'lucide-react';
+import { AlertCircle, Search, Users, XIcon } from 'lucide-react';
 import { format as formatearFechaIso } from 'date-fns';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,7 +11,7 @@ import {
   formatearFechaArgentinaCorta,
   formatearFechaArgentinaParaInput,
 } from '@/lib/fechasArgentina';
-import { REGEX_DNI, REGEX_TELEFONO, REGEX_EMAIL, obtenerErroresContrasenia } from '@/lib/validaciones';
+import { REGEX_DNI, REGEX_TELEFONO, REGEX_EMAIL } from '@/lib/validaciones';
 import { normalizarTexto } from '@/lib/text';
 import type { Nutricionista, CrearNutricionistaDto, Genero } from '@/types/nutricionista';
 import { Button } from '@/components/ui/button';
@@ -51,6 +51,7 @@ type CampoFormularioEdicion = keyof CrearNutricionistaDto;
 type ErroresFormularioCreacion = Partial<Record<CampoFormularioCreacion, string>>;
 type ErroresFormularioEdicion = Partial<Record<CampoFormularioEdicion, string>>;
 type EstadoFoto = string | File | null;
+type EstadoDiploma = string | File | null;
 
 const FORMULARIO_NUTRICIONISTA_INICIAL: CrearNutricionistaDto = {
   nombre: '',
@@ -66,7 +67,7 @@ const FORMULARIO_NUTRICIONISTA_INICIAL: CrearNutricionistaDto = {
   matricula: '',
   aniosExperiencia: 0,
   tarifaSesion: 0,
-  contrasena: '',
+  duracionTurnoMin: 30,
   presentacion: '',
 };
 
@@ -124,7 +125,9 @@ export function GestionNutricionistas() {
   const [errorGeneralCreacion, setErrorGeneralCreacion] = useState<string | null>(null);
   const [enviandoCreacion, setEnviandoCreacion] = useState(false);
   const [fotoCreacion, setFotoCreacion] = useState<EstadoFoto>(null);
+  const [diplomaCreacion, setDiplomaCreacion] = useState<EstadoDiploma>(null);
   const [fotoEdicion, setFotoEdicion] = useState<EstadoFoto>(null);
+  const [diplomaEdicion, setDiplomaEdicion] = useState<EstadoDiploma>(null);
   const [nutricionistaFormEdicion, setNutricionistaFormEdicion] = useState<CrearNutricionistaDto>(FORMULARIO_NUTRICIONISTA_INICIAL);
   const [erroresEdicion, setErroresEdicion] = useState<ErroresFormularioCreacion>({});
 
@@ -134,6 +137,10 @@ export function GestionNutricionistas() {
   const [mostrarModalDetalles, setMostrarModalDetalles] = useState(false);
   const [mostrarFotoAmpliada, setMostrarFotoAmpliada] = useState(false);
   const [nutricionistaSeleccionado, setNutricionistaSeleccionado] = useState<Nutricionista | null>(null);
+
+  const [mostrarModalContrasenaProvisional, setMostrarModalContrasenaProvisional] = useState(false);
+  const [contrasenaProvisional, setContrasenaProvisional] = useState<string | null>(null);
+  const [contrasenaCopiada, setContrasenaCopiada] = useState(false);
 
   const abrirModalDetalles = (nutricionista: Nutricionista) => {
     setNutricionistaSeleccionado(nutricionista);
@@ -158,32 +165,6 @@ export function GestionNutricionistas() {
     }
   };
 
-  const requisitosContrasenia = useMemo(
-    () => [
-      {
-        descripcion: 'Al menos 8 caracteres',
-        cumple: nutricionistaForm.contrasena.length >= 8,
-      },
-      {
-        descripcion: 'Una letra mayúscula',
-        cumple: /[A-Z]/.test(nutricionistaForm.contrasena),
-      },
-      {
-        descripcion: 'Una letra minúscula',
-        cumple: /[a-z]/.test(nutricionistaForm.contrasena),
-      },
-      {
-        descripcion: 'Un número',
-        cumple: /\d/.test(nutricionistaForm.contrasena),
-      },
-      {
-        descripcion: 'Un símbolo especial',
-        cumple: /[^A-Za-z0-9]/.test(nutricionistaForm.contrasena),
-      },
-    ],
-    [nutricionistaForm.contrasena],
-  );
-
   const validarFormularioCreacion = useCallback(
     (datos: CrearNutricionistaDto): ErroresFormularioCreacion => {
       const errores: ErroresFormularioCreacion = {};
@@ -200,9 +181,8 @@ export function GestionNutricionistas() {
       if (!datos.matricula.trim()) errores.matricula = 'Ingresá la matrícula.';
       if (datos.aniosExperiencia < 0) errores.aniosExperiencia = 'Los años de experiencia no pueden ser negativos.';
       if (datos.tarifaSesion <= 0) errores.tarifaSesion = 'La tarifa por sesión debe ser mayor a 0.';
-
-      if (obtenerErroresContrasenia(datos.contrasena).length > 0) {
-        errores.contrasena = 'La contraseña no cumple los requisitos mínimos de seguridad.';
+      if (!Number.isFinite(datos.duracionTurnoMin) || datos.duracionTurnoMin < 5 || datos.duracionTurnoMin > 240) {
+        errores.duracionTurnoMin = 'La duración del turno debe estar entre 5 y 240 minutos.';
       }
 
       return errores;
@@ -244,6 +224,9 @@ export function GestionNutricionistas() {
     if (!nutricionistaFormEdicion.matricula.trim()) errores.matricula = 'Ingresá la matrícula.';
     if (nutricionistaFormEdicion.aniosExperiencia < 0) errores.aniosExperiencia = 'Los años de experiencia no pueden ser negativos.';
     if (nutricionistaFormEdicion.tarifaSesion <= 0) errores.tarifaSesion = 'La tarifa por sesión debe ser mayor a 0.';
+    if (!Number.isFinite(nutricionistaFormEdicion.duracionTurnoMin) || nutricionistaFormEdicion.duracionTurnoMin < 5 || nutricionistaFormEdicion.duracionTurnoMin > 240) {
+      errores.duracionTurnoMin = 'La duración del turno debe estar entre 5 y 240 minutos.';
+    }
 
     return errores;
   }, [nutricionistaFormEdicion]);
@@ -253,6 +236,7 @@ export function GestionNutricionistas() {
     setErroresCreacion({});
     setErrorGeneralCreacion(null);
     setFotoCreacion(null);
+    setDiplomaCreacion(null);
     setEnviandoCreacion(false);
   }, []);
 
@@ -440,25 +424,49 @@ export function GestionNutricionistas() {
     setEnviandoCreacion(true);
 
     try {
-      if (fotoCreacion instanceof File) {
+      const hayFoto = fotoCreacion instanceof File;
+      const hayDiploma = diplomaCreacion instanceof File;
+
+      if (hayFoto || hayDiploma) {
         const formData = new FormData();
-        formData.append('foto', fotoCreacion);
+        if (hayFoto) {
+          formData.append('foto', fotoCreacion);
+        }
+        if (hayDiploma) {
+          formData.append('diploma', diplomaCreacion);
+        }
         Object.entries(nutricionistaForm).forEach(([key, value]) => {
           formData.append(key, String(value));
         });
-        await apiRequest('/profesional', {
-          method: 'POST',
-          token,
-          formData,
-        });
+        const respuesta = await apiRequest<Nutricionista & { contrasenaProvisional?: string }>(
+          '/profesional',
+          {
+            method: 'POST',
+            token,
+            formData,
+          },
+        );
+        if (respuesta.contrasenaProvisional) {
+          setContrasenaProvisional(respuesta.contrasenaProvisional);
+          setContrasenaCopiada(false);
+          setMostrarModalContrasenaProvisional(true);
+        }
       } else {
-        await apiRequest('/profesional', {
-          method: 'POST',
-          token,
-          body: nutricionistaForm,
-        });
+        const respuesta = await apiRequest<Nutricionista & { contrasenaProvisional?: string }>(
+          '/profesional',
+          {
+            method: 'POST',
+            token,
+            body: nutricionistaForm,
+          },
+        );
+        if (respuesta.contrasenaProvisional) {
+          setContrasenaProvisional(respuesta.contrasenaProvisional);
+          setContrasenaCopiada(false);
+          setMostrarModalContrasenaProvisional(true);
+        }
       }
-      
+
       toast.success('Nutricionista creado exitosamente');
       setMostrarFormularioNutricionista(false);
       limpiarEstadoCreacion();
@@ -469,6 +477,17 @@ export function GestionNutricionistas() {
       toast.error(errorMessage);
     } finally {
       setEnviandoCreacion(false);
+    }
+  };
+
+  const copiarContrasenaProvisional = async () => {
+    if (!contrasenaProvisional) return;
+    try {
+      await navigator.clipboard.writeText(contrasenaProvisional);
+      setContrasenaCopiada(true);
+      setTimeout(() => setContrasenaCopiada(false), 2500);
+    } catch {
+      toast.error('No se pudo copiar al portapapeles');
     }
   };
 
@@ -490,11 +509,12 @@ export function GestionNutricionistas() {
       matricula: nutricionista.matricula,
       aniosExperiencia: nutricionista.aniosExperiencia,
       tarifaSesion: nutricionista.tarifaSesion,
+      duracionTurnoMin: nutricionista.duracionTurnoMin,
       presentacion: nutricionista.presentacion ?? '',
-      contrasena: '',
     });
     setErroresEdicion({});
     setFotoEdicion(nutricionista.fotoPerfilUrl ?? null);
+    setDiplomaEdicion(nutricionista.diplomaUrl ?? null);
     setMostrarFormularioEdicion(true);
   };
 
@@ -511,30 +531,38 @@ export function GestionNutricionistas() {
     }
 
     try {
-      const payload = {
-        ...nutricionistaFormEdicion,
-        ...(nutricionistaFormEdicion.contrasena ? {} : { contrasena: undefined }),
-      };
-
-      const esFile = fotoEdicion instanceof File;
-      const esNull = fotoEdicion === null;
+      const esFileFoto = fotoEdicion instanceof File;
+      const esNullFoto = fotoEdicion === null;
+      const esFileDiploma = diplomaEdicion instanceof File;
+      const esNullDiploma = diplomaEdicion === null;
       const nutricionistaSiendoEditado = nutricionistas.find(
         (n) => n.idPersona === idNutricionistaEditando,
       );
       const nutricionistaTeniaFoto = nutricionistaSiendoEditado?.fotoPerfilUrl;
+      const nutricionistaTeniaDiploma = nutricionistaSiendoEditado?.diplomaUrl;
 
-      if (esFile || (esNull && nutricionistaTeniaFoto)) {
+      const enviarComoFormData =
+        esFileFoto ||
+        esFileDiploma ||
+        (esNullFoto && nutricionistaTeniaFoto) ||
+        (esNullDiploma && nutricionistaTeniaDiploma);
+
+      if (enviarComoFormData) {
         const formData = new FormData();
-        if (esFile) {
+        if (esFileFoto) {
           formData.append('foto', fotoEdicion);
         }
-        if (esNull && nutricionistaTeniaFoto) {
+        if (esNullFoto && nutricionistaTeniaFoto) {
           formData.append('eliminarFoto', 'true');
         }
-        Object.entries(payload).forEach(([key, value]) => {
-          if (key !== 'contrasena' || value) {
-            formData.append(key, String(value));
-          }
+        if (esFileDiploma) {
+          formData.append('diploma', diplomaEdicion);
+        }
+        if (esNullDiploma && nutricionistaTeniaDiploma) {
+          formData.append('eliminarDiploma', 'true');
+        }
+        Object.entries(nutricionistaFormEdicion).forEach(([key, value]) => {
+          formData.append(key, String(value));
         });
         await apiRequest(`/profesional/${idNutricionistaEditando}`, {
           method: 'PUT',
@@ -545,7 +573,7 @@ export function GestionNutricionistas() {
         await apiRequest(`/profesional/${idNutricionistaEditando}`, {
           method: 'PUT',
           token,
-          body: payload,
+          body: nutricionistaFormEdicion,
         });
       }
 
@@ -554,6 +582,7 @@ export function GestionNutricionistas() {
       setIdNutricionistaEditando(null);
       setErroresEdicion({});
       setFotoEdicion(null);
+      setDiplomaEdicion(null);
       await cargarNutricionistas();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'No se pudo editar el nutricionista';
@@ -1161,6 +1190,25 @@ export function GestionNutricionistas() {
                     />
                     {erroresCreacion.tarifaSesion && <p className="text-xs font-medium text-destructive">{erroresCreacion.tarifaSesion}</p>}
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="crear-duracion" required>Duración del turno (minutos)</Label>
+                    <Input
+                      id="crear-duracion"
+                      type="number"
+                      min={5}
+                      max={240}
+                      value={nutricionistaForm.duracionTurnoMin}
+                      onChange={(e) =>
+                        actualizarCampoCreacion(
+                          'duracionTurnoMin',
+                          parseInt(e.target.value, 10) || 0,
+                        )
+                      }
+                      aria-invalid={Boolean(erroresCreacion.duracionTurnoMin)}
+                      required
+                    />
+                    {erroresCreacion.duracionTurnoMin && <p className="text-xs font-medium text-destructive">{erroresCreacion.duracionTurnoMin}</p>}
+                  </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="crear-presentacion">Presentación (opcional)</Label>
                     <Textarea
@@ -1172,37 +1220,25 @@ export function GestionNutricionistas() {
                     />
                   </div>
                   <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="crear-password" required>Contraseña temporal</Label>
+                    <Label htmlFor="crear-diploma">Diploma / Matrícula profesional (PDF o imagen, opcional)</Label>
                     <Input
-                      id="crear-password"
-                      type="password"
-                      autoComplete="new-password"
-                      value={nutricionistaForm.contrasena}
-                      onChange={(e) => actualizarCampoCreacion('contrasena', e.target.value)}
-                      aria-invalid={Boolean(erroresCreacion.contrasena)}
-                      required
+                      id="crear-diploma"
+                      type="file"
+                      accept="application/pdf,image/*"
+                      onChange={(e) => {
+                        const archivo = e.target.files?.[0];
+                        setDiplomaCreacion(archivo ?? null);
+                        e.target.value = '';
+                      }}
                     />
-                    {erroresCreacion.contrasena && <p className="text-xs font-medium text-destructive">{erroresCreacion.contrasena}</p>}
-                    <div className="rounded-md border bg-muted/20 p-3">
-                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        Seguridad de contraseña
+                    {diplomaCreacion instanceof File && (
+                      <p className="text-xs text-muted-foreground">
+                        Archivo seleccionado: {diplomaCreacion.name}
                       </p>
-                      <ul className="space-y-1 text-xs">
-                        {requisitosContrasenia.map((regla) => {
-                          const colorTexto = regla.cumple ? 'text-emerald-700' : 'text-muted-foreground';
-
-                          return (
-                            <li
-                              key={regla.descripcion}
-                              className={`flex items-center gap-2 ${colorTexto}`}
-                            >
-                              <CheckCircle2 className="h-3.5 w-3.5" />
-                              <span>{regla.descripcion}</span>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </div>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      El documento se mostrará al socio desde el perfil del profesional.
+                    </p>
                   </div>
                 </div>
               </section>
@@ -1264,6 +1300,7 @@ export function GestionNutricionistas() {
             setIdNutricionistaEditando(null);
             setErroresEdicion({});
             setFotoEdicion(null);
+            setDiplomaEdicion(null);
           }
         }}>
         <DialogContent className="max-w-4xl p-0">
@@ -1377,13 +1414,58 @@ export function GestionNutricionistas() {
                     <Label htmlFor="editar-tarifa">Tarifa por sesión</Label>
                     <Input id="editar-tarifa" type="number" min={0} step="0.01" value={nutricionistaFormEdicion.tarifaSesion} onChange={(e) => setNutricionistaFormEdicion({ ...nutricionistaFormEdicion, tarifaSesion: parseFloat(e.target.value) || 0 })} required />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="editar-duracion">Duración del turno (minutos)</Label>
+                    <Input
+                      id="editar-duracion"
+                      type="number"
+                      min={5}
+                      max={240}
+                      value={nutricionistaFormEdicion.duracionTurnoMin}
+                      onChange={(e) =>
+                        setNutricionistaFormEdicion({
+                          ...nutricionistaFormEdicion,
+                          duracionTurnoMin: parseInt(e.target.value, 10) || 0,
+                        })
+                      }
+                      required
+                    />
+                    {erroresEdicion.duracionTurnoMin && (
+                      <p className="text-xs font-medium text-destructive">{erroresEdicion.duracionTurnoMin}</p>
+                    )}
+                  </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="editar-presentacion">Presentación (opcional)</Label>
                     <Textarea id="editar-presentacion" value={nutricionistaFormEdicion.presentacion || ''} onChange={(e) => setNutricionistaFormEdicion({ ...nutricionistaFormEdicion, presentacion: e.target.value })} placeholder="Breve biografía o presentación del profesional..." className="min-h-[100px]" />
                   </div>
                   <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="editar-password">Nueva contraseña (opcional)</Label>
-                    <Input id="editar-password" type="password" autoComplete="new-password" value={nutricionistaFormEdicion.contrasena} onChange={(e) => setNutricionistaFormEdicion({ ...nutricionistaFormEdicion, contrasena: e.target.value })} />
+                    <Label htmlFor="editar-diploma">Reemplazar diploma / matrícula (opcional)</Label>
+                    <Input
+                      id="editar-diploma"
+                      type="file"
+                      accept="application/pdf,image/*"
+                      onChange={(e) => {
+                        const archivo = e.target.files?.[0];
+                        setDiplomaEdicion(archivo ?? null);
+                        e.target.value = '';
+                      }}
+                    />
+                    {diplomaEdicion instanceof File && (
+                      <p className="text-xs text-muted-foreground">
+                        Nuevo archivo: {diplomaEdicion.name}
+                      </p>
+                    )}
+                    {diplomaEdicion === null &&
+                      (() => {
+                        const nutriActual = nutricionistas.find(
+                          (n) => n.idPersona === idNutricionistaEditando,
+                        );
+                        return nutriActual?.diplomaUrl ? (
+                          <p className="text-xs text-amber-700">
+                            Se eliminará el diploma actual al guardar.
+                          </p>
+                        ) : null;
+                      })()}
                   </div>
                 </div>
               </section>
@@ -1393,6 +1475,7 @@ export function GestionNutricionistas() {
                   setMostrarFormularioEdicion(false);
                   setIdNutricionistaEditando(null);
                   setFotoEdicion(null);
+                  setDiplomaEdicion(null);
                 }}>
                 Cancelar
               </Button>
@@ -1500,13 +1583,38 @@ export function GestionNutricionistas() {
                         {nutricionistaSeleccionado.aniosExperiencia} años
                       </p>
                     </div>
-                    <div className="col-span-2">
+                    <div>
+                      <p className="text-xs font-medium uppercase text-muted-foreground">
+                        Duración del turno
+                      </p>
+                      <p className="text-sm font-medium">
+                        {nutricionistaSeleccionado.duracionTurnoMin} min
+                      </p>
+                    </div>
+                    <div>
                       <p className="text-xs font-medium uppercase text-muted-foreground">
                         Tarifa por sesión
                       </p>
                       <p className="text-sm font-medium">
                         ${nutricionistaSeleccionado.tarifaSesion.toLocaleString()}
                       </p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-xs font-medium uppercase text-muted-foreground">
+                        Diploma / Matrícula profesional
+                      </p>
+                      {nutricionistaSeleccionado.diplomaUrl ? (
+                        <a
+                          href={nutricionistaSeleccionado.diplomaUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                        >
+                          Ver documento
+                        </a>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Sin diploma cargado</p>
+                      )}
                     </div>
                   </div>
                 </section>
@@ -1625,6 +1733,66 @@ export function GestionNutricionistas() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Modal contraseña provisional (RB32) */}
+      <Dialog
+        open={mostrarModalContrasenaProvisional}
+        onOpenChange={(open) => {
+          if (!open) {
+            setMostrarModalContrasenaProvisional(false);
+            setContrasenaProvisional(null);
+            setContrasenaCopiada(false);
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Contraseña provisional generada</DialogTitle>
+            <DialogDescription>
+              El sistema generó una contraseña segura. El nutricionista deberá
+              cambiarla en su primer inicio de sesión.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Alert className="border-amber-500/40 bg-amber-50">
+              <AlertCircle className="h-4 w-4 text-amber-700" />
+              <AlertTitle className="text-amber-900">Importante</AlertTitle>
+              <AlertDescription className="text-amber-800">
+                Compartila por un canal seguro con el profesional. Por
+                seguridad, no se vuelve a mostrar.
+              </AlertDescription>
+            </Alert>
+            <div className="flex items-center gap-2 rounded-md border bg-muted/40 p-3">
+              <code
+                data-testid="contrasena-provisional"
+                className="flex-1 break-all font-mono text-base font-semibold tracking-wide"
+              >
+                {contrasenaProvisional}
+              </code>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => void copiarContrasenaProvisional()}
+              >
+                {contrasenaCopiada ? 'Copiado' : 'Copiar'}
+              </Button>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 border-t bg-muted/20 px-6 py-4">
+            <Button
+              type="button"
+              onClick={() => {
+                setMostrarModalContrasenaProvisional(false);
+                setContrasenaProvisional(null);
+                setContrasenaCopiada(false);
+              }}
+            >
+              Entendido
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
