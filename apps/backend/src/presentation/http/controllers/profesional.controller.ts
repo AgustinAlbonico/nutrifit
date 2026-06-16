@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -14,7 +15,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import {
   CreateNutricionistaDto,
@@ -36,7 +37,9 @@ import {
   UpdateNutricionistaUseCase,
 } from 'src/application/profesionales/use-cases';
 import { NutricionistaEntity } from 'src/domain/entities/Persona/Nutricionista/nutricionista.entity';
+import { NutricionistaRepository, NUTRICIONISTA_REPOSITORY } from 'src/domain/entities/Persona/Nutricionista/nutricionista.repository';
 import { Rol as RolEnum } from 'src/domain/entities/Usuario/Rol';
+import { NotFoundError } from 'src/domain/exceptions/custom-exceptions';
 import {
   APP_LOGGER_SERVICE,
   IAppLoggerService,
@@ -67,6 +70,8 @@ export class ProfesionalController {
     private readonly updateNutricionistaUseCase: UpdateNutricionistaUseCase,
     private readonly deleteNutricionistaUseCase: DeleteNutricionistaUseCase,
     private readonly reactivarNutricionistaUseCase: ReactivarNutricionistaUseCase,
+    @Inject(NUTRICIONISTA_REPOSITORY)
+    private readonly nutricionistaRepository: NutricionistaRepository,
     @Inject(APP_LOGGER_SERVICE) private readonly logger: IAppLoggerService,
     @Inject(OBJECT_STORAGE_SERVICE)
     private readonly objectStorage: IObjectStorageService,
@@ -75,18 +80,10 @@ export class ProfesionalController {
   @Post()
   @Rol(RolEnum.ADMIN, RolEnum.RECEPCIONISTA)
   @Actions(ACCIONES.NUTRICIONISTAS_CREAR)
-  @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'foto', maxCount: 1 },
-      { name: 'diploma', maxCount: 1 },
-    ]),
-  )
+  @UseInterceptors(FileInterceptor('foto'))
   async create(
     @Body() createNutricionistaDto: CreateNutricionistaDto,
-    @UploadedFile() files?: {
-      foto?: Express.Multer.File[];
-      diploma?: Express.Multer.File[];
-    },
+    @UploadedFile() file?: Express.Multer.File,
   ) {
     console.log(
       '--- RAW BODY RECIBIDO EN CREATE NUTRICIONISTA ---',
@@ -97,40 +94,23 @@ export class ProfesionalController {
     );
 
     let fotoPerfilKey: string | undefined;
-    let diplomaKey: string | undefined;
 
-    const foto = files?.foto?.[0];
-    if (foto) {
-      const extension = foto.originalname.split('.').pop();
+    if (file) {
+      const extension = file.originalname.split('.').pop();
       fotoPerfilKey = `perfiles/nutricionistas/${Date.now()}-${Math.random().toString(36).substring(7)}.${extension}`;
 
       await this.objectStorage.subirArchivo(
         fotoPerfilKey,
-        foto.buffer,
-        foto.mimetype,
+        file.buffer,
+        file.mimetype,
       );
 
       this.logger.log(`Foto de perfil subida: ${fotoPerfilKey}`);
     }
 
-    const diploma = files?.diploma?.[0];
-    if (diploma) {
-      const extension = diploma.originalname.split('.').pop();
-      diplomaKey = `perfiles/nutricionistas/diplomas/${Date.now()}-${Math.random().toString(36).substring(7)}.${extension}`;
-
-      await this.objectStorage.subirArchivo(
-        diplomaKey,
-        diploma.buffer,
-        diploma.mimetype,
-      );
-
-      this.logger.log(`Diploma subido: ${diplomaKey}`);
-    }
-
     const resultado = await this.createNutricionistaUseCase.execute(
       createNutricionistaDto,
       fotoPerfilKey,
-      diplomaKey,
     );
     const dto = this.mapToResponseDto(resultado.nutricionista);
     dto.contrasenaProvisional = resultado.contrasenaProvisional;
@@ -191,58 +171,32 @@ export class ProfesionalController {
   @Put(':id')
   @Rol(RolEnum.ADMIN, RolEnum.RECEPCIONISTA, RolEnum.NUTRICIONISTA)
   @Actions(ACCIONES.NUTRICIONISTAS_EDITAR)
-  @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'foto', maxCount: 1 },
-      { name: 'diploma', maxCount: 1 },
-    ]),
-  )
+  @UseInterceptors(FileInterceptor('foto'))
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateNutricionistaDto: UpdateNutricionistaDto,
-    @UploadedFile() files?: {
-      foto?: Express.Multer.File[];
-      diploma?: Express.Multer.File[];
-    },
+    @UploadedFile() file?: Express.Multer.File,
     @Body('eliminarFoto') eliminarFotoRaw?: string,
-    @Body('eliminarDiploma') eliminarDiplomaRaw?: string,
     @CurrentUserId() usuarioEditorId?: number,
   ): Promise<NutricionistaResponseDto> {
     this.logger.log(`Actualizando profesional con ID: ${id}`);
 
     let fotoPerfilKey: string | undefined;
-    let diplomaKey: string | undefined;
 
-    const foto = files?.foto?.[0];
-    if (foto) {
-      const extension = foto.originalname.split('.').pop();
+    if (file) {
+      const extension = file.originalname.split('.').pop();
       fotoPerfilKey = `perfiles/nutricionistas/${Date.now()}-${Math.random().toString(36).substring(7)}.${extension}`;
 
       await this.objectStorage.subirArchivo(
         fotoPerfilKey,
-        foto.buffer,
-        foto.mimetype,
+        file.buffer,
+        file.mimetype,
       );
 
       this.logger.log(`Foto de perfil actualizada: ${fotoPerfilKey}`);
     }
 
-    const diploma = files?.diploma?.[0];
-    if (diploma) {
-      const extension = diploma.originalname.split('.').pop();
-      diplomaKey = `perfiles/nutricionistas/diplomas/${Date.now()}-${Math.random().toString(36).substring(7)}.${extension}`;
-
-      await this.objectStorage.subirArchivo(
-        diplomaKey,
-        diploma.buffer,
-        diploma.mimetype,
-      );
-
-      this.logger.log(`Diploma actualizado: ${diplomaKey}`);
-    }
-
     const eliminarFoto = eliminarFotoRaw === 'true';
-    const eliminarDiploma = eliminarDiplomaRaw === 'true';
 
     const nutricionista = await this.updateNutricionistaUseCase.execute(
       id,
@@ -250,8 +204,6 @@ export class ProfesionalController {
       fotoPerfilKey,
       eliminarFoto,
       usuarioEditorId,
-      diplomaKey,
-      eliminarDiploma,
     );
     return this.mapToResponseDto(nutricionista);
   }
@@ -316,6 +268,88 @@ export class ProfesionalController {
     );
     res.setHeader('Cache-Control', 'public, max-age=3600');
     return res.send(archivo.buffer);
+  }
+
+  @Post(':id/diploma')
+  @Rol(RolEnum.ADMIN, RolEnum.RECEPCIONISTA, RolEnum.NUTRICIONISTA)
+  @Actions(ACCIONES.NUTRICIONISTAS_EDITAR)
+  @UseInterceptors(FileInterceptor('diploma'))
+  async subirDiploma(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() diploma: Express.Multer.File,
+  ): Promise<NutricionistaResponseDto> {
+    if (!diploma) {
+      throw new BadRequestException('No se adjuntó ningún diploma.');
+    }
+
+    this.logger.log(
+      `Subiendo diploma para profesional con ID: ${id} (mime: ${diploma.mimetype}, size: ${diploma.size})`,
+    );
+
+    const nutricionista = await this.getNutricionistaUseCase.execute(id);
+    if (!nutricionista) {
+      throw new NotFoundError('Nutricionista no encontrado.');
+    }
+
+    const extension = diploma.originalname.split('.').pop();
+    const diplomaKey = `perfiles/nutricionistas/diplomas/${Date.now()}-${Math.random().toString(36).substring(7)}.${extension}`;
+
+    await this.objectStorage.subirArchivo(
+      diplomaKey,
+      diploma.buffer,
+      diploma.mimetype,
+    );
+
+    if (nutricionista.matriculaDocumentoKey) {
+      try {
+        await this.objectStorage.eliminarArchivo(
+          nutricionista.matriculaDocumentoKey,
+        );
+      } catch (error) {
+        this.logger.warn(
+          `No se pudo eliminar el diploma anterior ${nutricionista.matriculaDocumentoKey}: ${error}`,
+        );
+      }
+    }
+
+    nutricionista.matriculaDocumentoKey = diplomaKey;
+    const actualizado = await this.nutricionistaRepository.update(
+      id,
+      nutricionista,
+    );
+    return this.mapToResponseDto(actualizado);
+  }
+
+  @Delete(':id/diploma')
+  @Rol(RolEnum.ADMIN, RolEnum.RECEPCIONISTA, RolEnum.NUTRICIONISTA)
+  @Actions(ACCIONES.NUTRICIONISTAS_EDITAR)
+  async eliminarDiploma(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<NutricionistaResponseDto> {
+    this.logger.log(`Eliminando diploma del profesional con ID: ${id}`);
+    const nutricionista = await this.getNutricionistaUseCase.execute(id);
+    if (!nutricionista) {
+      throw new NotFoundError('Nutricionista no encontrado.');
+    }
+
+    if (nutricionista.matriculaDocumentoKey) {
+      try {
+        await this.objectStorage.eliminarArchivo(
+          nutricionista.matriculaDocumentoKey,
+        );
+      } catch (error) {
+        this.logger.warn(
+          `No se pudo eliminar el diploma ${nutricionista.matriculaDocumentoKey} del bucket: ${error}`,
+        );
+      }
+    }
+
+    nutricionista.matriculaDocumentoKey = null;
+    const actualizado = await this.nutricionistaRepository.update(
+      id,
+      nutricionista,
+    );
+    return this.mapToResponseDto(actualizado);
   }
 
   @Delete(':id')

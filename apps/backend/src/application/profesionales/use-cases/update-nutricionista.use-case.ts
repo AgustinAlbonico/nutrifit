@@ -44,8 +44,6 @@ export class UpdateNutricionistaUseCase implements BaseUseCase {
     fotoPerfilKey?: string,
     eliminarFoto: boolean = false,
     usuarioEditorId?: number,
-    diplomaKey?: string,
-    eliminarDiploma: boolean = false,
   ): Promise<NutricionistaEntity> {
     // Find existing nutricionista
     const nutricionista = await this.nutricionistaRepository.findById(id);
@@ -130,24 +128,6 @@ export class UpdateNutricionistaUseCase implements BaseUseCase {
     } else if (eliminarFoto && nutricionista.fotoPerfilKey) {
       await this.eliminarArchivoAnterior(nutricionista.fotoPerfilKey);
       nutricionista.fotoPerfilKey = null;
-    }
-
-    // Update diploma/matricula if provided
-    if (diplomaKey) {
-      if (nutricionista.matriculaDocumentoKey) {
-        await this.eliminarArchivoAnterior(
-          nutricionista.matriculaDocumentoKey,
-        );
-      }
-      nutricionista.matriculaDocumentoKey = diplomaKey;
-    } else if (
-      eliminarDiploma &&
-      nutricionista.matriculaDocumentoKey
-    ) {
-      await this.eliminarArchivoAnterior(
-        nutricionista.matriculaDocumentoKey,
-      );
-      nutricionista.matriculaDocumentoKey = null;
     }
 
     // Update nutricionista

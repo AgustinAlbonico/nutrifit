@@ -490,18 +490,14 @@ export function GestionNutricionistas() {
       const hayFoto = fotoCreacion instanceof File;
       const hayDiploma = diplomaCreacion instanceof File;
 
-      if (hayFoto || hayDiploma) {
+      let respuesta;
+      if (hayFoto) {
         const formData = new FormData();
-        if (hayFoto) {
-          formData.append('foto', fotoCreacion);
-        }
-        if (hayDiploma) {
-          formData.append('diploma', diplomaCreacion);
-        }
+        formData.append('foto', fotoCreacion);
         Object.entries(nutricionistaForm).forEach(([key, value]) => {
           formData.append(key, String(value));
         });
-        const respuesta = await apiRequest<Nutricionista & { contrasenaProvisional?: string }>(
+        respuesta = await apiRequest<ApiResponse<Nutricionista & { contrasenaProvisional?: string }>>(
           '/profesional',
           {
             method: 'POST',
@@ -509,13 +505,8 @@ export function GestionNutricionistas() {
             formData,
           },
         );
-        if (respuesta.contrasenaProvisional) {
-          setContrasenaProvisional(respuesta.contrasenaProvisional);
-          setContrasenaCopiada(false);
-          setMostrarModalContrasenaProvisional(true);
-        }
       } else {
-        const respuesta = await apiRequest<Nutricionista & { contrasenaProvisional?: string }>(
+        respuesta = await apiRequest<ApiResponse<Nutricionista & { contrasenaProvisional?: string }>>(
           '/profesional',
           {
             method: 'POST',
@@ -523,11 +514,25 @@ export function GestionNutricionistas() {
             body: nutricionistaForm,
           },
         );
-        if (respuesta.contrasenaProvisional) {
-          setContrasenaProvisional(respuesta.contrasenaProvisional);
-          setContrasenaCopiada(false);
-          setMostrarModalContrasenaProvisional(true);
-        }
+      }
+
+      const nutriCreado = respuesta.data;
+      const idNuevo = nutriCreado?.idPersona;
+
+      if (hayDiploma && idNuevo) {
+        const diplomaForm = new FormData();
+        diplomaForm.append('diploma', diplomaCreacion);
+        await apiRequest(`/profesional/${idNuevo}/diploma`, {
+          method: 'POST',
+          token,
+          formData: diplomaForm,
+        });
+      }
+
+      if (nutriCreado?.contrasenaProvisional) {
+        setContrasenaProvisional(nutriCreado.contrasenaProvisional);
+        setContrasenaCopiada(false);
+        setMostrarModalContrasenaProvisional(true);
       }
 
       toast.success('Nutricionista creado exitosamente');
@@ -604,25 +609,15 @@ export function GestionNutricionistas() {
       const nutricionistaTeniaFoto = nutricionistaSiendoEditado?.fotoPerfilUrl;
       const nutricionistaTeniaDiploma = nutricionistaSiendoEditado?.diplomaUrl;
 
-      const enviarComoFormData =
-        esFileFoto ||
-        esFileDiploma ||
-        (esNullFoto && nutricionistaTeniaFoto) ||
-        (esNullDiploma && nutricionistaTeniaDiploma);
+      const enviarFotoComoFormData = esFileFoto || (esNullFoto && nutricionistaTeniaFoto);
 
-      if (enviarComoFormData) {
+      if (enviarFotoComoFormData) {
         const formData = new FormData();
         if (esFileFoto) {
           formData.append('foto', fotoEdicion);
         }
         if (esNullFoto && nutricionistaTeniaFoto) {
           formData.append('eliminarFoto', 'true');
-        }
-        if (esFileDiploma) {
-          formData.append('diploma', diplomaEdicion);
-        }
-        if (esNullDiploma && nutricionistaTeniaDiploma) {
-          formData.append('eliminarDiploma', 'true');
         }
         Object.entries(nutricionistaFormEdicion).forEach(([key, value]) => {
           formData.append(key, String(value));
@@ -637,6 +632,21 @@ export function GestionNutricionistas() {
           method: 'PUT',
           token,
           body: nutricionistaFormEdicion,
+        });
+      }
+
+      if (esFileDiploma) {
+        const diplomaForm = new FormData();
+        diplomaForm.append('diploma', diplomaEdicion);
+        await apiRequest(`/profesional/${idNutricionistaEditando}/diploma`, {
+          method: 'POST',
+          token,
+          formData: diplomaForm,
+        });
+      } else if (esNullDiploma && nutricionistaTeniaDiploma) {
+        await apiRequest(`/profesional/${idNutricionistaEditando}/diploma`, {
+          method: 'DELETE',
+          token,
         });
       }
 
