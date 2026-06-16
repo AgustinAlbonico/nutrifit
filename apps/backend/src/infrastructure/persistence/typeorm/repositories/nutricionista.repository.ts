@@ -70,6 +70,8 @@ export class NutricionistaRepositoryImplementation implements NutricionistaRepos
     existing.matricula = entity.matricula;
     existing.tarifaSesion = entity.tarifaSesion;
     existing.aniosExperiencia = entity.aniosExperiencia;
+    existing.duracionTurnoMin = entity.duracionTurnoMin;
+    existing.matriculaDocumentoKey = entity.matriculaDocumentoKey;
     existing.fechaBaja = entity.fechaBaja;
     existing.presentacion = entity.presentacion;
     existing.certificaciones = entity.certificaciones;
@@ -182,6 +184,8 @@ export class NutricionistaRepositoryImplementation implements NutricionistaRepos
       matricula: nutricionista.matricula,
       tarifaSesion: nutricionista.tarifaSesion,
       aniosExperiencia: nutricionista.aniosExperiencia,
+      duracionTurnoMin: nutricionista.duracionTurnoMin,
+      matriculaDocumentoKey: nutricionista.matriculaDocumentoKey,
       formacionAcademica: nutricionista.formacionAcademica || [],
       turnos: nutricionista.turnos || [],
       fechaBaja: nutricionista.fechaBaja,
@@ -219,6 +223,8 @@ export class NutricionistaRepositoryImplementation implements NutricionistaRepos
       orm.usuario?.email ?? '',
       orm.presentacion ?? null,
       orm.certificaciones ?? null,
+      orm.duracionTurnoMin ?? 30,
+      orm.matriculaDocumentoKey ?? null,
     );
 
     // Establecer gimnasioId del ORM (heredado de PersonaOrmEntity como columna directa)
