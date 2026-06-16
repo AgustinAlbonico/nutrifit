@@ -127,12 +127,14 @@ export class ProfesionalController {
       this.logger.log(`Diploma subido: ${diplomaKey}`);
     }
 
-    const nutricionista = await this.createNutricionistaUseCase.execute(
+    const resultado = await this.createNutricionistaUseCase.execute(
       createNutricionistaDto,
       fotoPerfilKey,
       diplomaKey,
     );
-    return this.mapToResponseDto(nutricionista);
+    const dto = this.mapToResponseDto(resultado.nutricionista);
+    dto.contrasenaProvisional = resultado.contrasenaProvisional;
+    return dto;
   }
 
   @Get()

@@ -83,7 +83,8 @@ export class RecepcionistasController {
     );
     return {
       message: 'Recepcionista creado exitosamente',
-      id: result.idPersona,
+      id: result.recepcionista.idPersona,
+      contrasenaProvisional: result.contrasenaProvisional,
     };
   }
 

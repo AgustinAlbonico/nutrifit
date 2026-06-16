@@ -25,6 +25,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { GrupoPermisoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/grupo-permiso.entity';
 import { Repository } from 'typeorm';
 import { GrupoPermisoEntity } from 'src/domain/entities/Usuario/grupo-permiso.entity';
+import { generarContrasenaProvisional } from 'src/common/utils/password-generator.util';
+
+export interface ResultadoCrearNutricionista {
+  nutricionista: NutricionistaEntity;
+  contrasenaProvisional: string;
+}
 
 @Injectable()
 export class CreateNutricionistaUseCase implements BaseUseCase {
@@ -44,7 +50,7 @@ export class CreateNutricionistaUseCase implements BaseUseCase {
     payload: CreateNutricionistaDto,
     fotoPerfilKey?: string,
     diplomaKey?: string,
-  ): Promise<NutricionistaEntity> {
+  ): Promise<ResultadoCrearNutricionista> {
     // Validate email uniqueness
     const foundByEmail = await this.usuarioRepository.findByEmail(
       payload.email,
@@ -134,9 +140,10 @@ export class CreateNutricionistaUseCase implements BaseUseCase {
       `Creando Usuario para el nutricionista ${nutricionistaCreado.idPersona}`,
     );
 
-    // Generate encrypted password
+    // RB32: generar contraseña provisional segura y forzar cambio en primer login.
+    const contrasenaProvisional = generarContrasenaProvisional();
     const contraseñaEncriptada = await this.passwordEncrypter.encryptPassword(
-      payload.contrasena,
+      contrasenaProvisional,
     );
 
     const grupoProfesional = await this.obtenerGrupoProfesionalPorDefecto();
@@ -149,16 +156,22 @@ export class CreateNutricionistaUseCase implements BaseUseCase {
       nutricionistaCreado,
       Rol.NUTRICIONISTA,
       [grupoProfesional],
+      [],
+      null,
+      true,
     );
 
     // Save usuario
     const usuarioCreado = await this.usuarioRepository.save(usuario);
 
     this.logger.log(
-      `Usuario creado para nutricionista: ${nutricionistaCreado.idPersona}`,
+      `Usuario creado para nutricionista: ${nutricionistaCreado.idPersona} (debe_cambiar_password=true)`,
     );
 
-    return nutricionistaCreado;
+    return {
+      nutricionista: nutricionistaCreado,
+      contrasenaProvisional,
+    };
   }
 
   private async obtenerGrupoProfesionalPorDefecto(): Promise<GrupoPermisoEntity> {

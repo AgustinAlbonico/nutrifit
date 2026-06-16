@@ -9,7 +9,6 @@ import {
   IsString,
   Max,
   Min,
-  MinLength,
 } from 'class-validator';
 import { Genero } from 'src/domain/entities/Persona/Genero';
 import { IsValidDni } from 'src/infrastructure/validators/dni.validator';
@@ -18,11 +17,6 @@ export class CreateNutricionistaDto {
   @IsEmail()
   @IsNotEmpty()
   email: string;
-
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(8)
-  contrasena: string;
 
   @IsString()
   @IsNotEmpty()

@@ -8,6 +8,7 @@ export class UsuarioEntity extends AuditableEntity {
   idUsuario: number | null;
   email: string;
   contraseña: string;
+  debeCambiarPassword: boolean;
   fechaHoraAlta: Date;
   persona: PersonaEntity | null;
   rol: Rol;
@@ -23,11 +24,13 @@ export class UsuarioEntity extends AuditableEntity {
     grupos: GrupoPermisoEntity[] = [],
     acciones: AccionPermisoEntity[] = [],
     fechaBaja: Date | null = null,
+    debeCambiarPassword: boolean = false,
   ) {
     super(fechaBaja);
     this.idUsuario = idUsuario;
     this.email = email;
     this.contraseña = contraseña;
+    this.debeCambiarPassword = debeCambiarPassword;
     this.fechaHoraAlta = new Date();
     this.persona = persona;
     this.rol = rol;

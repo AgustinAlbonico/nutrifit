@@ -15,6 +15,7 @@ export class RecepcionistaResponseDto {
   activo: boolean;
   fotoPerfilUrl?: string;
   fechaBaja: Date | null;
+  contrasenaProvisional?: string;
 
   static fromEntity(entity: RecepcionistaEntity): RecepcionistaResponseDto {
     const dto = new RecepcionistaResponseDto();

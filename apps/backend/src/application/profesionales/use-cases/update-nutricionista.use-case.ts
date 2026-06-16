@@ -11,10 +11,6 @@ import {
   IAppLoggerService,
 } from 'src/domain/services/logger.service';
 import {
-  IPasswordEncrypterService,
-  PASSWORD_ENCRYPTER_SERVICE,
-} from 'src/domain/services/password-encrypter.service';
-import {
   USUARIO_REPOSITORY,
   UsuarioRepository,
 } from 'src/domain/entities/Usuario/usuario.repository';
@@ -37,8 +33,6 @@ export class UpdateNutricionistaUseCase implements BaseUseCase {
     @Inject(USUARIO_REPOSITORY)
     private readonly usuarioRepository: UsuarioRepository,
     @Inject(APP_LOGGER_SERVICE) private readonly logger: IAppLoggerService,
-    @Inject(PASSWORD_ENCRYPTER_SERVICE)
-    private readonly passwordEncrypter: IPasswordEncrypterService,
     @Inject(OBJECT_STORAGE_SERVICE)
     private readonly objectStorage: IObjectStorageService,
     private readonly auditoriaService: AuditoriaService,
@@ -162,19 +156,13 @@ export class UpdateNutricionistaUseCase implements BaseUseCase {
       nutricionista,
     );
 
-    // Update usuario email and password if provided
-    if (usuario) {
-      if (payload.email) {
-        usuario.email = payload.email;
-      }
-      if (payload.contrasena) {
-        usuario.contraseña = await this.passwordEncrypter.encryptPassword(
-          payload.contrasena,
-        );
-      }
-      if (payload.email || payload.contrasena) {
-        await this.usuarioRepository.update(usuario.idUsuario!, usuario);
-      }
+    // Update usuario email if provided.
+    // El cambio de contraseña de un nutricionista ya creado se hace por
+    // el endpoint /auth/cambiar-contrasena o un reset-password dedicado,
+    // NO en este flujo de edición.
+    if (usuario && payload.email) {
+      usuario.email = payload.email;
+      await this.usuarioRepository.update(usuario.idUsuario!, usuario);
     }
 
     this.logger.log(

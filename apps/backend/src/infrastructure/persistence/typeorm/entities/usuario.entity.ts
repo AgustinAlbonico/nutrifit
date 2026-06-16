@@ -26,6 +26,20 @@ export class UsuarioOrmEntity {
   contraseña: string;
 
   @Column({
+    name: 'debe_cambiar_password',
+    type: 'tinyint',
+    width: 1,
+    default: 0,
+    transformer: {
+      to: (value: boolean | null | undefined): number =>
+        value ? 1 : 0,
+      from: (value: number | null | undefined): boolean =>
+        Boolean(value),
+    },
+  })
+  debeCambiarPassword: boolean;
+
+  @Column({
     name: 'fecha_hora_alta',
     type: 'datetime',
     default: () => 'CURRENT_TIMESTAMP',

@@ -4,7 +4,6 @@ import {
   IsDateString,
   IsEnum,
   IsNotEmpty,
-  MinLength,
 } from 'class-validator';
 import { Genero } from 'src/domain/entities/Persona/Genero';
 
@@ -20,11 +19,6 @@ export class CreateRecepcionistaDto {
   @IsEmail()
   @IsNotEmpty()
   email: string;
-
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(6)
-  contrasena: string;
 
   @IsDateString()
   @IsNotEmpty()

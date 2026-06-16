@@ -25,6 +25,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { GrupoPermisoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/grupo-permiso.entity';
 import { Repository } from 'typeorm';
 import { GrupoPermisoEntity } from 'src/domain/entities/Usuario/grupo-permiso.entity';
+import { generarContrasenaProvisional } from 'src/common/utils/password-generator.util';
+
+export interface ResultadoCrearRecepcionista {
+  recepcionista: RecepcionistaEntity;
+  contrasenaProvisional: string;
+}
 
 @Injectable()
 export class CreateRecepcionistaUseCase implements BaseUseCase {
@@ -43,7 +49,7 @@ export class CreateRecepcionistaUseCase implements BaseUseCase {
   async execute(
     payload: CreateRecepcionistaDto,
     fotoPerfilKey?: string,
-  ): Promise<RecepcionistaEntity> {
+  ): Promise<ResultadoCrearRecepcionista> {
     const foundByEmail = await this.usuarioRepository.findByEmail(
       payload.email,
     );
@@ -97,8 +103,10 @@ export class CreateRecepcionistaUseCase implements BaseUseCase {
       `Recepcionista ${recepcionistaCreado.idPersona} creado: ${recepcionistaCreado.nombre}`,
     );
 
+    // RB32: generar contraseña provisional segura y forzar cambio en primer login.
+    const contrasenaProvisional = generarContrasenaProvisional();
     const contraseñaEncriptada = await this.passwordEncrypter.encryptPassword(
-      payload.contrasena,
+      contrasenaProvisional,
     );
 
     const grupoStaff = await this.obtenerGrupoStaffPorDefecto();
@@ -110,15 +118,21 @@ export class CreateRecepcionistaUseCase implements BaseUseCase {
       recepcionistaCreado,
       Rol.RECEPCIONISTA,
       [grupoStaff],
+      [],
+      null,
+      true,
     );
 
     await this.usuarioRepository.save(usuario);
 
     this.logger.log(
-      `Usuario creado para recepcionista: ${recepcionistaCreado.idPersona}`,
+      `Usuario creado para recepcionista: ${recepcionistaCreado.idPersona} (debe_cambiar_password=true)`,
     );
 
-    return recepcionistaCreado;
+    return {
+      recepcionista: recepcionistaCreado,
+      contrasenaProvisional,
+    };
   }
 
   private async obtenerGrupoStaffPorDefecto(): Promise<GrupoPermisoEntity> {

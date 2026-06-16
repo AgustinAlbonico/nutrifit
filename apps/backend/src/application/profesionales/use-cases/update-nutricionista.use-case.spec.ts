@@ -3,7 +3,6 @@ import { IObjectStorageService } from 'src/domain/services/object-storage.servic
 import { NutricionistaRepository } from 'src/domain/entities/Persona/Nutricionista/nutricionista.repository';
 import { UsuarioRepository } from 'src/domain/entities/Usuario/usuario.repository';
 import { NutricionistaEntity } from 'src/domain/entities/Persona/Nutricionista/nutricionista.entity';
-import { IPasswordEncrypterService } from 'src/domain/services/password-encrypter.service';
 import { IAppLoggerService } from 'src/domain/services/logger.service';
 import { Genero } from 'src/domain/entities/Persona/Genero';
 import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
@@ -43,10 +42,6 @@ describe('UpdateNutricionistaUseCase — limpieza de foto de perfil', () => {
       verbose: jest.fn(),
     } as unknown as jest.Mocked<IAppLoggerService>;
 
-    const passwordEncrypter: jest.Mocked<IPasswordEncrypterService> = {
-      encryptPassword: jest.fn(),
-    } as unknown as jest.Mocked<IPasswordEncrypterService>;
-
     const auditoriaService: jest.Mocked<AuditoriaService> = {
       registrar: jest.fn(),
       listarConFiltros: jest.fn(),
@@ -56,7 +51,6 @@ describe('UpdateNutricionistaUseCase — limpieza de foto de perfil', () => {
       nutricionistaRepository,
       usuarioRepository,
       logger,
-      passwordEncrypter,
       objectStorage,
       auditoriaService,
     );
