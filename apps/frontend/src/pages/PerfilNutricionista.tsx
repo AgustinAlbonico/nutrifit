@@ -5,6 +5,7 @@ import {
   Award,
   Calendar,
   DollarSign,
+  FileText,
   GraduationCap,
   MapPin,
   UserCircle,
@@ -53,6 +54,7 @@ interface PerfilNutricionista {
   presentacion: string | null;
   certificaciones: string | null;
   fotoUrl: string | null;
+  diplomaUrl: string | null;
   duracionTurnoMin: number;
   formacionAcademica: FormacionProfesional[];
   horarios: HorarioProfesional[];
@@ -282,6 +284,44 @@ export function PerfilNutricionista() {
               </CardContent>
             </Card>
           )}
+
+          {/* Matrícula profesional con diploma */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <FileText className="h-5 w-5 text-orange-500" />
+                Matrícula profesional
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div>
+                <p className="text-xs font-medium uppercase text-muted-foreground">
+                  Número de matrícula
+                </p>
+                <p className="text-sm font-medium">{perfil.matricula}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase text-muted-foreground">
+                  Diploma / Certificado
+                </p>
+                {perfil.diplomaUrl ? (
+                  <a
+                    href={perfil.diplomaUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="ver-diploma"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-primary underline-offset-4 hover:underline"
+                  >
+                    Ver documento
+                  </a>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    El profesional aún no cargó su diploma.
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Certificaciones */}
           {perfil.certificaciones && (
