@@ -230,6 +230,10 @@ export class NutricionistaRepositoryImplementation implements NutricionistaRepos
     // Establecer gimnasioId del ORM (heredado de PersonaOrmEntity como columna directa)
     entity.gimnasioId = orm.gimnasioId;
 
+    if (orm.matricula !== undefined && orm.matricula !== null) {
+      entity.matricula = orm.matricula;
+    }
+
     if (orm.fotoPerfilKey) {
       entity.fotoPerfilKey = orm.fotoPerfilKey;
     }
