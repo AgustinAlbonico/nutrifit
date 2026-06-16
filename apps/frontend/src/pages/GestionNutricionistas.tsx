@@ -1,6 +1,6 @@
-﻿import { useState, useEffect, useCallback, useMemo, type FormEvent } from 'react';
+﻿import { useState, useEffect, useCallback, useMemo, type FormEvent, type ReactNode } from 'react';
 import { toast } from 'sonner';
-import { AlertCircle, Search, Users, XIcon } from 'lucide-react';
+import { AlertCircle, ChevronDown, Search, Users, XIcon } from 'lucide-react';
 import { format as formatearFechaIso } from 'date-fns';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -70,6 +70,56 @@ const FORMULARIO_NUTRICIONISTA_INICIAL: CrearNutricionistaDto = {
   duracionTurnoMin: 30,
   presentacion: '',
 };
+
+type ClaveSeccion = 'datos-personales' | 'contacto-ubicacion' | 'datos-profesionales';
+const SECCIONES_INICIAL: Record<ClaveSeccion, boolean> = {
+  'datos-personales': true,
+  'contacto-ubicacion': true,
+  'datos-profesionales': true,
+};
+
+function SeccionColapsable({
+  id,
+  titulo,
+  abierta,
+  alAlternar,
+  children,
+}: {
+  id: string;
+  titulo: string;
+  abierta: boolean;
+  alAlternar: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <section className="space-y-4 rounded-lg border bg-card/40 p-4">
+      <button
+        type="button"
+        onClick={alAlternar}
+        aria-expanded={abierta}
+        aria-controls={`${id}-contenido`}
+        data-testid={`seccion-${id}-toggle`}
+        className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-1 text-left text-sm font-semibold text-foreground transition-colors hover:bg-muted/60"
+      >
+        <span>{titulo}</span>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${
+            abierta ? 'rotate-0' : '-rotate-90'
+          }`}
+        />
+      </button>
+      {abierta && (
+        <div
+          id={`${id}-contenido`}
+          data-testid={`seccion-${id}-contenido`}
+          className="space-y-4"
+        >
+          {children}
+        </div>
+      )}
+    </section>
+  );
+}
 
 
 
@@ -141,6 +191,19 @@ export function GestionNutricionistas() {
   const [mostrarModalContrasenaProvisional, setMostrarModalContrasenaProvisional] = useState(false);
   const [contrasenaProvisional, setContrasenaProvisional] = useState<string | null>(null);
   const [contrasenaCopiada, setContrasenaCopiada] = useState(false);
+
+  const [seccionesCreacionAbiertas, setSeccionesCreacionAbiertas] = useState<Record<ClaveSeccion, boolean>>(
+    SECCIONES_INICIAL,
+  );
+  const [seccionesEdicionAbiertas, setSeccionesEdicionAbiertas] = useState<Record<ClaveSeccion, boolean>>(
+    SECCIONES_INICIAL,
+  );
+  const alternarSeccionCreacion = useCallback((clave: ClaveSeccion) => {
+    setSeccionesCreacionAbiertas((prev) => ({ ...prev, [clave]: !prev[clave] }));
+  }, []);
+  const alternarSeccionEdicion = useCallback((clave: ClaveSeccion) => {
+    setSeccionesEdicionAbiertas((prev) => ({ ...prev, [clave]: !prev[clave] }));
+  }, []);
 
   const abrirModalDetalles = (nutricionista: Nutricionista) => {
     setNutricionistaSeleccionado(nutricionista);
@@ -1010,8 +1073,12 @@ export function GestionNutricionistas() {
                 </Alert>
               )}
 
-              <section className="space-y-4">
-                <h3 className="text-sm font-semibold text-foreground">Datos personales</h3>
+              <SeccionColapsable
+                id="crear-datos-personales"
+                titulo="Datos personales"
+                abierta={seccionesCreacionAbiertas['datos-personales']}
+                alAlternar={() => alternarSeccionCreacion('datos-personales')}
+              >
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="crear-nombre" required>Nombre</Label>
@@ -1089,16 +1156,19 @@ export function GestionNutricionistas() {
                      {erroresCreacion.telefono && <p className="text-xs font-medium text-destructive">{erroresCreacion.telefono}</p>}
                    </div>
                  </div>
-               </section>
-
-<SelectorImagen
+                <SelectorImagen
                   etiqueta="Foto de perfil"
                   alCambiarFoto={setFotoCreacion}
                   deshabilitado={false}
                 />
+              </SeccionColapsable>
 
-               <section className="space-y-4">
-                 <h3 className="text-sm font-semibold text-foreground">Contacto y ubicación</h3>
+              <SeccionColapsable
+                id="crear-contacto-ubicacion"
+                titulo="Contacto y ubicación"
+                abierta={seccionesCreacionAbiertas['contacto-ubicacion']}
+                alAlternar={() => alternarSeccionCreacion('contacto-ubicacion')}
+              >
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="crear-direccion" required>Dirección</Label>
@@ -1147,10 +1217,14 @@ export function GestionNutricionistas() {
                     {erroresCreacion.email && <p className="text-xs font-medium text-destructive">{erroresCreacion.email}</p>}
                   </div>
                 </div>
-              </section>
+              </SeccionColapsable>
 
-              <section className="space-y-4">
-                <h3 className="text-sm font-semibold text-foreground">Datos profesionales</h3>
+              <SeccionColapsable
+                id="crear-datos-profesionales"
+                titulo="Datos profesionales"
+                abierta={seccionesCreacionAbiertas['datos-profesionales']}
+                alAlternar={() => alternarSeccionCreacion('datos-profesionales')}
+              >
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="crear-matricula" required>Matrícula</Label>
@@ -1241,7 +1315,7 @@ export function GestionNutricionistas() {
                     </p>
                   </div>
                 </div>
-              </section>
+              </SeccionColapsable>
             </div>
             <div className="flex justify-end gap-2 border-t bg-background px-6 py-4">
               <Button
@@ -1313,8 +1387,12 @@ export function GestionNutricionistas() {
 
           <form onSubmit={editarNutricionista} autoComplete="off">
             <div className="max-h-[68vh] space-y-6 overflow-y-auto px-6 py-5">
-              <section className="space-y-4">
-                <h3 className="text-sm font-semibold text-foreground">Datos personales</h3>
+              <SeccionColapsable
+                id="editar-datos-personales"
+                titulo="Datos personales"
+                abierta={seccionesEdicionAbiertas['datos-personales']}
+                alAlternar={() => alternarSeccionEdicion('datos-personales')}
+              >
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="editar-nombre">Nombre</Label>
@@ -1366,9 +1444,7 @@ export function GestionNutricionistas() {
                     <Input id="editar-telefono" value={nutricionistaFormEdicion.telefono} onChange={(e) => setNutricionistaFormEdicion({ ...nutricionistaFormEdicion, telefono: e.target.value })} required />
                   </div>
                 </div>
-              </section>
-
-              <SelectorImagen
+                <SelectorImagen
                   etiqueta="Foto de perfil"
                   valorActual={
                     typeof fotoEdicion === 'string' ? fotoEdicion : null
@@ -1376,9 +1452,14 @@ export function GestionNutricionistas() {
                   alCambiarFoto={setFotoEdicion}
                   deshabilitado={false}
                 />
+              </SeccionColapsable>
 
-              <section className="space-y-4">
-                <h3 className="text-sm font-semibold text-foreground">Contacto y ubicación</h3>
+              <SeccionColapsable
+                id="editar-contacto-ubicacion"
+                titulo="Contacto y ubicación"
+                abierta={seccionesEdicionAbiertas['contacto-ubicacion']}
+                alAlternar={() => alternarSeccionEdicion('contacto-ubicacion')}
+              >
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="editar-direccion">Dirección</Label>
@@ -1397,10 +1478,14 @@ export function GestionNutricionistas() {
                     <Input id="editar-email" type="email" autoComplete="off" value={nutricionistaFormEdicion.email} onChange={(e) => setNutricionistaFormEdicion({ ...nutricionistaFormEdicion, email: e.target.value })} required />
                   </div>
                 </div>
-              </section>
+              </SeccionColapsable>
 
-              <section className="space-y-4">
-                <h3 className="text-sm font-semibold text-foreground">Datos profesionales</h3>
+              <SeccionColapsable
+                id="editar-datos-profesionales"
+                titulo="Datos profesionales"
+                abierta={seccionesEdicionAbiertas['datos-profesionales']}
+                alAlternar={() => alternarSeccionEdicion('datos-profesionales')}
+              >
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="editar-matricula">Matrícula</Label>
@@ -1468,7 +1553,7 @@ export function GestionNutricionistas() {
                       })()}
                   </div>
                 </div>
-              </section>
+              </SeccionColapsable>
             </div>
             <div className="flex justify-end gap-2 border-t bg-background px-6 py-4">
               <Button type="button" variant="outline" onClick={() => {
