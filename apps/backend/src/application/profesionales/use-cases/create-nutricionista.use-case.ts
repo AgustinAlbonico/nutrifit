@@ -43,6 +43,7 @@ export class CreateNutricionistaUseCase implements BaseUseCase {
   async execute(
     payload: CreateNutricionistaDto,
     fotoPerfilKey?: string,
+    diplomaKey?: string,
   ): Promise<NutricionistaEntity> {
     // Validate email uniqueness
     const foundByEmail = await this.usuarioRepository.findByEmail(
@@ -84,6 +85,7 @@ export class CreateNutricionistaUseCase implements BaseUseCase {
       matricula,
       tarifaSesion,
       aniosExperiencia,
+      duracionTurnoMin,
       presentacion,
       email,
     } = payload;
@@ -108,6 +110,9 @@ export class CreateNutricionistaUseCase implements BaseUseCase {
       null,
       email,
       presentacion ?? null,
+      null,
+      duracionTurnoMin,
+      diplomaKey ?? null,
     );
 
     // Add matricula to entity

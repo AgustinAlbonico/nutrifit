@@ -12,8 +12,11 @@ export class NutricionistaResponseDto {
   matricula: string;
   tarifaSesion: number;
   aniosExperiencia: number;
+  duracionTurnoMin: number;
   email: string;
   fechaBaja: Date | null;
   activo: boolean;
   fotoPerfilUrl: string | null;
+  diplomaUrl: string | null;
+  contrasenaProvisional?: string;
 }

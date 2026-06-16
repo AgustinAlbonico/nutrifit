@@ -123,6 +123,17 @@ export class NutricionistaOrmEntity extends PersonaOrmEntity {
   @Column({ name: 'certificaciones', type: 'text', nullable: true })
   certificaciones: string | null;
 
+  @Column({ name: 'duracion_turno_min', type: 'int', default: 30 })
+  duracionTurnoMin: number;
+
+  @Column({
+    name: 'matricula_documento_key',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
+  matriculaDocumentoKey: string | null;
+
   @OneToMany(() => AgendaOrmEntity, (agenda) => agenda.nutricionista, {
     eager: false,
     nullable: true,

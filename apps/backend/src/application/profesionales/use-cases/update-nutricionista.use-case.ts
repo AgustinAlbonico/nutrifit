@@ -50,6 +50,8 @@ export class UpdateNutricionistaUseCase implements BaseUseCase {
     fotoPerfilKey?: string,
     eliminarFoto: boolean = false,
     usuarioEditorId?: number,
+    diplomaKey?: string,
+    eliminarDiploma: boolean = false,
   ): Promise<NutricionistaEntity> {
     // Find existing nutricionista
     const nutricionista = await this.nutricionistaRepository.findById(id);
@@ -120,18 +122,38 @@ export class UpdateNutricionistaUseCase implements BaseUseCase {
       nutricionista.tarifaSesion = payload.tarifaSesion;
     if (payload.aniosExperiencia !== undefined)
       nutricionista.aniosExperiencia = payload.aniosExperiencia;
+    if (payload.duracionTurnoMin !== undefined)
+      nutricionista.duracionTurnoMin = payload.duracionTurnoMin;
     if (payload.presentacion !== undefined)
       nutricionista.presentacion = payload.presentacion;
 
     // Update foto de perfil if provided
     if (fotoPerfilKey) {
       if (nutricionista.fotoPerfilKey) {
-        await this.eliminarFotoAnterior(nutricionista.fotoPerfilKey);
+        await this.eliminarArchivoAnterior(nutricionista.fotoPerfilKey);
       }
       nutricionista.fotoPerfilKey = fotoPerfilKey;
     } else if (eliminarFoto && nutricionista.fotoPerfilKey) {
-      await this.eliminarFotoAnterior(nutricionista.fotoPerfilKey);
+      await this.eliminarArchivoAnterior(nutricionista.fotoPerfilKey);
       nutricionista.fotoPerfilKey = null;
+    }
+
+    // Update diploma/matricula if provided
+    if (diplomaKey) {
+      if (nutricionista.matriculaDocumentoKey) {
+        await this.eliminarArchivoAnterior(
+          nutricionista.matriculaDocumentoKey,
+        );
+      }
+      nutricionista.matriculaDocumentoKey = diplomaKey;
+    } else if (
+      eliminarDiploma &&
+      nutricionista.matriculaDocumentoKey
+    ) {
+      await this.eliminarArchivoAnterior(
+        nutricionista.matriculaDocumentoKey,
+      );
+      nutricionista.matriculaDocumentoKey = null;
     }
 
     // Update nutricionista
@@ -174,12 +196,12 @@ export class UpdateNutricionistaUseCase implements BaseUseCase {
     return nutricionistaActualizado;
   }
 
-  private async eliminarFotoAnterior(objectKey: string): Promise<void> {
+  private async eliminarArchivoAnterior(objectKey: string): Promise<void> {
     try {
       await this.objectStorage.eliminarArchivo(objectKey);
     } catch (error) {
       this.logger.warn(
-        `No se pudo eliminar la foto anterior ${objectKey} del bucket: ${error}`,
+        `No se pudo eliminar el archivo anterior ${objectKey} del bucket: ${error}`,
       );
     }
   }

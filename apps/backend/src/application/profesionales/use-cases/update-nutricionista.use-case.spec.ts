@@ -103,6 +103,7 @@ describe('UpdateNutricionistaUseCase — limpieza de foto de perfil', () => {
       { nombre: 'Ana' } as any,
       'perfiles/nutricionistas/nueva.png',
       false,
+      undefined,
     );
 
     expect(objectStorage.eliminarArchivo).toHaveBeenCalledWith(
@@ -123,7 +124,7 @@ describe('UpdateNutricionistaUseCase — limpieza de foto de perfil', () => {
     nutricionistaRepository.findByMatricula.mockResolvedValue(null);
     nutricionistaRepository.findAll.mockResolvedValue([]);
 
-    await useCase.execute(1, {} as any, undefined, true);
+    await useCase.execute(1, {} as any, undefined, true, undefined);
 
     expect(objectStorage.eliminarArchivo).toHaveBeenCalledWith(
       'perfiles/nutricionistas/vieja.png',
@@ -141,7 +142,7 @@ describe('UpdateNutricionistaUseCase — limpieza de foto de perfil', () => {
     nutricionistaRepository.findByMatricula.mockResolvedValue(null);
     nutricionistaRepository.findAll.mockResolvedValue([]);
 
-    await useCase.execute(1, {} as any, undefined, true);
+    await useCase.execute(1, {} as any, undefined, true, undefined);
 
     expect(objectStorage.eliminarArchivo).not.toHaveBeenCalled();
   });
@@ -159,7 +160,7 @@ describe('UpdateNutricionistaUseCase — limpieza de foto de perfil', () => {
     nutricionistaRepository.findByMatricula.mockResolvedValue(null);
     nutricionistaRepository.findAll.mockResolvedValue([]);
 
-    await useCase.execute(1, {} as any, undefined, false);
+    await useCase.execute(1, {} as any, undefined, false, undefined);
 
     expect(objectStorage.eliminarArchivo).not.toHaveBeenCalled();
   });
@@ -179,7 +180,13 @@ describe('UpdateNutricionistaUseCase — limpieza de foto de perfil', () => {
     objectStorage.eliminarArchivo.mockRejectedValue(new Error('MinIO down'));
 
     await expect(
-      useCase.execute(1, {} as any, 'perfiles/nutricionistas/nueva.png', false),
+      useCase.execute(
+        1,
+        {} as any,
+        'perfiles/nutricionistas/nueva.png',
+        false,
+        undefined,
+      ),
     ).resolves.toBeDefined();
     expect(nutricionistaRepository.update).toHaveBeenCalled();
   });

@@ -7,6 +7,8 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Max,
+  Min,
   MinLength,
 } from 'class-validator';
 import { Genero } from 'src/domain/entities/Persona/Genero';
@@ -72,6 +74,13 @@ export class CreateNutricionistaDto {
   @IsNotEmpty()
   @Type(() => Number)
   aniosExperiencia: number;
+
+  @IsNumber()
+  @IsNotEmpty()
+  @Type(() => Number)
+  @Min(5)
+  @Max(240)
+  duracionTurnoMin: number;
 
   @IsString()
   @IsOptional()

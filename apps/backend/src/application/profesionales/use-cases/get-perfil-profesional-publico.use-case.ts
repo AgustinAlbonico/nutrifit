@@ -40,14 +40,14 @@ export class GetPerfilProfesionalPublicoUseCase implements BaseUseCase {
 
     this.logger.log(`Perfil publico consultado para profesional ${id}.`);
 
-    const duracionTurnoMin =
-      nutricionista.agendas && nutricionista.agendas.length > 0
-        ? nutricionista.agendas[0].duracionTurno
-        : 30;
-
     const fotoUrl = this.construirFotoUrl(
       nutricionista.idPersona,
       nutricionista.fotoPerfilKey,
+    );
+
+    const diplomaUrl = this.construirDiplomaUrl(
+      nutricionista.idPersona,
+      nutricionista.matriculaDocumentoKey,
     );
 
     const response = new PerfilProfesionalPublicoResponseDto();
@@ -63,7 +63,8 @@ export class GetPerfilProfesionalPublicoUseCase implements BaseUseCase {
     response.presentacion = nutricionista.presentacion ?? null;
     response.certificaciones = nutricionista.certificaciones ?? null;
     response.fotoUrl = fotoUrl;
-    response.duracionTurnoMin = duracionTurnoMin;
+    response.diplomaUrl = diplomaUrl;
+    response.duracionTurnoMin = nutricionista.duracionTurnoMin;
     response.formacionAcademica = (nutricionista.formacionAcademica ?? []).map(
       (f) => {
         const dto = new FormacionAcademicaPublicaDto();
@@ -92,5 +93,13 @@ export class GetPerfilProfesionalPublicoUseCase implements BaseUseCase {
     if (!fotoPerfilKey) return null;
     // TODO(spec-futura): si en el futuro se migra a S3 presigned, este campo se transforma a URL absoluto.
     return `/api/profesional/${idPersona ?? 0}/foto?v=${encodeURIComponent(fotoPerfilKey)}`;
+  }
+
+  private construirDiplomaUrl(
+    idPersona: number | null,
+    matriculaDocumentoKey: string | null,
+  ): string | null {
+    if (!matriculaDocumentoKey) return null;
+    return `/api/profesional/${idPersona ?? 0}/diploma?v=${encodeURIComponent(matriculaDocumentoKey)}`;
   }
 }

@@ -113,13 +113,13 @@ export class ListProfesionalesPublicosUseCase implements BaseUseCase {
 
     const items: ProfesionalPublicoResponseDto[] = pageItems.map(
       ({ nutri, slots }) => {
-        const duracionTurnoMin =
-          nutri.agendas && nutri.agendas.length > 0
-            ? nutri.agendas[0].duracionTurno
-            : 30;
         const fotoUrl = this.construirFotoUrl(
           nutri.idPersona,
           nutri.fotoPerfilKey,
+        );
+        const diplomaUrl = this.construirDiplomaUrl(
+          nutri.idPersona,
+          nutri.matriculaDocumentoKey,
         );
         const dto = new ProfesionalPublicoResponseDto();
         dto.idPersona = nutri.idPersona ?? 0;
@@ -133,7 +133,8 @@ export class ListProfesionalesPublicosUseCase implements BaseUseCase {
         dto.tarifaSesion = nutri.tarifaSesion;
         dto.fotoUrl = fotoUrl;
         dto.presentacion = nutri.presentacion ?? null;
-        dto.duracionTurnoMin = duracionTurnoMin;
+        dto.duracionTurnoMin = nutri.duracionTurnoMin;
+        dto.diplomaUrl = diplomaUrl;
         dto.slotsProximos7Dias = slots;
         return dto;
       },
@@ -156,5 +157,13 @@ export class ListProfesionalesPublicosUseCase implements BaseUseCase {
   ): string | null {
     if (!fotoPerfilKey) return null;
     return `/api/profesional/${idPersona ?? 0}/foto?v=${encodeURIComponent(fotoPerfilKey)}`;
+  }
+
+  private construirDiplomaUrl(
+    idPersona: number | null,
+    matriculaDocumentoKey: string | null,
+  ): string | null {
+    if (!matriculaDocumentoKey) return null;
+    return `/api/profesional/${idPersona ?? 0}/diploma?v=${encodeURIComponent(matriculaDocumentoKey)}`;
   }
 }

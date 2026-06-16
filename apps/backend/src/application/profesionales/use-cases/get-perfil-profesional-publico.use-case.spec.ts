@@ -59,6 +59,7 @@ describe('GetPerfilProfesionalPublicoUseCase', () => {
       matricula: 'MN-100',
       tarifaSesion: 12000,
       aniosExperiencia: 5,
+      duracionTurnoMin: 30,
       agendas: [
         {
           idAgenda: 1,
@@ -79,6 +80,7 @@ describe('GetPerfilProfesionalPublicoUseCase', () => {
       ],
       turnos: [],
       fotoPerfilKey: null,
+      matriculaDocumentoKey: null,
       gimnasioId: 1,
       fechaBaja: null,
       presentacion: 'Soy Ana',
@@ -102,6 +104,7 @@ describe('GetPerfilProfesionalPublicoUseCase', () => {
     expect(result.presentacion).toBe('Soy Ana');
     expect(result.certificaciones).toBe('Cert. A');
     expect(result.duracionTurnoMin).toBe(30);
+    expect(result.diplomaUrl).toBeNull();
     expect(result.formacionAcademica).toHaveLength(1);
     expect(result.formacionAcademica[0].titulo).toBe('Lic. en Nutrición');
     expect(result.horarios).toHaveLength(1);
@@ -123,10 +126,12 @@ describe('GetPerfilProfesionalPublicoUseCase', () => {
       matricula: 'MN-200',
       tarifaSesion: 0,
       aniosExperiencia: 0,
+      duracionTurnoMin: 30,
       agendas: [],
       formacionAcademica: [],
       turnos: [],
       fotoPerfilKey: null,
+      matriculaDocumentoKey: null,
       gimnasioId: 999, // otro gimnasio
       fechaBaja: null,
       presentacion: null,
@@ -152,10 +157,12 @@ describe('GetPerfilProfesionalPublicoUseCase', () => {
       matricula: 'MN-300',
       tarifaSesion: 0,
       aniosExperiencia: 0,
+      duracionTurnoMin: 30,
       agendas: [],
       formacionAcademica: [],
       turnos: [],
       fotoPerfilKey: null,
+      matriculaDocumentoKey: null,
       gimnasioId: 1,
       fechaBaja: new Date('2025-01-01'),
       presentacion: null,

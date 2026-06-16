@@ -28,6 +28,7 @@ export class ProfesionalPublicoResponseDto {
   presentacion: string | null;
   duracionTurnoMin: number;
   slotsProximos7Dias: number;
+  diplomaUrl: string | null;
 }
 
 export class PerfilProfesionalPublicoResponseDto extends ProfesionalPublicoResponseDto {

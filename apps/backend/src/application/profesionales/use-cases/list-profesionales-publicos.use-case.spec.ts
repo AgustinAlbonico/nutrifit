@@ -140,6 +140,7 @@ function crearNutri(overrides: {
     matricula: `MN-${overrides.idPersona}`,
     tarifaSesion: 10000,
     aniosExperiencia: 3,
+    duracionTurnoMin: 30,
     agendas: [
       {
         idAgenda: 1,
@@ -153,6 +154,7 @@ function crearNutri(overrides: {
     formacionAcademica: [],
     turnos: [],
     fotoPerfilKey: null,
+    matriculaDocumentoKey: null,
     gimnasioId: 1,
     fechaBaja: overrides.fechaBaja ?? null,
     presentacion: 'Hola',

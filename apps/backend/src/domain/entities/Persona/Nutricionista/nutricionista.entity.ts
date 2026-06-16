@@ -15,6 +15,8 @@ export class NutricionistaEntity extends PersonaEntity {
   fotoPerfilKey: string | null;
   presentacion: string | null;
   certificaciones: string | null;
+  duracionTurnoMin: number;
+  matriculaDocumentoKey: string | null;
 
   constructor(
     idPersona: number | null = null,
@@ -36,6 +38,8 @@ export class NutricionistaEntity extends PersonaEntity {
     email: string = '',
     presentacion: string | null = null,
     certificaciones: string | null = null,
+    duracionTurnoMin: number = 30,
+    matriculaDocumentoKey: string | null = null,
   ) {
     super(
       idPersona,
@@ -61,5 +65,7 @@ export class NutricionistaEntity extends PersonaEntity {
     this.fotoPerfilKey = null;
     this.presentacion = presentacion;
     this.certificaciones = certificaciones;
+    this.duracionTurnoMin = duracionTurnoMin;
+    this.matriculaDocumentoKey = matriculaDocumentoKey;
   }
 }
