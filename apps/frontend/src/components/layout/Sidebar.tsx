@@ -68,7 +68,7 @@ export function Sidebar() {
       to: '/nutricionistas',
       label: 'Nutricionistas',
       icon: Users,
-      roles: ['ADMIN'],
+      roles: ['ADMIN', 'RECEPCIONISTA'],
     },
     {
       to: '/nutricionistas/catalogo',
