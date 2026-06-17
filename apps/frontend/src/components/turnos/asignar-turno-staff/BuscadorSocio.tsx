@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 
 interface BuscadorSocioProps {
   /** Rol del actor: determina si los socios sin ficha se muestran bloqueados o como aviso. */
-  rolActor: 'RECEPCIONISTA' | 'ADMIN' | 'NUTRICIONISTA' | null;
+  rolActor: 'RECEPCIONISTA' | 'ADMIN' | 'NUTRICIONISTA' | 'SOCIO' | 'SUPERADMIN' | null;
   /** Socio actualmente seleccionado. `null` si no hay ninguno. */
   socioSeleccionado: SocioConFicha | null;
   /** Callback al seleccionar un socio. */
@@ -35,7 +35,7 @@ export function BuscadorSocio({
   onLimpiar,
 }: BuscadorSocioProps) {
   const [busqueda, setBusqueda] = useState('');
-  const { data: socios, isLoading, error } = useSociosParaAsignar(busqueda);
+  const { data: socios = [], isLoading, error } = useSociosParaAsignar(busqueda);
 
   // Si cambia el socio seleccionado externamente, vaciamos el input
   // para que la lista no muestre resultados obsoletos.

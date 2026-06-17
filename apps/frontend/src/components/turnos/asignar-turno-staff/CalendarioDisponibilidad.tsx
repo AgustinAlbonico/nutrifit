@@ -34,7 +34,7 @@ export function CalendarioDisponibilidad({
   onFechaChange,
   onSeleccionar,
 }: CalendarioDisponibilidadProps) {
-  const { data: slots, isLoading, error } = useSlotsDisponibles(
+  const { data: slots = [], isLoading, error } = useSlotsDisponibles(
     nutricionistaId,
     fecha,
   );

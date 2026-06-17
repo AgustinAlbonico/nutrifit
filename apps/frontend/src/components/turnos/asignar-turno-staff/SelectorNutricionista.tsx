@@ -33,7 +33,7 @@ export function SelectorNutricionista({
   disabled = false,
   testId = 'selector-nutricionista',
 }: SelectorNutricionistaProps) {
-  const { data: nutricionistas, isLoading, error } = useNutricionistasParaAsignar();
+  const { data: nutricionistas = [], isLoading, error } = useNutricionistasParaAsignar();
 
   return (
     <div className="space-y-2" data-testid={testId}>
