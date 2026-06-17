@@ -102,8 +102,11 @@ Esto expone:
 
 ### 4. Variables de entorno
 
-Backend: `apps/backend/.env` (ya viene con valores de dev). El repositorio
-incluye credenciales de dev, **no son secretos de producción**:
+Backend: `apps/backend/.env`. El archivo versionado de referencia es
+`apps/backend/.env.example`; ahí están documentadas las variables requeridas
+por la API, la base de datos, MinIO, IA, email y schedulers.
+
+Valores base de desarrollo:
 
 ```env
 PORT=3000
@@ -126,6 +129,14 @@ MINIO_ACCESS_KEY=minioadmin
 MINIO_SECRET_KEY=minioadmin123
 MINIO_USE_SSL=false
 MINIO_BUCKET_NAME=nutrifit-fotos-perfil
+
+# Email: si SMTP_HOST queda vacio se usa ConsoleEmailProvider.
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=no-reply@nutrifit.local
 ```
 
 > El archivo `.env` está en `.gitignore`. No commitees credenciales reales.

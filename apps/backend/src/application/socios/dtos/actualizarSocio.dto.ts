@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsEnum, IsDateString } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsDateString, MaxLength } from 'class-validator';
 import { Genero } from 'src/domain/entities/Persona/Genero';
 
 export class ActualizarSocioDto {
@@ -12,6 +12,7 @@ export class ActualizarSocioDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(20)
   dni?: string;
 
   @IsOptional()
@@ -20,6 +21,7 @@ export class ActualizarSocioDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(30)
   telefono?: string;
 
   @IsOptional()
@@ -28,14 +30,17 @@ export class ActualizarSocioDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   direccion?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   ciudad?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   provincia?: string;
 
   @IsOptional()
@@ -45,4 +50,9 @@ export class ActualizarSocioDto {
   @IsOptional()
   @IsString()
   contrasena?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  observaciones?: string;
 }

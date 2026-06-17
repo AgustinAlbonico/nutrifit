@@ -19,6 +19,7 @@ export interface SocioResponseSource {
   email?: string | null;
   fechaBaja?: Date | string | null;
   fotoPerfilKey?: string | null;
+  observaciones?: string | null;
 }
 
 function formatearFecha(
@@ -64,6 +65,7 @@ export class SocioResponseDto {
   fechaBaja: string | null;
   activo: boolean;
   fotoPerfilUrl: string | null;
+  observaciones: string | null;
 
   constructor(socio: SocioEntity | SocioResponseSource) {
     this.idPersona = socio.idPersona;
@@ -82,5 +84,6 @@ export class SocioResponseDto {
     this.fotoPerfilUrl = socio.fotoPerfilKey
       ? `/socio/${socio.idPersona}/foto?v=${encodeURIComponent(socio.fotoPerfilKey)}`
       : null;
+    this.observaciones = socio.observaciones ?? null;
   }
 }

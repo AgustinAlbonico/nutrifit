@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   Inject,
   Param,
@@ -18,11 +17,15 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { RegistrarSocioDto } from 'src/application/socios/dtos/registrarSocio.dto';
 import { ActualizarSocioDto } from 'src/application/socios/dtos/actualizarSocio.dto';
+import {
+  DesactivarSocioDto,
+  DesactivarSocioResultDto,
+} from 'src/application/socios/dtos/desactivar-socio.dto';
 import { SocioResponseDto } from 'src/application/socios/dtos/socio-response.dto';
 import { RegistrarSocioUseCase } from 'src/application/socios/registrarSocio.use-case';
 import { ListarSociosUseCase } from 'src/application/socios/listarSocios.use-case';
 import { ActualizarSocioUseCase } from 'src/application/socios/actualizarSocio.use-case';
-import { EliminarSocioUseCase } from 'src/application/socios/eliminarSocio.use-case';
+import { DesactivarSocioUseCase } from 'src/application/socios/desactivarSocio.use-case';
 import { ReactivarSocioUseCase } from 'src/application/socios/reactivarSocio.use-case';
 import { BuscarSociosConFichaUseCase } from 'src/application/socios/buscar-socios-con-ficha.use-case';
 import { APP_LOGGER_SERVICE } from 'src/domain/services/logger.service';
@@ -35,6 +38,7 @@ import { Rol } from 'src/infrastructure/auth/decorators/role.decorator';
 import { JwtAuthGuard } from 'src/infrastructure/auth/guards/auth.guard';
 import { ActionsGuard } from 'src/infrastructure/auth/guards/actions.guard';
 import { RolesGuard } from 'src/infrastructure/auth/guards/roles.guard';
+import { CurrentUserId } from 'src/infrastructure/auth/decorators/current-user.decorator';
 import { Rol as RolEnum } from 'src/domain/entities/Usuario/Rol';
 
 @Controller('socio')
@@ -44,7 +48,7 @@ export class SocioController {
     private readonly registrarSocioUseCase: RegistrarSocioUseCase,
     private readonly listarSociosUseCase: ListarSociosUseCase,
     private readonly actualizarSocioUseCase: ActualizarSocioUseCase,
-    private readonly eliminarSocioUseCase: EliminarSocioUseCase,
+    private readonly desactivarSocioUseCase: DesactivarSocioUseCase,
     private readonly reactivarSocioUseCase: ReactivarSocioUseCase,
     private readonly buscarSociosConFichaUseCase: BuscarSociosConFichaUseCase,
     @Inject(APP_LOGGER_SERVICE)
@@ -101,9 +105,11 @@ export class SocioController {
       registrarSocioDto,
       fotoPerfilKey,
     );
+
     return {
       message: 'Socio registrado exitosamente',
       id: resultado.socio.idPersona,
+      socio: new SocioResponseDto(resultado.socio),
       contrasenaProvisional: resultado.contrasenaProvisional,
     };
   }
@@ -179,13 +185,26 @@ export class SocioController {
     return res.send(archivo.buffer);
   }
 
-  @Delete(':id')
+  @Post(':id/desactivar')
   @Rol(RolEnum.ADMIN, RolEnum.RECEPCIONISTA)
   @Actions('socios.eliminar')
-  async eliminarSocio(@Param('id', ParseIntPipe) id: number) {
-    this.logger.log(`Dando de baja socio ${id}`);
-    await this.eliminarSocioUseCase.execute(id);
-    return { message: 'Socio dado de baja exitosamente' };
+  async desactivarSocio(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: DesactivarSocioDto,
+    @CurrentUserId() usuarioId?: number,
+  ): Promise<DesactivarSocioResultDto> {
+    this.logger.log(`Desactivando socio con ID: ${id}`);
+    const resultado = await this.desactivarSocioUseCase.execute(
+      id,
+      dto.motivo,
+      usuarioId,
+    );
+    return {
+      message: `Socio desactivado. ${resultado.turnosCancelados} turnos cancelados, ${resultado.nutricionistasAfectados} nutricionistas notificados.`,
+      turnosCancelados: resultado.turnosCancelados,
+      nutricionistasAfectados: resultado.nutricionistasAfectados,
+      tienePlanActivo: resultado.tienePlanActivo,
+    };
   }
 
   @Post(':id/reactivar')

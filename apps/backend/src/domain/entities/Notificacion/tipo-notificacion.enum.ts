@@ -12,6 +12,8 @@ export enum TipoNotificacion {
   PLAN_EDITADO = 'PLAN_EDITADO',
   PLAN_ELIMINADO = 'PLAN_ELIMINADO',
   CONSULTA_FINALIZADA = 'CONSULTA_FINALIZADA',
+  NUTRICIONISTA_DESACTIVADO = 'NUTRICIONISTA_DESACTIVADO',
+  SOCIO_DESACTIVADO = 'SOCIO_DESACTIVADO',
   // === Reservados por el spec `crear-turno-en-nombre-del-socio-endpoint.md` ===
   // Se exponen en el enum por consistencia con el spec y paridad con
   // `packages/shared/src/types/notificacion.ts`, pero el use-case
@@ -22,6 +24,4 @@ export enum TipoNotificacion {
   TURNO_CREADO_POR_RECEPCION = 'TURNO_CREADO_POR_RECEPCION',
   TURNO_CREADO_POR_ADMIN = 'TURNO_CREADO_POR_ADMIN',
   TURNO_CREADO_POR_NUTRICIONISTA = 'TURNO_CREADO_POR_NUTRICIONISTA',
-  NUTRICIONISTA_DESACTIVADO = 'NUTRICIONISTA_DESACTIVADO',
-  SOCIO_DESACTIVADO = 'SOCIO_DESACTIVADO',
 }

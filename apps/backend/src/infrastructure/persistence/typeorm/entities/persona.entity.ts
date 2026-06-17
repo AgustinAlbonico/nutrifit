@@ -70,6 +70,9 @@ export abstract class PersonaOrmEntity extends AuditableOrmEntity {
   })
   fotoPerfilKey: string | null;
 
+  @Column({ name: 'observaciones', type: 'text', nullable: true })
+  observaciones: string | null;
+
   @Column({ name: 'id_gimnasio', type: 'int', nullable: true })
   gimnasioId: number | null;
 

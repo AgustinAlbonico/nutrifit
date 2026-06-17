@@ -249,7 +249,10 @@ export function ConsultaProfesionalPage() {
       return 'Esta consulta está cerrada. No se pueden modificar datos clínicos.';
     }
 
-    if (datosTurno.estadoTurno === 'PROGRAMADO') {
+    if (
+      datosTurno.estadoTurno === 'PROGRAMADO' ||
+      datosTurno.estadoTurno === 'CONFIRMADO'
+    ) {
       return 'La consulta todavía no puede editarse porque el turno no registró check-in.';
     }
 

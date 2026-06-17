@@ -1,5 +1,6 @@
 export { CreateNutricionistaUseCase } from './create-nutricionista.use-case';
 export { DeleteNutricionistaUseCase } from './delete-nutricionista.use-case';
+export { DesactivarNutricionistaUseCase } from './desactivar-nutricionista.use-case';
 export { EliminarDiplomaUseCase } from './eliminar-diploma.use-case';
 export { GetPerfilProfesionalPublicoUseCase } from './get-perfil-profesional-publico.use-case';
 export { GetNutricionistaUseCase } from './get-nutricionista.use-case';

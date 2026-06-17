@@ -59,6 +59,7 @@ export const AppDataSource = (
   entities: [
     AgendaOrmEntity,
     AlimentoOrmEntity,
+    ExcepcionDisponibilidadOrmEntity,
     SocioOrmEntity,
     TurnoOrmEntity,
     AlergiaOrmEntity,

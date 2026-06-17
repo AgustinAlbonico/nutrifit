@@ -19,7 +19,7 @@ Estas variables NO deben versionarse en `.env` compartidos ni en código:
 - Storage: `MINIO_ENDPOINT`, `MINIO_PORT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_USE_SSL`, `MINIO_BUCKET_NAME`
 - IA: `GROQ_API_KEY`, `GROQ_BASE_URL`, `GROQ_MODEL`
 - Email: `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
-- Enlaces externos, CORS y jobs: `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS`, `AUSENCIA_UMBRAL_MINUTOS`
+- Enlaces externos, CORS y jobs: `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS`, `AUSENCIA_UMBRAL_MINUTOS`, `REMINDERS_CRON_EXPR`, `ALIMENTOS_SYNC_HABILITADO`
 
 Recomendación:
 
@@ -51,6 +51,7 @@ Lineamiento operativo:
 - `FRONTEND_URL` debe apuntar al dominio HTTPS real del frontend.
 - Los recordatorios no deben generar links vacíos ni dominios hardcodeados.
 - No incluyas datos clínicos sensibles en correos, asuntos ni metadata visible al usuario.
+- Si `SMTP_HOST` no está configurado, el backend usa `ConsoleEmailProvider`: no envía SMTP real y solo registra el email en logs.
 
 ## 6. Checklist previo a producción
 

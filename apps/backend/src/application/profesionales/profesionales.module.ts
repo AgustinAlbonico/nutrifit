@@ -24,6 +24,7 @@ import { UsuarioRepositoryImplementation } from 'src/infrastructure/persistence/
 import {
   CreateNutricionistaUseCase,
   DeleteNutricionistaUseCase,
+  DesactivarNutricionistaUseCase,
   EliminarDiplomaUseCase,
   GetPerfilProfesionalPublicoUseCase,
   GetNutricionistaUseCase,
@@ -35,6 +36,8 @@ import {
   SubirDiplomaUseCase,
   UpdateNutricionistaUseCase,
 } from './use-cases';
+import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
+import { NotificacionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/notificacion.entity';
 
 @Module({
   imports: [
@@ -45,6 +48,7 @@ import {
       NutricionistaOrmEntity,
       GrupoPermisoOrmEntity,
       TurnoOrmEntity,
+      NotificacionOrmEntity,
     ]),
     AppLoggerModule,
     PasswordEncrypterModule,
@@ -58,6 +62,7 @@ import {
     CreateNutricionistaUseCase,
     UpdateNutricionistaUseCase,
     DeleteNutricionistaUseCase,
+    DesactivarNutricionistaUseCase,
     EliminarDiplomaUseCase,
     GetPerfilProfesionalPublicoUseCase,
     GetNutricionistaUseCase,
@@ -67,6 +72,7 @@ import {
     ListProfesionalesPublicosUseCase,
     ReactivarNutricionistaUseCase,
     SubirDiplomaUseCase,
+    NotificacionesService,
     {
       provide: USUARIO_REPOSITORY,
       useClass: UsuarioRepositoryImplementation,
@@ -84,6 +90,7 @@ import {
     CreateNutricionistaUseCase,
     UpdateNutricionistaUseCase,
     DeleteNutricionistaUseCase,
+    DesactivarNutricionistaUseCase,
     GetPerfilProfesionalPublicoUseCase,
     GetNutricionistaUseCase,
     GetMiPerfilNutricionistaUseCase,

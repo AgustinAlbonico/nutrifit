@@ -9,11 +9,11 @@ export async function login(page: Page, usuario: UsuarioPrueba): Promise<void> {
   await page.waitForLoadState('networkidle');
 
   // Completar formulario de login
-  await page.fill('input[name="email"]', usuario.email);
-  await page.fill('input[name="password"]', usuario.password);
+  await page.getByRole('textbox', { name: 'Email' }).fill(usuario.email);
+  await page.getByRole('textbox', { name: 'Contraseña' }).fill(usuario.password);
 
   // Enviar formulario
-  await page.click('button[type="submit"]');
+  await page.getByRole('button', { name: 'Entrar' }).click();
 
   // Esperar a que termine la redireccion
   await page.waitForLoadState('networkidle');

@@ -138,6 +138,8 @@ export function Turnos() {
 
   const obtenerDescripcionEstado = (estadoTurno: EstadoTurno) => {
     switch (estadoTurno) {
+      case 'CONFIRMADO':
+        return 'Tu turno está confirmado y podés gestionarlo según la política vigente.';
       case 'PROGRAMADO':
         return 'Tu turno esta programado y podes gestionarlo segun la politica vigente.';
       case 'PRESENTE':
@@ -649,7 +651,9 @@ export function Turnos() {
                             {descripcionEstado}
                           </p>
 
-                          {turno.estadoTurno === 'PROGRAMADO' && !esFechaPasada(turno.fechaTurno, turno.horaTurno) && (
+                          {(turno.estadoTurno === 'PROGRAMADO' ||
+                            turno.estadoTurno === 'CONFIRMADO') &&
+                            !esFechaPasada(turno.fechaTurno, turno.horaTurno) && (
                             <div className="mt-4 flex flex-wrap gap-2 border-t pt-3">
                               <Button
                                 size="sm"

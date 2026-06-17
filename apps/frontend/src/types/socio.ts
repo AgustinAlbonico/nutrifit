@@ -16,6 +16,7 @@ export interface Socio {
   fechaBaja: string | null;
   activo: boolean;
   fotoPerfilUrl: string | null;
+  observaciones: string | null;
 }
 
 export interface CrearSocioDto {
@@ -29,5 +30,22 @@ export interface CrearSocioDto {
   ciudad: string;
   provincia: string;
   email: string;
-  contrasena?: string;
+  observaciones?: string;
+  estado?: 'ACTIVO' | 'INACTIVO';
+}
+
+export interface CrearSocioResponseDto {
+  socio: Socio;
+  contrasenaProvisional: string;
+}
+
+export interface DesactivarSocioDto {
+  motivo: string;
+}
+
+export interface DesactivarSocioResultDto {
+  message: string;
+  turnosCancelados: number;
+  nutricionistasAfectados: number;
+  tienePlanActivo: boolean;
 }

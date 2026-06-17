@@ -9,17 +9,6 @@
 
 ## 🔴 Errores funcionales
 
-### 1. No se puede probar CU-08 (primera creación) — todos los socios seed tienen ficha
-
-- **Spec**: El socio SIN ficha debe ver el formulario vacío con botón "Finalizar" y checkbox de consentimiento desmarcado.
-- **Realidad**: Todos los socios probados (`socio1-central`, `socio2-central`, `socio.m0`) ya tienen una `FichaSalud` creada (probablemente por el seed o testing previo). La UI siempre muestra "Actualizar ficha" en lugar de "Finalizar". El checkbox de consentimiento aparece siempre como `checked disabled` ("Consentimiento expresado anteriormente").
-- **Impacto**: No se puede verificar el flujo de primera creación (CU-08): validación de consentimiento obligatorio, mensaje de éxito específico de creación, ni el botón "Finalizar". Para probarlo haría falta un socio nuevo sin ficha.
-
-### 2. Endpoint API no coincide con el spec
-
-- **Spec**: `POST /api/socios/me/ficha-salud` con respuesta `{ id, version, completada: true }`
-- **Realidad**: Endpoint real es `PUT /turnos/socio/ficha-salud` con respuesta `{ success, message, data: { ..., versionActual: N } }`
-- **Impacto**: La documentación del endpoint está desactualizada respecto a la implementación. El spec debería reflejar la ruta y forma de respuesta real.
 
 ### 3. Console error: 404 en dashboard al cargar plan activo
 

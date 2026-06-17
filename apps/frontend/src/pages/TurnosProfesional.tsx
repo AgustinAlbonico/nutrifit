@@ -131,7 +131,7 @@ export function TurnosProfesional() {
     return (
       <Badge className={obtenerClasesEstadoTurno(estado)}>
         {estado === 'PRESENTE' && <User className="mr-1 h-3 w-3" />}
-        {estado === 'PROGRAMADO' && <Clock className="mr-1 h-3 w-3" />}
+        {(estado === 'PROGRAMADO' || estado === 'CONFIRMADO') && <Clock className="mr-1 h-3 w-3" />}
         {estado === 'EN_CURSO' && <PlayCircle className="mr-1 h-3 w-3" />}
         {estado === 'REALIZADO' && <CheckCircle2 className="mr-1 h-3 w-3" />}
         {estado === 'CANCELADO' && <XCircle className="mr-1 h-3 w-3" />}
@@ -255,7 +255,7 @@ export function TurnosProfesional() {
                           ? 'bg-rose-400'
                           : estado === 'REALIZADO'
                             ? 'bg-emerald-400'
-                            : estado === 'PROGRAMADO'
+                            : estado === 'PROGRAMADO' || estado === 'CONFIRMADO'
                               ? 'bg-amber-400'
                               : estado === 'EN_CURSO'
                                 ? 'bg-violet-400'
@@ -305,7 +305,7 @@ export function TurnosProfesional() {
 
                     {/* Botones contextuales por estado (TASK-1.16). */}
                     <div className="mt-auto flex flex-col gap-2">
-                      {estado === 'PROGRAMADO' && (
+                      {(estado === 'PROGRAMADO' || estado === 'CONFIRMADO') && (
                         <>
                           <Button
                             size="sm"

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import {
   ConfigureAgendaUseCase,
+  CrearExcepcionDisponibilidadUseCase,
   GetAgendaUseCase,
   ListarExcepcionesDisponibilidadUseCase,
 } from './use-cases';
@@ -19,6 +20,8 @@ import {
 } from 'src/infrastructure/persistence/typeorm/entities';
 import { AppLoggerModule } from 'src/infrastructure/common/logger/app-logger.module';
 import { SlotComputationService } from 'src/application/turnos/services/slot-computation.service';
+import { TurnosModule } from 'src/application/turnos/turnos.module';
+import { RepositoriesModule } from 'src/infrastructure/persistence/typeorm/repositories/repositories.module';
 
 @Module({
   imports: [
@@ -29,9 +32,12 @@ import { SlotComputationService } from 'src/application/turnos/services/slot-com
       TurnoOrmEntity,
     ]),
     AppLoggerModule,
+    TurnosModule,
+    RepositoriesModule,
   ],
   providers: [
     ConfigureAgendaUseCase,
+    CrearExcepcionDisponibilidadUseCase,
     GetAgendaUseCase,
     ListarExcepcionesDisponibilidadUseCase,
     SlotComputationService,
@@ -50,6 +56,7 @@ import { SlotComputationService } from 'src/application/turnos/services/slot-com
   ],
   exports: [
     ConfigureAgendaUseCase,
+    CrearExcepcionDisponibilidadUseCase,
     GetAgendaUseCase,
     ListarExcepcionesDisponibilidadUseCase,
   ],

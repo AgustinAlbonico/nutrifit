@@ -20,9 +20,8 @@ describe('CheckInTurnoUseCase (CU-15)', () => {
   let turnoRepository: jest.Mocked<Repository<TurnoOrmEntity>>;
   let notificacionesService: jest.Mocked<NotificacionesService>;
   let auditoriaService: jest.Mocked<AuditoriaService>;
-  let tenantContext: jest.Mocked<TenantContextService>;
 
-  const fechaHoy = new Date('2026-06-17T03:00:00.000Z'); // 00:00 hora Argentina
+  const fechaHoy = new Date('2026-06-17T03:00:00.000Z');
   const horaTurno = '15:00';
 
   const buildMockTurno = (
@@ -85,7 +84,6 @@ describe('CheckInTurnoUseCase (CU-15)', () => {
     turnoRepository = module.get(getRepositoryToken(TurnoOrmEntity));
     notificacionesService = module.get(NotificacionesService);
     auditoriaService = module.get(AuditoriaService);
-    tenantContext = module.get(TenantContextService);
   });
 
   afterEach(() => {
@@ -94,7 +92,7 @@ describe('CheckInTurnoUseCase (CU-15)', () => {
 
   describe('Happy path', () => {
     it('cambia el estado de CONFIRMADO a PRESENTE, setea checkInAt, notifica al nutri y audita CHECKIN con antes/despues', async () => {
-      jest.useFakeTimers().setSystemTime(new Date('2026-06-17T18:00:00.000Z')); // 15:00 hora Argentina (turno准时)
+      jest.useFakeTimers().setSystemTime(new Date('2026-06-17T18:00:00.000Z'));
       const mockTurno = buildMockTurno();
       turnoRepository.findOne.mockResolvedValue(mockTurno);
       turnoRepository.save.mockImplementation(async (t) => t as TurnoOrmEntity);
@@ -114,7 +112,6 @@ describe('CheckInTurnoUseCase (CU-15)', () => {
         }),
       );
 
-      // Notifica SOLO al nutricionista (no al socio)
       expect(notificacionesService.crear).toHaveBeenCalledTimes(1);
       expect(notificacionesService.crear).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -125,7 +122,6 @@ describe('CheckInTurnoUseCase (CU-15)', () => {
         }),
       );
 
-      // Audita CHECKIN con antes/despues
       expect(auditoriaService.registrar).toHaveBeenCalledWith(
         expect.objectContaining({
           accion: AccionAuditoria.CHECKIN,
@@ -145,7 +141,7 @@ describe('CheckInTurnoUseCase (CU-15)', () => {
     });
 
     it('setea llegadaTardeMin cuando el check-in es posterior al horario', async () => {
-      jest.useFakeTimers().setSystemTime(new Date('2026-06-17T18:20:00.000Z')); // 15:20 hora Argentina (20 min tarde)
+      jest.useFakeTimers().setSystemTime(new Date('2026-06-17T18:20:00.000Z'));
       const mockTurno = buildMockTurno();
       turnoRepository.findOne.mockResolvedValue(mockTurno);
       turnoRepository.save.mockImplementation(async (t) => t as TurnoOrmEntity);
@@ -164,7 +160,7 @@ describe('CheckInTurnoUseCase (CU-15)', () => {
   describe('A1 — Turno no es del día actual', () => {
     it('rechaza si la fechaTurno es de ayer', async () => {
       jest.useFakeTimers().setSystemTime(new Date('2026-06-17T15:00:00.000Z'));
-      const ayer = new Date('2026-06-16T03:00:00.000Z'); // 00:00 hora Argentina del 16
+      const ayer = new Date('2026-06-16T03:00:00.000Z');
       const mockTurno = buildMockTurno({ fechaTurno: ayer });
       turnoRepository.findOne.mockResolvedValue(mockTurno);
 
@@ -237,7 +233,7 @@ describe('CheckInTurnoUseCase (CU-15)', () => {
 
   describe('Cálculo de llegada tarde', () => {
     it('permite check-in mucho antes del horario (sin llegadaTardeMin)', async () => {
-      jest.useFakeTimers().setSystemTime(new Date('2026-06-17T16:00:00.000Z')); // 13:00 ARG (2 horas antes)
+      jest.useFakeTimers().setSystemTime(new Date('2026-06-17T16:00:00.000Z'));
       const mockTurno = buildMockTurno();
       turnoRepository.findOne.mockResolvedValue(mockTurno);
       turnoRepository.save.mockImplementation(async (t) => t as TurnoOrmEntity);
@@ -255,7 +251,7 @@ describe('CheckInTurnoUseCase (CU-15)', () => {
     });
 
     it('permite check-in mucho después del horario (calcula llegadaTardeMin)', async () => {
-      jest.useFakeTimers().setSystemTime(new Date('2026-06-17T20:00:00.000Z')); // 17:00 ARG (2 horas tarde)
+      jest.useFakeTimers().setSystemTime(new Date('2026-06-17T20:00:00.000Z'));
       const mockTurno = buildMockTurno();
       turnoRepository.findOne.mockResolvedValue(mockTurno);
       turnoRepository.save.mockImplementation(async (t) => t as TurnoOrmEntity);
@@ -265,7 +261,7 @@ describe('CheckInTurnoUseCase (CU-15)', () => {
       expect(result.success).toBe(true);
       expect(turnoRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({
-          llegadaTardeMin: 120, // 2 horas = 120 minutos
+          llegadaTardeMin: 120,
         }),
       );
     });

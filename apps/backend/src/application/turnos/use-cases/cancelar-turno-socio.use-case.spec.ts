@@ -23,6 +23,7 @@ import {
 import { TurnoConfirmacionTokenOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/turno-confirmacion-token.entity';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 describe('CancelarTurnoSocioUseCase', () => {
   let useCase: CancelarTurnoSocioUseCase;
@@ -114,6 +115,12 @@ describe('CancelarTurnoSocioUseCase', () => {
           provide: APP_LOGGER_SERVICE,
           useValue: {
             log: jest.fn(),
+          },
+        },
+        {
+          provide: TenantContextService,
+          useValue: {
+            gimnasioId: 1,
           },
         },
       ],

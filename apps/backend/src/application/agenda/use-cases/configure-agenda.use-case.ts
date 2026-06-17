@@ -1,9 +1,17 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Not, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
+
 import { ConfigureAgendaDto } from 'src/application/agenda/dtos/configure-agenda.dto';
 import { ConfigureAgendaResponseDto } from 'src/application/agenda/dtos/configure-agenda-response.dto';
+import { SlotComputationService } from 'src/application/turnos/services/slot-computation.service';
 import { BaseUseCase } from 'src/application/shared/use-case.base';
+import {
+  formatArgentinaDate,
+  getArgentinaTodayDate,
+  getArgentinaWeekdayIndex,
+  timeToMinutes,
+} from 'src/common/utils/argentina-datetime.util';
 import { AgendaEntity } from 'src/domain/entities/Agenda/agenda.entity';
 import { DiaSemana } from 'src/domain/entities/Agenda/dia-semana';
 import {
@@ -14,6 +22,7 @@ import {
   NUTRICIONISTA_REPOSITORY,
   NutricionistaRepository,
 } from 'src/domain/entities/Persona/Nutricionista/nutricionista.repository';
+import { EstadoTurno } from 'src/domain/entities/Turno/EstadoTurno';
 import {
   BadRequestError,
   ConflictError,
@@ -23,19 +32,34 @@ import {
   APP_LOGGER_SERVICE,
   IAppLoggerService,
 } from 'src/domain/services/logger.service';
-import { EstadoTurno } from 'src/domain/entities/Turno/EstadoTurno';
 import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities';
-import { SlotComputationService } from 'src/application/turnos/services/slot-computation.service';
-import {
-  formatArgentinaDate,
-  getArgentinaStartOfToday,
-  getArgentinaWeekdayIndex,
-} from 'src/common/utils/argentina-datetime.util';
 
-type TimeInterval = {
+type IntervaloHorario = {
   start: number;
   end: number;
 };
+
+type AdvertenciaDisponibilidad = {
+  requiereConfirmacion: true;
+  turnosFueraDeAgenda: number;
+  turnosConDuracionActual: number;
+};
+
+const DIAS_ARGENTINA: DiaSemana[] = [
+  DiaSemana.DOMINGO,
+  DiaSemana.LUNES,
+  DiaSemana.MARTES,
+  DiaSemana.MIERCOLES,
+  DiaSemana.JUEVES,
+  DiaSemana.VIERNES,
+  DiaSemana.SABADO,
+];
+
+const ESTADOS_NO_RESERVADOS = new Set<EstadoTurno>([
+  EstadoTurno.CANCELADO,
+  EstadoTurno.REALIZADO,
+  EstadoTurno.AUSENTE,
+]);
 
 @Injectable()
 export class ConfigureAgendaUseCase implements BaseUseCase {
@@ -68,29 +92,26 @@ export class ConfigureAgendaUseCase implements BaseUseCase {
       );
     }
 
-    this.validateAgenda(payload);
-
     const agendaActual =
       await this.agendaRepository.findByNutricionistaId(nutricionistaId);
-    const turnosFuturos = await this.findTurnosFuturos(nutricionistaId);
+
+    this.validateAgenda(payload);
+
+    const turnosFuturosReservados =
+      await this.obtenerTurnosFuturosReservados(nutricionistaId);
     const duracionActual =
       nutricionista.duracionTurnoMin ?? agendaActual[0]?.duracionTurno ?? 30;
-    const turnosFueraDeAgenda = this.countTurnosFueraDeAgenda(
-      turnosFuturos,
-      payload.agendas,
+    const advertencia = this.calcularAdvertenciaCambios(
+      payload,
+      turnosFuturosReservados,
+      duracionActual,
     );
-    const turnosConDuracionActual =
-      payload.duracionTurno !== duracionActual ? turnosFuturos.length : 0;
 
-    if (
-      !payload.confirmarCambiosConTurnos &&
-      (turnosFueraDeAgenda > 0 || turnosConDuracionActual > 0)
-    ) {
-      throw new ConflictError('La agenda tiene turnos futuros afectados.', {
-        requiereConfirmacion: true,
-        turnosFueraDeAgenda,
-        turnosConDuracionActual,
-      });
+    if (advertencia && !payload.confirmarCambiosConTurnos) {
+      throw new ConflictError(
+        'Se requiere confirmación para guardar cambios que afectan turnos futuros.',
+        advertencia,
+      );
     }
 
     nutricionista.duracionTurnoMin = payload.duracionTurno;
@@ -142,7 +163,7 @@ export class ConfigureAgendaUseCase implements BaseUseCase {
       );
     }
 
-    const intervalsByDay = new Map<DiaSemana, TimeInterval[]>();
+    const intervalsByDay = new Map<DiaSemana, IntervaloHorario[]>();
 
     for (const agenda of payload.agendas) {
       const start = this.timeToMinutes(agenda.horaInicio);
@@ -181,55 +202,88 @@ export class ConfigureAgendaUseCase implements BaseUseCase {
     }
   }
 
-  private timeToMinutes(time: string): number {
-    const [hours, minutes] = time.split(':').map((value) => Number(value));
-    return hours * 60 + minutes;
-  }
-
-  private async findTurnosFuturos(
+  private async obtenerTurnosFuturosReservados(
     nutricionistaId: number,
   ): Promise<TurnoOrmEntity[]> {
-    const today = formatArgentinaDate(getArgentinaStartOfToday());
     const turnos = await this.turnoRepository.find({
       where: {
         nutricionista: { idPersona: nutricionistaId },
-        estadoTurno: Not(EstadoTurno.CANCELADO),
       },
-      relations: ['nutricionista'],
+      relations: {
+        socio: true,
+      },
     });
 
-    return turnos.filter(
-      (turno) => formatArgentinaDate(turno.fechaTurno) >= today,
-    );
-  }
+    const hoy = getArgentinaTodayDate();
 
-  private countTurnosFueraDeAgenda(
-    turnos: TurnoOrmEntity[],
-    agendas: ConfigureAgendaDto['agendas'],
-  ): number {
     return turnos.filter((turno) => {
-      const diaTurno = this.mapDateToDiaSemana(turno.fechaTurno);
-      const horaTurno = this.timeToMinutes(turno.horaTurno.slice(0, 5));
+      if (!turno.socio) {
+        return false;
+      }
 
-      return !agendas.some((agenda) => {
-        if (agenda.dia !== diaTurno) return false;
-        const inicio = this.timeToMinutes(agenda.horaInicio);
-        const fin = this.timeToMinutes(agenda.horaFin);
-        return horaTurno >= inicio && horaTurno < fin;
-      });
-    }).length;
+      if (ESTADOS_NO_RESERVADOS.has(turno.estadoTurno)) {
+        return false;
+      }
+
+      return formatArgentinaDate(turno.fechaTurno) >= hoy;
+    });
   }
 
-  private mapDateToDiaSemana(date: Date): DiaSemana {
-    const days = [
-      DiaSemana.DOMINGO,
-      DiaSemana.LUNES,
-      DiaSemana.MARTES,
-      DiaSemana.MIERCOLES,
-      DiaSemana.JUEVES,
-      DiaSemana.VIERNES,
-      DiaSemana.SABADO,
-    ];
-    return days[getArgentinaWeekdayIndex(date)];
+  private calcularAdvertenciaCambios(
+    payload: ConfigureAgendaDto,
+    turnosFuturosReservados: TurnoOrmEntity[],
+    duracionActual: number,
+  ): AdvertenciaDisponibilidad | null {
+    if (turnosFuturosReservados.length === 0) {
+      return null;
+    }
+
+    const turnosFueraDeAgenda = turnosFuturosReservados.filter(
+      (turno) =>
+        !this.estaCubiertoPorNuevaAgenda(
+          turno,
+          payload.agendas,
+          duracionActual,
+        ),
+    ).length;
+    const turnosConDuracionActual =
+      duracionActual !== payload.duracionTurno
+        ? turnosFuturosReservados.length
+        : 0;
+
+    if (turnosFueraDeAgenda === 0 && turnosConDuracionActual === 0) {
+      return null;
+    }
+
+    return {
+      requiereConfirmacion: true,
+      turnosFueraDeAgenda,
+      turnosConDuracionActual,
+    };
+  }
+
+  private estaCubiertoPorNuevaAgenda(
+    turno: TurnoOrmEntity,
+    agendas: ConfigureAgendaDto['agendas'],
+    duracionActual: number,
+  ): boolean {
+    const diaTurno = DIAS_ARGENTINA[getArgentinaWeekdayIndex(turno.fechaTurno)];
+    const inicioTurno = this.timeToMinutes(turno.horaTurno.slice(0, 5));
+    const finTurno = inicioTurno + duracionActual;
+
+    return agendas.some((agenda) => {
+      if (agenda.dia !== diaTurno) {
+        return false;
+      }
+
+      const inicioAgenda = this.timeToMinutes(agenda.horaInicio);
+      const finAgenda = this.timeToMinutes(agenda.horaFin);
+
+      return inicioTurno >= inicioAgenda && finTurno <= finAgenda;
+    });
+  }
+
+  private timeToMinutes(time: string): number {
+    return timeToMinutes(time);
   }
 }

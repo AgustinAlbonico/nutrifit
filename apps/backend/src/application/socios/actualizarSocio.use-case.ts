@@ -60,7 +60,13 @@ export class ActualizarSocioUseCase implements BaseUseCase {
       socioExistente.turnos,
       socioExistente.fichaSalud,
       socioExistente.planesAlimentacion,
+      socioExistente.gimnasioId,
     );
+
+    socioActualizado.observaciones =
+      payload.observaciones !== undefined
+        ? payload.observaciones.trim() || null
+        : socioExistente.observaciones;
 
     if (fotoPerfilKey) {
       if (socioExistente.fotoPerfilKey) {

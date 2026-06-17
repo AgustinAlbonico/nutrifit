@@ -1,7 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { TipoRecordatorio } from 'src/infrastructure/persistence/typeorm/entities/recordatorio-enviado.entity';
 import { CreadoPor } from 'src/domain/entities/Turno/creado-por.enum';
-import { IEmailProvider } from './contracts/email-provider.interface';
+import {
+  IEmailProvider,
+  type EmailPayload,
+} from './contracts/email-provider.interface';
 import {
   recordatorioTemplate,
   type RecordatorioTemplateData,
@@ -16,6 +19,14 @@ import {
 } from './templates/bienvenida.template';
 
 export const EMAIL_PROVIDER = 'EMAIL_PROVIDER';
+
+export interface EnviarEmailInput {
+  para: string;
+  asunto: string;
+  html: string;
+  texto?: string;
+  gimnasioId?: number;
+}
 
 interface TurnoEmailData {
   email: string;
@@ -39,12 +50,38 @@ export interface NotificacionTurnoParaNutriData {
   gimnasioId?: number;
 }
 
+export interface CredencialesProvisionalesEmailData {
+  email: string;
+  nombreDestinatario: string;
+  contrasenaProvisional: string;
+  rol: 'SOCIO' | 'NUTRICIONISTA' | 'RECEPCIONISTA';
+  gimnasioId?: number;
+}
+
 @Injectable()
 export class EmailService {
   constructor(
     @Inject(EMAIL_PROVIDER)
     private readonly emailProvider: IEmailProvider,
   ) {}
+
+  async enviarEmail(input: EnviarEmailInput): Promise<void> {
+    const payload: EmailPayload = {
+      to: input.para,
+      subject: input.asunto,
+      html: input.html,
+    };
+
+    if (input.texto) {
+      payload.text = input.texto;
+    }
+
+    if (input.gimnasioId !== undefined) {
+      payload.gimnasioId = input.gimnasioId;
+    }
+
+    await this.emailProvider.enviar(payload);
+  }
 
   async enviarRecordatorio(
     turno: TurnoEmailData,
@@ -78,6 +115,30 @@ export class EmailService {
         ...data,
         loginUrl: this.construirUrlFrontend('/login'),
       }),
+    });
+  }
+
+  async enviarCredencialesProvisionales(
+    data: CredencialesProvisionalesEmailData,
+  ): Promise<void> {
+    const subject = 'Tus credenciales de acceso a NutriFit Supervisor';
+    const html = `
+      <p>Hola ${data.nombreDestinatario},</p>
+      <p>Te damos la bienvenida a <strong>NutriFit Supervisor</strong>. Tu cuenta fue creada con el rol <strong>${data.rol}</strong>.</p>
+      <p>Tus credenciales provisorias son:</p>
+      <ul>
+        <li><strong>Email:</strong> ${data.email}</li>
+        <li><strong>Contraseña provisional:</strong> <code>${data.contrasenaProvisional}</code></li>
+      </ul>
+      <p><strong>Importante:</strong> por seguridad, al ingresar por primera vez el sistema te pedirá que cambies tu contraseña.</p>
+      <p>Si no reconocés este registro, contactanos respondiendo este email.</p>
+    `.trim();
+
+    await this.emailProvider.enviar({
+      to: data.email,
+      subject,
+      html,
+      gimnasioId: data.gimnasioId,
     });
   }
 

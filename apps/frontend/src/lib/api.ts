@@ -62,6 +62,7 @@ interface ErrorResponse {
     path?: string;
     timestamp?: string;
     details?: string[];
+    context?: Record<string, unknown>;
   };
 }
 
@@ -218,10 +219,16 @@ export async function apiRequest<T>(
     const error = new Error(mensaje) as Error & {
       status?: number;
       details?: string[] | null;
+      code?: string;
+      context?: Record<string, unknown>;
     };
     error.status = response.status;
+    error.code = errorBody?.error?.code;
     if (detalles && detalles.length > 0) {
       error.details = detalles;
+    }
+    if (errorBody?.error?.context) {
+      error.context = errorBody.error.context;
     }
     throw error;
   }

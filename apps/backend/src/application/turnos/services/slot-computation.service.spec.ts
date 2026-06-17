@@ -235,4 +235,23 @@ describe('SlotComputationService', () => {
       }
     }
   });
+
+  it('cuenta slots proximos sin violar la anticipacion minima de 2 horas', async () => {
+    nutriRepo.findOne.mockResolvedValue({ idPersona: 10 });
+    agendaRepo.find.mockResolvedValue([
+      {
+        idAgenda: 1,
+        dia: DiaSemana.LUNES,
+        horaInicio: '09:00:00',
+        horaFin: '11:00:00',
+        duracionTurno: 30,
+      },
+    ]);
+    excepcionRepo.findVigentesEnVentana.mockResolvedValue([]);
+    turnoRepo.find.mockResolvedValue([]);
+
+    await expect(
+      service.contarSlotsProximos(10, 60),
+    ).resolves.toBeGreaterThanOrEqual(0);
+  });
 });

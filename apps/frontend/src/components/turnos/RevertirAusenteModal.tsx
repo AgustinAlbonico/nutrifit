@@ -24,7 +24,7 @@ interface RevertirAusenteModalProps {
 
 interface RevertirResponse {
   success: boolean;
-  estadoFinal: 'PROGRAMADO' | 'PRESENTE' | 'EN_CURSO' | 'REALIZADO' | 'AUSENTE' | 'CANCELADO';
+  estadoFinal: 'PROGRAMADO' | 'CONFIRMADO' | 'PRESENTE' | 'EN_CURSO' | 'REALIZADO' | 'AUSENTE' | 'CANCELADO';
   hizoCheckIn: boolean;
 }
 
@@ -78,7 +78,7 @@ export function RevertirAusenteModal({
           `Turno revertido y check-in registrado (${minutos} min tarde)`,
         );
       } else {
-        toast.success('Estado ausente revertido. Turno en PROGRAMADO.');
+        toast.success('Estado ausente revertido. Turno en CONFIRMADO.');
       }
 
       setMotivo('');
@@ -100,7 +100,7 @@ export function RevertirAusenteModal({
           <DialogTitle>Revertir Estado Ausente</DialogTitle>
           <DialogDescription>
             El socio llegó al gimnasio pero el sistema lo marcó como ausente.
-            Elegí qué hacer: revertir a PROGRAMADO o revertir y registrar el
+            Elegí qué hacer: revertir a CONFIRMADO o revertir y registrar el
             check-in directo con los minutos tarde.
           </DialogDescription>
         </DialogHeader>
@@ -148,11 +148,11 @@ export function RevertirAusenteModal({
             Cancelar
           </Button>
           <Button onClick={handleSubmit} disabled={cargando || !motivo.trim()}>
-            {cargando
-              ? 'Guardando...'
-              : quiereCheckIn
-                ? 'Revertir y check-in'
-                : 'Revertir a PROGRAMADO'}
+              {cargando
+                ? 'Guardando...'
+                : quiereCheckIn
+                  ? 'Revertir y check-in'
+                  : 'Revertir a CONFIRMADO'}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -31,12 +31,14 @@ export class AppErrorFilter implements ExceptionFilter {
     let message = 'Error interno del servidor';
     let errorCode = ErrorCode.SERVER_ERROR;
     let details: string[] | undefined = undefined;
+    let context: Record<string, unknown> | undefined = undefined;
 
     // ===== Errores custom del dominio =====
     if (exception instanceof AppError) {
       statusCode = exception.statusCode;
       message = exception.message;
       errorCode = exception.errorCode;
+      context = exception.context;
 
       if (statusCode >= 500) {
         this.logger.error(`[${errorCode}] ${message}`, exception.stack);
@@ -105,6 +107,7 @@ export class AppErrorFilter implements ExceptionFilter {
         `[UNHANDLED_EXCEPTION] ${e.name}: ${e.message}`,
         this.formatUnknownException(e),
       );
+
     }
 
     // ===== Respuesta JSON unificada =====
@@ -115,6 +118,7 @@ export class AppErrorFilter implements ExceptionFilter {
         code: errorCode,
         message,
         ...(details && details.length > 0 ? { details } : {}),
+        ...(context ? { context } : {}),
       },
       meta: {
         timestamp: new Date().toISOString(),

@@ -33,6 +33,12 @@ import {
   obtenerEstadoVisualSlotAgenda,
   obtenerEtiquetaEstadoTurno,
 } from '@/lib/turnos/estadoTurno';
+import {
+  construirMensajeConfirmacionDisponibilidad,
+  crearPayloadDisponibilidad,
+  extraerAdvertenciaDisponibilidad,
+  obtenerDuracionGlobalAgenda,
+} from './agendaDisponibilidad';
 
 interface AgendaItem {
   idAgenda: number;
@@ -64,13 +70,9 @@ interface AgendaFormItem {
   horaFin: string;
 }
 
-interface ConfigureAgendaPayload {
-  duracionTurno: number;
-  agendas: Array<{
-    dia: DiaSemanaOption;
-    horaInicio: string;
-    horaFin: string;
-  }>;
+interface ConfigureAgendaResponse {
+  agendas: AgendaItem[];
+  slotsDisponiblesProximos60Dias: number;
 }
 
 // Tipos para gestión de excepciones (Bloqueos)
@@ -156,7 +158,7 @@ export function Agenda() {
       setError(null);
 
       const agendaResponse = await apiRequest<ApiResponse<AgendaItem[]>>(
-        `/agenda/${personaId}`,
+        `/nutricionistas/${personaId}/disponibilidad`,
         { token },
       );
 
@@ -164,6 +166,7 @@ export function Agenda() {
       setAgenda(agendaData);
       setDuracionTurnoGlobal(agendaData[0]?.duracionTurno ?? 30);
       setAgendaForm(mapAgendaToForm(agendaData));
+      setDuracionTurnoGlobal(obtenerDuracionGlobalAgenda(agendaData));
     } catch (requestError) {
       const message =
         requestError instanceof Error
@@ -202,8 +205,9 @@ export function Agenda() {
     });
   };
 
-  const guardarConfiguracionAgenda = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const enviarConfiguracionAgenda = async (
+    confirmarCambiosConTurnos: boolean,
+  ) => {
     if (!token || !personaId || rol !== 'NUTRICIONISTA') return;
 
     if (!Number.isFinite(duracionTurnoGlobal) || duracionTurnoGlobal < 5) {
@@ -253,31 +257,51 @@ export function Agenda() {
       bloquesPorDia[bloque.dia].push({ inicio, fin });
     }
 
-    const payload: ConfigureAgendaPayload = {
+    const payload = crearPayloadDisponibilidad({
       duracionTurno: duracionTurnoGlobal,
-      agendas: agendaForm.map((item) => ({
-        dia: item.dia,
-        horaInicio: item.horaInicio.slice(0, 5),
-        horaFin: item.horaFin.slice(0, 5),
-      })),
-    };
+      agendas: agendaForm,
+      confirmarCambiosConTurnos,
+    });
 
     try {
       setGuardandoAgenda(true);
       setError(null);
-      await apiRequest<ApiResponse<AgendaItem[]>>(
-        `/agenda/${personaId}/configuracion`,
+      const response = await apiRequest<ApiResponse<ConfigureAgendaResponse>>(
+        `/nutricionistas/${personaId}/disponibilidad`,
         { method: 'PUT', token, body: payload },
       );
-      toast.success('Horarios de atencion actualizados.');
-      await cargarAgendaConfig();
+      const agendaActualizada = response.data.agendas ?? [];
+      setAgenda(agendaActualizada);
+      setAgendaForm(mapAgendaToForm(agendaActualizada));
+      setDuracionTurnoGlobal(obtenerDuracionGlobalAgenda(agendaActualizada));
+      toast.success(
+        `Disponibilidad configurada. ${response.data.slotsDisponiblesProximos60Dias} slots disponibles para los próximos 60 días.`,
+      );
     } catch (requestError) {
+      const advertencia = extraerAdvertenciaDisponibilidad(requestError);
+
+      if (advertencia) {
+        const confirmar = window.confirm(
+          construirMensajeConfirmacionDisponibilidad(advertencia),
+        );
+
+        if (confirmar) {
+          await enviarConfiguracionAgenda(true);
+        }
+        return;
+      }
+
       const message = requestError instanceof Error ? requestError.message : 'Error al guardar';
       setError(message);
       toast.error(message);
     } finally {
       setGuardandoAgenda(false);
     }
+  };
+
+  const guardarConfiguracionAgenda = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    await enviarConfiguracionAgenda(false);
   };
 
   // --- Logic for Exceptions Tab ---
@@ -373,6 +397,8 @@ export function Agenda() {
         return <Badge className="bg-gradient-to-r from-rose-500 to-rose-600 text-white border-0 shadow-sm hover:from-rose-600 hover:to-rose-700">Bloqueado</Badge>;
       case 'PROGRAMADO':
         return <Badge className="bg-gradient-to-r from-amber-500 to-amber-600 text-white border-0 shadow-sm hover:from-amber-600 hover:to-amber-700">Programado</Badge>;
+      case 'CONFIRMADO':
+        return <Badge className="bg-gradient-to-r from-amber-500 to-amber-600 text-white border-0 shadow-sm hover:from-amber-600 hover:to-amber-700">Confirmado</Badge>;
       case 'PRESENTE':
         return <Badge className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0 shadow-sm hover:from-blue-600 hover:to-blue-700">Presente</Badge>;
       case 'EN_CURSO':
@@ -454,7 +480,7 @@ export function Agenda() {
           >
             <div className="flex items-center gap-2">
               <CalendarRange className="h-4 w-4" />
-              Gestionar Fechas
+              Excepciones y Bloqueos
             </div>
           </TabsTrigger>
         </TabsList>
@@ -633,6 +659,12 @@ export function Agenda() {
                 </div>
               ) : (
                 <div className="flex flex-col gap-3">
+                  <div className="rounded-xl border bg-gradient-to-br from-orange-50/60 to-rose-50/40 p-4 shadow-sm">
+                    <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                      <RefreshCw className="h-4 w-4 text-orange-500/70" />
+                      <span>Duración global: <span className="font-medium">{duracionTurnoGlobal} min</span></span>
+                    </div>
+                  </div>
                   {agenda.map((item) => (
                     <div key={item.idAgenda} className="group relative overflow-hidden rounded-xl border bg-gradient-to-br from-card to-orange-50/30 p-4 shadow-sm transition-all hover:shadow-md">
                       <div className="absolute right-0 top-0 h-full w-1.5 bg-gradient-to-b from-orange-400 to-rose-400" />

@@ -68,7 +68,6 @@ const FORMULARIO_NUTRICIONISTA_INICIAL: CrearNutricionistaDto = {
   matricula: '',
   aniosExperiencia: 0,
   tarifaSesion: 0,
-  duracionTurnoMin: 30,
   presentacion: '',
   certificaciones: [],
   formacionAcademica: [],
@@ -189,6 +188,12 @@ export function GestionNutricionistas() {
 
   const [mostrarConfirmacionEliminar, setMostrarConfirmacionEliminar] = useState(false);
   const [nutricionistaAEliminar, setNutricionistaAEliminar] = useState<Nutricionista | null>(null);
+  const [motivoDesactivacion, setMotivoDesactivacion] = useState('');
+  const [desactivando, setDesactivando] = useState(false);
+  const [resultadoDesactivacion, setResultadoDesactivacion] = useState<{
+    turnosCancelados: number;
+    sociosAfectados: number;
+  } | null>(null);
 
   const [mostrarModalDetalles, setMostrarModalDetalles] = useState(false);
   const [mostrarFotoAmpliada, setMostrarFotoAmpliada] = useState(false);
@@ -250,9 +255,6 @@ export function GestionNutricionistas() {
       if (!datos.matricula.trim()) errores.matricula = 'Ingresá la matrícula.';
       if (datos.aniosExperiencia < 0) errores.aniosExperiencia = 'Los años de experiencia no pueden ser negativos.';
       if (datos.tarifaSesion <= 0) errores.tarifaSesion = 'La tarifa por sesión debe ser mayor a 0.';
-      if (!Number.isFinite(datos.duracionTurnoMin) || datos.duracionTurnoMin < 5 || datos.duracionTurnoMin > 240) {
-        errores.duracionTurnoMin = 'La duración del turno debe estar entre 5 y 240 minutos.';
-      }
 
       return errores;
     },
@@ -293,9 +295,6 @@ export function GestionNutricionistas() {
     if (!nutricionistaFormEdicion.matricula.trim()) errores.matricula = 'Ingresá la matrícula.';
     if (nutricionistaFormEdicion.aniosExperiencia < 0) errores.aniosExperiencia = 'Los años de experiencia no pueden ser negativos.';
     if (nutricionistaFormEdicion.tarifaSesion <= 0) errores.tarifaSesion = 'La tarifa por sesión debe ser mayor a 0.';
-    if (!Number.isFinite(nutricionistaFormEdicion.duracionTurnoMin) || nutricionistaFormEdicion.duracionTurnoMin < 5 || nutricionistaFormEdicion.duracionTurnoMin > 240) {
-      errores.duracionTurnoMin = 'La duración del turno debe estar entre 5 y 240 minutos.';
-    }
 
     return errores;
   }, [nutricionistaFormEdicion]);
@@ -496,11 +495,13 @@ export function GestionNutricionistas() {
       const hayFoto = fotoCreacion instanceof File;
       const hayDiplomas = diplomasCreacion.length > 0;
 
+      const payload = { ...nutricionistaForm, duracionTurnoMin: 30 };
+
       let respuesta;
       if (hayFoto) {
         const formData = new FormData();
         formData.append('foto', fotoCreacion);
-        Object.entries(nutricionistaForm).forEach(([key, value]) => {
+        Object.entries(payload).forEach(([key, value]) => {
           agregarValorAFormData(formData, key, value);
         });
         respuesta = await apiRequest<ApiResponse<Nutricionista & { contrasenaProvisional?: string }>>(
@@ -517,7 +518,7 @@ export function GestionNutricionistas() {
           {
             method: 'POST',
             token,
-            body: nutricionistaForm,
+            body: payload,
           },
         );
       }
@@ -697,27 +698,43 @@ export function GestionNutricionistas() {
     }
   };
 
-  const confirmarEliminar = (nutricionista: Nutricionista) => {
+  const confirmarDesactivar = (nutricionista: Nutricionista) => {
     setNutricionistaAEliminar(nutricionista);
+    setMotivoDesactivacion('');
+    setResultadoDesactivacion(null);
     setMostrarConfirmacionEliminar(true);
   };
 
-  const eliminarNutricionista = async () => {
+  const desactivarNutricionista = async () => {
     if (!token || !nutricionistaAEliminar) return;
+    if (!motivoDesactivacion.trim() || motivoDesactivacion.trim().length < 10) {
+      toast.error('El motivo debe tener al menos 10 caracteres.');
+      return;
+    }
 
+    setDesactivando(true);
     try {
-      await apiRequest(`/profesional/${nutricionistaAEliminar.idPersona}`, {
-        method: 'DELETE',
+      const resultado = await apiRequest<{
+        message: string;
+        turnosCancelados: number;
+        sociosAfectados: number;
+      }>(`/profesional/${nutricionistaAEliminar.idPersona}/desactivar`, {
+        method: 'POST',
         token,
+        body: { motivo: motivoDesactivacion.trim() },
       });
 
-      toast.success('Nutricionista dado de baja exitosamente');
-      setMostrarConfirmacionEliminar(false);
-      setNutricionistaAEliminar(null);
+      setResultadoDesactivacion({
+        turnosCancelados: resultado.turnosCancelados,
+        sociosAfectados: resultado.sociosAfectados,
+      });
+      toast.success(resultado.message);
       await cargarNutricionistas();
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'No se pudo dar de baja el nutricionista';
+      const errorMessage = err instanceof Error ? err.message : 'No se pudo desactivar el nutricionista';
       toast.error(errorMessage);
+    } finally {
+      setDesactivando(false);
     }
   };
 
@@ -1019,9 +1036,9 @@ export function GestionNutricionistas() {
                                   type="button"
                                   variant="destructive"
                                   size="sm"
-                                  onClick={() => confirmarEliminar(nutricionista)}
+                                  onClick={() => confirmarDesactivar(nutricionista)}
                                 >
-                                  Baja
+                                  Desactivar
                                 </Button>
                               </Can>
                             ) : (
@@ -1308,25 +1325,6 @@ export function GestionNutricionistas() {
                     />
                     {erroresCreacion.tarifaSesion && <p className="text-xs font-medium text-destructive">{erroresCreacion.tarifaSesion}</p>}
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="crear-duracion" required>Duración del turno (minutos)</Label>
-                    <Input
-                      id="crear-duracion"
-                      type="number"
-                      min={5}
-                      max={240}
-                      value={nutricionistaForm.duracionTurnoMin}
-                      onChange={(e) =>
-                        actualizarCampoCreacion(
-                          'duracionTurnoMin',
-                          parseInt(e.target.value, 10) || 0,
-                        )
-                      }
-                      aria-invalid={Boolean(erroresCreacion.duracionTurnoMin)}
-                      required
-                    />
-                    {erroresCreacion.duracionTurnoMin && <p className="text-xs font-medium text-destructive">{erroresCreacion.duracionTurnoMin}</p>}
-                  </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="crear-presentacion">Presentación (opcional)</Label>
                     <Textarea
@@ -1357,6 +1355,7 @@ export function GestionNutricionistas() {
                       type="file"
                       multiple
                       accept="application/pdf,image/*"
+                      className="hidden"
                       onChange={(e) => {
                         const archivos = Array.from(e.target.files ?? []);
                         setDiplomasCreacion((prev) => [...prev, ...archivos]);
@@ -1398,34 +1397,94 @@ export function GestionNutricionistas() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={mostrarConfirmacionEliminar} onOpenChange={setMostrarConfirmacionEliminar}>
-        <DialogContent className="max-w-md">
+      <Dialog open={mostrarConfirmacionEliminar} onOpenChange={(open) => {
+        if (!open) {
+          setMostrarConfirmacionEliminar(false);
+          setNutricionistaAEliminar(null);
+          setMotivoDesactivacion('');
+          setResultadoDesactivacion(null);
+        }
+      }}>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Confirmar baja</DialogTitle>
+            <DialogTitle>{resultadoDesactivacion ? 'Nutricionista desactivado' : 'Confirmar desactivación'}</DialogTitle>
             <DialogDescription>
-              ¿Estás seguro de que querés dar de baja a {nutricionistaAEliminar?.nombre} {nutricionistaAEliminar?.apellido}?
-              <br /><br />
-              Esta acción no se puede deshacer.
+              {resultadoDesactivacion ? (
+                <span className="text-foreground">
+                  Se desactivó a {nutricionistaAEliminar?.nombre} {nutricionistaAEliminar?.apellido}.
+                  <br /><br />
+                  <strong>{resultadoDesactivacion.turnosCancelados}</strong> turnos futuros fueron cancelados.{' '}
+                  <strong>{resultadoDesactivacion.sociosAfectados}</strong> socios fueron notificados.
+                </span>
+              ) : (
+                <>
+                  ¿Estás seguro de que querés desactivar a {nutricionistaAEliminar?.nombre} {nutricionistaAEliminar?.apellido}?
+                  <br /><br />
+                  <span className="font-medium text-amber-600 dark:text-amber-400">
+                    Hay turnos futuros que serán cancelados y los socios afectados serán notificados.
+                  </span>
+                  <br /><br />
+                  Esta acción no se puede deshacer.
+                </>
+              )}
             </DialogDescription>
           </DialogHeader>
+
+          {!resultadoDesactivacion && (
+            <div className="space-y-3">
+              <Label htmlFor="motivo-desactivacion">
+                Motivo de la desactivación <span className="text-destructive">*</span>
+              </Label>
+              <Textarea
+                id="motivo-desactivacion"
+                placeholder="Describí el motivo de la desactivación (mín. 10 caracteres)"
+                value={motivoDesactivacion}
+                onChange={(e) => setMotivoDesactivacion(e.target.value)}
+                rows={3}
+                maxLength={500}
+              />
+              <p className="text-xs text-muted-foreground">
+                {motivoDesactivacion.length}/500 caracteres
+              </p>
+            </div>
+          )}
+
           <div className="flex justify-end gap-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setMostrarConfirmacionEliminar(false);
-                setNutricionistaAEliminar(null);
-              }}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={eliminarNutricionista}
-            >
-              Dar de baja
-            </Button>
+            {resultadoDesactivacion ? (
+              <Button
+                type="button"
+                onClick={() => {
+                  setMostrarConfirmacionEliminar(false);
+                  setNutricionistaAEliminar(null);
+                  setMotivoDesactivacion('');
+                  setResultadoDesactivacion(null);
+                }}
+              >
+                Cerrar
+              </Button>
+            ) : (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setMostrarConfirmacionEliminar(false);
+                    setNutricionistaAEliminar(null);
+                    setMotivoDesactivacion('');
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => void desactivarNutricionista()}
+                  disabled={desactivando || motivoDesactivacion.trim().length < 10}
+                >
+                  {desactivando ? 'Desactivando...' : 'Desactivar'}
+                </Button>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -1560,26 +1619,6 @@ export function GestionNutricionistas() {
                   <div className="space-y-2">
                     <Label htmlFor="editar-tarifa">Tarifa por sesión</Label>
                     <Input id="editar-tarifa" type="number" min={0} step="0.01" value={nutricionistaFormEdicion.tarifaSesion} onChange={(e) => setNutricionistaFormEdicion({ ...nutricionistaFormEdicion, tarifaSesion: parseFloat(e.target.value) || 0 })} required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="editar-duracion">Duración del turno (minutos)</Label>
-                    <Input
-                      id="editar-duracion"
-                      type="number"
-                      min={5}
-                      max={240}
-                      value={nutricionistaFormEdicion.duracionTurnoMin}
-                      onChange={(e) =>
-                        setNutricionistaFormEdicion({
-                          ...nutricionistaFormEdicion,
-                          duracionTurnoMin: parseInt(e.target.value, 10) || 0,
-                        })
-                      }
-                      required
-                    />
-                    {erroresEdicion.duracionTurnoMin && (
-                      <p className="text-xs font-medium text-destructive">{erroresEdicion.duracionTurnoMin}</p>
-                    )}
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="editar-presentacion">Presentación (opcional)</Label>
@@ -1901,6 +1940,34 @@ export function GestionNutricionistas() {
             </div>
           )}
           <div className="flex justify-end gap-2 border-t bg-muted/20 px-6 py-4">
+            {nutricionistaSeleccionado?.activo ? (
+              <Can accion={ACCIONES.NUTRICIONISTAS_ELIMINAR}>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => {
+                    setMostrarModalDetalles(false);
+                    confirmarDesactivar(nutricionistaSeleccionado!);
+                  }}
+                >
+                  Desactivar
+                </Button>
+              </Can>
+            ) : nutricionistaSeleccionado ? (
+              <Can accion={ACCIONES.NUTRICIONISTAS_EDITAR}>
+                <Button
+                  type="button"
+                  variant="default"
+                  className="bg-emerald-600 hover:bg-emerald-700"
+                  onClick={() => {
+                    setMostrarModalDetalles(false);
+                    void reactivarNutricionista(nutricionistaSeleccionado);
+                  }}
+                >
+                  Reactivar
+                </Button>
+              </Can>
+            ) : null}
             <Button
               type="button"
               variant="outline"

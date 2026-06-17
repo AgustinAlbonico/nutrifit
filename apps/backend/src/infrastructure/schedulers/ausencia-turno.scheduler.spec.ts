@@ -8,6 +8,7 @@ import {
   POLITICA_OPERATIVA_REPOSITORY,
   IPoliticaOperativaRepository,
 } from 'src/application/politicas/politica-operativa.repository';
+import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 
 describe('AusenciaTurnoScheduler', () => {
   let scheduler: AusenciaTurnoScheduler;
@@ -29,6 +30,12 @@ describe('AusenciaTurnoScheduler', () => {
           provide: POLITICA_OPERATIVA_REPOSITORY,
           useValue: {
             getUmbralAusente: jest.fn().mockResolvedValue(30),
+          },
+        },
+        {
+          provide: NotificacionesService,
+          useValue: {
+            crear: jest.fn().mockResolvedValue(undefined),
           },
         },
       ],

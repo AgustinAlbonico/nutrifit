@@ -66,6 +66,7 @@ export class SocioRepositoryImplementation implements SocioRepository {
       provincia: entity.provincia,
       dni: entity.dni,
       fotoPerfilKey: entity.fotoPerfilKey,
+      observaciones: entity.observaciones ?? null,
     });
 
     const socioActualizado = await this.socioRepository.findOne({
@@ -138,6 +139,7 @@ export class SocioRepositoryImplementation implements SocioRepository {
     orm.direccion = socio.direccion;
     orm.dni = socio.dni;
     orm.fotoPerfilKey = socio.fotoPerfilKey;
+    orm.observaciones = socio.observaciones ?? null;
     orm.fechaAlta = new Date();
     orm.fichaSalud = null;
     orm.planesAlimentacion = [];
@@ -171,7 +173,7 @@ export class SocioRepositoryImplementation implements SocioRepository {
       orm.gimnasioId,
     );
 
-    // PersonaEntity expone email, fechaBaja y fotoPerfilKey en sus props.
+    // PersonaEntity expone email, fechaBaja, fotoPerfilKey y observaciones en sus props.
     if (orm.fechaBaja) {
       entity.fechaBaja = orm.fechaBaja;
     }
@@ -183,6 +185,8 @@ export class SocioRepositoryImplementation implements SocioRepository {
     if (orm.fotoPerfilKey) {
       entity.fotoPerfilKey = orm.fotoPerfilKey;
     }
+
+    entity.observaciones = orm.observaciones ?? null;
 
     return entity;
   }

@@ -75,7 +75,7 @@ export interface CrearNutricionistaDto {
   matricula: string;
   aniosExperiencia: number;
   tarifaSesion: number;
-  duracionTurnoMin: number;
+  duracionTurnoMin?: number;
   presentacion?: string;
   certificaciones?: CertificacionDto[];
   formacionAcademica?: FormacionAcademicaDto[];

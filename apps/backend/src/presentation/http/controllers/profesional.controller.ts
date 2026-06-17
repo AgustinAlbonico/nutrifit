@@ -21,6 +21,8 @@ import {
   CertificacionDto,
   CreateNutricionistaDto,
   DiplomaDto,
+  DesactivarNutricionistaDto,
+  DesactivarNutricionistaResultDto,
   ListProfesionalesPublicQueryDto,
   NutricionistaResponseDto,
   PerfilProfesionalPublicoResponseDto,
@@ -31,6 +33,7 @@ import {
   CreateNutricionistaUseCase,
   DeleteNutricionistaUseCase,
   EliminarDiplomaUseCase,
+  DesactivarNutricionistaUseCase,
   GetNutricionistaUseCase,
   GetMiPerfilNutricionistaUseCase,
   GetPerfilProfesionalPublicoUseCase,
@@ -78,6 +81,7 @@ export class ProfesionalController {
     private readonly getPerfilProfesionalPublicoUseCase: GetPerfilProfesionalPublicoUseCase,
     private readonly updateNutricionistaUseCase: UpdateNutricionistaUseCase,
     private readonly deleteNutricionistaUseCase: DeleteNutricionistaUseCase,
+    private readonly desactivarNutricionistaUseCase: DesactivarNutricionistaUseCase,
     private readonly reactivarNutricionistaUseCase: ReactivarNutricionistaUseCase,
     private readonly listarDiplomasUseCase: ListarDiplomasUseCase,
     private readonly subirDiplomaUseCase: SubirDiplomaUseCase,
@@ -378,6 +382,27 @@ export class ProfesionalController {
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     this.logger.log(`Dando de baja profesional con ID: ${id}`);
     await this.deleteNutricionistaUseCase.execute(id);
+  }
+
+  @Post(':id/desactivar')
+  @Rol(RolEnum.ADMIN, RolEnum.RECEPCIONISTA)
+  @Actions(ACCIONES.NUTRICIONISTAS_ELIMINAR)
+  async desactivar(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: DesactivarNutricionistaDto,
+    @CurrentUserId() usuarioId?: number,
+  ): Promise<DesactivarNutricionistaResultDto> {
+    this.logger.log(`Desactivando profesional con ID: ${id}`);
+    const resultado = await this.desactivarNutricionistaUseCase.execute(
+      id,
+      dto.motivo,
+      usuarioId,
+    );
+    return {
+      message: `Nutricionista desactivado. ${resultado.turnosCancelados} turnos cancelados, ${resultado.sociosAfectados} socios notificados.`,
+      turnosCancelados: resultado.turnosCancelados,
+      sociosAfectados: resultado.sociosAfectados,
+    };
   }
 
   @Post(':id/reactivar')

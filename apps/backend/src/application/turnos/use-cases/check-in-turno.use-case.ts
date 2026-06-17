@@ -33,8 +33,6 @@ export interface CheckInResult {
 
 @Injectable()
 export class CheckInTurnoUseCase {
-  private static readonly MARGEN_TOLERANCIA_LLEGADA_TARDE_MIN = 0;
-
   constructor(
     @InjectRepository(TurnoOrmEntity)
     private readonly turnoRepository: Repository<TurnoOrmEntity>,
@@ -58,9 +56,6 @@ export class CheckInTurnoUseCase {
       throw new NotFoundError('Turno', String(turnoId));
     }
 
-    // A3 — Idempotencia: si ya está PRESENTE, devolvemos el checkInAt
-    // existente sin guardar ni auditar. Cubre el caso del doble click
-    // y también la carrera con el scheduler de ausentes.
     if (turno.estadoTurno === EstadoTurno.PRESENTE) {
       return {
         success: true,
@@ -77,7 +72,6 @@ export class CheckInTurnoUseCase {
       );
     }
 
-    // A1 — Validar que sea el día del turno en TZ Argentina.
     const hoy = getArgentinaTodayDate();
     const fechaTurnoStr = formatArgentinaDate(turno.fechaTurno);
     if (fechaTurnoStr !== hoy) {
@@ -86,7 +80,6 @@ export class CheckInTurnoUseCase {
       );
     }
 
-    // Calcular minutos de llegada tarde (solo si llega después del horario)
     const ahora = getArgentinaNow();
     const horaTurnoReal = combineArgentinaDateAndTime(
       turno.fechaTurno,
@@ -96,7 +89,6 @@ export class CheckInTurnoUseCase {
       (ahora.getTime() - horaTurnoReal.getTime()) / 60000,
     );
 
-    // Snapshots para auditoría
     const antes = {
       estado: turno.estadoTurno,
       checkInAt: turno.checkInAt,
@@ -105,15 +97,10 @@ export class CheckInTurnoUseCase {
 
     turno.estadoTurno = EstadoTurno.PRESENTE;
     turno.checkInAt = ahora;
-    if (diffMinutos > 0) {
-      turno.llegadaTardeMin = diffMinutos;
-    } else {
-      turno.llegadaTardeMin = null;
-    }
+    turno.llegadaTardeMin = diffMinutos > 0 ? diffMinutos : null;
 
     const turnoActualizado = await this.turnoRepository.save(turno);
 
-    // RB33 — Auditar con antes/despues
     await this.auditoriaService.registrar({
       accion: AccionAuditoria.CHECKIN,
       entidad: 'turno',
@@ -130,9 +117,6 @@ export class CheckInTurnoUseCase {
       gimnasioId: this.tenantContext.gimnasioId,
     });
 
-    // Notificación SOLO al nutricionista (el socio ya recibió TURNO_CONFIRMADO
-    // al confirmar por email/token; el check-in es la confirmación silenciosa
-    // para el profesional de que el socio llegó).
     if (turnoActualizado.nutricionista?.idPersona) {
       await this.notificacionesService.crear({
         destinatarioId: turnoActualizado.nutricionista.idPersona,

@@ -185,6 +185,7 @@ export class NutricionistaRepositoryImplementation implements NutricionistaRepos
     const gimnasioId = this.gimnasioIdActual;
     const nutricionistas = await this.nutricionistaRepository.find({
       where: { gimnasioId },
+      withDeleted: true,
       relations: {
         usuario: true,
         agenda: true,
@@ -206,6 +207,7 @@ export class NutricionistaRepositoryImplementation implements NutricionistaRepos
 
     const nutricionista = await this.nutricionistaRepository.findOne({
       where: whereClause,
+      withDeleted: true,
       relations: {
         usuario: true,
         agenda: true,

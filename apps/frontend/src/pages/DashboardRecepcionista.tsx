@@ -46,7 +46,7 @@ export function DashboardRecepcionista() {
   // Calcular KPIs
   const totalTurnos = turnos.length;
   const presentes = turnos.filter((t) => t.estadoTurno === 'PRESENTE').length;
-  const pendientes = turnos.filter((t) => t.estadoTurno === 'PROGRAMADO').length;
+  const pendientes = turnos.filter((t) => t.estadoTurno === 'CONFIRMADO').length;
   const enCurso = turnos.filter((t) => t.estadoTurno === 'EN_CURSO').length;
 
   return (

@@ -25,12 +25,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { GrupoPermisoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/grupo-permiso.entity';
 import { Repository } from 'typeorm';
 import { GrupoPermisoEntity } from 'src/domain/entities/Usuario/grupo-permiso.entity';
-import { EmailService } from 'src/application/email/email.service';
 import { generarContrasenaProvisional } from 'src/common/utils/password-generator.util';
+import { EmailService } from 'src/application/email/email.service';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 export interface ResultadoRegistrarSocio {
   socio: SocioEntity;
-  usuario: UsuarioEntity;
   contrasenaProvisional: string;
 }
 
@@ -46,6 +46,7 @@ export class RegistrarSocioUseCase implements BaseUseCase {
     @InjectRepository(GrupoPermisoOrmEntity)
     private readonly grupoPermisoRepository: Repository<GrupoPermisoOrmEntity>,
     private readonly emailService: EmailService,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(
@@ -68,23 +69,33 @@ export class RegistrarSocioUseCase implements BaseUseCase {
       direccion,
       ciudad,
       provincia,
+      observaciones,
+      estado,
     } = payload;
+
+    const gimnasioId = this.tenantContext.isInitialized
+      ? this.tenantContext.gimnasioId
+      : 1;
 
     const socioEntity = new SocioEntity(
       null,
       nombre,
       apellido,
-      new Date(fechaNacimiento),
-      telefono,
-      genero,
-      direccion,
-      ciudad,
-      provincia,
+      fechaNacimiento ? new Date(fechaNacimiento) : new Date('1900-01-01'),
+      telefono ?? '',
+      (genero ?? 'OTRO') as SocioEntity['genero'],
+      direccion ?? '',
+      ciudad ?? '',
+      provincia ?? '',
       dni ?? '',
       [],
       null,
       [],
+      gimnasioId,
     );
+
+    socioEntity.observaciones = observaciones?.trim() || null;
+    socioEntity.fechaBaja = estado === 'INACTIVO' ? new Date() : null;
 
     if (fotoPerfilKey) {
       socioEntity.fotoPerfilKey = fotoPerfilKey;
@@ -97,10 +108,10 @@ export class RegistrarSocioUseCase implements BaseUseCase {
     );
     this.logger.log(`Creando Usuario para el socio ${socioCreado.idPersona}`);
 
-    const contrasena = payload.contrasena ?? generarContrasenaProvisional();
-    const debeCambiarPassword = !payload.contrasena;
-    const contrasenaEncriptada =
-      await this.passwordEncrypter.encryptPassword(contrasena);
+    const contrasenaProvisional = generarContrasenaProvisional();
+    const contrasenaEncriptada = await this.passwordEncrypter.encryptPassword(
+      contrasenaProvisional,
+    );
 
     const grupoSocio = await this.obtenerGrupoSocioPorDefecto();
 
@@ -113,30 +124,39 @@ export class RegistrarSocioUseCase implements BaseUseCase {
       [grupoSocio],
       [],
       null,
-      debeCambiarPassword,
+      true,
     );
 
-    const usuarioCreado = await this.usuarioRepository.save(usuario);
+    await this.usuarioRepository.save(usuario);
 
-    usuarioCreado.persona = socioCreado;
+    socioCreado.email = payload.email;
 
-    void this.emailService
-      .enviarBienvenida({
-        nombre: `${socioCreado.nombre} ${socioCreado.apellido}`,
+    this.logger.log(
+      `Usuario creado para socio: ${socioCreado.idPersona} (debe_cambiar_password=true)`,
+    );
+
+    try {
+      await this.emailService.enviarCredencialesProvisionales({
         email: payload.email,
-        contrasenaProvisional: contrasena,
+        nombreDestinatario: `${nombre} ${apellido}`.trim(),
+        contrasenaProvisional,
         rol: 'SOCIO',
-      })
-      .catch((error) => {
-        this.logger.warn(
-          `No se pudo enviar email de bienvenida a ${payload.email}: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        gimnasioId,
       });
+      this.logger.log(
+        `Email de credenciales enviado a ${payload.email} (socio ${socioCreado.idPersona})`,
+      );
+    } catch (error) {
+      this.logger.warn(
+        `No se pudo enviar el email de credenciales a ${payload.email}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
 
     return {
       socio: socioCreado,
-      usuario: usuarioCreado,
-      contrasenaProvisional: contrasena,
+      contrasenaProvisional,
     };
   }
 

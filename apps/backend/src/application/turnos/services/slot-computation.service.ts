@@ -218,13 +218,11 @@ export class SlotComputationService {
     nutricionistaId: number,
     dias: number = 7,
   ): Promise<number> {
-    const desde = getArgentinaNow();
-    const hasta = new Date(desde.getTime() + dias * 86400000);
-    const resultado = await this.calcularSlotsDisponibles(
-      nutricionistaId,
-      desde,
-      hasta,
-    );
-    return resultado.slots.length;
+    const ahora = getArgentinaNow();
+    const hasta = new Date(ahora.getTime() + dias * 86400000);
+    const resultado = await this.calcularSlotsDisponibles(nutricionistaId);
+
+    return resultado.slots.filter((slot) => new Date(slot.fechaHora) <= hasta)
+      .length;
   }
 }

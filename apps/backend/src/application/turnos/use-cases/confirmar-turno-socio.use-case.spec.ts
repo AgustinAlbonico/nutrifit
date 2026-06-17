@@ -11,6 +11,7 @@ import { BadRequestError } from 'src/domain/exceptions/custom-exceptions';
 import { APP_LOGGER_SERVICE } from 'src/domain/services/logger.service';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import { createHash } from 'crypto';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 describe('ConfirmarTurnoSocioUseCase token flow', () => {
   let useCase: ConfirmarTurnoSocioUseCase;
@@ -39,6 +40,7 @@ describe('ConfirmarTurnoSocioUseCase token flow', () => {
         },
         { provide: NotificacionesService, useValue: { crear: jest.fn() } },
         { provide: APP_LOGGER_SERVICE, useValue: { log: jest.fn() } },
+        { provide: TenantContextService, useValue: { gimnasioId: 1 } },
       ],
     }).compile();
 

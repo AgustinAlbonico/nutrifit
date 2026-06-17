@@ -71,7 +71,7 @@ export function DashboardNutricionista() {
   const pacientesActivos = pacientes?.length ?? 0;
   const turnosHoyCount = turnosHoy?.length ?? 0;
   const pendientesCount =
-    turnosHoy?.filter((t) => t.estadoTurno === 'PROGRAMADO').length ?? 0;
+    turnosHoy?.filter((t) => t.estadoTurno === 'CONFIRMADO').length ?? 0;
   const planesCount = planes?.length ?? 0;
 
   return (

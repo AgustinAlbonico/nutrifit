@@ -14,10 +14,11 @@ import {
 } from '@/lib/fechasArgentina';
 import { REGEX_DNI, REGEX_TELEFONO, REGEX_EMAIL } from '@/lib/validaciones';
 import { normalizarTexto } from '@/lib/text';
-import type { Socio, CrearSocioDto, Genero } from '@/types/socio';
+import type { Socio, CrearSocioDto, CrearSocioResponseDto, DesactivarSocioResultDto, Genero } from '@/types/socio';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
@@ -63,6 +64,8 @@ const FORMULARIO_SOCIO_INICIAL: CrearSocioDto = {
   ciudad: '',
   provincia: '',
   email: '',
+  observaciones: '',
+  estado: 'ACTIVO',
 };
 
 
@@ -132,6 +135,10 @@ export function Socios() {
   const [contrasenaProvisional, setContrasenaProvisional] = useState<string | null>(null);
   const [mostrarFotoAmpliada, setMostrarFotoAmpliada] = useState(false);
   const [socioSeleccionado, setSocioSeleccionado] = useState<Socio | null>(null);
+
+  const [motivoDesactivacion, setMotivoDesactivacion] = useState('');
+  const [desactivando, setDesactivando] = useState(false);
+  const [resultadoDesactivacion, setResultadoDesactivacion] = useState<DesactivarSocioResultDto | null>(null);
 
   const abrirModalDetalles = (socio: Socio) => {
     setSocioSeleccionado(socio);
@@ -373,40 +380,37 @@ export function Socios() {
     setEnviandoCreacion(true);
 
     try {
-      interface RespuestaCrearSocio {
-        contrasenaProvisional?: string;
-      }
+      const body = { ...socioForm };
+      if (!body.observaciones) delete body.observaciones;
+      if (body.estado === 'ACTIVO') delete body.estado;
 
-      let respuesta: RespuestaCrearSocio | undefined;
+      let responseData: ApiResponse<CrearSocioResponseDto>;
       if (fotoCreacion instanceof File) {
         const formData = new FormData();
         formData.append('foto', fotoCreacion);
-        Object.entries(socioForm).forEach(([key, value]) => {
-          formData.append(key, String(value));
+        Object.entries(body).forEach(([key, value]) => {
+          if (value !== undefined) formData.append(key, String(value));
         });
         
-        respuesta = await apiRequest<ApiResponse<RespuestaCrearSocio>>('/socio', {
+        responseData = await apiRequest<ApiResponse<CrearSocioResponseDto>>('/socio', {
           method: 'POST',
           token,
           formData,
-        }).then((r) => r.data);
+        });
       } else {
-        respuesta = await apiRequest<ApiResponse<RespuestaCrearSocio>>('/socio', {
+        responseData = await apiRequest<ApiResponse<CrearSocioResponseDto>>('/socio', {
           method: 'POST',
           token,
-          body: socioForm,
-        }).then((r) => r.data);
+          body,
+        });
       }
       
-      toast.success('Socio creado exitosamente');
+      const resultado = responseData.data;
       setMostrarFormularioSocio(false);
       limpiarEstadoCreacion();
       await cargarSocios();
-
-      if (respuesta?.contrasenaProvisional) {
-        setContrasenaProvisional(respuesta.contrasenaProvisional);
-        setMostrarModalContrasenaProvisional(true);
-      }
+      setContrasenaProvisional(resultado.contrasenaProvisional);
+      setMostrarModalContrasenaProvisional(true);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'No se pudo crear el socio';
       setErrorGeneralCreacion(errorMessage);
@@ -431,7 +435,8 @@ export function Socios() {
       ciudad: socio.ciudad,
       provincia: socio.provincia,
       email: socio.email,
-      contrasena: '',
+      observaciones: socio.observaciones ?? '',
+      estado: socio.activo ? 'ACTIVO' : 'INACTIVO',
     });
     setErroresEdicion({});
     setFotoEdicion(socio.fotoPerfilUrl ?? null);
@@ -450,10 +455,9 @@ export function Socios() {
     }
 
     try {
-      const payload = {
-        ...socioFormEdicion,
-        ...(socioFormEdicion.contrasena ? {} : { contraseña: undefined }),
-      };
+      const payload = { ...socioFormEdicion };
+      if (!payload.observaciones) delete payload.observaciones;
+      delete payload.estado;
 
       // Usar FormData si hay foto nueva o eliminación, sino JSON normal
       const esFile = fotoEdicion instanceof File;
@@ -504,25 +508,31 @@ export function Socios() {
 
   const confirmarEliminar = (socio: Socio) => {
     setSocioAEliminar(socio);
+    setMotivoDesactivacion('');
+    setResultadoDesactivacion(null);
     setMostrarConfirmacionEliminar(true);
   };
 
-  const eliminarSocio = async () => {
+  const desactivarSocio = async () => {
     if (!token || !socioAEliminar) return;
 
+    setDesactivando(true);
     try {
-      await apiRequest(`/socio/${socioAEliminar.idPersona}`, {
-        method: 'DELETE',
+      const response = await apiRequest<ApiResponse<DesactivarSocioResultDto>>(`/socio/${socioAEliminar.idPersona}/desactivar`, {
+        method: 'POST',
         token,
+        body: { motivo: motivoDesactivacion.trim() },
       });
 
-      toast.success('Socio dado de baja exitosamente');
-      setMostrarConfirmacionEliminar(false);
-      setSocioAEliminar(null);
+      setResultadoDesactivacion(response.data);
       await cargarSocios();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'No se pudo dar de baja el socio';
       toast.error(errorMessage);
+      setMostrarConfirmacionEliminar(false);
+      setSocioAEliminar(null);
+    } finally {
+      setDesactivando(false);
     }
   };
 
@@ -1048,6 +1058,38 @@ export function Socios() {
                   </div>
                 </div>
               </section>
+
+              <section className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground">Estado y observaciones</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="crear-estado">Estado inicial</Label>
+                    <select
+                      id="crear-estado"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      value={socioForm.estado ?? 'ACTIVO'}
+                      onChange={(e) => actualizarCampoCreacion('estado', e.target.value as 'ACTIVO' | 'INACTIVO')}
+                    >
+                      <option value="ACTIVO">Activo</option>
+                      <option value="INACTIVO">Inactivo</option>
+                    </select>
+                    <p className="text-xs text-muted-foreground">
+                      Si seleccionás "Inactivo" el socio se creará con fecha de baja inmediata.
+                    </p>
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="crear-observaciones">Observaciones</Label>
+                    <Textarea
+                      id="crear-observaciones"
+                      value={socioForm.observaciones ?? ''}
+                      onChange={(e) => actualizarCampoCreacion('observaciones', e.target.value)}
+                      placeholder="Notas internas sobre el socio (opcional)"
+                      maxLength={2000}
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              </section>
             </div>
             <div className="flex justify-end gap-2 border-t bg-background px-6 py-4">
               <Button
@@ -1068,35 +1110,112 @@ export function Socios() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={mostrarConfirmacionEliminar} onOpenChange={setMostrarConfirmacionEliminar}>
+      {/* Modal baja */}
+      <Dialog
+        open={mostrarConfirmacionEliminar}
+        onOpenChange={(open) => {
+          setMostrarConfirmacionEliminar(open);
+          if (!open) {
+            setSocioAEliminar(null);
+            setMotivoDesactivacion('');
+            setResultadoDesactivacion(null);
+          }
+        }}
+      >
         <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Confirmar baja</DialogTitle>
-            <DialogDescription>
-              ¿Estás seguro de que querés dar de baja a {socioAEliminar?.nombre} {socioAEliminar?.apellido}?
-              <br /><br />
-              Esta acción no se puede deshacer.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end gap-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setMostrarConfirmacionEliminar(false);
-                setSocioAEliminar(null);
-              }}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={eliminarSocio}
-            >
-              Dar de baja
-            </Button>
-          </div>
+          {resultadoDesactivacion ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>Baja realizada</DialogTitle>
+                <DialogDescription>
+                  {socioAEliminar?.nombre} {socioAEliminar?.apellido} fue dado de baja correctamente.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3 py-2">
+                {resultadoDesactivacion.tienePlanActivo && (
+                  <Alert variant="destructive" className="border-destructive/30 bg-destructive/5">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Plan alimentario activo</AlertTitle>
+                    <AlertDescription>
+                      El socio tiene un plan alimentario activo. Recordá gestionarlo.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                <div className="rounded-md border bg-muted/20 p-3 text-sm space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Turnos cancelados</span>
+                    <span className="font-medium">{resultadoDesactivacion.turnosCancelados}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Nutricionistas afectados</span>
+                    <span className="font-medium">{resultadoDesactivacion.nutricionistasAfectados}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setMostrarConfirmacionEliminar(false);
+                    setSocioAEliminar(null);
+                    setMotivoDesactivacion('');
+                    setResultadoDesactivacion(null);
+                  }}
+                >
+                  Cerrar
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle>Dar de baja</DialogTitle>
+                <DialogDescription>
+                  Estás por dar de baja a <strong>{socioAEliminar?.nombre} {socioAEliminar?.apellido}</strong>.
+                  Esta acción cancelará todos sus turnos futuros.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-2">
+                <div className="space-y-2">
+                  <Label htmlFor="motivo-baja" required>Motivo de la baja</Label>
+                  <Textarea
+                    id="motivo-baja"
+                    placeholder="Describí el motivo de la baja (mín. 10 caracteres)"
+                    value={motivoDesactivacion}
+                    onChange={(e) => setMotivoDesactivacion(e.target.value)}
+                    maxLength={500}
+                    rows={3}
+                  />
+                  {motivoDesactivacion.length > 0 && motivoDesactivacion.length < 10 && (
+                    <p className="text-xs font-medium text-destructive">
+                      El motivo debe tener al menos 10 caracteres.
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setMostrarConfirmacionEliminar(false);
+                    setSocioAEliminar(null);
+                    setMotivoDesactivacion('');
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={motivoDesactivacion.trim().length < 10 || desactivando}
+                  onClick={desactivarSocio}
+                >
+                  {desactivando ? 'Dando de baja…' : 'Dar de baja'}
+                </Button>
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -1215,12 +1334,18 @@ export function Socios() {
               </section>
 
               <section className="space-y-4">
-                <h3 className="text-sm font-semibold text-foreground">Seguridad (opcional)</h3>
+                <h3 className="text-sm font-semibold text-foreground">Observaciones</h3>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="editar-password">Nueva contraseña</Label>
-                    <Input id="editar-password" type="password" autoComplete="new-password" value={socioFormEdicion.contrasena} onChange={(e) => setSocioFormEdicion({ ...socioFormEdicion, contrasena: e.target.value })} />
-                    <p className="text-xs text-muted-foreground">Dejá en blanco para mantener la contraseña actual.</p>
+                    <Label htmlFor="editar-observaciones">Observaciones</Label>
+                    <Textarea
+                      id="editar-observaciones"
+                      value={socioFormEdicion.observaciones ?? ''}
+                      onChange={(e) => setSocioFormEdicion({ ...socioFormEdicion, observaciones: e.target.value })}
+                      placeholder="Notas internas sobre el socio (opcional)"
+                      maxLength={2000}
+                      rows={3}
+                    />
                   </div>
                 </div>
               </section>
@@ -1379,6 +1504,16 @@ export function Socios() {
                 </section>
               </div>
 
+              {socioSeleccionado.observaciones && (
+                <section className="rounded-xl border bg-card p-4">
+                  <h4 className="mb-2 text-sm font-semibold text-foreground">
+                    Observaciones
+                  </h4>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {socioSeleccionado.observaciones}
+                  </p>
+                </section>
+              )}
               {socioSeleccionado.fechaBaja && (
                 <section className="rounded-xl border border-destructive/30 bg-destructive/5 p-4">
                   <p className="text-xs font-medium uppercase text-muted-foreground">

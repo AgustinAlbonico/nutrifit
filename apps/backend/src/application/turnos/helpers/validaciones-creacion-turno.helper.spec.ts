@@ -15,11 +15,6 @@ import {
   ConflictError,
 } from 'src/domain/exceptions/custom-exceptions';
 
-/**
- * Spec del helper compartido `ValidacionesCreacionTurno` (PR 1.5 del
- * change `crear-turno-en-nombre-del-socio`). Cubre los 4 metodos
- * publicos: happy path + cada tipo de error esperado.
- */
 describe('ValidacionesCreacionTurno', () => {
   let helper: ValidacionesCreacionTurno;
   let agendaRepository: jest.Mocked<Repository<AgendaOrmEntity>>;
@@ -68,9 +63,10 @@ describe('ValidacionesCreacionTurno', () => {
       getRepositoryToken(NutricionistaOrmEntity),
     );
     turnoRepository = module.get(getRepositoryToken(TurnoOrmEntity));
-    jest
-      .mocked(nutricionistaRepository.findOne)
-      .mockResolvedValue({ idPersona: 10, duracionTurnoMin: 60 } as NutricionistaOrmEntity);
+    jest.mocked(nutricionistaRepository.findOne).mockResolvedValue({
+      idPersona: 10,
+      duracionTurnoMin: 60,
+    } as NutricionistaOrmEntity);
   });
 
   afterEach(() => jest.clearAllMocks());
@@ -81,11 +77,13 @@ describe('ValidacionesCreacionTurno', () => {
         helper.validarFechaHoraNoPasado(future, '10:00'),
       ).resolves.toBeUndefined();
     });
+
     it('rechaza fecha pasada', async () => {
       await expect(
         helper.validarFechaHoraNoPasado(past, '10:00'),
       ).rejects.toThrow(BadRequestError);
     });
+
     it('rechaza hoy con hora a menos de 1h', async () => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -103,11 +101,13 @@ describe('ValidacionesCreacionTurno', () => {
         helper.validarFechaNoPasadoSimple(today),
       ).resolves.toBeUndefined();
     });
+
     it('acepta fecha futura', async () => {
       await expect(
         helper.validarFechaNoPasadoSimple(future),
       ).resolves.toBeUndefined();
     });
+
     it('rechaza fecha pasada', async () => {
       await expect(helper.validarFechaNoPasadoSimple(past)).rejects.toThrow(
         BadRequestError,
@@ -116,7 +116,7 @@ describe('ValidacionesCreacionTurno', () => {
   });
 
   describe('validarAgendaDisponible', () => {
-    it('acepta slot dentro de la agenda (lunes 10:00) y filtra por gimnasio del TenantContext', async () => {
+    it('acepta slot dentro de la agenda y filtra por gimnasio del TenantContext', async () => {
       jest.mocked(agendaRepository.find).mockResolvedValue(mockAgenda);
       await expect(
         helper.validarAgendaDisponible(10, future, '10:00'),
@@ -130,13 +130,15 @@ describe('ValidacionesCreacionTurno', () => {
         }),
       );
     });
+
     it('rechaza si no hay agenda ese dia', async () => {
       jest.mocked(agendaRepository.find).mockResolvedValue([]);
       await expect(
         helper.validarAgendaDisponible(10, future, '10:00'),
       ).rejects.toThrow(BadRequestError);
     });
-    it('rechaza si el slot no calza con la grilla (10:30 con turnos de 60min)', async () => {
+
+    it('rechaza si el slot no calza con la grilla global de 60min', async () => {
       jest.mocked(agendaRepository.find).mockResolvedValue(mockAgenda);
       await expect(
         helper.validarAgendaDisponible(10, future, '10:30'),
@@ -159,6 +161,7 @@ describe('ValidacionesCreacionTurno', () => {
         }),
       );
     });
+
     it('rechaza si hay un turno activo en el slot', async () => {
       jest.mocked(turnoRepository.findOne).mockResolvedValue({
         idTurno: 99,

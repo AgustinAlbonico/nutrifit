@@ -160,5 +160,6 @@ function crearNutri(overrides: {
     fechaBaja: overrides.fechaBaja ?? null,
     presentacion: 'Hola',
     certificaciones: [],
+    observaciones: null,
   };
 }

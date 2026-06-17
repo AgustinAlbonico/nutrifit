@@ -258,6 +258,7 @@ export function MiPerfilNutricionista() {
       toast.error(message);
     } finally {
       setEnviando(false);
+      setSubiendoDiploma(false);
     }
   };
 
@@ -647,8 +648,8 @@ export function MiPerfilNutricionista() {
         </Card>
 
         <div className="flex justify-end gap-3">
-          <Button type="submit" disabled={enviando}>
-            {enviando ? 'Guardando...' : 'Guardar cambios'}
+          <Button type="submit" disabled={enviando || subiendoDiploma}>
+            {enviando || subiendoDiploma ? 'Guardando...' : 'Guardar cambios'}
           </Button>
         </div>
       </form>
