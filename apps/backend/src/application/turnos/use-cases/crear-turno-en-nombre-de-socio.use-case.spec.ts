@@ -131,7 +131,7 @@ describe('CrearTurnoEnNombreDeSocioUseCase', () => {
       idTurno: 999,
       fechaTurno: new Date('2026-06-15'),
       horaTurno: '10:00',
-      estadoTurno: EstadoTurno.PROGRAMADO,
+      estadoTurno: EstadoTurno.CONFIRMADO,
       socio: socioConFichaCompleta,
       nutricionista: baseNutricionistaOrm,
       creadoPor: CreadoPor.RECEPCION,

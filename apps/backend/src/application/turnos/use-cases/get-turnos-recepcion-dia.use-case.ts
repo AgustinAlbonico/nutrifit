@@ -35,14 +35,14 @@ export class GetTurnosRecepcionDiaUseCase implements BaseUseCase {
 
     const queryBuilder = this.turnoRepository
       .createQueryBuilder('turno')
-      .leftJoinAndSelect('turno.socio', 'socio')
+      .innerJoinAndSelect('turno.socio', 'socio')
       .innerJoinAndSelect('turno.nutricionista', 'nutricionista')
       .andWhere('nutricionista.gimnasioId = :gimnasioId', {
         gimnasioId: this.tenantContext.gimnasioId,
       })
       .andWhere('DATE(turno.fechaTurno) = :targetDate', { targetDate })
       .andWhere('turno.estadoTurno IN (:...estados)', {
-        estados: ['PROGRAMADO', 'PRESENTE', 'EN_CURSO', 'AUSENTE'],
+        estados: ['CONFIRMADO', 'PRESENTE', 'EN_CURSO', 'AUSENTE'],
       })
       .orderBy('turno.horaTurno', 'ASC');
 
@@ -58,12 +58,11 @@ export class GetTurnosRecepcionDiaUseCase implements BaseUseCase {
       response.fechaTurno = formatArgentinaDate(turno.fechaTurno);
       response.horaTurno = turno.horaTurno;
       response.estadoTurno = turno.estadoTurno;
-      response.nombreSocio = turno.socio
-        ? `${turno.socio.nombre} ${turno.socio.apellido}`.trim()
-        : 'Sin socio asignado';
+      response.nombreSocio =
+        `${turno.socio.nombre} ${turno.socio.apellido}`.trim();
       response.nombreNutricionista =
         `${turno.nutricionista.nombre} ${turno.nutricionista.apellido}`.trim();
-      response.dniSocio = turno.socio?.dni ?? '';
+      response.dniSocio = turno.socio.dni ?? '';
       response.ausenteAt = turno.ausenteAt;
       response.ausenteMotivo = turno.ausenteMotivo;
       response.llegadaTardeMin = turno.llegadaTardeMin;

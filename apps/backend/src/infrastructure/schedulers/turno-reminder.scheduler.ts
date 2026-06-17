@@ -39,6 +39,7 @@ export class TurnoReminderScheduler {
       relations: {
         socio: { usuario: true },
         nutricionista: true,
+        gimnasio: true,
       },
     });
   }

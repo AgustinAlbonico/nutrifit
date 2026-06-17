@@ -17,7 +17,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
-import React from 'react';
+import React, { StrictMode } from 'react';
 
 import { server } from '@/mocks/server';
 import { FichaSaludSocio } from '@/pages/FichaSaludSocio';
@@ -369,5 +369,56 @@ describe('FichaSaludSocio - página de socio', () => {
     expect(banner).toBeInTheDocument();
     // El banner muestra una fecha con formato DD/MM/YYYY HH:mm
     expect(banner.textContent).toMatch(/\d{2}\/\d{2}\/\d{4}/);
+  });
+
+  it('T2-11: en StrictMode la ficha se consulta una sola vez al cargar', async () => {
+    let cantidadLlamadas = 0;
+
+    server.use(
+      http.get('*/turnos/socio/ficha-salud', () => {
+        cantidadLlamadas += 1;
+        return HttpResponse.json({
+          success: true,
+          message: 'ok',
+          data: fichaCompleta,
+          timestamp: new Date().toISOString(),
+        });
+      }),
+    );
+
+    render(crearProveedorQuery(
+      <StrictMode>
+        <FichaSaludSocio />
+      </StrictMode>,
+    ));
+
+    await screen.findByTestId('boton-ver-historial');
+
+    await waitFor(() => {
+      expect(cantidadLlamadas).toBe(1);
+    });
+  });
+
+  it('T2-12: muestra indicador de progreso y las 6 secciones esperadas del formulario', async () => {
+    server.use(handlerFichaCompleta);
+    render(crearProveedorQuery(<FichaSaludSocio />));
+
+    await screen.findByTestId('boton-ver-historial');
+
+    expect(screen.getByText(/Progreso del formulario/i)).toBeInTheDocument();
+    expect(screen.getByText(/6 secciones/i)).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('heading', { name: /Datos antropométricos/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^Hábitos$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^Salud$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^Alimentación$/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /Antecedentes y objetivos/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /^Consentimiento$/i }),
+    ).toBeInTheDocument();
   });
 });

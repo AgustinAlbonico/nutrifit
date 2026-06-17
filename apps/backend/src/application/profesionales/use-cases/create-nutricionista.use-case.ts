@@ -26,6 +26,11 @@ import { GrupoPermisoOrmEntity } from 'src/infrastructure/persistence/typeorm/en
 import { Repository } from 'typeorm';
 import { GrupoPermisoEntity } from 'src/domain/entities/Usuario/grupo-permiso.entity';
 import { generarContrasenaProvisional } from 'src/common/utils/password-generator.util';
+import {
+  normalizarCertificaciones,
+  normalizarFormacionAcademica,
+} from '../helpers/trayectoria-profesional.helper';
+import { EmailService } from 'src/application/email/email.service';
 
 export interface ResultadoCrearNutricionista {
   nutricionista: NutricionistaEntity;
@@ -44,6 +49,7 @@ export class CreateNutricionistaUseCase implements BaseUseCase {
     private readonly passwordEncrypter: IPasswordEncrypterService,
     @InjectRepository(GrupoPermisoOrmEntity)
     private readonly grupoPermisoRepository: Repository<GrupoPermisoOrmEntity>,
+    private readonly emailService: EmailService,
   ) {}
 
   async execute(
@@ -92,8 +98,15 @@ export class CreateNutricionistaUseCase implements BaseUseCase {
       aniosExperiencia,
       duracionTurnoMin,
       presentacion,
+      formacionAcademica,
+      certificaciones,
       email,
     } = payload;
+
+    const formacionAcademicaNormalizada =
+      normalizarFormacionAcademica(formacionAcademica);
+    const certificacionesNormalizadas =
+      normalizarCertificaciones(certificaciones);
 
     // Create NutricionistaEntity
     const nutricionistaEntity = new NutricionistaEntity(
@@ -110,12 +123,13 @@ export class CreateNutricionistaUseCase implements BaseUseCase {
       aniosExperiencia,
       tarifaSesion,
       [],
+      formacionAcademicaNormalizada,
+      certificacionesNormalizadas,
       [],
       [],
       null,
       email,
       presentacion ?? null,
-      null,
       duracionTurnoMin,
       null,
     );
@@ -166,6 +180,19 @@ export class CreateNutricionistaUseCase implements BaseUseCase {
     this.logger.log(
       `Usuario creado para nutricionista: ${nutricionistaCreado.idPersona} (debe_cambiar_password=true)`,
     );
+
+    void this.emailService
+      .enviarBienvenida({
+        nombre: `${nutricionistaCreado.nombre} ${nutricionistaCreado.apellido}`,
+        email: payload.email,
+        contrasenaProvisional,
+        rol: 'NUTRICIONISTA',
+      })
+      .catch((error) => {
+        this.logger.warn(
+          `No se pudo enviar email de bienvenida a ${payload.email}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      });
 
     return {
       nutricionista: nutricionistaCreado,

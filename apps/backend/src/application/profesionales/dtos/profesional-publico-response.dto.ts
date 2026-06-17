@@ -1,4 +1,7 @@
 import { DiaSemana } from 'src/domain/entities/Agenda/dia-semana';
+import { NivelFormacion } from 'src/domain/entities/Certificacion/nivel-formacion';
+import { CertificacionDto } from './certificacion.dto';
+import { DiplomaDto } from './diploma.dto';
 
 export class HorarioProfesionalPublicoDto {
   dia: DiaSemana;
@@ -10,7 +13,10 @@ export class HorarioProfesionalPublicoDto {
 export class FormacionAcademicaPublicaDto {
   titulo: string;
   institucion: string;
-  anio: number;
+  anioInicio: number;
+  anioFin: number | null;
+  nivel: NivelFormacion;
+  enCurso: boolean;
 }
 
 export class ProfesionalPublicoResponseDto {
@@ -23,17 +29,16 @@ export class ProfesionalPublicoResponseDto {
   provincia: string;
   aniosExperiencia: number;
   tarifaSesion: number;
-  // Campos nuevos (spec 10 / spec 15)
   fotoUrl: string | null;
   presentacion: string | null;
   duracionTurnoMin: number;
+  agendaConfigurada: boolean;
   slotsProximos7Dias: number;
-  diplomaUrl: string | null;
+  diplomas: DiplomaDto[];
 }
 
 export class PerfilProfesionalPublicoResponseDto extends ProfesionalPublicoResponseDto {
-  // matricula se hereda de ProfesionalPublicoResponseDto
-  certificaciones: string | null;
+  certificaciones: CertificacionDto[];
   formacionAcademica: FormacionAcademicaPublicaDto[];
   horarios: HorarioProfesionalPublicoDto[];
 }

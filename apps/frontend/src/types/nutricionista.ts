@@ -1,6 +1,41 @@
 import type { Genero } from './genero';
 export type { Genero };
 
+export type NivelFormacion =
+  | 'GRADO'
+  | 'POSGRADO'
+  | 'MAESTRIA'
+  | 'DOCTORADO'
+  | 'ESPECIALIZACION'
+  | 'DIPLOMATURA'
+  | 'CURSO';
+
+export interface DiplomaDto {
+  idDiploma: number;
+  url: string;
+  nombreOriginal: string | null;
+  mimeType: string | null;
+}
+
+export interface CertificacionDto {
+  idCertificacion: number | null;
+  nombre: string;
+  entidad: string;
+  anio: number | null;
+  cargaHoraria: number | null;
+  nivel: NivelFormacion | null;
+}
+
+export interface FormacionAcademicaDto {
+  idFormacionAcademica: number | null;
+  titulo: string;
+  institucion: string;
+  anioInicio: number;
+  anioFin: number | null;
+  nivel: NivelFormacion;
+  enCurso: boolean;
+}
+
 export interface Nutricionista {
   idPersona: number;
   nombre: string;
@@ -21,7 +56,9 @@ export interface Nutricionista {
   activo: boolean;
   fotoPerfilUrl: string | null;
   presentacion: string | null;
-  diplomaUrl: string | null;
+  certificaciones?: CertificacionDto[];
+  formacionAcademica?: FormacionAcademicaDto[];
+  diplomas: DiplomaDto[];
 }
 
 export interface CrearNutricionistaDto {
@@ -40,6 +77,8 @@ export interface CrearNutricionistaDto {
   tarifaSesion: number;
   duracionTurnoMin: number;
   presentacion?: string;
+  certificaciones?: CertificacionDto[];
+  formacionAcademica?: FormacionAcademicaDto[];
 }
 
 export interface CrearNutricionistaResponseDto {

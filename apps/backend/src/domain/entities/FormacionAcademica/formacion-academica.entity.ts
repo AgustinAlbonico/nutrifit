@@ -1,20 +1,21 @@
 import { AuditableEntity } from '../../shared/auditable.entity';
+import { NivelFormacion } from '../Certificacion/nivel-formacion';
 
 export class FormacionAcademicaEntity extends AuditableEntity {
   idFormacionAcademica: number | null;
   titulo: string;
   institucion: string;
   añoComienzo: number;
-  añoFin: number;
-  nivel: string;
+  añoFin: number | null;
+  nivel: NivelFormacion;
 
   constructor(
     idFormacionAcademica: number | null = null,
     titulo: string,
     institucion: string,
     añoComienzo: number,
-    añoFin: number,
-    nivel: string,
+    añoFin: number | null,
+    nivel: NivelFormacion,
     fechaBaja: Date | null = null,
   ) {
     super(fechaBaja);

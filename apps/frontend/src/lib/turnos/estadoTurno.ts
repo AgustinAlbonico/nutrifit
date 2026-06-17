@@ -25,12 +25,16 @@ export function obtenerEstadoVisualSlotAgenda(
 }
 
 export function puedeHacerCheckInTurno(estado: EstadoTurno): boolean {
-  return estado === 'PROGRAMADO';
+  return estado === 'CONFIRMADO';
+}
+
+export function puedeRevertirCheckIn(estado: EstadoTurno): boolean {
+  return estado === 'PRESENTE';
 }
 
 export function esEstadoTurnoVigente(estado: EstadoTurno): boolean {
   return (
-    estado === 'PROGRAMADO' ||
+    estado === 'CONFIRMADO' ||
     estado === 'PRESENTE' ||
     estado === 'EN_CURSO'
   );
@@ -40,6 +44,8 @@ export function obtenerEtiquetaEstadoTurno(estado: EstadoSlotAgenda): string {
   switch (estado) {
     case 'PROGRAMADO':
       return 'Programado';
+    case 'CONFIRMADO':
+      return 'Confirmado';
     case 'PRESENTE':
       return 'Presente';
     case 'EN_CURSO':
@@ -65,6 +71,8 @@ export function obtenerClasesEstadoTurno(estado: EstadoSlotAgenda): string {
   switch (estado) {
     case 'PROGRAMADO':
       return 'border-amber-200 bg-amber-100 text-amber-800';
+    case 'CONFIRMADO':
+      return 'border-sky-200 bg-sky-100 text-sky-800';
     case 'PRESENTE':
       return 'border-blue-200 bg-blue-100 text-blue-800';
     case 'EN_CURSO':
@@ -90,6 +98,7 @@ export function obtenerVarianteEstadoTurno(
 ): 'default' | 'secondary' | 'destructive' | 'outline' {
   switch (estado) {
     case 'PROGRAMADO':
+    case 'CONFIRMADO':
       return 'secondary';
     case 'PRESENTE':
     case 'EN_CURSO':

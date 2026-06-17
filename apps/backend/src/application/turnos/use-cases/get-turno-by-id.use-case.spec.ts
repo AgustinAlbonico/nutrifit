@@ -41,7 +41,7 @@ describe('GetTurnoByIdUseCase - Multi-Tenant Isolation', () => {
     idTurno: 1,
     fechaTurno: new Date('2026-06-01'),
     horaTurno: '10:00',
-    estadoTurno: EstadoTurno.PROGRAMADO,
+    estadoTurno: EstadoTurno.CONFIRMADO,
     socio: mockSocio,
     nutricionista: mockNutricionista,
     observacionClinica: null,

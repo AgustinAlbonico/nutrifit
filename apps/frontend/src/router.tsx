@@ -40,6 +40,7 @@ import { UsuarioPermisosPage } from '@/pages/admin/UsuarioPermisosPage';
 import { Recepcionistas } from '@/pages/Recepcionistas';
 import { MiPerfilNutricionista } from '@/pages/MiPerfilNutricionista';
 import { AsignarTurnoPage } from '@/pages/AsignarTurnoPage';
+import { CambiarContrasenaObligatorio } from '@/pages/CambiarContrasenaObligatorio';
 
 // Definir el tipo del context del router
 declare module '@tanstack/react-router' {
@@ -59,11 +60,11 @@ interface RouterContextType {
 }
 
 // Función para leer autenticación del localStorage (mismo que AuthContext)
-function readStoredAuth(): { isAuthenticated: boolean; rol: string | null } {
+function readStoredAuth(): { isAuthenticated: boolean; rol: string | null; debeCambiarPassword: boolean } {
   const AUTH_STORAGE_KEY = 'nutrifit.auth';
   const raw = localStorage.getItem(AUTH_STORAGE_KEY);
   if (!raw) {
-    return { isAuthenticated: false, rol: null };
+    return { isAuthenticated: false, rol: null, debeCambiarPassword: false };
   }
 
   try {
@@ -71,11 +72,16 @@ function readStoredAuth(): { isAuthenticated: boolean; rol: string | null } {
       token: string;
       rol: string;
       permissions: string[];
+      debeCambiarPassword?: boolean;
     };
-    return { isAuthenticated: !!parsed.token, rol: parsed.rol ?? null };
+    return {
+      isAuthenticated: !!parsed.token,
+      rol: parsed.rol ?? null,
+      debeCambiarPassword: parsed.debeCambiarPassword ?? false,
+    };
   } catch {
     localStorage.removeItem(AUTH_STORAGE_KEY);
-    return { isAuthenticated: false, rol: null };
+    return { isAuthenticated: false, rol: null, debeCambiarPassword: false };
   }
 }
 
@@ -116,6 +122,10 @@ const authLayoutRoute = createRoute({
 
     if (!isNavigatingToLogin && !auth.isAuthenticated) {
       throw redirect({ to: '/login', replace: true });
+    }
+
+    if (!isNavigatingToLogin && auth.debeCambiarPassword) {
+      throw redirect({ to: '/cambiar-contrasena', replace: true });
     }
   },
 });
@@ -353,15 +363,30 @@ const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
   beforeLoad: () => {
-    // Leer autenticación directamente del localStorage
     const auth = readStoredAuth();
     const to = auth?.isAuthenticated ? '/dashboard' : '/login';
     throw redirect({ to, replace: true });
   },
 });
 
+const cambiarContrasenaRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/cambiar-contrasena',
+  component: CambiarContrasenaObligatorio,
+  beforeLoad: () => {
+    const auth = readStoredAuth();
+    if (!auth.isAuthenticated) {
+      throw redirect({ to: '/login', replace: true });
+    }
+    if (!auth.debeCambiarPassword) {
+      throw redirect({ to: '/dashboard', replace: true });
+    }
+  },
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
+  cambiarContrasenaRoute,
   loginRoute,
   authLayoutRoute.addChildren([
     dashboardRoute,

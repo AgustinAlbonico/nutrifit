@@ -1,6 +1,8 @@
 import 'reflect-metadata';
 import { AgendaOrmEntity } from '../../persistence/typeorm/entities/agenda.entity';
 import { AlimentoOrmEntity } from '../../persistence/typeorm/entities/alimento.entity';
+import { DiplomaOrmEntity } from '../../persistence/typeorm/entities/diploma.entity';
+import { CertificacionOrmEntity } from '../../persistence/typeorm/entities/certificacion.entity';
 import {
   RecepcionistaOrmEntity,
   NutricionistaOrmEntity,
@@ -64,12 +66,14 @@ export const AppMigrationDataSource = new DataSource({
     GrupoAlimenticioOrmEntity,
     PlanAlimentacionOrmEntity,
     FormacionAcademicaOrmEntity,
+    CertificacionOrmEntity,
     ObservacionClinicaOrmEntity,
     AccionOrmEntity,
     GrupoPermisoOrmEntity,
     UsuarioGrupoPermisoOrmEntity,
     MedicionOrmEntity,
     DiaPlanOrmEntity,
+    DiplomaOrmEntity,
     GimnasioOrmEntity,
     FotoProgresoOrmEntity,
     ObjetivoOrmEntity,

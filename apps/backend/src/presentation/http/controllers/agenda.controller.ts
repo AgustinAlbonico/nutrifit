@@ -6,15 +6,19 @@ import {
   Param,
   ParseIntPipe,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
   AgendaResponseDto,
   ConfigureAgendaDto,
+  ConfigureAgendaResponseDto,
+  ListarExcepcionesDisponibilidadQueryDto,
 } from 'src/application/agenda/dtos';
 import {
   ConfigureAgendaUseCase,
   GetAgendaUseCase,
+  ListarExcepcionesDisponibilidadUseCase,
 } from 'src/application/agenda/use-cases';
 import { AgendaEntity } from 'src/domain/entities/Agenda/agenda.entity';
 import { Rol as RolEnum } from 'src/domain/entities/Usuario/Rol';
@@ -34,6 +38,7 @@ export class AgendaController {
   constructor(
     private readonly configureAgendaUseCase: ConfigureAgendaUseCase,
     private readonly getAgendaUseCase: GetAgendaUseCase,
+    private readonly listarExcepcionesUseCase: ListarExcepcionesDisponibilidadUseCase,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
   ) {}
@@ -44,17 +49,25 @@ export class AgendaController {
   async configureAgenda(
     @Param('nutricionistaId', ParseIntPipe) nutricionistaId: number,
     @Body() configureAgendaDto: ConfigureAgendaDto,
-  ): Promise<AgendaResponseDto[]> {
+  ): Promise<ConfigureAgendaResponseDto> {
     this.logger.log(
       `Configurando agenda para profesional ${nutricionistaId} con ${configureAgendaDto.agendas.length} bloques.`,
     );
 
-    const configuredAgenda = await this.configureAgendaUseCase.execute(
-      nutricionistaId,
-      configureAgendaDto,
-    );
+    return this.configureAgendaUseCase.execute(nutricionistaId, configureAgendaDto);
+  }
 
-    return configuredAgenda.map((agenda) => this.toResponseDto(agenda));
+  @Get(':nutricionistaId/excepciones-disponibilidad')
+  @Rol(RolEnum.NUTRICIONISTA)
+  @UseGuards(NutricionistaOwnershipGuard)
+  async listarExcepciones(
+    @Param('nutricionistaId', ParseIntPipe) nutricionistaId: number,
+    @Query() query: ListarExcepcionesDisponibilidadQueryDto,
+  ) {
+    this.logger.log(
+      `Listando excepciones de disponibilidad para profesional ${nutricionistaId}.`,
+    );
+    return this.listarExcepcionesUseCase.execute(nutricionistaId, query);
   }
 
   @Get(':nutricionistaId')

@@ -13,9 +13,7 @@ const TODOS = MAYUSCULAS + MINUSCULAS + NUMEROS + SIMBOLOS;
  * 1 minúscula, 1 número y 1 símbolo. Los 8 caracteres restantes
  * se eligen al azar del set completo para no debilitar la contraseña.
  */
-export function generarContrasenaProvisional(
-  longitud: number = 12,
-): string {
+export function generarContrasenaProvisional(longitud: number = 12): string {
   if (longitud < 4) {
     throw new Error(
       'La longitud mínima de la contraseña provisional es 4 caracteres.',

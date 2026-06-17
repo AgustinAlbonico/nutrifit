@@ -295,6 +295,13 @@ export function Turnos() {
     return null;
   };
 
+  const esFechaPasada = (fecha: string, hora: string): boolean => {
+    const [horas, minutos] = hora.split(':').map(Number);
+    const fechaHora = new Date(fecha);
+    fechaHora.setHours(horas, minutos, 0, 0);
+    return fechaHora < new Date();
+  };
+
   const cancelarTurno = async (turno: MiTurno) => {
     if (!token) {
       return;
@@ -642,7 +649,7 @@ export function Turnos() {
                             {descripcionEstado}
                           </p>
 
-                          {turno.estadoTurno === 'PROGRAMADO' && (
+                          {turno.estadoTurno === 'PROGRAMADO' && !esFechaPasada(turno.fechaTurno, turno.horaTurno) && (
                             <div className="mt-4 flex flex-wrap gap-2 border-t pt-3">
                               <Button
                                 size="sm"

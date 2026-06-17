@@ -1,4 +1,4 @@
-import { IsEnum, IsInt, IsString, Matches, Min } from 'class-validator';
+import { IsEnum, IsString, Matches } from 'class-validator';
 import { DiaSemana } from 'src/domain/entities/Agenda/dia-semana';
 
 const TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
@@ -18,8 +18,4 @@ export class ConfigureAgendaItemDto {
     message: 'horaFin debe estar en formato HH:mm',
   })
   horaFin: string;
-
-  @IsInt()
-  @Min(5)
-  duracionTurno: number;
 }

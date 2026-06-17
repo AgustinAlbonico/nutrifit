@@ -3,7 +3,10 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ReprogramarTurnoSocioUseCase } from './reprogramar-turno-socio.use-case';
 import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/turno.entity';
-import { SocioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/persona.entity';
+import {
+  NutricionistaOrmEntity,
+  SocioOrmEntity,
+} from 'src/infrastructure/persistence/typeorm/entities/persona.entity';
 import { UsuarioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/usuario.entity';
 import { AgendaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/agenda.entity';
 import { GimnasioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/gimnasio.entity';
@@ -77,7 +80,7 @@ describe('ReprogramarTurnoSocioUseCase', () => {
       idTurno: 1,
       fechaTurno: new Date(Date.now() + 48 * 60 * 60 * 1000), // 48 hours from now
       horaTurno: '10:00',
-      estadoTurno: EstadoTurno.PROGRAMADO,
+      estadoTurno: EstadoTurno.CONFIRMADO,
       checkInAt: null,
       consultaIniciadaAt: null,
       consultaFinalizadaAt: null,
@@ -117,6 +120,15 @@ describe('ReprogramarTurnoSocioUseCase', () => {
           provide: getRepositoryToken(AgendaOrmEntity),
           useValue: {
             find: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(NutricionistaOrmEntity),
+          useValue: {
+            findOne: jest.fn().mockResolvedValue({
+              idPersona: mockNutricionista.idPersona,
+              duracionTurnoMin: 60,
+            }),
           },
         },
         {
@@ -211,8 +223,8 @@ describe('ReprogramarTurnoSocioUseCase', () => {
       const savedTurno = turnoRepository.save.mock
         .calls[0][0] as TurnoOrmEntity;
       expect(savedTurno.fechaOriginal).toEqual(fechaOriginal);
-      // El estado se mantiene como PROGRAMADO tras reprogramar
-      expect(savedTurno.estadoTurno).toBe(EstadoTurno.PROGRAMADO);
+      // El estado se mantiene como CONFIRMADO tras reprogramar
+      expect(savedTurno.estadoTurno).toBe(EstadoTurno.CONFIRMADO);
     });
 
     it('debe lanzar NotFoundError cuando el turno no existe', async () => {
@@ -264,7 +276,7 @@ describe('ReprogramarTurnoSocioUseCase', () => {
       );
     });
 
-    it('debe lanzar BadRequestError cuando el turno no esta en estado PROGRAMADO', async () => {
+    it('debe lanzar BadRequestError cuando el turno no esta en estado CONFIRMADO', async () => {
       // Arrange
       usuarioRepository.findOne.mockResolvedValue(mockUsuario);
       socioRepository.findOne.mockResolvedValue(mockSocio);

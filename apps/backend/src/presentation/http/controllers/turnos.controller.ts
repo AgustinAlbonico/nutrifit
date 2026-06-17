@@ -48,6 +48,7 @@ import {
   RegistrarAsistenciaTurnoDto,
   ReservarTurnoSocioDto,
   RevertirAusenteDto,
+  RevertirCheckinDto,
   TurnoDelDiaResponseDto,
   TurnoOperacionResponseDto,
   UpsertFichaSaludSocioDto,
@@ -88,6 +89,7 @@ import {
   RegistrarAsistenciaTurnoUseCase,
   ReservarTurnoSocioUseCase,
   RevertirAusenteTurnoUseCase,
+  RevertirCheckinTurnoUseCase,
   UpsertFichaSaludSocioUseCase,
 } from 'src/application/turnos/use-cases';
 import { ActorStaff } from 'src/application/turnos/types/actor-staff';
@@ -154,6 +156,7 @@ export class TurnosController {
     private readonly registrarAsistenciaTurnoUseCase: RegistrarAsistenciaTurnoUseCase,
     private readonly reservarTurnoSocioUseCase: ReservarTurnoSocioUseCase,
     private readonly revertirAusenteTurnoUseCase: RevertirAusenteTurnoUseCase,
+    private readonly revertirCheckinTurnoUseCase: RevertirCheckinTurnoUseCase,
     private readonly upsertFichaSaludSocioUseCase: UpsertFichaSaludSocioUseCase,
     private readonly adjuntoClinicoService: AdjuntoClinicoService,
     private readonly tenantContext: TenantContextService,
@@ -603,13 +606,45 @@ export class TurnosController {
   }
 
   @Post(':id/check-in')
-  @Rol(RolEnum.RECEPCIONISTA)
-  async checkInTurno(
-    @Param('id', ParseIntPipe) turnoId: number,
-  ): Promise<{ success: boolean; estado: string }> {
+  @Rol(RolEnum.RECEPCIONISTA, RolEnum.ADMIN)
+  @UseGuards(TurnoNutricionistaAccessGuard)
+  async checkInTurno(@Param('id', ParseIntPipe) turnoId: number): Promise<{
+    success: boolean;
+    estado: string;
+    checkInAt: string;
+    llegadaTardeMin: number | null;
+    fueIdempotente: boolean;
+  }> {
     this.logger.log(`Check-in para turno ${turnoId}.`);
 
-    return this.checkInTurnoUseCase.execute(turnoId);
+    const result = await this.checkInTurnoUseCase.execute(turnoId);
+
+    return {
+      success: result.success,
+      estado: result.estado,
+      checkInAt: result.checkInAt.toISOString(),
+      llegadaTardeMin: result.llegadaTardeMin,
+      fueIdempotente: result.fueIdempotente,
+    };
+  }
+
+  @Post(':id/revertir-checkin')
+  @Rol(RolEnum.ADMIN)
+  @UseGuards(TurnoNutricionistaAccessGuard)
+  async revertirCheckin(
+    @Param('id', ParseIntPipe) turnoId: number,
+    @Body() dto: RevertirCheckinDto,
+    @CurrentUserId() userId: number,
+  ): Promise<{ success: boolean; estado: string }> {
+    this.logger.log(
+      `Revirtiendo check-in para turno ${turnoId} por admin ${userId}. Motivo: ${dto.motivo}`,
+    );
+
+    return this.revertirCheckinTurnoUseCase.execute(
+      turnoId,
+      dto.motivo,
+      userId,
+    );
   }
 
   @Get('recepcion/dia')
@@ -687,6 +722,7 @@ export class TurnosController {
 
   @Post(':id/notificar-inasistencia')
   @Rol(RolEnum.RECEPCIONISTA, RolEnum.ADMIN)
+  @UseGuards(TurnoNutricionistaAccessGuard)
   async notificarInasistencia(
     @Param('id', ParseIntPipe) turnoId: number,
   ): Promise<{ success: boolean }> {

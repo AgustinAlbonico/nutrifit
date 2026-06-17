@@ -46,8 +46,13 @@ export class ForbiddenError extends AppError {
 }
 
 export class ConflictError extends AppError {
-  constructor(message?: string) {
+  public readonly data?: Record<string, unknown>;
+  public readonly context?: Record<string, unknown>;
+
+  constructor(message?: string, data?: Record<string, unknown>) {
     super(ErrorCode.CONFLICT, message);
+    this.data = data;
+    this.context = data;
   }
 }
 

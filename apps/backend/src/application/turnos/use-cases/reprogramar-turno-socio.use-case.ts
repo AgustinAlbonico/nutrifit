@@ -32,6 +32,7 @@ import {
 } from 'src/common/utils/argentina-datetime.util';
 import {
   AgendaOrmEntity,
+  NutricionistaOrmEntity,
   SocioOrmEntity,
   TurnoOrmEntity,
   UsuarioOrmEntity,
@@ -54,6 +55,8 @@ export class ReprogramarTurnoSocioUseCase implements BaseUseCase {
     private readonly turnoRepository: Repository<TurnoOrmEntity>,
     @InjectRepository(AgendaOrmEntity)
     private readonly agendaRepository: Repository<AgendaOrmEntity>,
+    @InjectRepository(NutricionistaOrmEntity)
+    private readonly nutricionistaRepository: Repository<NutricionistaOrmEntity>,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
     @Inject(POLITICA_OPERATIVA_REPOSITORY)
@@ -100,9 +103,9 @@ export class ReprogramarTurnoSocioUseCase implements BaseUseCase {
       }
     }
 
-    if (turno.estadoTurno !== EstadoTurno.PROGRAMADO) {
+    if (turno.estadoTurno !== EstadoTurno.CONFIRMADO) {
       throw new BadRequestError(
-        'Solo se pueden reprogramar turnos en estado PROGRAMADO.',
+        'Solo se pueden reprogramar turnos en estado CONFIRMADO.',
       );
     }
 
@@ -146,7 +149,7 @@ export class ReprogramarTurnoSocioUseCase implements BaseUseCase {
     turno.fechaOriginal = turno.fechaTurno;
     turno.fechaTurno = nuevaFecha;
     turno.horaTurno = nuevaHora;
-    // La reprogramación mantiene el estado PROGRAMADO (el turno sigue programado, solo cambia fecha/hora)
+    // La reprogramación mantiene el estado CONFIRMADO (el turno sigue confirmado, solo cambia fecha/hora)
 
     const updatedTurno = await this.turnoRepository.save(turno);
 
@@ -307,17 +310,26 @@ export class ReprogramarTurnoSocioUseCase implements BaseUseCase {
       );
     }
 
+    const nutricionista = await this.nutricionistaRepository.findOne({
+      where: {
+        idPersona: nutricionistaId,
+        gimnasioId: this.tenantContext.gimnasioId,
+      },
+      select: ['idPersona', 'duracionTurnoMin'],
+    });
+    const duracionTurno = nutricionista?.duracionTurnoMin ?? agendaDelDia[0].duracionTurno;
+
     const turnoInicio = this.timeToMinutes(horaTurno);
 
     const hasAvailableSlot = agendaDelDia.some((agenda) => {
       const inicio = this.timeToMinutes(agenda.horaInicio);
       const fin = this.timeToMinutes(agenda.horaFin);
-      const turnoFin = turnoInicio + agenda.duracionTurno;
+      const turnoFin = turnoInicio + duracionTurno;
 
       return (
         turnoInicio >= inicio &&
         turnoFin <= fin &&
-        (turnoInicio - inicio) % agenda.duracionTurno === 0
+        (turnoInicio - inicio) % duracionTurno === 0
       );
     });
 

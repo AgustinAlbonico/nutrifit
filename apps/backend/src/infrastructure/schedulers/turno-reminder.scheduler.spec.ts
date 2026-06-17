@@ -32,13 +32,13 @@ describe('TurnoReminderScheduler', () => {
   });
 
   it('debe excluir turnos en estados CANCELADO y AUSENTE', async () => {
-    // Turnos que SÍ deberían procesarse (PROGRAMADO)
+    // Turnos que SÍ deberían procesarse (CONFIRMADO)
     const turnosValidos = [
       {
         idTurno: 1,
         fechaTurno: new Date(),
         horaTurno: '15:00',
-        estadoTurno: EstadoTurno.PROGRAMADO,
+        estadoTurno: EstadoTurno.CONFIRMADO,
         socio: { usuario: { email: 'test@test.com' }, nombre: 'Socio' },
         nutricionista: { nombre: 'Profesional' },
       },

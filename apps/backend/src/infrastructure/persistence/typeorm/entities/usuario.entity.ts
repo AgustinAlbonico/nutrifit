@@ -31,10 +31,8 @@ export class UsuarioOrmEntity {
     width: 1,
     default: 0,
     transformer: {
-      to: (value: boolean | null | undefined): number =>
-        value ? 1 : 0,
-      from: (value: number | null | undefined): boolean =>
-        Boolean(value),
+      to: (value: boolean | null | undefined): number => (value ? 1 : 0),
+      from: (value: number | null | undefined): boolean => Boolean(value),
     },
   })
   debeCambiarPassword: boolean;

@@ -50,23 +50,67 @@ export interface PlanSemilla {
 const GIMNASIOS = ['Gym Central', 'Gym Norte', 'Gym Sur'] as const;
 
 const NOMBRES_MASCULINOS = [
-  'Diego', 'Martín', 'Sebastián', 'Federico', 'Joaquín',
-  'Lucas', 'Gabriel', 'Mateo', 'Tomás', 'Nicolás',
-  'Esteban', 'Andrés', 'Santiago', 'Emiliano', 'Bruno',
+  'Diego',
+  'Martín',
+  'Sebastián',
+  'Federico',
+  'Joaquín',
+  'Lucas',
+  'Gabriel',
+  'Mateo',
+  'Tomás',
+  'Nicolás',
+  'Esteban',
+  'Andrés',
+  'Santiago',
+  'Emiliano',
+  'Bruno',
 ];
 
 const NOMBRES_FEMENINOS = [
-  'Sofía', 'María', 'Carla', 'Lucía', 'Paula',
-  'Florencia', 'Valentina', 'Camila', 'Rocío', 'Julieta',
-  'Carolina', 'Victoria', 'Daniela', 'Lara', 'Agustina',
+  'Sofía',
+  'María',
+  'Carla',
+  'Lucía',
+  'Paula',
+  'Florencia',
+  'Valentina',
+  'Camila',
+  'Rocío',
+  'Julieta',
+  'Carolina',
+  'Victoria',
+  'Daniela',
+  'Lara',
+  'Agustina',
 ];
 
 const APELLIDOS = [
-  'González', 'Fernández', 'Rodríguez', 'Martínez', 'López',
-  'Pérez', 'Sánchez', 'Romero', 'Díaz', 'Medina',
-  'Acosta', 'Benítez', 'Castro', 'Domínguez', 'Flores',
-  'Gómez', 'Herrera', 'Ibarra', 'Juárez', 'Luna',
-  'Molina', 'Navarro', 'Ortiz', 'Ramírez', 'Torres',
+  'González',
+  'Fernández',
+  'Rodríguez',
+  'Martínez',
+  'López',
+  'Pérez',
+  'Sánchez',
+  'Romero',
+  'Díaz',
+  'Medina',
+  'Acosta',
+  'Benítez',
+  'Castro',
+  'Domínguez',
+  'Flores',
+  'Gómez',
+  'Herrera',
+  'Ibarra',
+  'Juárez',
+  'Luna',
+  'Molina',
+  'Navarro',
+  'Ortiz',
+  'Ramírez',
+  'Torres',
 ];
 
 const PRESENTACIONES = [
@@ -93,53 +137,218 @@ const CERTIFICACIONES = [
 
 const PLANTILLAS_AGENDA: BloqueAgendaSemilla[][] = [
   [
-    { dia: 'Lunes', horaInicio: '09:00:00', horaFin: '13:00:00', duracionTurno: 60 },
-    { dia: 'Martes', horaInicio: '09:00:00', horaFin: '13:00:00', duracionTurno: 60 },
-    { dia: 'Miércoles', horaInicio: '09:00:00', horaFin: '13:00:00', duracionTurno: 60 },
-    { dia: 'Jueves', horaInicio: '09:00:00', horaFin: '13:00:00', duracionTurno: 60 },
-    { dia: 'Viernes', horaInicio: '09:00:00', horaFin: '13:00:00', duracionTurno: 60 },
+    {
+      dia: 'Lunes',
+      horaInicio: '09:00:00',
+      horaFin: '13:00:00',
+      duracionTurno: 60,
+    },
+    {
+      dia: 'Martes',
+      horaInicio: '09:00:00',
+      horaFin: '13:00:00',
+      duracionTurno: 60,
+    },
+    {
+      dia: 'Miércoles',
+      horaInicio: '09:00:00',
+      horaFin: '13:00:00',
+      duracionTurno: 60,
+    },
+    {
+      dia: 'Jueves',
+      horaInicio: '09:00:00',
+      horaFin: '13:00:00',
+      duracionTurno: 60,
+    },
+    {
+      dia: 'Viernes',
+      horaInicio: '09:00:00',
+      horaFin: '13:00:00',
+      duracionTurno: 60,
+    },
   ],
   [
-    { dia: 'Lunes', horaInicio: '14:00:00', horaFin: '19:00:00', duracionTurno: 45 },
-    { dia: 'Miércoles', horaInicio: '14:00:00', horaFin: '19:00:00', duracionTurno: 45 },
-    { dia: 'Viernes', horaInicio: '14:00:00', horaFin: '19:00:00', duracionTurno: 45 },
+    {
+      dia: 'Lunes',
+      horaInicio: '14:00:00',
+      horaFin: '19:00:00',
+      duracionTurno: 45,
+    },
+    {
+      dia: 'Miércoles',
+      horaInicio: '14:00:00',
+      horaFin: '19:00:00',
+      duracionTurno: 45,
+    },
+    {
+      dia: 'Viernes',
+      horaInicio: '14:00:00',
+      horaFin: '19:00:00',
+      duracionTurno: 45,
+    },
   ],
   [
-    { dia: 'Martes', horaInicio: '08:00:00', horaFin: '12:00:00', duracionTurno: 30 },
-    { dia: 'Jueves', horaInicio: '08:00:00', horaFin: '12:00:00', duracionTurno: 30 },
-    { dia: 'Sábado', horaInicio: '09:00:00', horaFin: '13:00:00', duracionTurno: 30 },
+    {
+      dia: 'Martes',
+      horaInicio: '08:00:00',
+      horaFin: '12:00:00',
+      duracionTurno: 30,
+    },
+    {
+      dia: 'Jueves',
+      horaInicio: '08:00:00',
+      horaFin: '12:00:00',
+      duracionTurno: 30,
+    },
+    {
+      dia: 'Sábado',
+      horaInicio: '09:00:00',
+      horaFin: '13:00:00',
+      duracionTurno: 30,
+    },
   ],
   [
-    { dia: 'Lunes', horaInicio: '16:00:00', horaFin: '20:00:00', duracionTurno: 30 },
-    { dia: 'Martes', horaInicio: '16:00:00', horaFin: '20:00:00', duracionTurno: 30 },
-    { dia: 'Miércoles', horaInicio: '16:00:00', horaFin: '20:00:00', duracionTurno: 30 },
-    { dia: 'Jueves', horaInicio: '16:00:00', horaFin: '20:00:00', duracionTurno: 30 },
-    { dia: 'Viernes', horaInicio: '16:00:00', horaFin: '20:00:00', duracionTurno: 30 },
+    {
+      dia: 'Lunes',
+      horaInicio: '16:00:00',
+      horaFin: '20:00:00',
+      duracionTurno: 30,
+    },
+    {
+      dia: 'Martes',
+      horaInicio: '16:00:00',
+      horaFin: '20:00:00',
+      duracionTurno: 30,
+    },
+    {
+      dia: 'Miércoles',
+      horaInicio: '16:00:00',
+      horaFin: '20:00:00',
+      duracionTurno: 30,
+    },
+    {
+      dia: 'Jueves',
+      horaInicio: '16:00:00',
+      horaFin: '20:00:00',
+      duracionTurno: 30,
+    },
+    {
+      dia: 'Viernes',
+      horaInicio: '16:00:00',
+      horaFin: '20:00:00',
+      duracionTurno: 30,
+    },
   ],
   [
-    { dia: 'Miércoles', horaInicio: '10:00:00', horaFin: '14:00:00', duracionTurno: 60 },
-    { dia: 'Miércoles', horaInicio: '16:00:00', horaFin: '20:00:00', duracionTurno: 60 },
-    { dia: 'Viernes', horaInicio: '10:00:00', horaFin: '14:00:00', duracionTurno: 60 },
-    { dia: 'Sábado', horaInicio: '10:00:00', horaFin: '14:00:00', duracionTurno: 60 },
+    {
+      dia: 'Miércoles',
+      horaInicio: '10:00:00',
+      horaFin: '14:00:00',
+      duracionTurno: 60,
+    },
+    {
+      dia: 'Miércoles',
+      horaInicio: '16:00:00',
+      horaFin: '20:00:00',
+      duracionTurno: 60,
+    },
+    {
+      dia: 'Viernes',
+      horaInicio: '10:00:00',
+      horaFin: '14:00:00',
+      duracionTurno: 60,
+    },
+    {
+      dia: 'Sábado',
+      horaInicio: '10:00:00',
+      horaFin: '14:00:00',
+      duracionTurno: 60,
+    },
   ],
   [
-    { dia: 'Lunes', horaInicio: '07:00:00', horaFin: '11:00:00', duracionTurno: 30 },
-    { dia: 'Martes', horaInicio: '07:00:00', horaFin: '11:00:00', duracionTurno: 30 },
-    { dia: 'Miércoles', horaInicio: '07:00:00', horaFin: '11:00:00', duracionTurno: 30 },
-    { dia: 'Jueves', horaInicio: '07:00:00', horaFin: '11:00:00', duracionTurno: 30 },
-    { dia: 'Viernes', horaInicio: '07:00:00', horaFin: '11:00:00', duracionTurno: 30 },
+    {
+      dia: 'Lunes',
+      horaInicio: '07:00:00',
+      horaFin: '11:00:00',
+      duracionTurno: 30,
+    },
+    {
+      dia: 'Martes',
+      horaInicio: '07:00:00',
+      horaFin: '11:00:00',
+      duracionTurno: 30,
+    },
+    {
+      dia: 'Miércoles',
+      horaInicio: '07:00:00',
+      horaFin: '11:00:00',
+      duracionTurno: 30,
+    },
+    {
+      dia: 'Jueves',
+      horaInicio: '07:00:00',
+      horaFin: '11:00:00',
+      duracionTurno: 30,
+    },
+    {
+      dia: 'Viernes',
+      horaInicio: '07:00:00',
+      horaFin: '11:00:00',
+      duracionTurno: 30,
+    },
   ],
   [
-    { dia: 'Lunes', horaInicio: '14:00:00', horaFin: '18:00:00', duracionTurno: 60 },
-    { dia: 'Martes', horaInicio: '14:00:00', horaFin: '18:00:00', duracionTurno: 60 },
-    { dia: 'Miércoles', horaInicio: '14:00:00', horaFin: '18:00:00', duracionTurno: 60 },
-    { dia: 'Jueves', horaInicio: '14:00:00', horaFin: '18:00:00', duracionTurno: 60 },
-    { dia: 'Viernes', horaInicio: '14:00:00', horaFin: '18:00:00', duracionTurno: 60 },
+    {
+      dia: 'Lunes',
+      horaInicio: '14:00:00',
+      horaFin: '18:00:00',
+      duracionTurno: 60,
+    },
+    {
+      dia: 'Martes',
+      horaInicio: '14:00:00',
+      horaFin: '18:00:00',
+      duracionTurno: 60,
+    },
+    {
+      dia: 'Miércoles',
+      horaInicio: '14:00:00',
+      horaFin: '18:00:00',
+      duracionTurno: 60,
+    },
+    {
+      dia: 'Jueves',
+      horaInicio: '14:00:00',
+      horaFin: '18:00:00',
+      duracionTurno: 60,
+    },
+    {
+      dia: 'Viernes',
+      horaInicio: '14:00:00',
+      horaFin: '18:00:00',
+      duracionTurno: 60,
+    },
   ],
   [
-    { dia: 'Martes', horaInicio: '09:00:00', horaFin: '13:00:00', duracionTurno: 45 },
-    { dia: 'Jueves', horaInicio: '09:00:00', horaFin: '13:00:00', duracionTurno: 45 },
-    { dia: 'Sábado', horaInicio: '10:00:00', horaFin: '14:00:00', duracionTurno: 45 },
+    {
+      dia: 'Martes',
+      horaInicio: '09:00:00',
+      horaFin: '13:00:00',
+      duracionTurno: 45,
+    },
+    {
+      dia: 'Jueves',
+      horaInicio: '09:00:00',
+      horaFin: '13:00:00',
+      duracionTurno: 45,
+    },
+    {
+      dia: 'Sábado',
+      horaInicio: '10:00:00',
+      horaFin: '14:00:00',
+      duracionTurno: 45,
+    },
   ],
 ];
 
@@ -210,7 +419,9 @@ export function generarNutricionistasSemilla(
   return resultado;
 }
 
-export function generarSociosSemilla(cantidadPorGimnasio: number): SocioSemilla[] {
+export function generarSociosSemilla(
+  cantidadPorGimnasio: number,
+): SocioSemilla[] {
   const resultado: SocioSemilla[] = [];
   let indiceGlobal = 0;
 
@@ -251,8 +462,18 @@ function fechaStr(date: Date): string {
 }
 
 function diaSemanaIndex(nombreDia: string): number {
-  const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-  const idx = dias.findIndex((d) => d.toLowerCase() === nombreDia.toLowerCase());
+  const dias = [
+    'Domingo',
+    'Lunes',
+    'Martes',
+    'Miércoles',
+    'Jueves',
+    'Viernes',
+    'Sábado',
+  ];
+  const idx = dias.findIndex(
+    (d) => d.toLowerCase() === nombreDia.toLowerCase(),
+  );
   if (idx === -1) {
     const corto = nombreDia.slice(0, 3).toLowerCase();
     return dias.findIndex((d) => d.slice(0, 3).toLowerCase() === corto);
@@ -285,14 +506,18 @@ export function generarTurnosSemilla(
     fechaTurno.setDate(fechaTurno.getDate() - 14 + (diaIdx - hoy.getDay()));
     if (fechaTurno > hoy) fechaTurno.setDate(fechaTurno.getDate() - 7);
     if (fechaTurno.getDay() !== diaIdx) {
-      fechaTurno.setDate(fechaTurno.getDate() + ((diaIdx - fechaTurno.getDay() + 7) % 7) - 7);
+      fechaTurno.setDate(
+        fechaTurno.getDate() + ((diaIdx - fechaTurno.getDay() + 7) % 7) - 7,
+      );
     }
 
     const [hH, hM] = bloque.horaInicio.split(':').map(Number);
     const [hFinH, hFinM] = bloque.horaFin.split(':').map(Number);
-    const minutosTotales = (hFinH * 60 + hFinM) - (hH * 60 + hM);
+    const minutosTotales = hFinH * 60 + hFinM - (hH * 60 + hM);
     const slotsEnBloque = Math.floor(minutosTotales / bloque.duracionTurno);
-    const slotOffset = (Math.floor(i / bloques.length) % Math.max(slotsEnBloque, 1)) * bloque.duracionTurno;
+    const slotOffset =
+      (Math.floor(i / bloques.length) % Math.max(slotsEnBloque, 1)) *
+      bloque.duracionTurno;
     const hora = hH + Math.floor(slotOffset / 60);
     const minutos = hM + (slotOffset % 60);
     const horaStr = `${String(hora).padStart(2, '0')}:${String(minutos).padStart(2, '0')}`;
@@ -306,14 +531,15 @@ export function generarTurnosSemilla(
     if (ocupadoSet.has(slotKey)) continue;
     ocupadoSet.add(slotKey);
 
-    const esPasado = fechaTurno < hoy || (fechaStrVal === fechaStr(hoy) && horaStr < '12:00');
+    const esPasado =
+      fechaTurno < hoy || (fechaStrVal === fechaStr(hoy) && horaStr < '12:00');
 
     turnos.push({
       idSocio,
       idNutricionista: idNutri,
       fecha: fechaStrVal,
       hora: horaStr,
-      estado: esPasado ? 'REALIZADO' : 'PROGRAMADO',
+      estado: esPasado ? 'REALIZADO' : 'CONFIRMADO',
       idGimnasio: idGym,
     });
   }
@@ -334,7 +560,8 @@ export function generarPlanesSemilla(
     planes.push({
       idSocio,
       idNutricionista: idNutri,
-      objetivoNutricional: OBJETIVOS_PLANES[Math.floor(i / 2) % OBJETIVOS_PLANES.length],
+      objetivoNutricional:
+        OBJETIVOS_PLANES[Math.floor(i / 2) % OBJETIVOS_PLANES.length],
     });
   }
 

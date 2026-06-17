@@ -1,21 +1,24 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ApiResponse } from '@/types/api';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { ClipboardCheck, Clock, History } from 'lucide-react';
+import { ClipboardCheck, Clock, History, Search, Undo2 } from 'lucide-react';
 
 import type { EstadoTurno } from '@nutrifit/shared';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRequest } from '@/lib/api';
+import { normalizarTexto } from '@/lib/text';
 import {
   obtenerClasesEstadoTurno,
   obtenerEtiquetaEstadoTurno,
   puedeHacerCheckInTurno,
+  puedeRevertirCheckIn,
 } from '@/lib/turnos/estadoTurno';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DatePicker } from '@/components/ui/date-picker';
+import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -25,6 +28,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { RevertirAusenteModal } from '@/components/turnos/RevertirAusenteModal';
+import { RevertirCheckinModal } from '@/components/turnos/RevertirCheckinModal';
 
 interface TurnoRecepcion {
   idTurno: number;
@@ -37,7 +41,23 @@ interface TurnoRecepcion {
   llegadaTardeMin?: number | null;
 }
 
+interface CheckInResponse {
+  success: boolean;
+  estado: EstadoTurno;
+  checkInAt: string;
+  llegadaTardeMin: number | null;
+  fueIdempotente: boolean;
+}
 
+function matchesBusqueda(turno: TurnoRecepcion, termino: string): boolean {
+  if (!termino.trim()) return true;
+  const t = normalizarTexto(termino);
+  return (
+    normalizarTexto(turno.nombreSocio).includes(t) ||
+    normalizarTexto(turno.dniSocio).includes(t) ||
+    normalizarTexto(turno.horaTurno).includes(t)
+  );
+}
 
 export function RecepcionTurnosPage() {
   const { token, rol } = useAuth();
@@ -49,10 +69,16 @@ export function RecepcionTurnosPage() {
   );
   const [turnos, setTurnos] = useState<TurnoRecepcion[]>([]);
   const [cargando, setCargando] = useState(false);
+  const [terminoBusqueda, setTerminoBusqueda] = useState('');
   const [turnoSeleccionado, setTurnoSeleccionado] =
     useState<TurnoRecepcion | null>(null);
   const [procesandoCheckIn, setProcesandoCheckIn] = useState(false);
-  const [turnoARevertir, setTurnoARevertir] = useState<TurnoRecepcion | null>(null);
+  const [errorCheckIn, setErrorCheckIn] = useState<string | null>(null);
+  const [turnoARevertir, setTurnoARevertir] = useState<TurnoRecepcion | null>(
+    null,
+  );
+  const [turnoARevertirCheckin, setTurnoARevertirCheckin] =
+    useState<TurnoRecepcion | null>(null);
 
   const fecha = format(fechaSeleccionada ?? new Date(), 'yyyy-MM-dd');
 
@@ -86,12 +112,19 @@ export function RecepcionTurnosPage() {
     void cargarTurnosDelDia();
   }, [cargarTurnosDelDia]);
 
+  const turnosFiltrados = useMemo(
+    () => turnos.filter((t) => matchesBusqueda(t, terminoBusqueda)),
+    [turnos, terminoBusqueda],
+  );
+
   const abrirModalCheckIn = (turno: TurnoRecepcion) => {
     setTurnoSeleccionado(turno);
+    setErrorCheckIn(null);
   };
 
   const cerrarModalCheckIn = () => {
     setTurnoSeleccionado(null);
+    setErrorCheckIn(null);
   };
 
   const confirmarCheckIn = async () => {
@@ -101,19 +134,32 @@ export function RecepcionTurnosPage() {
 
     try {
       setProcesandoCheckIn(true);
+      setErrorCheckIn(null);
 
-      await apiRequest(`/turnos/${turnoSeleccionado.idTurno}/check-in`, {
-        method: 'POST',
-        token,
-      });
+      const response = await apiRequest<CheckInResponse>(
+        `/turnos/${turnoSeleccionado.idTurno}/check-in`,
+        {
+          method: 'POST',
+          token,
+        },
+      );
 
-      toast.success('Check-in registrado exitosamente');
+      if (response.fueIdempotente) {
+        toast.success(
+          `El socio ya estaba presente desde las ${format(
+            new Date(response.checkInAt),
+            'HH:mm',
+          )}`,
+        );
+      } else {
+        toast.success('Check-in registrado exitosamente');
+      }
       cerrarModalCheckIn();
       await cargarTurnosDelDia();
     } catch (err) {
       const mensaje =
         err instanceof Error ? err.message : 'Error al registrar check-in';
-      toast.error(mensaje);
+      setErrorCheckIn(mensaje);
     } finally {
       setProcesandoCheckIn(false);
     }
@@ -128,8 +174,13 @@ export function RecepcionTurnosPage() {
   };
 
   const puedeHacerCheckIn = (turno: TurnoRecepcion) => {
-    if (!esRecepcionista) return false;
+    if (!esRecepcionista && !esAdmin) return false;
     return puedeHacerCheckInTurno(turno.estadoTurno);
+  };
+
+  const puedeMostrarRevertirCheckin = (turno: TurnoRecepcion) => {
+    if (!esAdmin) return false;
+    return puedeRevertirCheckIn(turno.estadoTurno);
   };
 
   if (!esRecepcionista && !esAdmin) {
@@ -157,7 +208,7 @@ export function RecepcionTurnosPage() {
               </h1>
             </div>
             <p className="text-muted-foreground">
-              Registra la llegada de los socios a sus turnos programados.
+              Registra la llegada de los socios a sus turnos confirmados.
             </p>
           </div>
 
@@ -175,14 +226,29 @@ export function RecepcionTurnosPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Turnos del {fecha}</CardTitle>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <CardTitle>Turnos del {fecha}</CardTitle>
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Buscar por nombre, DNI u hora..."
+                value={terminoBusqueda}
+                onChange={(e) => setTerminoBusqueda(e.target.value)}
+                className="pl-9"
+                data-testid="busqueda-turnos-input"
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {cargando ? (
             <p className="text-sm text-muted-foreground">Cargando turnos...</p>
-          ) : turnos.length === 0 ? (
+          ) : turnosFiltrados.length === 0 ? (
             <div className="py-8 text-center text-muted-foreground">
-              No hay turnos activos para este día.
+              {turnos.length === 0
+                ? 'No hay turnos activos para este día.'
+                : 'Ningún turno coincide con la búsqueda.'}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -200,7 +266,7 @@ export function RecepcionTurnosPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {turnos.map((turno) => (
+                  {turnosFiltrados.map((turno) => (
                     <tr
                       key={turno.idTurno}
                       className="border-b hover:bg-accent/50 transition-colors"
@@ -209,16 +275,17 @@ export function RecepcionTurnosPage() {
                         <div className="flex items-center gap-2">
                           <span className="font-semibold">{turno.horaTurno}</span>
                           {turno.llegadaTardeMin && turno.llegadaTardeMin > 0 && (
-                            <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50">
+                            <Badge
+                              variant="outline"
+                              className="text-orange-600 border-orange-200 bg-orange-50"
+                            >
                               <Clock className="w-3 h-3 mr-1" />
                               Llega {turno.llegadaTardeMin}m tarde
                             </Badge>
                           )}
                         </div>
                       </td>
-                      <td className="p-3">
-                        {turno.nombreSocio}
-                      </td>
+                      <td className="p-3">{turno.nombreSocio}</td>
                       <td className="p-3">
                         <span className="text-sm text-muted-foreground">
                           {turno.dniSocio || '-'}
@@ -235,6 +302,7 @@ export function RecepcionTurnosPage() {
                               size="sm"
                               onClick={() => abrirModalCheckIn(turno)}
                               className="gap-2"
+                              data-testid="boton-checkin"
                             >
                               <ClipboardCheck className="h-4 w-4" />
                               Check-in
@@ -248,6 +316,17 @@ export function RecepcionTurnosPage() {
                             >
                               <History className="h-4 w-4" />
                               Revertir
+                            </Button>
+                          ) : puedeMostrarRevertirCheckin(turno) ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setTurnoARevertirCheckin(turno)}
+                              className="gap-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50 border-amber-200"
+                              data-testid="boton-revertir-checkin"
+                            >
+                              <Undo2 className="h-4 w-4" />
+                              Revertir check-in
                             </Button>
                           ) : (
                             <span className="text-xs text-muted-foreground italic">
@@ -284,7 +363,9 @@ export function RecepcionTurnosPage() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">DNI:</span>
-                <span className="font-medium">{turnoSeleccionado.dniSocio || '-'}</span>
+                <span className="font-medium">
+                  {turnoSeleccionado.dniSocio || '-'}
+                </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Fecha:</span>
@@ -303,6 +384,16 @@ export function RecepcionTurnosPage() {
             </div>
           )}
 
+          {errorCheckIn && (
+            <div
+              role="alert"
+              data-testid="checkin-error-banner"
+              className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+            >
+              {errorCheckIn}
+            </div>
+          )}
+
           <DialogFooter>
             <Button
               variant="outline"
@@ -311,7 +402,11 @@ export function RecepcionTurnosPage() {
             >
               Cancelar
             </Button>
-            <Button onClick={confirmarCheckIn} disabled={procesandoCheckIn}>
+            <Button
+              onClick={confirmarCheckIn}
+              disabled={procesandoCheckIn}
+              data-testid="boton-confirmar-checkin"
+            >
               {procesandoCheckIn ? 'Procesando...' : 'Confirmar Check-in'}
             </Button>
           </DialogFooter>
@@ -324,6 +419,16 @@ export function RecepcionTurnosPage() {
         turnoId={turnoARevertir?.idTurno ?? null}
         onSuccess={() => {
           setTurnoARevertir(null);
+          void cargarTurnosDelDia();
+        }}
+      />
+
+      <RevertirCheckinModal
+        isOpen={Boolean(turnoARevertirCheckin)}
+        onClose={() => setTurnoARevertirCheckin(null)}
+        turnoId={turnoARevertirCheckin?.idTurno ?? null}
+        onSuccess={() => {
+          setTurnoARevertirCheckin(null);
           void cargarTurnosDelDia();
         }}
       />

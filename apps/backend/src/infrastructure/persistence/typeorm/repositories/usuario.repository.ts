@@ -158,6 +158,8 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
             action.descripcion,
           ),
       ),
+      null,
+      user.debeCambiarPassword,
     );
 
     return formatedUser;
@@ -178,6 +180,30 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
     });
 
     return user ? this.findByEmail(user.email) : null;
+  }
+
+  async findAllByRolAndGimnasioId(
+    rol: Rol,
+    gimnasioId: number,
+  ): Promise<UsuarioEntity[]> {
+    const users = await this.userRepository.find({
+      where: {
+        rol,
+        persona: {
+          gimnasioId,
+          fechaBaja: IsNull(),
+        },
+      },
+    });
+
+    const result: UsuarioEntity[] = [];
+    for (const user of users) {
+      const fullUser = await this.findByEmail(user.email);
+      if (fullUser) {
+        result.push(fullUser);
+      }
+    }
+    return result;
   }
 
   async findPersonaIdByUserId(userId: number): Promise<number | null> {
@@ -221,6 +247,7 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
     usuarioOrmEntity.contraseña = entity.contraseña;
     usuarioOrmEntity.rol = entity.rol;
     usuarioOrmEntity.fechaHoraAlta = new Date();
+    usuarioOrmEntity.debeCambiarPassword = entity.debeCambiarPassword;
 
     if (entity.persona) {
       usuarioOrmEntity.persona = {
@@ -246,6 +273,8 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
       usuarioCreado.rol,
       [],
       [],
+      null,
+      usuarioCreado.debeCambiarPassword,
     );
   }
 
@@ -254,6 +283,7 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
       email: entity.email,
       contraseña: entity.contraseña,
       rol: entity.rol,
+      debeCambiarPassword: entity.debeCambiarPassword,
     });
 
     return entity;
@@ -299,6 +329,8 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
           (a) =>
             new AccionPermisoEntity(a.id, a.clave, a.nombre, a.descripcion),
         ),
+        null,
+        user.debeCambiarPassword,
       );
     });
   }
@@ -404,6 +436,8 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
             action.descripcion,
           ),
       ),
+      null,
+      user.debeCambiarPassword,
     );
   }
 }

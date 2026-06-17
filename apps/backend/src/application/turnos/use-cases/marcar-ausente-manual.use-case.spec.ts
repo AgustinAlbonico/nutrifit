@@ -144,7 +144,7 @@ describe('MarcarAusenteManualUseCase', () => {
       configurable: true,
     });
     const turno = mockTurno({
-      estadoTurno: EstadoTurno.PROGRAMADO,
+      estadoTurno: EstadoTurno.CONFIRMADO,
       nutricionista: { idPersona: 30, gimnasioId: 1 } as never,
     });
     jest.spyOn(turnoRepository, 'findOne').mockResolvedValue(turno);

@@ -1,17 +1,18 @@
 ﻿import { useState, useEffect, useCallback, useMemo, type FormEvent } from 'react';
 import { toast } from 'sonner';
-import { AlertCircle, CheckCircle2, Search, Users, XIcon } from 'lucide-react';
+import { AlertCircle, Search, Users, XIcon } from 'lucide-react';
 import { format as formatearFechaIso } from 'date-fns';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { Can } from '@/components/auth/Can';
 import { ACCIONES } from '@nutrifit/shared';
 import { apiRequest, obtenerUrlFoto } from '@/lib/api';
+import { ModalContrasenaProvisional } from '@/components/ui/ModalContrasenaProvisional';
 import {
   formatearFechaArgentinaCorta,
   formatearFechaArgentinaParaInput,
 } from '@/lib/fechasArgentina';
-import { REGEX_DNI, REGEX_TELEFONO, REGEX_EMAIL, obtenerErroresContrasenia } from '@/lib/validaciones';
+import { REGEX_DNI, REGEX_TELEFONO, REGEX_EMAIL } from '@/lib/validaciones';
 import { normalizarTexto } from '@/lib/text';
 import type { Socio, CrearSocioDto, Genero } from '@/types/socio';
 import { Button } from '@/components/ui/button';
@@ -62,7 +63,6 @@ const FORMULARIO_SOCIO_INICIAL: CrearSocioDto = {
   ciudad: '',
   provincia: '',
   email: '',
-  contrasena: '',
 };
 
 
@@ -128,6 +128,8 @@ export function Socios() {
   
 
   const [mostrarModalDetalles, setMostrarModalDetalles] = useState(false);
+  const [mostrarModalContrasenaProvisional, setMostrarModalContrasenaProvisional] = useState(false);
+  const [contrasenaProvisional, setContrasenaProvisional] = useState<string | null>(null);
   const [mostrarFotoAmpliada, setMostrarFotoAmpliada] = useState(false);
   const [socioSeleccionado, setSocioSeleccionado] = useState<Socio | null>(null);
 
@@ -135,32 +137,6 @@ export function Socios() {
     setSocioSeleccionado(socio);
     setMostrarModalDetalles(true);
   };
-
-  const requisitosContrasenia = useMemo(
-    () => [
-      {
-        descripcion: 'Al menos 8 caracteres',
-        cumple: socioForm.contrasena.length >= 8,
-      },
-      {
-        descripcion: 'Una letra mayúscula',
-        cumple: /[A-Z]/.test(socioForm.contrasena),
-      },
-      {
-        descripcion: 'Una letra minúscula',
-        cumple: /[a-z]/.test(socioForm.contrasena),
-      },
-      {
-        descripcion: 'Un número',
-        cumple: /\d/.test(socioForm.contrasena),
-      },
-      {
-        descripcion: 'Un símbolo especial',
-        cumple: /[^A-Za-z0-9]/.test(socioForm.contrasena),
-      },
-    ],
-    [socioForm.contrasena],
-  );
 
   const provinciasDisponibles = useMemo(() => {
     return Array.from(
@@ -307,10 +283,6 @@ export function Socios() {
       if (!datos.provincia.trim()) errores.provincia = 'Ingresá la provincia.';
       if (!REGEX_EMAIL.test(datos.email.trim())) errores.email = 'Ingresá un email válido.';
 
-      if (obtenerErroresContrasenia(datos.contrasena).length > 0) {
-        errores.contrasena = 'La contraseña no cumple los requisitos mínimos de seguridad.';
-      }
-
       return errores;
     },
     [],
@@ -401,6 +373,11 @@ export function Socios() {
     setEnviandoCreacion(true);
 
     try {
+      interface RespuestaCrearSocio {
+        contrasenaProvisional?: string;
+      }
+
+      let respuesta: RespuestaCrearSocio | undefined;
       if (fotoCreacion instanceof File) {
         const formData = new FormData();
         formData.append('foto', fotoCreacion);
@@ -408,23 +385,28 @@ export function Socios() {
           formData.append(key, String(value));
         });
         
-        await apiRequest('/socio', {
+        respuesta = await apiRequest<ApiResponse<RespuestaCrearSocio>>('/socio', {
           method: 'POST',
           token,
           formData,
-        });
+        }).then((r) => r.data);
       } else {
-        await apiRequest('/socio', {
+        respuesta = await apiRequest<ApiResponse<RespuestaCrearSocio>>('/socio', {
           method: 'POST',
           token,
           body: socioForm,
-        });
+        }).then((r) => r.data);
       }
       
       toast.success('Socio creado exitosamente');
       setMostrarFormularioSocio(false);
       limpiarEstadoCreacion();
       await cargarSocios();
+
+      if (respuesta?.contrasenaProvisional) {
+        setContrasenaProvisional(respuesta.contrasenaProvisional);
+        setMostrarModalContrasenaProvisional(true);
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'No se pudo crear el socio';
       setErrorGeneralCreacion(errorMessage);
@@ -1066,45 +1048,6 @@ export function Socios() {
                   </div>
                 </div>
               </section>
-
-              <section className="space-y-4">
-                <h3 className="text-sm font-semibold text-foreground">Seguridad</h3>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="crear-password" required>Contraseña temporal</Label>
-                    <Input
-                      id="crear-password"
-                      type="password"
-                      autoComplete="new-password"
-                      value={socioForm.contrasena}
-                      onChange={(e) => actualizarCampoCreacion('contrasena', e.target.value)}
-                      aria-invalid={Boolean(erroresCreacion.contrasena)}
-                      required
-                    />
-                    {erroresCreacion.contrasena && <p className="text-xs font-medium text-destructive">{erroresCreacion.contrasena}</p>}
-                    <div className="rounded-md border bg-muted/20 p-3">
-                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        Seguridad de contraseña
-                      </p>
-                      <ul className="space-y-1 text-xs">
-                        {requisitosContrasenia.map((regla) => {
-                          const colorTexto = regla.cumple ? 'text-emerald-700' : 'text-muted-foreground';
-
-                          return (
-                            <li
-                              key={regla.descripcion}
-                              className={`flex items-center gap-2 ${colorTexto}`}
-                            >
-                              <CheckCircle2 className="h-3.5 w-3.5" />
-                              <span>{regla.descripcion}</span>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </section>
             </div>
             <div className="flex justify-end gap-2 border-t bg-background px-6 py-4">
               <Button
@@ -1475,6 +1418,16 @@ export function Socios() {
           </DialogContent>
         </Dialog>
       )}
+
+      <ModalContrasenaProvisional
+        abierto={mostrarModalContrasenaProvisional}
+        alCerrar={() => {
+          setMostrarModalContrasenaProvisional(false);
+          setContrasenaProvisional(null);
+        }}
+        contrasena={contrasenaProvisional ?? ''}
+        nombreRol="El socio"
+      />
     </div>
   );
 }

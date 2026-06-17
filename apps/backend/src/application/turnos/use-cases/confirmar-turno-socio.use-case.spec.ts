@@ -52,7 +52,7 @@ describe('ConfirmarTurnoSocioUseCase token flow', () => {
   it('acepta token válido y marca token usado', async () => {
     const turno = {
       idTurno: 10,
-      estadoTurno: EstadoTurno.PROGRAMADO,
+      estadoTurno: EstadoTurno.CONFIRMADO,
       fechaTurno: new Date(),
       horaTurno: '23:59',
       socio: { idPersona: 20 },
@@ -76,7 +76,7 @@ describe('ConfirmarTurnoSocioUseCase token flow', () => {
   it('rechaza token inválido', async () => {
     turnoRepository.findOne.mockResolvedValue({
       idTurno: 10,
-      estadoTurno: EstadoTurno.PROGRAMADO,
+      estadoTurno: EstadoTurno.CONFIRMADO,
       fechaTurno: new Date(),
       horaTurno: '23:59',
       socio: { idPersona: 20 },
@@ -92,7 +92,7 @@ describe('ConfirmarTurnoSocioUseCase token flow', () => {
   it('rechaza token expirado', async () => {
     turnoRepository.findOne.mockResolvedValue({
       idTurno: 10,
-      estadoTurno: EstadoTurno.PROGRAMADO,
+      estadoTurno: EstadoTurno.CONFIRMADO,
       fechaTurno: new Date(),
       horaTurno: '23:59',
       socio: { idPersona: 20 },
@@ -113,7 +113,7 @@ describe('ConfirmarTurnoSocioUseCase token flow', () => {
   it('rechaza token ya usado', async () => {
     turnoRepository.findOne.mockResolvedValue({
       idTurno: 10,
-      estadoTurno: EstadoTurno.PROGRAMADO,
+      estadoTurno: EstadoTurno.CONFIRMADO,
       fechaTurno: new Date(),
       horaTurno: '23:59',
       socio: { idPersona: 20 },

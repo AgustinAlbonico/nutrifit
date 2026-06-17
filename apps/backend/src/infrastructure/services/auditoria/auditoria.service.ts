@@ -136,9 +136,8 @@ export class AuditoriaService {
     gimnasioId: number,
     fechaReferencia: Date,
   ): Promise<number> {
-    const { inicioMes, finMes } = this.calcularRangoMesNaturalArgentina(
-      fechaReferencia,
-    );
+    const { inicioMes, finMes } =
+      this.calcularRangoMesNaturalArgentina(fechaReferencia);
 
     return this.auditoriaRepository
       .createQueryBuilder('auditoria')

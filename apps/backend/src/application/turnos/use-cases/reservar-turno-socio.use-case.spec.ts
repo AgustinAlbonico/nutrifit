@@ -118,7 +118,7 @@ describe('ReservarTurnoSocioUseCase - Multi-Tenant Isolation', () => {
       idTurno: 1,
       fechaTurno: new Date('2026-06-15'),
       horaTurno: '10:00',
-      estadoTurno: EstadoTurno.PROGRAMADO,
+      estadoTurno: EstadoTurno.CONFIRMADO,
       socio: mockSocio,
       nutricionista: mockNutricionista,
       ...overrides,

@@ -85,14 +85,15 @@ export class GetAgendaDiariaUseCase implements BaseUseCase {
 
     // 3. Generar slots
     const slots: AgendaSlotDto[] = [];
+    const duracionTurno = nutricionista.duracionTurnoMin ?? agendas[0].duracionTurno;
 
     for (const bloque of agendas) {
       let current = timeToMinutes(bloque.horaInicio);
       const end = timeToMinutes(bloque.horaFin);
 
-      while (current + bloque.duracionTurno <= end) {
+      while (current + duracionTurno <= end) {
         const horaInicioStr = minutesToTime(current);
-        const horaFinStr = minutesToTime(current + bloque.duracionTurno);
+        const horaFinStr = minutesToTime(current + duracionTurno);
 
         const turnoExistente = turnosMap.get(horaInicioStr);
 
@@ -114,7 +115,7 @@ export class GetAgendaDiariaUseCase implements BaseUseCase {
         }
 
         slots.push(slot);
-        current += bloque.duracionTurno;
+        current += duracionTurno;
       }
     }
 

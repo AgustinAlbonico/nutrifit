@@ -15,8 +15,8 @@ export class RegistrarSocioDto {
   email: string;
 
   @IsString()
-  @IsNotEmpty()
-  contrasena: string;
+  @IsOptional()
+  contrasena?: string;
 
   @IsString()
   @IsNotEmpty()

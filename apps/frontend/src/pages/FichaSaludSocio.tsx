@@ -1,5 +1,4 @@
 import {
-  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -15,7 +14,7 @@ import {
   FileWarning,
   History,
 } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRequest } from '@/lib/api';
@@ -93,6 +92,15 @@ const FORMULARIO_INICIAL: FormularioFichaSalud = {
   contactoEmergenciaTelefono: '',
 };
 
+const SECCIONES_FICHA_SALUD = [
+  'Datos antropométricos',
+  'Hábitos',
+  'Salud',
+  'Alimentación',
+  'Antecedentes y objetivos',
+  'Consentimiento',
+] as const;
+
 const separarLista = (valor: string): string[] => {
   return Array.from(
     new Set(
@@ -105,6 +113,33 @@ const separarLista = (valor: string): string[] => {
 };
 
 const unirLista = (items: string[]): string => items.join(', ');
+
+function mapearFichaAFormulario(
+  ficha: FichaSaludSocioDto,
+): FormularioFichaSalud {
+  return {
+    altura: String(ficha.altura),
+    peso: String(ficha.peso),
+    nivelActividadFisica: ficha.nivelActividadFisica,
+    alergias: unirLista(ficha.alergias),
+    patologias: unirLista(ficha.patologias),
+    objetivoPersonal: ficha.objetivoPersonal,
+    medicacionActual: ficha.medicacionActual ?? '',
+    suplementosActuales: ficha.suplementosActuales ?? '',
+    cirugiasPrevias: ficha.cirugiasPrevias ?? '',
+    antecedentesFamiliares: ficha.antecedentesFamiliares ?? '',
+    frecuenciaComidas: ficha.frecuenciaComidas ?? '',
+    consumoAguaDiario: ficha.consumoAguaDiario
+      ? String(ficha.consumoAguaDiario)
+      : '',
+    restriccionesAlimentarias: ficha.restriccionesAlimentarias ?? '',
+    consumoAlcohol: ficha.consumoAlcohol ?? '',
+    fumaTabaco: ficha.fumaTabaco,
+    horasSueno: ficha.horasSueno ? String(ficha.horasSueno) : '',
+    contactoEmergenciaNombre: ficha.contactoEmergenciaNombre ?? '',
+    contactoEmergenciaTelefono: ficha.contactoEmergenciaTelefono ?? '',
+  };
+}
 
 function formatearFechaHora(fecha: Date | string | null | undefined): string {
   if (!fecha) return 'desconocida';
@@ -256,7 +291,6 @@ export function FichaSaludSocio() {
   const [fichaCargada, setFichaCargada] = useState<FichaSaludSocioDto | null>(
     null,
   );
-  const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mensajeExito, setMensajeExito] = useState<string | null>(null);
@@ -275,62 +309,46 @@ export function FichaSaludSocio() {
 
   const fichaExistente = fichaCargada !== null;
 
-  const cargarFichaSalud = useCallback(async () => {
-    if (!token) {
-      return;
-    }
-    try {
-      setCargando(true);
-      setError(null);
+  const {
+    data: fichaInicial,
+    isLoading: cargando,
+    error: errorCargaFicha,
+  } = useQuery({
+    queryKey: ['ficha-salud', 'estado', token],
+    queryFn: async (): Promise<FichaSaludSocioDto | null> => {
       const response = await apiRequest<ApiResponse<FichaSaludSocioDto | null>>(
         '/turnos/socio/ficha-salud',
         { token },
       );
-      const ficha = response.data;
-      if (!ficha) {
-        setFichaCargada(null);
-        setFormulario(FORMULARIO_INICIAL);
-        setConsentimiento(false);
-        return;
-      }
-      setFichaCargada(ficha);
-      setConsentimiento(true);
-      setFormulario({
-        altura: String(ficha.altura),
-        peso: String(ficha.peso),
-        nivelActividadFisica: ficha.nivelActividadFisica,
-        alergias: unirLista(ficha.alergias),
-        patologias: unirLista(ficha.patologias),
-        objetivoPersonal: ficha.objetivoPersonal,
-        medicacionActual: ficha.medicacionActual ?? '',
-        suplementosActuales: ficha.suplementosActuales ?? '',
-        cirugiasPrevias: ficha.cirugiasPrevias ?? '',
-        antecedentesFamiliares: ficha.antecedentesFamiliares ?? '',
-        frecuenciaComidas: ficha.frecuenciaComidas ?? '',
-        consumoAguaDiario: ficha.consumoAguaDiario
-          ? String(ficha.consumoAguaDiario)
-          : '',
-        restriccionesAlimentarias: ficha.restriccionesAlimentarias ?? '',
-        consumoAlcohol: ficha.consumoAlcohol ?? '',
-        fumaTabaco: ficha.fumaTabaco,
-        horasSueno: ficha.horasSueno ? String(ficha.horasSueno) : '',
-        contactoEmergenciaNombre: ficha.contactoEmergenciaNombre ?? '',
-        contactoEmergenciaTelefono: ficha.contactoEmergenciaTelefono ?? '',
-      });
-    } catch (requestError) {
-      setError(obtenerMensajeError(requestError));
-    } finally {
-      setCargando(false);
-    }
-  }, [token]);
+      return response.data;
+    },
+    enabled: Boolean(token) && rol === 'SOCIO',
+    refetchOnWindowFocus: false,
+  });
 
   useEffect(() => {
-    if (!token || rol !== 'SOCIO') {
-      setCargando(false);
+    if (rol !== 'SOCIO') {
       return;
     }
-    void cargarFichaSalud();
-  }, [cargarFichaSalud, rol, token]);
+
+    if (errorCargaFicha) {
+      setError(obtenerMensajeError(errorCargaFicha));
+      return;
+    }
+
+    setError(null);
+
+    if (!fichaInicial) {
+      setFichaCargada(null);
+      setFormulario(FORMULARIO_INICIAL);
+      setConsentimiento(false);
+      return;
+    }
+
+    setFichaCargada(fichaInicial);
+    setConsentimiento(true);
+    setFormulario(mapearFichaAFormulario(fichaInicial));
+  }, [errorCargaFicha, fichaInicial, rol]);
 
   const {
     data: historial,
@@ -455,6 +473,9 @@ export function FichaSaludSocio() {
       );
 
       setFichaCargada(response.data);
+      setFormulario(mapearFichaAFormulario(response.data));
+      setConsentimiento(true);
+      queryClient.setQueryData(['ficha-salud', 'estado', token], response.data);
       setMensajeExito(
         esCreacion
           ? 'Ficha de salud completada. Ya podés reservar turnos.'
@@ -535,7 +556,7 @@ export function FichaSaludSocio() {
         />
       )}
 
-      {!fichaExistente && (
+      {!cargando && !fichaExistente && (
         <Card className="border-amber-200 bg-amber-50/40">
           <CardContent className="pt-4">
             <p className="text-sm text-amber-800">
@@ -545,6 +566,40 @@ export function FichaSaludSocio() {
           </CardContent>
         </Card>
       )}
+
+      <Card data-testid="progreso-ficha-salud">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">
+            <h2>Progreso del formulario</h2>
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            {SECCIONES_FICHA_SALUD.length} secciones para organizar la
+            información clave de tu ficha.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <ol className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {SECCIONES_FICHA_SALUD.map((seccion, indice) => (
+              <li
+                key={seccion}
+                className="flex items-center gap-3 rounded-xl border border-border/60 bg-muted/20 p-3"
+              >
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-500/10 text-sm font-semibold text-orange-700">
+                  {indice + 1}
+                </span>
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    {seccion}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Paso {indice + 1} de {SECCIONES_FICHA_SALUD.length}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </CardContent>
+      </Card>
 
       {cargando ? (
         <Card>
@@ -564,35 +619,15 @@ export function FichaSaludSocio() {
           onSubmit={manejarEnvio}
           noValidate
         >
-          {/* Consentimiento RGPD (siempre visible, requerido solo en creación) */}
+          {/* Sección: Datos antropométricos */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Consentimiento</CardTitle>
+              <CardTitle className="text-lg">
+                <h2>Datos antropométricos</h2>
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <SeccionConsentimiento
-                checked={consentimiento}
-                onChange={setConsentimiento}
-                disabled={fichaExistente}
-                required={!fichaExistente}
-                fechaConsentimiento={fichaCargada?.consentAt}
-                onAbrirModalRGPD={() => setModalConsentimientoAbierto(true)}
-                idError={
-                  !fichaExistente && !consentimiento && error
-                    ? 'error-consentimiento'
-                    : undefined
-                }
-              />
-            </CardContent>
-          </Card>
-
-          {/* Sección: Datos físicos básicos */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Datos físicos básicos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="altura" required>
                     Altura (cm)
@@ -665,33 +700,168 @@ export function FichaSaludSocio() {
                     </p>
                   )}
                 </div>
+              </div>
+            </CardContent>
+          </Card>
 
+          {/* Sección: Salud */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">
+                <h2>Salud</h2>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="nivel-actividad" required>
-                    Nivel de actividad física
-                  </Label>
-                  <select
-                    id="nivel-actividad"
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    value={formulario.nivelActividadFisica}
+                  <Label htmlFor="alergias">Alergias</Label>
+                  <Input
+                    id="alergias"
+                    value={formulario.alergias}
                     onChange={(event) =>
                       setFormulario((previo) => ({
                         ...previo,
-                        nivelActividadFisica: event.target
-                          .value as NivelActividadFisicaValue,
+                        alergias: event.target.value,
                       }))
                     }
-                    required
-                  >
-                    {NIVELES_ACTIVIDAD_FISICA.map((opcion) => (
-                      <option key={opcion.value} value={opcion.value}>
-                        {opcion.label}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="Separar por coma. Ej: maní, lactosa"
+                  />
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="patologias">Patologías</Label>
+                  <Input
+                    id="patologias"
+                    value={formulario.patologias}
+                    onChange={(event) =>
+                      setFormulario((previo) => ({
+                        ...previo,
+                        patologias: event.target.value,
+                      }))
+                    }
+                    placeholder="Separar por coma. Ej: diabetes, hipertensión"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="medicacion">Medicación actual</Label>
+                  <Textarea
+                    id="medicacion"
+                    value={formulario.medicacionActual}
+                    onChange={(event) =>
+                      setFormulario((previo) => ({
+                        ...previo,
+                        medicacionActual: event.target.value,
+                      }))
+                    }
+                    placeholder="Listá los medicamentos que tomás actualmente"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="suplementos">Suplementos actuales</Label>
+                  <Textarea
+                    id="suplementos"
+                    value={formulario.suplementosActuales}
+                    onChange={(event) =>
+                      setFormulario((previo) => ({
+                        ...previo,
+                        suplementosActuales: event.target.value,
+                      }))
+                    }
+                    placeholder="Vitaminas, proteínas, etc."
+                    rows={3}
+                  />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <p className="text-sm font-medium text-foreground">
+                    Contacto de emergencia
+                  </p>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="contacto-nombre">Nombre completo</Label>
+                      <Input
+                        id="contacto-nombre"
+                        value={formulario.contactoEmergenciaNombre}
+                        onChange={(event) =>
+                          setFormulario((previo) => ({
+                            ...previo,
+                            contactoEmergenciaNombre: event.target.value,
+                          }))
+                        }
+                        aria-invalid={
+                          Boolean(erroresVisibles.contactoEmergenciaNombre) ||
+                          undefined
+                        }
+                        aria-describedby={
+                          erroresVisibles.contactoEmergenciaNombre
+                            ? 'error-contacto-nombre'
+                            : undefined
+                        }
+                        placeholder="Nombre del contacto"
+                      />
+                      {erroresVisibles.contactoEmergenciaNombre && (
+                        <p
+                          id="error-contacto-nombre"
+                          className="text-xs text-destructive"
+                          role="alert"
+                        >
+                          {erroresVisibles.contactoEmergenciaNombre}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="contacto-telefono">Teléfono</Label>
+                      <Input
+                        id="contacto-telefono"
+                        type="tel"
+                        value={formulario.contactoEmergenciaTelefono}
+                        onChange={(event) =>
+                          setFormulario((previo) => ({
+                            ...previo,
+                            contactoEmergenciaTelefono: event.target.value,
+                          }))
+                        }
+                        aria-invalid={
+                          Boolean(erroresVisibles.contactoEmergenciaTelefono) ||
+                          undefined
+                        }
+                        aria-describedby={
+                          erroresVisibles.contactoEmergenciaTelefono
+                            ? 'error-contacto-telefono'
+                            : undefined
+                        }
+                        placeholder="Ej: +54 11 1234-5678"
+                      />
+                      {erroresVisibles.contactoEmergenciaTelefono && (
+                        <p
+                          id="error-contacto-telefono"
+                          className="text-xs text-destructive"
+                          role="alert"
+                        >
+                          {erroresVisibles.contactoEmergenciaTelefono}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Sección: Antecedentes y objetivos */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">
+                <h2>Antecedentes y objetivos</h2>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="objetivo" required>
                     Objetivo personal
                   </Label>
@@ -725,99 +895,7 @@ export function FichaSaludSocio() {
                     </p>
                   )}
                 </div>
-              </div>
-            </CardContent>
-          </Card>
 
-          {/* Sección: Alergias y patologías */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Alergias y patologías</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="alergias">Alergias</Label>
-                  <Input
-                    id="alergias"
-                    value={formulario.alergias}
-                    onChange={(event) =>
-                      setFormulario((previo) => ({
-                        ...previo,
-                        alergias: event.target.value,
-                      }))
-                    }
-                    placeholder="Separar por coma. Ej: maní, lactosa"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="patologias">Patologías</Label>
-                  <Input
-                    id="patologias"
-                    value={formulario.patologias}
-                    onChange={(event) =>
-                      setFormulario((previo) => ({
-                        ...previo,
-                        patologias: event.target.value,
-                      }))
-                    }
-                    placeholder="Separar por coma. Ej: diabetes, hipertensión"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Sección: Medicación y suplementos */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Medicación y suplementos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="medicacion">Medicación actual</Label>
-                  <Textarea
-                    id="medicacion"
-                    value={formulario.medicacionActual}
-                    onChange={(event) =>
-                      setFormulario((previo) => ({
-                        ...previo,
-                        medicacionActual: event.target.value,
-                      }))
-                    }
-                    placeholder="Listá los medicamentos que tomás actualmente"
-                    rows={3}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="suplementos">Suplementos actuales</Label>
-                  <Textarea
-                    id="suplementos"
-                    value={formulario.suplementosActuales}
-                    onChange={(event) =>
-                      setFormulario((previo) => ({
-                        ...previo,
-                        suplementosActuales: event.target.value,
-                      }))
-                    }
-                    placeholder="Vitaminas, proteínas, etc."
-                    rows={3}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Sección: Historial médico */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Historial médico</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="cirugias">Cirugías previas</Label>
                   <Textarea
@@ -853,10 +931,12 @@ export function FichaSaludSocio() {
             </CardContent>
           </Card>
 
-          {/* Sección: Hábitos alimentarios */}
+          {/* Sección: Alimentación */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Hábitos alimentarios</CardTitle>
+              <CardTitle className="text-lg">
+                <h2>Alimentación</h2>
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-3">
@@ -937,13 +1017,40 @@ export function FichaSaludSocio() {
             </CardContent>
           </Card>
 
-          {/* Sección: Hábitos de vida */}
+          {/* Sección: Hábitos */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Hábitos de vida</CardTitle>
+              <CardTitle className="text-lg">
+                <h2>Hábitos</h2>
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="nivel-actividad" required>
+                    Nivel de actividad física
+                  </Label>
+                  <select
+                    id="nivel-actividad"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={formulario.nivelActividadFisica}
+                    onChange={(event) =>
+                      setFormulario((previo) => ({
+                        ...previo,
+                        nivelActividadFisica: event.target
+                          .value as NivelActividadFisicaValue,
+                      }))
+                    }
+                    required
+                  >
+                    {NIVELES_ACTIVIDAD_FISICA.map((opcion) => (
+                      <option key={opcion.value} value={opcion.value}>
+                        {opcion.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="alcohol">Consumo de alcohol</Label>
                   <select
@@ -1035,80 +1142,27 @@ export function FichaSaludSocio() {
             </CardContent>
           </Card>
 
-          {/* Sección: Contacto de emergencia */}
+          {/* Sección: Consentimiento */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Contacto de emergencia</CardTitle>
+              <CardTitle className="text-lg">
+                <h2>Consentimiento</h2>
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="contacto-nombre">Nombre completo</Label>
-                  <Input
-                    id="contacto-nombre"
-                    value={formulario.contactoEmergenciaNombre}
-                    onChange={(event) =>
-                      setFormulario((previo) => ({
-                        ...previo,
-                        contactoEmergenciaNombre: event.target.value,
-                      }))
-                    }
-                    aria-invalid={
-                      Boolean(erroresVisibles.contactoEmergenciaNombre) ||
-                      undefined
-                    }
-                    aria-describedby={
-                      erroresVisibles.contactoEmergenciaNombre
-                        ? 'error-contacto-nombre'
-                        : undefined
-                    }
-                    placeholder="Nombre del contacto"
-                  />
-                  {erroresVisibles.contactoEmergenciaNombre && (
-                    <p
-                      id="error-contacto-nombre"
-                      className="text-xs text-destructive"
-                      role="alert"
-                    >
-                      {erroresVisibles.contactoEmergenciaNombre}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="contacto-telefono">Teléfono</Label>
-                  <Input
-                    id="contacto-telefono"
-                    type="tel"
-                    value={formulario.contactoEmergenciaTelefono}
-                    onChange={(event) =>
-                      setFormulario((previo) => ({
-                        ...previo,
-                        contactoEmergenciaTelefono: event.target.value,
-                      }))
-                    }
-                    aria-invalid={
-                      Boolean(erroresVisibles.contactoEmergenciaTelefono) ||
-                      undefined
-                    }
-                    aria-describedby={
-                      erroresVisibles.contactoEmergenciaTelefono
-                        ? 'error-contacto-telefono'
-                        : undefined
-                    }
-                    placeholder="Ej: +54 11 1234-5678"
-                  />
-                  {erroresVisibles.contactoEmergenciaTelefono && (
-                    <p
-                      id="error-contacto-telefono"
-                      className="text-xs text-destructive"
-                      role="alert"
-                    >
-                      {erroresVisibles.contactoEmergenciaTelefono}
-                    </p>
-                  )}
-                </div>
-              </div>
+              <SeccionConsentimiento
+                checked={consentimiento}
+                onChange={setConsentimiento}
+                disabled={fichaExistente}
+                required={!fichaExistente}
+                fechaConsentimiento={fichaCargada?.consentAt}
+                onAbrirModalRGPD={() => setModalConsentimientoAbierto(true)}
+                idError={
+                  !fichaExistente && !consentimiento && error
+                    ? 'error-consentimiento'
+                    : undefined
+                }
+              />
             </CardContent>
           </Card>
 

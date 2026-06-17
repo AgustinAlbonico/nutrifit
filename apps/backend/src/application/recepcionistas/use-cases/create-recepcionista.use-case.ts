@@ -26,6 +26,7 @@ import { GrupoPermisoOrmEntity } from 'src/infrastructure/persistence/typeorm/en
 import { Repository } from 'typeorm';
 import { GrupoPermisoEntity } from 'src/domain/entities/Usuario/grupo-permiso.entity';
 import { generarContrasenaProvisional } from 'src/common/utils/password-generator.util';
+import { EmailService } from 'src/application/email/email.service';
 
 export interface ResultadoCrearRecepcionista {
   recepcionista: RecepcionistaEntity;
@@ -44,6 +45,7 @@ export class CreateRecepcionistaUseCase implements BaseUseCase {
     private readonly passwordEncrypter: IPasswordEncrypterService,
     @InjectRepository(GrupoPermisoOrmEntity)
     private readonly grupoPermisoRepository: Repository<GrupoPermisoOrmEntity>,
+    private readonly emailService: EmailService,
   ) {}
 
   async execute(
@@ -128,6 +130,19 @@ export class CreateRecepcionistaUseCase implements BaseUseCase {
     this.logger.log(
       `Usuario creado para recepcionista: ${recepcionistaCreado.idPersona} (debe_cambiar_password=true)`,
     );
+
+    void this.emailService
+      .enviarBienvenida({
+        nombre: `${recepcionistaCreado.nombre} ${recepcionistaCreado.apellido}`,
+        email: payload.email,
+        contrasenaProvisional,
+        rol: 'RECEPCIONISTA',
+      })
+      .catch((error) => {
+        this.logger.warn(
+          `No se pudo enviar email de bienvenida a ${payload.email}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      });
 
     return {
       recepcionista: recepcionistaCreado,

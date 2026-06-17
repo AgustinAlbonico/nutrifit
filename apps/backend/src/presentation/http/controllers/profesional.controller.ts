@@ -18,7 +18,9 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import {
+  CertificacionDto,
   CreateNutricionistaDto,
+  DiplomaDto,
   ListProfesionalesPublicQueryDto,
   NutricionistaResponseDto,
   PerfilProfesionalPublicoResponseDto,
@@ -28,16 +30,23 @@ import {
 import {
   CreateNutricionistaUseCase,
   DeleteNutricionistaUseCase,
+  EliminarDiplomaUseCase,
   GetNutricionistaUseCase,
   GetMiPerfilNutricionistaUseCase,
   GetPerfilProfesionalPublicoUseCase,
+  ListarDiplomasUseCase,
   ListNutricionistasUseCase,
   ListProfesionalesPublicosUseCase,
   ReactivarNutricionistaUseCase,
+  SubirDiplomaUseCase,
   UpdateNutricionistaUseCase,
 } from 'src/application/profesionales/use-cases';
+import { DiplomaEntity } from 'src/domain/entities/Diploma/diploma.entity';
 import { NutricionistaEntity } from 'src/domain/entities/Persona/Nutricionista/nutricionista.entity';
-import { NutricionistaRepository, NUTRICIONISTA_REPOSITORY } from 'src/domain/entities/Persona/Nutricionista/nutricionista.repository';
+import {
+  NutricionistaRepository,
+  NUTRICIONISTA_REPOSITORY,
+} from 'src/domain/entities/Persona/Nutricionista/nutricionista.repository';
 import { Rol as RolEnum } from 'src/domain/entities/Usuario/Rol';
 import { NotFoundError } from 'src/domain/exceptions/custom-exceptions';
 import {
@@ -70,6 +79,9 @@ export class ProfesionalController {
     private readonly updateNutricionistaUseCase: UpdateNutricionistaUseCase,
     private readonly deleteNutricionistaUseCase: DeleteNutricionistaUseCase,
     private readonly reactivarNutricionistaUseCase: ReactivarNutricionistaUseCase,
+    private readonly listarDiplomasUseCase: ListarDiplomasUseCase,
+    private readonly subirDiplomaUseCase: SubirDiplomaUseCase,
+    private readonly eliminarDiplomaUseCase: EliminarDiplomaUseCase,
     @Inject(NUTRICIONISTA_REPOSITORY)
     private readonly nutricionistaRepository: NutricionistaRepository,
     @Inject(APP_LOGGER_SERVICE) private readonly logger: IAppLoggerService,
@@ -237,119 +249,127 @@ export class ProfesionalController {
     return res.send(archivo.buffer);
   }
 
-  @Get(':id/diploma')
-  @Rol(RolEnum.SOCIO, RolEnum.ADMIN, RolEnum.RECEPCIONISTA)
-  async obtenerDiploma(
+  /* ──────── Diplomas múltiples ──────── */
+
+  @Get(':id/diplomas')
+  @Rol(
+    RolEnum.ADMIN,
+    RolEnum.RECEPCIONISTA,
+    RolEnum.NUTRICIONISTA,
+    RolEnum.SOCIO,
+  )
+  async listarDiplomas(
     @Param('id', ParseIntPipe) id: number,
-    @Res() res: Response,
-  ) {
-    const nutricionista = await this.getNutricionistaUseCase.execute(id);
-
-    if (!nutricionista || !nutricionista.matriculaDocumentoKey) {
-      return res.status(404).json({
-        message: 'El profesional no tiene un diploma cargado.',
-      });
-    }
-
-    const archivo = await this.objectStorage.obtenerArchivo(
-      nutricionista.matriculaDocumentoKey,
-    );
-
-    if (!archivo) {
-      return res.status(404).json({
-        message: 'No se pudo recuperar el diploma del profesional.',
-      });
-    }
-
-    res.setHeader('Content-Type', archivo.mimeType);
-    res.setHeader(
-      'Content-Disposition',
-      `inline; filename="diploma-${nutricionista.matricula || id}.${archivo.mimeType.split('/')[1] || 'pdf'}"`,
-    );
-    res.setHeader('Cache-Control', 'public, max-age=3600');
-    return res.send(archivo.buffer);
+  ): Promise<DiplomaDto[]> {
+    this.logger.log(`Listando diplomas del profesional ${id}`);
+    const diplomas = await this.listarDiplomasUseCase.execute(id);
+    return this.mapDiplomasToDto(diplomas, id);
   }
 
-  @Post(':id/diploma')
+  @Post(':id/diplomas')
   @Rol(RolEnum.ADMIN, RolEnum.RECEPCIONISTA, RolEnum.NUTRICIONISTA)
-  @Actions(ACCIONES.NUTRICIONISTAS_EDITAR)
   @UseInterceptors(FileInterceptor('diploma'))
   async subirDiploma(
     @Param('id', ParseIntPipe) id: number,
     @UploadedFile() diploma: Express.Multer.File,
-  ): Promise<NutricionistaResponseDto> {
+  ): Promise<DiplomaDto> {
     if (!diploma) {
       throw new BadRequestException('No se adjuntó ningún diploma.');
     }
 
     this.logger.log(
-      `Subiendo diploma para profesional con ID: ${id} (mime: ${diploma.mimetype}, size: ${diploma.size})`,
+      `Subiendo diploma para profesional ${id} (${diploma.mimetype}, ${diploma.size} bytes)`,
     );
 
-    const nutricionista = await this.getNutricionistaUseCase.execute(id);
-    if (!nutricionista) {
-      throw new NotFoundError('Nutricionista no encontrado.');
-    }
-
-    const extension = diploma.originalname.split('.').pop();
-    const diplomaKey = `perfiles/nutricionistas/diplomas/${Date.now()}-${Math.random().toString(36).substring(7)}.${extension}`;
-
-    await this.objectStorage.subirArchivo(
-      diplomaKey,
-      diploma.buffer,
-      diploma.mimetype,
-    );
-
-    if (nutricionista.matriculaDocumentoKey) {
-      try {
-        await this.objectStorage.eliminarArchivo(
-          nutricionista.matriculaDocumentoKey,
-        );
-      } catch (error) {
-        this.logger.warn(
-          `No se pudo eliminar el diploma anterior ${nutricionista.matriculaDocumentoKey}: ${error}`,
-        );
-      }
-    }
-
-    nutricionista.matriculaDocumentoKey = diplomaKey;
-    const actualizado = await this.nutricionistaRepository.update(
-      id,
-      nutricionista,
-    );
-    return this.mapToResponseDto(actualizado);
+    const entity = await this.subirDiplomaUseCase.execute(id, diploma);
+    return this.mapDiplomaToDto(entity, id);
   }
 
-  @Delete(':id/diploma')
+  @Delete(':id/diplomas/:diplomaId')
   @Rol(RolEnum.ADMIN, RolEnum.RECEPCIONISTA, RolEnum.NUTRICIONISTA)
-  @Actions(ACCIONES.NUTRICIONISTAS_EDITAR)
   async eliminarDiploma(
+    @Param('diplomaId', ParseIntPipe) diplomaId: number,
+  ): Promise<void> {
+    this.logger.log(`Eliminando diploma ${diplomaId}`);
+    await this.eliminarDiplomaUseCase.execute(diplomaId);
+  }
+
+  @Public()
+  @Get(':id/diplomas/:diplomaId/archivo')
+  async obtenerArchivoDiploma(
     @Param('id', ParseIntPipe) id: number,
-  ): Promise<NutricionistaResponseDto> {
-    this.logger.log(`Eliminando diploma del profesional con ID: ${id}`);
-    const nutricionista = await this.getNutricionistaUseCase.execute(id);
-    if (!nutricionista) {
-      throw new NotFoundError('Nutricionista no encontrado.');
+    @Param('diplomaId', ParseIntPipe) diplomaId: number,
+    @Res() res: Response,
+  ) {
+    const diplomas = await this.listarDiplomasUseCase.execute(id);
+    const diploma = diplomas.find((d) => d.idDiploma === diplomaId);
+
+    if (!diploma) {
+      return res.status(404).json({ message: 'Diploma no encontrado.' });
     }
 
-    if (nutricionista.matriculaDocumentoKey) {
-      try {
-        await this.objectStorage.eliminarArchivo(
-          nutricionista.matriculaDocumentoKey,
-        );
-      } catch (error) {
-        this.logger.warn(
-          `No se pudo eliminar el diploma ${nutricionista.matriculaDocumentoKey} del bucket: ${error}`,
-        );
-      }
-    }
-
-    nutricionista.matriculaDocumentoKey = null;
-    const actualizado = await this.nutricionistaRepository.update(
-      id,
-      nutricionista,
+    const archivo = await this.objectStorage.obtenerArchivo(
+      diploma.documentKey,
     );
-    return this.mapToResponseDto(actualizado);
+    if (!archivo) {
+      return res
+        .status(404)
+        .json({ message: 'No se pudo recuperar el archivo del diploma.' });
+    }
+
+    res.setHeader('Content-Type', archivo.mimeType);
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="${diploma.nombreOriginal || `diploma-${diplomaId}.${archivo.mimeType.split('/')[1] || 'pdf'}`}"`,
+    );
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader(
+      'Content-Security-Policy',
+      "frame-ancestors 'self' http://localhost:5173",
+    );
+    return res.send(archivo.buffer);
+  }
+
+  /** @deprecated Mantenido para compatibilidad; retorna el primer diploma o 404 */
+  @Get(':id/diploma')
+  @Rol(
+    RolEnum.SOCIO,
+    RolEnum.ADMIN,
+    RolEnum.RECEPCIONISTA,
+    RolEnum.NUTRICIONISTA,
+  )
+  async obtenerDiplomaLegacy(
+    @Param('id', ParseIntPipe) id: number,
+    @Res() res: Response,
+  ) {
+    const diplomas = await this.listarDiplomasUseCase.execute(id);
+    if (diplomas.length === 0) {
+      return res
+        .status(404)
+        .json({ message: 'El profesional no tiene diplomas cargados.' });
+    }
+
+    const primero = diplomas[0];
+    const archivo = await this.objectStorage.obtenerArchivo(
+      primero.documentKey,
+    );
+    if (!archivo) {
+      return res
+        .status(404)
+        .json({ message: 'No se pudo recuperar el archivo del diploma.' });
+    }
+
+    res.setHeader('Content-Type', archivo.mimeType);
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="${primero.nombreOriginal || `diploma-${id}.${archivo.mimeType.split('/')[1] || 'pdf'}`}"`,
+    );
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader(
+      'Content-Security-Policy',
+      "frame-ancestors 'self' http://localhost:5173",
+    );
+    return res.send(archivo.buffer);
   }
 
   @Delete(':id')
@@ -389,12 +409,56 @@ export class ProfesionalController {
     dto.email = nutricionista.email;
     dto.fechaBaja = nutricionista.fechaBaja;
     dto.activo = !nutricionista.fechaBaja;
+    dto.presentacion = nutricionista.presentacion ?? null;
     dto.fotoPerfilUrl = nutricionista.fotoPerfilKey
       ? `/profesional/${nutricionista.idPersona}/foto?v=${encodeURIComponent(nutricionista.fotoPerfilKey)}`
       : null;
-    dto.diplomaUrl = nutricionista.matriculaDocumentoKey
-      ? `/profesional/${nutricionista.idPersona}/diploma?v=${encodeURIComponent(nutricionista.matriculaDocumentoKey)}`
-      : null;
+    dto.certificaciones = (nutricionista.certificaciones ?? []).map((c) =>
+      this.mapCertificacionToDto(c),
+    );
+    dto.formacionAcademica = (nutricionista.formacionAcademica ?? []).map(
+      (f) => ({
+        idFormacionAcademica: f.idFormacionAcademica,
+        titulo: f.titulo,
+        institucion: f.institucion,
+        anioInicio: f.añoComienzo,
+        anioFin: f.añoFin,
+        nivel: f.nivel,
+        enCurso: f.añoFin === null,
+      }),
+    );
+    dto.diplomas = (nutricionista.diplomas ?? []).map((d) =>
+      this.mapDiplomaToDto(d, nutricionista.idPersona ?? 0),
+    );
     return dto;
+  }
+
+  private mapCertificacionToDto(
+    c: NutricionistaEntity['certificaciones'][number],
+  ): CertificacionDto {
+    const dto = new CertificacionDto();
+    dto.idCertificacion = c.idCertificacion;
+    dto.nombre = c.nombre;
+    dto.entidad = c.entidad;
+    dto.anio = c.anio;
+    dto.cargaHoraria = c.cargaHoraria;
+    dto.nivel = c.nivel;
+    return dto;
+  }
+
+  private mapDiplomaToDto(d: DiplomaEntity, idPersona: number): DiplomaDto {
+    const dto = new DiplomaDto();
+    dto.idDiploma = d.idDiploma;
+    dto.url = `/api/profesional/${idPersona}/diplomas/${d.idDiploma}/archivo`;
+    dto.nombreOriginal = d.nombreOriginal;
+    dto.mimeType = d.mimeType;
+    return dto;
+  }
+
+  private mapDiplomasToDto(
+    diplomas: DiplomaEntity[],
+    idPersona: number,
+  ): DiplomaDto[] {
+    return diplomas.map((d) => this.mapDiplomaToDto(d, idPersona));
   }
 }

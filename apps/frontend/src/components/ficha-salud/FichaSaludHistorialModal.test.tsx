@@ -7,7 +7,7 @@
  * - Renderiza `FichaSaludVersionDetalle` con los datos read-only.
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -46,6 +46,10 @@ const datosVersionMock: DatosVersion = {
 };
 
 describe('FichaSaludHistorialModal', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('HIST-1: lista las versiones mockeadas', () => {
     render(
       <FichaSaludHistorialModal
@@ -137,5 +141,29 @@ describe('FichaSaludHistorialModal', () => {
       .parentElement!
       .querySelector('fieldset');
     expect(fieldset).toBeDisabled();
+  });
+
+  it('HIST-5: abre sin warnings de accesibilidad del Dialog', () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    render(
+      <FichaSaludHistorialModal
+        open
+        onClose={vi.fn()}
+        versiones={versionesMock}
+        cargando={false}
+        versionSeleccionada={1}
+        datosVersion={datosVersionMock}
+        cargandoVersion={false}
+        onSeleccionarVersion={vi.fn()}
+      />,
+    );
+
+    expect(
+      errorSpy.mock.calls.some(([mensaje]) =>
+        String(mensaje).includes('DialogContent') ||
+        String(mensaje).includes('aria-describedby'),
+      ),
+    ).toBe(false);
   });
 });

@@ -10,7 +10,9 @@ import {
 import { LoginDto } from 'src/application/auth/dtos/login.dto';
 import { LoginUseCase } from 'src/application/auth/login.use-case';
 import { CambiarContrasenaUseCase } from 'src/application/auth/cambiar-contrasena.use-case';
+import { EstablecerContrasenaUseCase } from 'src/application/auth/establecer-contrasena.use-case';
 import { CambiarContrasenaDto } from 'src/application/auth/dtos/cambiar-contrasena.dto';
+import { EstablecerContrasenaDto } from 'src/application/auth/dtos/establecer-contrasena.dto';
 import {
   APP_LOGGER_SERVICE,
   IAppLoggerService,
@@ -32,6 +34,7 @@ export class AuthController {
   constructor(
     private readonly loginUseCase: LoginUseCase,
     private readonly cambiarContrasenaUseCase: CambiarContrasenaUseCase,
+    private readonly establecerContrasenaUseCase: EstablecerContrasenaUseCase,
     private readonly permisosService: PermisosService,
     @Inject(USUARIO_REPOSITORY)
     private readonly usuarioRepository: UsuarioRepository,
@@ -58,9 +61,20 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async cambiarContrasena(
     @CurrentUserId() userId: number,
+    @CurrentUser() user: UsuarioAutenticadoPayload,
     @Body() body: CambiarContrasenaDto,
   ) {
-    return this.cambiarContrasenaUseCase.execute(userId, body);
+    return this.cambiarContrasenaUseCase.execute(userId, user.email, body);
+  }
+
+  @Put('establecer-contrasena')
+  @UseGuards(JwtAuthGuard)
+  async establecerContrasena(
+    @CurrentUserId() userId: number,
+    @CurrentUser() user: UsuarioAutenticadoPayload,
+    @Body() body: EstablecerContrasenaDto,
+  ) {
+    return this.establecerContrasenaUseCase.execute(userId, user.email, body);
   }
 
   @Get('perfil')

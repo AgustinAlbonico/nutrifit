@@ -173,13 +173,68 @@ describe('UpdateNutricionistaUseCase — limpieza de foto de perfil', () => {
     objectStorage.eliminarArchivo.mockRejectedValue(new Error('MinIO down'));
 
     await expect(
-      useCase.execute(
-        1,
-        {} as any,
-        'perfiles/nutricionistas/nueva.png',
-        false,
-      ),
+      useCase.execute(1, {} as any, 'perfiles/nutricionistas/nueva.png', false),
     ).resolves.toBeDefined();
     expect(nutricionistaRepository.update).toHaveBeenCalled();
+  });
+
+  it('actualiza formación académica y certificaciones desde el payload', async () => {
+    const { useCase, nutricionistaRepository } = buildUseCase();
+    const nutricionistaExistente = buildNutricionista(null);
+    nutricionistaRepository.findById.mockResolvedValue(nutricionistaExistente);
+    nutricionistaRepository.update.mockImplementation(
+      async (_id, entity) => entity,
+    );
+    nutricionistaRepository.findByDni.mockResolvedValue(null);
+    nutricionistaRepository.findByMatricula.mockResolvedValue(null);
+    nutricionistaRepository.findAll.mockResolvedValue([]);
+
+    await useCase.execute(1, {
+      formacionAcademica: [
+        {
+          idFormacionAcademica: 3,
+          titulo: 'Posgrado en Obesidad',
+          institucion: 'SAOTA',
+          anioInicio: 2024,
+          anioFin: null,
+          nivel: 'POSGRADO',
+        },
+      ],
+      certificaciones: [
+        {
+          idCertificacion: 2,
+          nombre: 'ISAK Nivel 2',
+          entidad: 'ISAK',
+          anio: 2023,
+          cargaHoraria: 40,
+          nivel: 'CURSO',
+        },
+      ],
+    } as any);
+
+    expect(nutricionistaRepository.update).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({
+        formacionAcademica: [
+          expect.objectContaining({
+            idFormacionAcademica: 3,
+            titulo: 'Posgrado en Obesidad',
+            añoComienzo: 2024,
+            añoFin: null,
+            nivel: 'POSGRADO',
+          }),
+        ],
+        certificaciones: [
+          expect.objectContaining({
+            idCertificacion: 2,
+            nombre: 'ISAK Nivel 2',
+            entidad: 'ISAK',
+            anio: 2023,
+            cargaHoraria: 40,
+            nivel: 'CURSO',
+          }),
+        ],
+      }),
+    );
   });
 });

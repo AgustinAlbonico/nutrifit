@@ -31,24 +31,22 @@ export class CambiarContrasenaUseCase implements BaseUseCase {
 
   async execute(
     userId: number,
+    email: string,
     payload: CambiarContrasenaDto,
-  ): Promise<{ mensaje: string }> {
+  ): Promise<{ mensaje: string; requiereRelogin?: boolean }> {
     this.logger.log(
       `CambiarContrasenaUseCase: Intentando cambiar contraseña para usuario ID ${userId}`,
     );
 
     const { contrasenaActual, nuevaContrasena } = payload;
 
-    // Find the user
-    const usuarios = await this.usuarioRepository.findAll();
-    const usuario = usuarios.find((u) => u.idUsuario === userId);
+    const usuario = await this.usuarioRepository.findByEmail(email);
 
     if (!usuario) {
-      this.logger.warn(`Usuario ID ${userId} no encontrado.`);
+      this.logger.warn(`Usuario ${email} no encontrado.`);
       throw new UnauthorizedError('No se encontró el usuario.');
     }
 
-    // Verify current password
     const isPasswordValid = await this.passwordEncrypter.comparePasswords(
       contrasenaActual,
       usuario.contraseña,
@@ -61,10 +59,9 @@ export class CambiarContrasenaUseCase implements BaseUseCase {
       throw new UnauthorizedError('La contraseña actual es incorrecta.');
     }
 
-    // Validate new password strength
     if (nuevaContrasena.length < 8) {
       throw new BadRequestError(
-        'La nueva contraseña debe tener al menos 8 caracteres.',
+        'La nueva contraseña debe tener al least 8 caracteres.',
       );
     }
 
@@ -92,7 +89,6 @@ export class CambiarContrasenaUseCase implements BaseUseCase {
       );
     }
 
-    // Check new password is different
     const isSamePassword = await this.passwordEncrypter.comparePasswords(
       nuevaContrasena,
       usuario.contraseña,
@@ -104,15 +100,15 @@ export class CambiarContrasenaUseCase implements BaseUseCase {
       );
     }
 
-    // Encrypt and save new password
     const hashedPassword =
       await this.passwordEncrypter.encryptPassword(nuevaContrasena);
 
     usuario.contraseña = hashedPassword;
+    usuario.debeCambiarPassword = false;
     await this.usuarioRepository.update(usuario.idUsuario!, usuario);
 
     this.logger.log(
-      `Contraseña cambiada exitosamente para usuario ID ${userId}`,
+      `Contraseña cambiada exitosamente para usuario ID ${userId}. Flag debeCambiarPassword reseteado.`,
     );
 
     return { mensaje: 'Contraseña actualizada correctamente.' };

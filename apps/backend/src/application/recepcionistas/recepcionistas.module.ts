@@ -11,6 +11,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppLoggerModule } from 'src/infrastructure/common/logger/app-logger.module';
 import { PasswordEncrypterModule } from 'src/infrastructure/services/bcrypt/bcrypt.module';
 import { MinioModule } from 'src/infrastructure/services/minio/minio.module';
+import { EmailModule } from 'src/application/email/email.module';
 import {
   GrupoPermisoOrmEntity,
   RecepcionistaOrmEntity,
@@ -31,6 +32,7 @@ import { UsuarioRepositoryImplementation } from 'src/infrastructure/persistence/
     AppLoggerModule,
     PasswordEncrypterModule,
     MinioModule,
+    EmailModule,
   ],
   providers: [
     CreateRecepcionistaUseCase,

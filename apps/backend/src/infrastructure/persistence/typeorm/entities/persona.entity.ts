@@ -23,6 +23,9 @@ import { UsuarioOrmEntity } from './usuario.entity';
 import { TurnoOrmEntity } from './turno.entity';
 import { TurnoEntity } from 'src/domain/entities/Turno/turno.entity';
 import { GimnasioOrmEntity } from './gimnasio.entity';
+import { CertificacionOrmEntity } from './certificacion.entity';
+import { CertificacionEntity } from 'src/domain/entities/Certificacion/certificacion.entity';
+import { DiplomaOrmEntity } from './diploma.entity';
 import { AuditableOrmEntity } from '../common/auditable.orm-entity';
 
 @Entity('persona')
@@ -120,9 +123,6 @@ export class NutricionistaOrmEntity extends PersonaOrmEntity {
   @Column({ name: 'presentacion', type: 'text', nullable: true })
   presentacion: string | null;
 
-  @Column({ name: 'certificaciones', type: 'text', nullable: true })
-  certificaciones: string | null;
-
   @Column({ name: 'duracion_turno_min', type: 'int', default: 30 })
   duracionTurnoMin: number;
 
@@ -134,6 +134,24 @@ export class NutricionistaOrmEntity extends PersonaOrmEntity {
   })
   matriculaDocumentoKey: string | null;
 
+  @OneToMany(() => DiplomaOrmEntity, (diploma) => diploma.nutricionista, {
+    eager: true,
+    nullable: true,
+  })
+  diplomas: DiplomaOrmEntity[];
+
+  @OneToMany(
+    () => CertificacionOrmEntity,
+    (certificacion) => certificacion.nutricionista,
+    {
+      cascade: true,
+      eager: true,
+      nullable: true,
+      orphanedRowAction: 'delete',
+    },
+  )
+  certificaciones: CertificacionOrmEntity[] | CertificacionEntity[];
+
   @OneToMany(() => AgendaOrmEntity, (agenda) => agenda.nutricionista, {
     eager: false,
     nullable: true,
@@ -144,8 +162,10 @@ export class NutricionistaOrmEntity extends PersonaOrmEntity {
     () => FormacionAcademicaOrmEntity,
     (formacion) => formacion.nutricionista,
     {
+      cascade: true,
       eager: true,
       nullable: true,
+      orphanedRowAction: 'delete',
     },
   )
   formacionAcademica:

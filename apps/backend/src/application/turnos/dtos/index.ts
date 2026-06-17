@@ -29,6 +29,7 @@ export * from './reprogramar-turno-socio.dto';
 export * from './registrar-asistencia-turno.dto';
 export * from './reservar-turno-socio.dto';
 export * from './revertir-ausente.dto';
+export * from './revertir-checkin.dto';
 export * from './turno-clinico-response.dto';
 export * from './turno-del-dia-response.dto';
 export * from './turno-operacion-response.dto';

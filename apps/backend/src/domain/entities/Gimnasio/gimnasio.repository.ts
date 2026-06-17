@@ -8,6 +8,15 @@ export interface CrearGimnasioDto {
   direccion: string;
   telefono?: string | null;
   email?: string | null;
+  admin?: {
+    nombre: string;
+    email: string;
+  };
+}
+
+export interface CrearAdminGimnasioDto {
+  nombre: string;
+  email: string;
 }
 
 export interface ActualizarGimnasioDto {

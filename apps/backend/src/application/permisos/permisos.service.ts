@@ -13,6 +13,8 @@ import { CreateAccionDto } from './dtos/create-accion.dto';
 import { CreateGrupoPermisoDto } from './dtos/create-grupo-permiso.dto';
 import { UpdateAccionDto } from './dtos/update-accion.dto';
 import { UpdateGrupoPermisoDto } from './dtos/update-grupo-permiso.dto';
+import { normalizarTexto } from 'src/common/utils/text.util';
+import { stripAccentsLowerSql } from 'src/common/utils/sql-text.util';
 
 @Injectable()
 export class PermisosService {
@@ -275,9 +277,17 @@ export class PermisosService {
 
     // Filtro por búsqueda (email, nombre, apellido)
     if (search) {
+      const termino = `%${normalizarTexto(search)}%`;
       queryBuilder.andWhere(
-        '(usuario.email LIKE :search OR persona.nombre LIKE :search OR persona.apellido LIKE :search)',
-        { search: `%${search}%` },
+        `(LOWER(usuario.email) LIKE :searchEmail OR ${stripAccentsLowerSql(
+          'LOWER(persona.nombre)',
+        )} LIKE :search OR ${stripAccentsLowerSql(
+          'LOWER(persona.apellido)',
+        )} LIKE :search)`,
+        {
+          search: termino,
+          searchEmail: `%${search.toLowerCase()}%`,
+        },
       );
     }
 

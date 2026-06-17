@@ -29,5 +29,5 @@ export interface CrearSocioDto {
   ciudad: string;
   provincia: string;
   email: string;
-  contrasena: string;
+  contrasena?: string;
 }

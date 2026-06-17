@@ -48,7 +48,7 @@ export class GetProfesionalKpiUseCase {
       .where('turno.fechaTurno >= :fechaInicio', { fechaInicio })
       .andWhere('turno.fechaTurno <= :fechaFin', { fechaFin })
       .setParameters({
-        programado: 'PROGRAMADO',
+        programado: 'CONFIRMADO',
         realizado: 'REALIZADO',
         ausente: 'AUSENTE',
       })

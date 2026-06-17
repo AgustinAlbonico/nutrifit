@@ -16,6 +16,7 @@ import {
 } from 'src/common/utils/argentina-datetime.util';
 import {
   AgendaOrmEntity,
+  NutricionistaOrmEntity,
   TurnoOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
 
@@ -57,6 +58,8 @@ export class ValidacionesCreacionTurno {
   constructor(
     @InjectRepository(AgendaOrmEntity)
     private readonly agendaRepository: Repository<AgendaOrmEntity>,
+    @InjectRepository(NutricionistaOrmEntity)
+    private readonly nutricionistaRepository: Repository<NutricionistaOrmEntity>,
     @InjectRepository(TurnoOrmEntity)
     private readonly turnoRepository: Repository<TurnoOrmEntity>,
     private readonly tenantContext: TenantContextService,
@@ -140,17 +143,27 @@ export class ValidacionesCreacionTurno {
       );
     }
 
+    const nutricionista = await this.nutricionistaRepository.findOne({
+      where: {
+        idPersona: nutricionistaId,
+        gimnasioId: this.tenantContext.gimnasioId,
+      },
+      select: ['idPersona', 'duracionTurnoMin'],
+    });
+
+    const duracionTurno = nutricionista?.duracionTurnoMin ?? agendaDelDia[0].duracionTurno;
+
     const turnoInicio = timeToMinutes(horaTurno);
 
     const hasAvailableSlot = agendaDelDia.some((agenda) => {
       const inicio = timeToMinutes(agenda.horaInicio);
       const fin = timeToMinutes(agenda.horaFin);
-      const turnoFin = turnoInicio + agenda.duracionTurno;
+      const turnoFin = turnoInicio + duracionTurno;
 
       return (
         turnoInicio >= inicio &&
         turnoFin <= fin &&
-        (turnoInicio - inicio) % agenda.duracionTurno === 0
+        (turnoInicio - inicio) % duracionTurno === 0
       );
     });
 

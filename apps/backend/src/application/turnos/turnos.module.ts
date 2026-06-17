@@ -52,6 +52,7 @@ import {
   RegistrarAsistenciaTurnoUseCase,
   ReservarTurnoSocioUseCase,
   RevertirAusenteTurnoUseCase,
+  RevertirCheckinTurnoUseCase,
   UpsertFichaSaludSocioUseCase,
 } from './use-cases';
 import { SlotComputationService } from './services/slot-computation.service';
@@ -121,6 +122,7 @@ import { EmailModule } from 'src/application/email/email.module';
     RegistrarAsistenciaTurnoUseCase,
     ReservarTurnoSocioUseCase,
     RevertirAusenteTurnoUseCase,
+    RevertirCheckinTurnoUseCase,
     UpsertFichaSaludSocioUseCase,
     SlotComputationService,
     ValidacionesCreacionTurno,
@@ -162,6 +164,7 @@ import { EmailModule } from 'src/application/email/email.module';
     RegistrarAsistenciaTurnoUseCase,
     ReservarTurnoSocioUseCase,
     RevertirAusenteTurnoUseCase,
+    RevertirCheckinTurnoUseCase,
     UpsertFichaSaludSocioUseCase,
     SlotComputationService,
     ValidacionesCreacionTurno,

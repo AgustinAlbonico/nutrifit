@@ -38,7 +38,7 @@ describe('GetTurnoSocioByIdUseCase', () => {
       idTurno: 1,
       fechaTurno: new Date('2026-06-15T00:00:00.000Z'),
       horaTurno: '10:00',
-      estadoTurno: EstadoTurno.PROGRAMADO,
+      estadoTurno: EstadoTurno.CONFIRMADO,
       socio: mockSocioPersona,
       nutricionista: mockNutricionista,
       ...overrides,

@@ -9,6 +9,7 @@ import { AppLoggerModule } from 'src/infrastructure/common/logger/app-logger.mod
 import { PasswordEncrypterModule } from 'src/infrastructure/services/bcrypt/bcrypt.module';
 import { MinioModule } from 'src/infrastructure/services/minio/minio.module';
 import { TenantContextModule } from 'src/infrastructure/auth/tenant-context.module';
+import { EmailModule } from 'src/application/email/email.module';
 import {
   SocioOrmEntity,
   UsuarioOrmEntity,
@@ -32,6 +33,7 @@ import {
     PasswordEncrypterModule,
     MinioModule,
     TenantContextModule,
+    EmailModule,
   ],
   providers: [
     RegistrarSocioUseCase,

@@ -152,12 +152,13 @@ function crearNutri(overrides: {
       },
     ],
     formacionAcademica: [],
+    diplomas: [],
     turnos: [],
     fotoPerfilKey: null,
     matriculaDocumentoKey: null,
     gimnasioId: 1,
     fechaBaja: overrides.fechaBaja ?? null,
     presentacion: 'Hola',
-    certificaciones: null,
+    certificaciones: [],
   };
 }

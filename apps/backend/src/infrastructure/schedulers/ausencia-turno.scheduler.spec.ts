@@ -53,7 +53,7 @@ describe('AusenciaTurnoScheduler', () => {
       idTurno: 1,
       fechaTurno: new Date(fechaHoyStr + 'T13:00:00.000Z'),
       horaTurno: '13:00',
-      estadoTurno: EstadoTurno.PROGRAMADO,
+      estadoTurno: EstadoTurno.CONFIRMADO,
       ausenteAt: null,
       gimnasio: { idGimnasio: 1 },
     } as TurnoOrmEntity;
@@ -98,7 +98,7 @@ describe('AusenciaTurnoScheduler', () => {
     const turnoReciente = {
       idTurno: 1,
       horaTurno: '13:00',
-      estadoTurno: EstadoTurno.PROGRAMADO,
+      estadoTurno: EstadoTurno.CONFIRMADO,
       ausenteAt: null,
       gimnasio: { idGimnasio: 1 },
     } as TurnoOrmEntity;

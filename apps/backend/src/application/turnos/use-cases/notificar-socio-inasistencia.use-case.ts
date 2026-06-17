@@ -31,7 +31,9 @@ export class NotificarSocioInasistenciaUseCase {
     }
 
     if (turno.estadoTurno !== EstadoTurno.AUSENTE) {
-      throw new BadRequestError('El turno debe estar en estado AUSENTE para notificar');
+      throw new BadRequestError(
+        'El turno debe estar en estado AUSENTE para notificar',
+      );
     }
 
     if (turno.socio?.idPersona) {

@@ -25,6 +25,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { GrupoPermisoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/grupo-permiso.entity';
 import { Repository } from 'typeorm';
 import { GrupoPermisoEntity } from 'src/domain/entities/Usuario/grupo-permiso.entity';
+import { EmailService } from 'src/application/email/email.service';
+import { generarContrasenaProvisional } from 'src/common/utils/password-generator.util';
+
+export interface ResultadoRegistrarSocio {
+  socio: SocioEntity;
+  usuario: UsuarioEntity;
+  contrasenaProvisional: string;
+}
 
 @Injectable()
 export class RegistrarSocioUseCase implements BaseUseCase {
@@ -37,12 +45,13 @@ export class RegistrarSocioUseCase implements BaseUseCase {
     private readonly passwordEncrypter: IPasswordEncrypterService,
     @InjectRepository(GrupoPermisoOrmEntity)
     private readonly grupoPermisoRepository: Repository<GrupoPermisoOrmEntity>,
+    private readonly emailService: EmailService,
   ) {}
 
   async execute(
     payload: RegistrarSocioDto,
     fotoPerfilKey?: string,
-  ): Promise<UsuarioEntity> {
+  ): Promise<ResultadoRegistrarSocio> {
     const foundUser = await this.usuarioRepository.findByEmail(payload.email);
     if (foundUser) {
       this.logger.warn(`El email ${payload.email} ya está registrado.`);
@@ -77,7 +86,6 @@ export class RegistrarSocioUseCase implements BaseUseCase {
       [],
     );
 
-    // Asignar foto de perfil si se proporcionó
     if (fotoPerfilKey) {
       socioEntity.fotoPerfilKey = fotoPerfilKey;
     }
@@ -89,9 +97,10 @@ export class RegistrarSocioUseCase implements BaseUseCase {
     );
     this.logger.log(`Creando Usuario para el socio ${socioCreado.idPersona}`);
 
-    const contrasenaEncriptada = await this.passwordEncrypter.encryptPassword(
-      payload.contrasena,
-    );
+    const contrasena = payload.contrasena ?? generarContrasenaProvisional();
+    const debeCambiarPassword = !payload.contrasena;
+    const contrasenaEncriptada =
+      await this.passwordEncrypter.encryptPassword(contrasena);
 
     const grupoSocio = await this.obtenerGrupoSocioPorDefecto();
 
@@ -102,13 +111,33 @@ export class RegistrarSocioUseCase implements BaseUseCase {
       socioCreado,
       Rol.SOCIO,
       [grupoSocio],
+      [],
+      null,
+      debeCambiarPassword,
     );
 
     const usuarioCreado = await this.usuarioRepository.save(usuario);
 
     usuarioCreado.persona = socioCreado;
 
-    return usuarioCreado;
+    void this.emailService
+      .enviarBienvenida({
+        nombre: `${socioCreado.nombre} ${socioCreado.apellido}`,
+        email: payload.email,
+        contrasenaProvisional: contrasena,
+        rol: 'SOCIO',
+      })
+      .catch((error) => {
+        this.logger.warn(
+          `No se pudo enviar email de bienvenida a ${payload.email}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      });
+
+    return {
+      socio: socioCreado,
+      usuario: usuarioCreado,
+      contrasenaProvisional: contrasena,
+    };
   }
 
   private async obtenerGrupoSocioPorDefecto(): Promise<GrupoPermisoEntity> {

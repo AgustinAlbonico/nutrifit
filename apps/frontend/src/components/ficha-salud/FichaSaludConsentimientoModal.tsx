@@ -47,31 +47,21 @@ export function FichaSaludConsentimientoModal({
 
   return (
     <Dialog open={open} onOpenChange={(abierto) => !abierto && onClose()}>
-      <DialogContent
-        className="sm:max-w-2xl"
-        aria-labelledby="titulo-modal-consentimiento"
-        aria-describedby="cuerpo-modal-consentimiento"
-      >
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <div className="flex items-center gap-2">
-            <ShieldCheck
-              className="h-5 w-5 text-primary"
-              aria-hidden="true"
-            />
-            <DialogTitle id="titulo-modal-consentimiento">
+          <DialogTitle className="flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-primary" aria-hidden="true" />
+            <span>
               Consentimiento para almacenar tu ficha de salud
-            </DialogTitle>
-          </div>
+            </span>
+          </DialogTitle>
           <DialogDescription>
             Tu información de salud es confidencial. Por favor, leé los
             siguientes puntos antes de confirmar.
           </DialogDescription>
         </DialogHeader>
 
-        <div
-          id="cuerpo-modal-consentimiento"
-          className="space-y-3 text-sm text-foreground/90"
-        >
+        <div className="space-y-3 text-sm text-foreground/90">
           <p>
             Almacenamos los datos que cargás en tu ficha de salud (datos
             antropométricos, alergias, patologías declaradas, medicación,

@@ -1,6 +1,8 @@
 import 'reflect-metadata';
 import { AgendaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/agenda.entity';
 import { AlimentoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/alimento.entity';
+import { DiplomaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/diploma.entity';
+import { CertificacionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/certificacion.entity';
 import {
   RecepcionistaOrmEntity,
   NutricionistaOrmEntity,
@@ -35,6 +37,7 @@ import { AuditoriaOrmEntity } from 'src/infrastructure/persistence/typeorm/entit
 import { RecordatorioEnviadoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/recordatorio-enviado.entity';
 import { SugerenciaIAOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/sugerencia-ia.entity';
 import { TurnoConfirmacionTokenOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/turno-confirmacion-token.entity';
+import { ExcepcionDisponibilidadOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/excepcion-disponibilidad.entity';
 import { PoliticaOperativaOrmEntity } from 'src/infrastructure/politicas/politica-operativa.entity';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { EnvironmentConfigService } from '../environment-config/environment-config.service';
@@ -71,11 +74,13 @@ export const AppDataSource = (
     GrupoAlimenticioOrmEntity,
     PlanAlimentacionOrmEntity,
     FormacionAcademicaOrmEntity,
+    CertificacionOrmEntity,
     ObservacionClinicaOrmEntity,
     AccionOrmEntity,
     GrupoPermisoOrmEntity,
     MedicionOrmEntity,
     DiaPlanOrmEntity,
+    DiplomaOrmEntity,
     ObjetivoOrmEntity,
     FotoProgresoOrmEntity,
     GimnasioOrmEntity,
@@ -86,6 +91,7 @@ export const AppDataSource = (
     SugerenciaIAOrmEntity,
     TurnoConfirmacionTokenOrmEntity,
     UsuarioGrupoPermisoOrmEntity,
+    ExcepcionDisponibilidadOrmEntity,
     PoliticaOperativaOrmEntity,
   ],
   //BORRAR ESTO CUANDO SAQUE LA APP A PRODUCCION

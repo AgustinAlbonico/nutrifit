@@ -9,6 +9,7 @@ import {
   Pencil,
   Trash2,
   UserCheck,
+  UserPlus,
   Loader2,
   ArrowLeft,
   Users,
@@ -20,6 +21,7 @@ import {
   actualizarGimnasio,
   eliminarGimnasio,
   listarAdminsDeGimnasio,
+  crearAdminDeGimnasio,
 } from '@/services/gimnasio.service';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -43,6 +45,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { ModalContrasenaProvisional } from '@/components/ui/ModalContrasenaProvisional';
 import { toast } from 'sonner';
 import type { Gimnasio, AdminUser, ActualizarGimnasioRequest } from '@/types/gimnasio';
 
@@ -50,17 +53,21 @@ const editarSchema = z.object({
   nombre: z.string().min(3).max(100),
   direccion: z.string().min(5).max(200),
   telefono: z.string().optional(),
-  email: z.email().optional().or(z.literal('')),
+  email: z.string().email().optional().or(z.literal('')),
+});
+
+const adminSchema = z.object({
+  adminNombre: z.string().min(3, 'El nombre debe tener al menos 3 caracteres').max(100),
+  adminEmail: z.string().email('Email inválido'),
 });
 
 type EditarFormData = z.infer<typeof editarSchema>;
+type AdminFormData = z.infer<typeof adminSchema>;
 
 function formatDate(date?: Date | string): string {
   if (!date) return '-';
-
   const d = new Date(date);
   if (Number.isNaN(d.getTime())) return '-';
-
   return d.toLocaleDateString('es-AR', {
     day: '2-digit',
     month: '2-digit',
@@ -75,26 +82,21 @@ export function GimnasioDetailPage() {
   const queryClient = useQueryClient();
   const [modoEditar, setModoEditar] = useState(false);
   const [mostrarModalEliminar, setMostrarModalEliminar] = useState(false);
+  const [mostrarModalAdmin, setMostrarModalAdmin] = useState(false);
+  const [contrasenaProvisional, setContrasenaProvisional] = useState<string | null>(null);
 
   const gimnasioId = Number(id);
 
-  const {
-    data: gimnasio,
-    isLoading,
-    isError,
-    error,
-  } = useQuery<Gimnasio>({
+  const { data: gimnasio, isLoading, isError, error } = useQuery<Gimnasio>({
     queryKey: ['gimnasios', gimnasioId, token],
     queryFn: () => obtenerGimnasio(gimnasioId, token!),
     enabled: !!token && !isNaN(gimnasioId),
   });
 
-  const {
-    data: admins,
-  } = useQuery<AdminUser[]>({
+  const { data: admins } = useQuery<AdminUser[]>({
     queryKey: ['gimnasios', gimnasioId, 'admins', token],
     queryFn: () => listarAdminsDeGimnasio(gimnasioId, token!),
-    enabled: !!token && !isNaN(gimnasioId) && modoEditar,
+    enabled: !!token && !isNaN(gimnasioId),
   });
 
   const editarForm = useForm<EditarFormData>({
@@ -105,6 +107,14 @@ export function GimnasioDetailPage() {
       telefono: gimnasio.telefono ?? '',
       email: gimnasio.email ?? '',
     } : undefined,
+  });
+
+  const adminForm = useForm<AdminFormData>({
+    resolver: zodResolver(adminSchema),
+    defaultValues: {
+      adminNombre: '',
+      adminEmail: '',
+    },
   });
 
   const mutationEditar = useMutation({
@@ -144,6 +154,20 @@ export function GimnasioDetailPage() {
     },
   });
 
+  const mutationCrearAdmin = useMutation({
+    mutationFn: (data: { nombre: string; email: string }) =>
+      crearAdminDeGimnasio(gimnasioId, data, token!),
+    onSuccess: (respuesta) => {
+      setContrasenaProvisional(respuesta.contrasenaProvisional);
+      setContrasenaProvisional(respuesta.contrasenaProvisional);
+      adminForm.reset();
+      queryClient.invalidateQueries({ queryKey: ['gimnasios', gimnasioId, 'admins'] });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || 'No se pudo agregar el admin');
+    },
+  });
+
   const handleGuardarEdicion = editarForm.handleSubmit((data) => {
     mutationEditar.mutate({
       nombre: data.nombre,
@@ -156,6 +180,23 @@ export function GimnasioDetailPage() {
   const handleCancelarEdicion = () => {
     setModoEditar(false);
     editarForm.reset();
+  };
+
+  const handleAbrirModalAdmin = () => {
+    setMostrarModalAdmin(true);
+    adminForm.reset();
+  };
+
+  const handleAgregarAdmin = adminForm.handleSubmit((data) => {
+    mutationCrearAdmin.mutate({
+      nombre: data.adminNombre,
+      email: data.adminEmail,
+    });
+    setMostrarModalAdmin(false);
+  });
+
+  const handleCerrarModalContrasena = () => {
+    setContrasenaProvisional(null);
   };
 
   if (isLoading) {
@@ -412,15 +453,24 @@ export function GimnasioDetailPage() {
                 </div>
               )}
             </CardContent>
+            {esSuperadmin && (
+              <div className="px-4 pb-4 pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAbrirModalAdmin}
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Agregar Admin
+                </Button>
+              </div>
+            )}
           </Card>
         </div>
       )}
 
       {/* Modal de confirmación de eliminación */}
-      <Dialog
-        open={mostrarModalEliminar}
-        onOpenChange={setMostrarModalEliminar}
-      >
+      <Dialog open={mostrarModalEliminar} onOpenChange={setMostrarModalEliminar}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>¿Eliminar gimnasio?</DialogTitle>
@@ -430,10 +480,7 @@ export function GimnasioDetailPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setMostrarModalEliminar(false)}
-            >
+            <Button variant="outline" onClick={() => setMostrarModalEliminar(false)}>
               Cancelar
             </Button>
             <Button
@@ -453,6 +500,72 @@ export function GimnasioDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal para agregar admin */}
+      <Dialog open={mostrarModalAdmin} onOpenChange={setMostrarModalAdmin}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Agregar Administrador</DialogTitle>
+            <DialogDescription>
+              La contraseña se generará automáticamente y se le enviará al admin por email.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleAgregarAdmin} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="adminNombre">Nombre *</Label>
+              <Input
+                id="adminNombre"
+                placeholder="Ej: Juan Pérez"
+                {...adminForm.register('adminNombre')}
+                aria-invalid={!!adminForm.formState.errors.adminNombre}
+              />
+              {adminForm.formState.errors.adminNombre && (
+                <p className="text-sm text-destructive">
+                  {adminForm.formState.errors.adminNombre.message}
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="adminEmail">Email *</Label>
+              <Input
+                id="adminEmail"
+                type="email"
+                placeholder="Ej: admin@gymcentral.com"
+                {...adminForm.register('adminEmail')}
+                aria-invalid={!!adminForm.formState.errors.adminEmail}
+              />
+              {adminForm.formState.errors.adminEmail && (
+                <p className="text-sm text-destructive">
+                  {adminForm.formState.errors.adminEmail.message}
+                </p>
+              )}
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setMostrarModalAdmin(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={mutationCrearAdmin.isPending}>
+                {mutationCrearAdmin.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Agregando...
+                  </>
+                ) : (
+                  'Agregar Admin'
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal contraseña provisional */}
+      <ModalContrasenaProvisional
+        abierto={contrasenaProvisional !== null}
+        alCerrar={handleCerrarModalContrasena}
+        contrasena={contrasenaProvisional ?? ''}
+        nombreRol="Administrador de gimnasio"
+      />
     </div>
   );
 }

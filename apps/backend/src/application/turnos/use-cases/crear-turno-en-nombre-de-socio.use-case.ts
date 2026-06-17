@@ -63,7 +63,7 @@ import {
  *  - Los recordatorios 24h+1h los dispara el cron scheduler existente
  *    (`TurnoReminderScheduler`) que ya recorre todos los turnos no
  *    cancelados/ausentes. El use-case NO agenda recordatorios de forma
- *    explicita; el turno creado con `estadoTurno = PROGRAMADO` es
+ *    explicita; el turno creado con `estadoTurno = CONFIRMADO` es
  *    suficiente para que el cron lo recoja. Los recordatorios van
  *    SOLO al socio (no al nutri) por comportamiento estandar.
  *
@@ -153,7 +153,7 @@ export class CrearTurnoEnNombreDeSocioUseCase {
     const turno = new TurnoOrmEntity();
     turno.fechaTurno = fechaTurno;
     turno.horaTurno = horaTurno;
-    turno.estadoTurno = EstadoTurno.PROGRAMADO;
+    turno.estadoTurno = EstadoTurno.CONFIRMADO;
     turno.socio = socio;
     turno.nutricionista = nutricionistaOrm;
     turno.creadoPor = creadoPor;

@@ -112,7 +112,7 @@ export class SlotComputationService {
       return { nutricionistaId, duracionMin: 0, slots: [] };
     }
 
-    const duracionMin = bloques[0].duracionTurno;
+    const duracionMin = nutricionista.duracionTurnoMin ?? bloques[0].duracionTurno;
 
     const excepciones = await this.excepcionRepository.findVigentesEnVentana(
       nutricionistaId,

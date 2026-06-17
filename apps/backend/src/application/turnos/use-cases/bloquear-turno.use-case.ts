@@ -82,7 +82,7 @@ export class BloquearTurnoUseCase implements BaseUseCase {
 
     if (existingTurno) {
       if (
-        existingTurno.estadoTurno === EstadoTurno.PROGRAMADO &&
+        existingTurno.estadoTurno === EstadoTurno.CONFIRMADO &&
         !existingTurno.socio
       ) {
         throw new ConflictError('El turno ya se encuentra bloqueado.');
@@ -92,11 +92,11 @@ export class BloquearTurnoUseCase implements BaseUseCase {
       );
     }
 
-    // 3. Crear turno bloqueado (PROGRAMADO sin socio = bloqueado)
+    // 3. Crear turno bloqueado (CONFIRMADO sin socio = bloqueado)
     const turno = new TurnoOrmEntity();
     turno.fechaTurno = fechaTurno;
     turno.horaTurno = horaTurno;
-    turno.estadoTurno = EstadoTurno.PROGRAMADO;
+    turno.estadoTurno = EstadoTurno.CONFIRMADO;
     turno.nutricionista = nutricionista;
     // turno.socio no se asigna porque es opcional en la entidad y null no es compatible directo si strictNullChecks está activo
     // Al ser opcional en la entidad, simplemente no la asignamos o la dejamos undefined
@@ -134,18 +134,27 @@ export class BloquearTurnoUseCase implements BaseUseCase {
       );
     }
 
+    const nutricionista = await this.nutricionistaOrmRepository.findOne({
+      where: {
+        idPersona: nutricionistaId,
+        gimnasioId: this.tenantContext.gimnasioId,
+      },
+      select: ['idPersona', 'duracionTurnoMin'],
+    });
+    const duracionTurno = nutricionista?.duracionTurnoMin ?? agendaDelDia[0].duracionTurno;
+
     const turnoInicio = this.timeToMinutes(horaTurno);
 
     const hasAvailableSlot = agendaDelDia.some((agenda) => {
       const inicio = this.timeToMinutes(agenda.horaInicio);
       const fin = this.timeToMinutes(agenda.horaFin);
-      const turnoFin = turnoInicio + agenda.duracionTurno;
+      const turnoFin = turnoInicio + duracionTurno;
 
       // Validar que el inicio este dentro del rango y alineado con la duracion
       return (
         turnoInicio >= inicio &&
         turnoFin <= fin &&
-        (turnoInicio - inicio) % agenda.duracionTurno === 0
+        (turnoInicio - inicio) % duracionTurno === 0
       );
     });
 

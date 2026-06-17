@@ -92,6 +92,8 @@ describe('NutricionistaRepositoryImplementation - tenant scoping', () => {
           usuario: true,
           agenda: true,
           formacionAcademica: true,
+          certificaciones: true,
+          diplomas: true,
           turnos: true,
         },
       });
@@ -146,6 +148,8 @@ describe('NutricionistaRepositoryImplementation - tenant scoping', () => {
           usuario: true,
           agenda: true,
           formacionAcademica: true,
+          certificaciones: true,
+          diplomas: true,
           turnos: true,
         },
       });

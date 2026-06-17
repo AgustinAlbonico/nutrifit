@@ -70,11 +70,11 @@ export class MarcarAusenteManualUseCase implements BaseUseCase {
 
     // Validar estado actual
     if (
-      turno.estadoTurno !== EstadoTurno.PROGRAMADO &&
+      turno.estadoTurno !== EstadoTurno.CONFIRMADO &&
       turno.estadoTurno !== EstadoTurno.PRESENTE
     ) {
       throw new ConflictError(
-        `Solo se puede marcar ausente un turno en estado PROGRAMADO o PRESENTE. Estado actual: ${turno.estadoTurno}`,
+        `Solo se puede marcar ausente un turno en estado CONFIRMADO o PRESENTE. Estado actual: ${turno.estadoTurno}`,
       );
     }
 

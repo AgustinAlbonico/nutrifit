@@ -13,7 +13,11 @@ export class AddLlegadaTardeReagendado1770830000000 implements MigrationInterfac
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query('ALTER TABLE `turno` DROP COLUMN `reagendado_en_id`');
-    await queryRunner.query('ALTER TABLE `turno` DROP COLUMN `llegada_tarde_min`');
+    await queryRunner.query(
+      'ALTER TABLE `turno` DROP COLUMN `reagendado_en_id`',
+    );
+    await queryRunner.query(
+      'ALTER TABLE `turno` DROP COLUMN `llegada_tarde_min`',
+    );
   }
 }

@@ -84,19 +84,15 @@ export function FichaSaludHistorialModal({
 
   return (
     <Dialog open={open} onOpenChange={(abierto) => !abierto && onClose()}>
-      <DialogContent
-        className="sm:max-w-3xl"
-        aria-labelledby="titulo-modal-historial"
-        aria-describedby="descripcion-modal-historial"
-      >
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
-          <div className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2">
             <History className="h-5 w-5 text-primary" aria-hidden="true" />
-            <DialogTitle id="titulo-modal-historial">
+            <span>
               Historial de versiones
-            </DialogTitle>
-          </div>
-          <DialogDescription id="descripcion-modal-historial">
+            </span>
+          </DialogTitle>
+          <DialogDescription>
             Cada cambio en tu ficha de salud genera una nueva versión. Hacé
             clic en una para ver los datos que contenía.
           </DialogDescription>

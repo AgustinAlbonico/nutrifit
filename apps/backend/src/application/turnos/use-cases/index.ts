@@ -33,4 +33,5 @@ export * from './reprogramar-turno-socio.use-case';
 export * from './registrar-asistencia-turno.use-case';
 export * from './reservar-turno-socio.use-case';
 export * from './revertir-ausente-turno.use-case';
+export * from './revertir-checkin-turno.use-case';
 export * from './upsert-ficha-salud-socio.use-case';

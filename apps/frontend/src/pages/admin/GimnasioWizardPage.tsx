@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
+import { ModalContrasenaProvisional } from '@/components/ui/ModalContrasenaProvisional';
 import { toast } from 'sonner';
 
 // Step 1: Basic data schema
@@ -30,15 +31,10 @@ const paso1Schema = z.object({
   email: z.string().email('Email inválido').optional().or(z.literal('')),
 });
 
-// Step 2: Admin user schema
+// Step 2: Admin user schema (sin contraseña — se genera automáticamente)
 const paso2Schema = z.object({
   adminNombre: z.string().min(3, 'El nombre debe tener al menos 3 caracteres').max(100),
   adminEmail: z.string().email('Email inválido'),
-  adminContrasena: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres').max(50),
-  adminConfirmarContrasena: z.string(),
-}).refine((data) => data.adminContrasena === data.adminConfirmarContrasena, {
-  message: 'Las contraseñas no coinciden',
-  path: ['adminConfirmarContrasena'],
 });
 
 type Paso1FormData = z.infer<typeof paso1Schema>;
@@ -63,6 +59,7 @@ export function GimnasioWizardPage() {
   const { token } = useAuth();
   const navigate = useNavigate();
   const [pasoActual, setPasoActual] = useState(1);
+  const [contrasenaProvisional, setContrasenaProvisional] = useState<string | null>(null);
   const [resumen, setResumen] = useState<ResumenData>({
     nombre: '',
     direccion: '',
@@ -89,13 +86,11 @@ export function GimnasioWizardPage() {
     defaultValues: {
       adminNombre: '',
       adminEmail: '',
-      adminContrasena: '',
-      adminConfirmarContrasena: '',
     },
   });
 
   const mutationCrear = useMutation({
-    mutationFn: (data: { gimnasio: { nombre: string; direccion: string; telefono?: string; email?: string }; admin: { nombre: string; email: string; contrasena: string } }) =>
+    mutationFn: (data: { gimnasio: { nombre: string; direccion: string; telefono?: string; email?: string }; admin: { nombre: string; email: string } }) =>
       crearGimnasio(
         {
           nombre: data.gimnasio.nombre,
@@ -105,19 +100,22 @@ export function GimnasioWizardPage() {
           admin: {
             nombre: data.admin.nombre,
             email: data.admin.email,
-            contrasena: data.admin.contrasena,
           },
         },
         token!,
       ),
-    onSuccess: (gimnasio) => {
-      toast.success(`Gimnasio "${gimnasio.nombre}" creado exitosamente`);
-      navigate({ to: '/admin/gimnasios' });
+    onSuccess: (respuesta) => {
+      setContrasenaProvisional(respuesta.contrasenaProvisional ?? null);
     },
     onError: (err: Error) => {
       toast.error(err.message || 'No se pudo crear el gimnasio');
     },
   });
+
+  const handleCerrarModal = () => {
+    setContrasenaProvisional(null);
+    navigate({ to: '/admin/gimnasios' });
+  };
 
   const handlePaso1Next = paso1Form.handleSubmit((data) => {
     setResumen((prev) => ({
@@ -139,9 +137,8 @@ export function GimnasioWizardPage() {
     setPasoActual(3);
   });
 
-const handleConfirm = () => {
+  const handleConfirm = () => {
     if (!resumen) return;
-    const adminContrasena = paso2Form.getValues('adminContrasena');
     mutationCrear.mutate({
       gimnasio: {
         nombre: resumen.nombre,
@@ -152,7 +149,6 @@ const handleConfirm = () => {
       admin: {
         nombre: resumen.adminNombre,
         email: resumen.adminEmail,
-        contrasena: adminContrasena,
       },
     });
   };
@@ -299,7 +295,7 @@ const handleConfirm = () => {
             </form>
           )}
 
-          {/* Step 2: Admin user */}
+          {/* Step 2: Admin user (sin contraseña — se genera automáticamente) */}
           {pasoActual === 2 && (
             <form onSubmit={handlePaso2Next} className="space-y-4">
               <div className="space-y-2">
@@ -328,36 +324,6 @@ const handleConfirm = () => {
                 {paso2Form.formState.errors.adminEmail && (
                   <p className="text-sm text-destructive">
                     {paso2Form.formState.errors.adminEmail.message}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="adminContrasena">Contraseña *</Label>
-                <Input
-                  id="adminContrasena"
-                  type="password"
-                  placeholder="Mínimo 6 caracteres"
-                  {...paso2Form.register('adminContrasena')}
-                  aria-invalid={!!paso2Form.formState.errors.adminContrasena}
-                />
-                {paso2Form.formState.errors.adminContrasena && (
-                  <p className="text-sm text-destructive">
-                    {paso2Form.formState.errors.adminContrasena.message}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="adminConfirmarContrasena">Confirmar contraseña *</Label>
-                <Input
-                  id="adminConfirmarContrasena"
-                  type="password"
-                  placeholder="Repetí la contraseña"
-                  {...paso2Form.register('adminConfirmarContrasena')}
-                  aria-invalid={!!paso2Form.formState.errors.adminConfirmarContrasena}
-                />
-                {paso2Form.formState.errors.adminConfirmarContrasena && (
-                  <p className="text-sm text-destructive">
-                    {paso2Form.formState.errors.adminConfirmarContrasena.message}
                   </p>
                 )}
               </div>
@@ -452,6 +418,13 @@ const handleConfirm = () => {
           )}
         </CardContent>
       </Card>
+
+      <ModalContrasenaProvisional
+        abierto={contrasenaProvisional !== null}
+        alCerrar={handleCerrarModal}
+        contrasena={contrasenaProvisional ?? ''}
+        nombreRol="Administrador de gimnasio"
+      />
     </div>
   );
 }

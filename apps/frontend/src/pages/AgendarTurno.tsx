@@ -27,6 +27,7 @@ interface ProfesionalDisponible {
   ciudad: string;
   provincia: string;
   tarifaSesion: number | string;
+  agendaConfigurada: boolean;
 }
 
 interface FichaSaludSocio {
@@ -128,11 +129,15 @@ export function AgendarTurno() {
       if (nutricionistaIdParam) {
         const id = Number(nutricionistaIdParam);
         const profesionalUrl = profesionales.find((p) => p.idPersona === id);
-        if (profesionalUrl) {
+        if (profesionalUrl?.agendaConfigurada) {
           setProfesionalSeleccionado((prev) => {
             if (!prev) return profesionalUrl;
             return prev;
           });
+        } else if (profesionalUrl) {
+          setErrorProfesionales(
+            'El profesional seleccionado todavía no configuró su agenda horaria.',
+          );
         }
       }
     } catch (requestError) {
@@ -198,6 +203,11 @@ export function AgendarTurno() {
   );
 
   const seleccionarProfesional = (profesional: ProfesionalDisponible) => {
+    if (!profesional.agendaConfigurada) {
+      setErrorReserva('Este profesional todavía no configuró su agenda horaria.');
+      return;
+    }
+
     setProfesionalSeleccionado(profesional);
     setFechaSeleccionada(undefined);
     setTurnosDisponibles([]);
@@ -560,6 +570,7 @@ export function AgendarTurno() {
                           variant="outline"
                           className="h-auto flex-1 justify-start py-3 text-left"
                           onClick={() => seleccionarProfesional(profesional)}
+                          disabled={!profesional.agendaConfigurada}
                         >
                           <div className="flex flex-col">
                             <span className="font-medium">{nombreProfesional}</span>
@@ -570,6 +581,11 @@ export function AgendarTurno() {
                             <span className="text-xs opacity-90">
                               Tarifa: ${formatearTarifa(profesional.tarifaSesion)}
                             </span>
+                            {!profesional.agendaConfigurada && (
+                              <span className="text-xs text-muted-foreground">
+                                Sin agenda horaria configurada
+                              </span>
+                            )}
                           </div>
                         </Button>
                         <Button

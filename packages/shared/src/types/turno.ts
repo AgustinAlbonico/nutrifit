@@ -1,6 +1,7 @@
 // Estados de turno según el dominio
 export type EstadoTurno =
   | 'PROGRAMADO'
+  | 'CONFIRMADO'
   | 'PRESENTE'
   | 'EN_CURSO'
   | 'REALIZADO'
@@ -15,6 +16,7 @@ export interface InfoEstadoTurno {
 
 export const ESTADOS_TURNO: InfoEstadoTurno[] = [
   { estado: 'PROGRAMADO', nombre: 'Programado', color: 'bg-blue-100 text-blue-800' },
+  { estado: 'CONFIRMADO', nombre: 'Confirmado', color: 'bg-sky-100 text-sky-800' },
   { estado: 'PRESENTE', nombre: 'Presente', color: 'bg-green-100 text-green-800' },
   { estado: 'EN_CURSO', nombre: 'En curso', color: 'bg-yellow-100 text-yellow-800' },
   { estado: 'REALIZADO', nombre: 'Realizado', color: 'bg-green-600 text-white' },

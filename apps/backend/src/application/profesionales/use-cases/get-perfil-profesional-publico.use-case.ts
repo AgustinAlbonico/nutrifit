@@ -45,11 +45,6 @@ export class GetPerfilProfesionalPublicoUseCase implements BaseUseCase {
       nutricionista.fotoPerfilKey,
     );
 
-    const diplomaUrl = this.construirDiplomaUrl(
-      nutricionista.idPersona,
-      nutricionista.matriculaDocumentoKey,
-    );
-
     const response = new PerfilProfesionalPublicoResponseDto();
     response.idPersona = nutricionista.idPersona ?? 0;
     response.nombre = nutricionista.nombre;
@@ -61,16 +56,34 @@ export class GetPerfilProfesionalPublicoUseCase implements BaseUseCase {
     response.tarifaSesion = nutricionista.tarifaSesion;
     response.matricula = nutricionista.matricula;
     response.presentacion = nutricionista.presentacion ?? null;
-    response.certificaciones = nutricionista.certificaciones ?? null;
+    response.certificaciones = (nutricionista.certificaciones ?? []).map(
+      (c) => ({
+        idCertificacion: c.idCertificacion,
+        nombre: c.nombre,
+        entidad: c.entidad,
+        anio: c.anio,
+        cargaHoraria: c.cargaHoraria,
+        nivel: c.nivel,
+      }),
+    );
     response.fotoUrl = fotoUrl;
-    response.diplomaUrl = diplomaUrl;
     response.duracionTurnoMin = nutricionista.duracionTurnoMin;
+    response.agendaConfigurada = (nutricionista.agendas ?? []).length > 0;
+    response.diplomas = (nutricionista.diplomas ?? []).map((d) => ({
+      idDiploma: d.idDiploma,
+      url: `/api/profesional/${nutricionista.idPersona ?? 0}/diplomas/${d.idDiploma}/archivo`,
+      nombreOriginal: d.nombreOriginal,
+      mimeType: d.mimeType,
+    }));
     response.formacionAcademica = (nutricionista.formacionAcademica ?? []).map(
       (f) => {
         const dto = new FormacionAcademicaPublicaDto();
         dto.titulo = f.titulo;
         dto.institucion = f.institucion;
-        dto.anio = f.añoFin;
+        dto.anioInicio = f.añoComienzo;
+        dto.anioFin = f.añoFin;
+        dto.nivel = f.nivel;
+        dto.enCurso = f.añoFin === null;
         return dto;
       },
     );
@@ -79,7 +92,7 @@ export class GetPerfilProfesionalPublicoUseCase implements BaseUseCase {
       horario.dia = agenda.dia;
       horario.horaInicio = agenda.horaInicio;
       horario.horaFin = agenda.horaFin;
-      horario.duracionTurno = agenda.duracionTurno;
+      horario.duracionTurno = nutricionista.duracionTurnoMin;
       return horario;
     });
 
@@ -93,13 +106,5 @@ export class GetPerfilProfesionalPublicoUseCase implements BaseUseCase {
     if (!fotoPerfilKey) return null;
     // TODO(spec-futura): si en el futuro se migra a S3 presigned, este campo se transforma a URL absoluto.
     return `/api/profesional/${idPersona ?? 0}/foto?v=${encodeURIComponent(fotoPerfilKey)}`;
-  }
-
-  private construirDiplomaUrl(
-    idPersona: number | null,
-    matriculaDocumentoKey: string | null,
-  ): string | null {
-    if (!matriculaDocumentoKey) return null;
-    return `/api/profesional/${idPersona ?? 0}/diploma?v=${encodeURIComponent(matriculaDocumentoKey)}`;
   }
 }

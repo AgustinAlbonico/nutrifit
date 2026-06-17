@@ -1,0 +1,413 @@
+- generic:
+  - generic:
+    - generic:
+      - complementary:
+        - generic:
+          - generic:
+            - generic:
+              - img
+        - button:
+          - img
+        - navigation:
+          - link:
+            - /url: /dashboard
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /nutricionistas
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /recepcionistas
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /socios
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /permisos
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /recepcion/turnos
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /notificaciones
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /admin/auditoria
+            - generic:
+              - generic:
+                - img
+          - link:
+            - /url: /configuracion
+            - generic:
+              - generic:
+                - img
+        - generic:
+          - generic:
+            - generic:
+              - generic: AC
+      - main:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+                      - heading [level=1]: Gestión de Nutricionistas
+                    - paragraph: Administración profesional de altas, bajas y seguimiento del equipo.
+                  - generic:
+                    - button: Refrescar
+                    - button: Nuevo nutricionista
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - paragraph: Buscar
+                      - textbox:
+                        - /placeholder: Nombre, apellido, email, matrícula o DNI
+                    - generic:
+                      - paragraph: Estado
+                      - combobox
+                    - generic:
+                      - paragraph: Provincia
+                      - combobox
+                    - generic:
+                      - paragraph: Ciudad
+                      - combobox
+                    - generic:
+                      - paragraph: Antigüedad
+                      - combobox
+                    - generic:
+                      - paragraph: Orden
+                      - generic:
+                        - combobox
+                        - combobox
+                  - generic:
+                    - paragraph: "Resultados: 19"
+                    - generic:
+                      - combobox
+                      - button: Limpiar filtros
+                  - generic:
+                    - generic:
+                      - table:
+                        - rowgroup:
+                          - row:
+                            - columnheader: Nombre
+                            - columnheader: Matrícula
+                            - columnheader: Email
+                            - columnheader: Exp.
+                            - columnheader: Tarifa
+                            - columnheader: Estado
+                            - columnheader: Acciones
+                        - rowgroup:
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - generic: DB
+                                - generic:
+                                  - paragraph: Directo 20260616024115 Backend
+                                  - paragraph: Rosario, Santa Fe
+                            - cell: MN-DIR-20260616024115
+                            - cell: directo.20260616024115@nutrifit.com
+                            - cell: 3 años
+                            - cell: $5000.00
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - generic: DB
+                                - generic:
+                                  - paragraph: Directo Test 20260616024054 Backend
+                                  - paragraph: Rosario, Santa Fe
+                            - cell: MN-DIR-20260616024054
+                            - cell: directo.20260616024054@nutrifit.com
+                            - cell: 3 años
+                            - cell: $5000.00
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - generic: SB
+                                - generic:
+                                  - paragraph: SoloDiploma 20260616024359 Backend
+                                  - paragraph: Rosario, Santa Fe
+                            - cell: MN-SD-20260616024359
+                            - cell: solodip.20260616024359@nutrifit.com
+                            - cell: 3 años
+                            - cell: $5000.00
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - img
+                                - generic:
+                                  - paragraph: Nutri Central
+                                  - paragraph: Rosario, Santa Fe
+                            - cell: "123"
+                            - cell: nutri-central@nutrifit.com
+                            - cell: 5 años
+                            - cell: $1500.00
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - generic: RD
+                                - generic:
+                                  - paragraph: Rocío Díaz
+                                  - paragraph: Rosario, Santa Fe
+                            - cell: MN-5008
+                            - cell: nutri.demo.f8@gymcentral.com
+                            - cell: 11 años
+                            - cell: $11400.00
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - generic: MF
+                                - generic:
+                                  - paragraph: Martín Fernández
+                                  - paragraph: Rosario, Santa Fe
+                            - cell: MN-5001
+                            - cell: nutri.demo.m1@gymcentral.com
+                            - cell: 4 años
+                            - cell: $5800.00
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - generic: TF
+                                - generic:
+                                  - paragraph: TestNutri FrontQA
+                                  - paragraph: Rosario, Santa Fe
+                            - cell: MN-9001
+                            - cell: nutri-test-frontend-001@nutrifit.com
+                            - cell: 5 años
+                            - cell: $5000.00
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - generic: SG
+                                - generic:
+                                  - paragraph: Sofía González
+                                  - paragraph: Rosario, Santa Fe
+                            - cell: MN-5000
+                            - cell: nutri.demo.f0@gymcentral.com
+                            - cell: 3 años
+                            - cell: $5000.00
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                          - row:
+                            - cell:
+                              - generic:
+                                - generic:
+                                  - generic: PL
+                                - generic:
+                                  - paragraph: Paula López
+                                  - paragraph: Rosario, Santa Fe
+                            - cell: MN-5004
+                            - cell: nutri.demo.f4@gymcentral.com
+                            - cell: 7 años
+                            - cell: $8200.00
+                            - cell:
+                              - generic: Activo
+                            - cell:
+                              - generic:
+                                - button: Ver
+                                - button: Editar
+                                - button: Baja
+                  - generic:
+                    - paragraph: Mostrando 1 - 9 de 19
+                    - generic:
+                      - button [disabled]: Anterior
+                      - generic: Página 1 de 3
+                      - button: Siguiente
+    - region "Notifications alt+T"
+  - dialog "Nuevo nutricionista" [ref=e366]:
+    - generic [ref=e367]:
+      - heading "Nuevo nutricionista" [level=2] [ref=e368]
+      - paragraph [ref=e369]: Completa los datos para registrar un nuevo nutricionista.
+    - generic [ref=e370]:
+      - generic [ref=e371]:
+        - generic [ref=e372]:
+          - button "Datos personales" [expanded] [active] [ref=e373]:
+            - generic [ref=e374]: Datos personales
+            - img [ref=e375]
+          - generic [ref=e377]:
+            - generic [ref=e378]:
+              - generic [ref=e379]:
+                - generic [ref=e380]:
+                  - text: Nombre
+                  - generic [ref=e381]: "*"
+                - textbox "Nombre *" [ref=e382]
+              - generic [ref=e383]:
+                - generic [ref=e384]:
+                  - text: Apellido
+                  - generic [ref=e385]: "*"
+                - textbox "Apellido *" [ref=e386]
+              - generic [ref=e387]:
+                - generic [ref=e388]:
+                  - text: DNI
+                  - generic [ref=e389]: "*"
+                - textbox "DNI *" [ref=e390]
+              - generic [ref=e391]:
+                - generic [ref=e392]:
+                  - text: Fecha de nacimiento
+                  - generic [ref=e393]: "*"
+                - button "Seleccionar fecha" [ref=e394]:
+                  - generic [ref=e395]:
+                    - img
+                    - generic [ref=e396]: Seleccionar fecha
+              - generic [ref=e397]:
+                - generic [ref=e398]:
+                  - text: Género
+                  - generic [ref=e399]: "*"
+                - combobox "Género *" [ref=e400]:
+                  - option "Masculino" [selected]
+                  - option "Femenino"
+                  - option "Otro"
+              - generic [ref=e401]:
+                - generic [ref=e402]:
+                  - text: Teléfono
+                  - generic [ref=e403]: "*"
+                - textbox "Teléfono *" [ref=e404]
+            - generic [ref=e405]:
+              - text: Foto de perfil
+              - generic [ref=e407]:
+                - img [ref=e409]
+                - generic [ref=e412]:
+                  - paragraph [ref=e413]: Arrastrá una imagen aquí o
+                  - button "Seleccionar archivo" [ref=e414]
+        - generic [ref=e415]:
+          - button "Contacto y ubicación" [expanded] [ref=e416]:
+            - generic [ref=e417]: Contacto y ubicación
+            - img [ref=e418]
+          - generic [ref=e421]:
+            - generic [ref=e422]:
+              - generic [ref=e423]:
+                - text: Dirección
+                - generic [ref=e424]: "*"
+              - textbox "Dirección *" [ref=e425]
+            - generic [ref=e426]:
+              - generic [ref=e427]:
+                - text: Ciudad
+                - generic [ref=e428]: "*"
+              - textbox "Ciudad *" [ref=e429]
+            - generic [ref=e430]:
+              - generic [ref=e431]:
+                - text: Provincia
+                - generic [ref=e432]: "*"
+              - textbox "Provincia *" [ref=e433]
+            - generic [ref=e434]:
+              - generic [ref=e435]:
+                - text: Email
+                - generic [ref=e436]: "*"
+              - textbox "Email *" [ref=e437]
+        - generic [ref=e438]:
+          - button "Datos profesionales" [expanded] [ref=e439]:
+            - generic [ref=e440]: Datos profesionales
+            - img [ref=e441]
+          - generic [ref=e444]:
+            - generic [ref=e445]:
+              - generic [ref=e446]:
+                - text: Matrícula
+                - generic [ref=e447]: "*"
+              - textbox "Matrícula *" [ref=e448]
+            - generic [ref=e449]:
+              - generic [ref=e450]:
+                - text: Años de experiencia
+                - generic [ref=e451]: "*"
+              - spinbutton "Años de experiencia *" [ref=e452]: "0"
+            - generic [ref=e453]:
+              - generic [ref=e454]:
+                - text: Tarifa por sesión
+                - generic [ref=e455]: "*"
+              - spinbutton "Tarifa por sesión *" [ref=e456]: "0"
+            - generic [ref=e457]:
+              - generic [ref=e458]:
+                - text: Duración del turno (minutos)
+                - generic [ref=e459]: "*"
+              - spinbutton "Duración del turno (minutos) *" [ref=e460]: "30"
+            - generic [ref=e461]:
+              - generic [ref=e462]: Presentación (opcional)
+              - textbox "Presentación (opcional)" [ref=e463]:
+                - /placeholder: Breve biografía o presentación del profesional...
+            - generic [ref=e464]:
+              - generic [ref=e465]: Diploma / Matrícula profesional (PDF o imagen, opcional)
+              - button "Diploma / Matrícula profesional (PDF o imagen, opcional)" [ref=e466]
+              - paragraph [ref=e467]: El documento se mostrará al socio desde el perfil del profesional.
+      - generic [ref=e468]:
+        - button "Cancelar" [ref=e469]
+        - button "Crear nutricionista" [ref=e470]
+    - button "Close" [ref=e471]:
+      - img
+      - generic [ref=e472]: Close

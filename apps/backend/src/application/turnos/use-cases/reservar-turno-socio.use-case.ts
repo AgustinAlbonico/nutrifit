@@ -98,7 +98,7 @@ export class ReservarTurnoSocioUseCase implements BaseUseCase {
           gimnasioId: this.tenantContext.gimnasioId,
         },
         estadoTurno: In([
-          EstadoTurno.PROGRAMADO,
+          EstadoTurno.CONFIRMADO,
           EstadoTurno.PRESENTE,
           EstadoTurno.EN_CURSO,
         ]),
@@ -128,7 +128,7 @@ export class ReservarTurnoSocioUseCase implements BaseUseCase {
     const turno = new TurnoOrmEntity();
     turno.fechaTurno = fechaTurno;
     turno.horaTurno = horaTurno;
-    turno.estadoTurno = EstadoTurno.PROGRAMADO;
+    turno.estadoTurno = EstadoTurno.CONFIRMADO;
     turno.socio = socio;
     turno.nutricionista = nutricionistaOrm;
 

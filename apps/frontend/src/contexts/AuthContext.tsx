@@ -32,6 +32,7 @@ interface AuthState {
   nombre: string | null;
   apellido: string | null;
   fotoPerfilUrl: string | null;
+  debeCambiarPassword: boolean;
 }
 
 interface AuthContextValue {
@@ -47,11 +48,13 @@ interface AuthContextValue {
   nombre: string | null;
   apellido: string | null;
   fotoPerfilUrl: string | null;
+  debeCambiarPassword: boolean;
   isAuthenticated: boolean;
   esSuperadmin: boolean;
   estaImpersonando: boolean;
   login: (email: string, contrasenia: string) => Promise<void>;
   logout: () => void;
+  marcarContrasenaEstablecida: () => void;
   impersonarGimnasio: (gimnasioId: number) => Promise<void>;
   salirDeImpersonacion: () => void;
   cargarGimnasios: () => Promise<void>;
@@ -116,6 +119,7 @@ function readStoredAuth(): AuthState | null {
       nombre: typeof parsed.nombre === 'string' ? parsed.nombre : null,
       apellido: typeof parsed.apellido === 'string' ? parsed.apellido : null,
       fotoPerfilUrl: typeof parsed.fotoPerfilUrl === 'string' ? parsed.fotoPerfilUrl : null,
+      debeCambiarPassword: typeof parsed.debeCambiarPassword === 'boolean' ? parsed.debeCambiarPassword : false,
     };
   } catch {
     localStorage.removeItem(AUTH_STORAGE_KEY);
@@ -192,6 +196,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         nombre: profile.data.nombre,
         apellido: profile.data.apellido,
         fotoPerfilUrl: profile.data.fotoPerfilUrl,
+        debeCambiarPassword: response.data.debeCambiarPassword ?? false,
       };
 
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextAuth));
@@ -213,6 +218,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       nombre: null,
       apellido: null,
       fotoPerfilUrl: null,
+      debeCambiarPassword: response.data.debeCambiarPassword ?? false,
     };
 
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextAuth));
@@ -221,11 +227,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     setAuth(null);
-    // Limpiar localStorage para asegurar que no quede rastro
     localStorage.removeItem(AUTH_STORAGE_KEY);
     localStorage.removeItem(AUTH_BACKUP_STORAGE_KEY);
-    // Redirigir a login
     window.location.href = '/login';
+  }, []);
+
+  const marcarContrasenaEstablecida = useCallback(() => {
+    setAuth((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, debeCambiarPassword: false };
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updated));
+      return updated;
+    });
   }, []);
 
   const impersonarGimnasio = useCallback(
@@ -262,6 +275,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         nombre: null,
         apellido: null,
         fotoPerfilUrl: null,
+        debeCambiarPassword: false,
       };
 
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(siguienteAuth));
@@ -314,11 +328,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       nombre: auth?.nombre ?? null,
       apellido: auth?.apellido ?? null,
       fotoPerfilUrl: auth?.fotoPerfilUrl ?? null,
+      debeCambiarPassword: auth?.debeCambiarPassword ?? false,
       isAuthenticated: Boolean(auth?.token),
       esSuperadmin: auth?.rol === 'SUPERADMIN',
       estaImpersonando: Boolean(auth?.impersonatedBy),
       login,
       logout,
+      marcarContrasenaEstablecida,
       impersonarGimnasio,
       salirDeImpersonacion,
       cargarGimnasios,
@@ -334,6 +350,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     listaGimnasios,
     login,
     logout,
+    marcarContrasenaEstablecida,
     refreshPermissions,
     salirDeImpersonacion,
   ]);

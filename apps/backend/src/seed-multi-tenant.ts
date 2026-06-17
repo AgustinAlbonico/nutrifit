@@ -80,6 +80,177 @@ interface SocioData extends AdminData {
   dni: string;
 }
 
+interface FormacionSemilla {
+  titulo: string;
+  institucion: string;
+  anioInicio: number;
+  anioFin: number | null;
+  nivel:
+    | 'GRADO'
+    | 'POSGRADO'
+    | 'MAESTRIA'
+    | 'DOCTORADO'
+    | 'ESPECIALIZACION'
+    | 'DIPLOMATURA'
+    | 'CURSO';
+}
+
+const FORMACIONES_BASE: FormacionSemilla[] = [
+  {
+    titulo: 'Licenciatura en Nutrición',
+    institucion: 'UBA',
+    anioInicio: 2006,
+    anioFin: 2011,
+    nivel: 'GRADO',
+  },
+  {
+    titulo: 'Licenciatura en Nutrición',
+    institucion: 'UNLP',
+    anioInicio: 2008,
+    anioFin: 2013,
+    nivel: 'GRADO',
+  },
+  {
+    titulo: 'Licenciatura en Nutrición',
+    institucion: 'UNC',
+    anioInicio: 2010,
+    anioFin: 2015,
+    nivel: 'GRADO',
+  },
+];
+
+const FORMACIONES_COMPLEMENTARIAS: FormacionSemilla[] = [
+  {
+    titulo: 'Diplomatura en Nutrición Clínica',
+    institucion: 'Hospital Italiano',
+    anioInicio: 2018,
+    anioFin: 2019,
+    nivel: 'DIPLOMATURA',
+  },
+  {
+    titulo: 'Maestría en Nutrición Deportiva',
+    institucion: 'Universidad Favaloro',
+    anioInicio: 2019,
+    anioFin: 2021,
+    nivel: 'MAESTRIA',
+  },
+  {
+    titulo: 'Posgrado en Obesidad y Trastornos Alimentarios',
+    institucion: 'SAOTA',
+    anioInicio: 2024,
+    anioFin: null,
+    nivel: 'POSGRADO',
+  },
+];
+
+function inferirNivelFormacion(
+  texto: string,
+): FormacionSemilla['nivel'] | null {
+  const normalizado = texto
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase();
+
+  if (normalizado.includes('DOCTORADO')) return 'DOCTORADO';
+  if (normalizado.includes('MAESTRIA')) return 'MAESTRIA';
+  if (normalizado.includes('POSGRADO')) return 'POSGRADO';
+  if (normalizado.includes('DIPLOMATURA')) return 'DIPLOMATURA';
+  if (normalizado.includes('ESPECIALIZACION')) return 'ESPECIALIZACION';
+  if (normalizado.includes('CURSO')) return 'CURSO';
+  if (normalizado.includes('LICENCIATURA') || normalizado.includes('GRADO')) {
+    return 'GRADO';
+  }
+
+  return null;
+}
+
+function parsearCertificacionesLegacy(texto: string): Array<{
+  nombre: string;
+  entidad: string;
+  anio: number | null;
+  cargaHoraria: number | null;
+  nivel: FormacionSemilla['nivel'] | null;
+}> {
+  return texto
+    .split(',')
+    .map((parte) => parte.trim())
+    .filter(Boolean)
+    .map((parte) => {
+      const matchEntidad = parte.match(/\(([^)]+)\)/);
+      const entidad = matchEntidad?.[1]?.trim() || 'No especificada';
+      const nombre = parte
+        .replace(/\(([^)]+)\)/g, '')
+        .replace(/\.$/, '')
+        .trim();
+
+      return {
+        nombre,
+        entidad,
+        anio: null,
+        cargaHoraria: null,
+        nivel: inferirNivelFormacion(nombre),
+      };
+    });
+}
+
+async function recrearCertificacionesNutricionista(
+  dataSource: DataSource,
+  idPersona: number,
+  certificacionesLegacy: string,
+): Promise<void> {
+  await dataSource.query(
+    'DELETE FROM certificacion WHERE id_nutricionista = ?',
+    [idPersona],
+  );
+
+  const certificaciones = parsearCertificacionesLegacy(certificacionesLegacy);
+  for (const certificacion of certificaciones) {
+    await dataSource.query(
+      `INSERT INTO certificacion (id_nutricionista, nombre, entidad, anio, carga_horaria, nivel)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        idPersona,
+        certificacion.nombre,
+        certificacion.entidad,
+        certificacion.anio,
+        certificacion.cargaHoraria,
+        certificacion.nivel,
+      ],
+    );
+  }
+}
+
+async function recrearFormacionNutricionista(
+  dataSource: DataSource,
+  idPersona: number,
+  indice: number,
+): Promise<void> {
+  await dataSource.query(
+    'DELETE FROM formacion_academica WHERE id_nutricionista = ?',
+    [idPersona],
+  );
+
+  const formaciones = [
+    FORMACIONES_BASE[indice % FORMACIONES_BASE.length],
+    FORMACIONES_COMPLEMENTARIAS[indice % FORMACIONES_COMPLEMENTARIAS.length],
+  ];
+
+  for (const formacion of formaciones) {
+    await dataSource.query(
+      `INSERT INTO formacion_academica (titulo, institucion, anio_inicio, anio_fin, nivel, id_nutricionista)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        formacion.titulo,
+        formacion.institucion,
+        formacion.anioInicio,
+        formacion.anioFin,
+        formacion.nivel,
+        idPersona,
+      ],
+    );
+  }
+}
+
 function generarDniSemilla(index: number): string {
   return String(51001000 + index);
 }
@@ -512,7 +683,9 @@ async function runSeedMultiTenant() {
       for (const recepcionista of recepcionistas) {
         const idGimnasio = gimnasioIds.get(recepcionista.gimnasioNombre);
         if (!idGimnasio) {
-          console.error(`Gimnasio no encontrado: ${recepcionista.gimnasioNombre}`);
+          console.error(
+            `Gimnasio no encontrado: ${recepcionista.gimnasioNombre}`,
+          );
           continue;
         }
 
@@ -552,7 +725,7 @@ async function runSeedMultiTenant() {
       const ids: number[] = [];
       const agendas = new Map<number, any[]>();
 
-      for (const nutri of nutricionistas) {
+      for (const [indice, nutri] of nutricionistas.entries()) {
         const idGimnasio = gimnasioIds.get(nutri.gimnasioNombre);
         if (!idGimnasio) {
           console.error(`Gimnasio no encontrado: ${nutri.gimnasioNombre}`);
@@ -590,11 +763,36 @@ async function runSeedMultiTenant() {
         );
 
         await asignarGruposAUsuario(nutri.email, 'NUTRICIONISTA');
+        await recrearCertificacionesNutricionista(
+          dataSource,
+          idPersona,
+          nutri.certificaciones,
+        );
+        await recrearFormacionNutricionista(dataSource, idPersona, indice);
+
+        // Crear agenda básica para el nutricionista fijo
+        const diasSemana = [
+          'Lunes',
+          'Martes',
+          'Miércoles',
+          'Jueves',
+          'Viernes',
+        ];
+        for (const dia of diasSemana) {
+          await dataSource.query(
+            `INSERT IGNORE INTO agenda (dia, hora_inicio, hora_fin, duracion_turno, id_nutricionista)
+             VALUES (?, '09:00:00', '13:00:00', 60, ?)`,
+            [dia, idPersona],
+          );
+        }
+        console.log(
+          `Agenda creada para nutricionista fijo ID ${idPersona}: 5 bloques`,
+        );
       }
 
       // Crear nutricionistas demo (10 por gimnasio)
       const nutriDemo = generarNutricionistasSemilla(10);
-      for (const nutri of nutriDemo) {
+      for (const [indice, nutri] of nutriDemo.entries()) {
         const idGimnasio = gimnasioIds.get(nutri.gimnasioNombre);
         if (!idGimnasio) continue;
 
@@ -634,6 +832,12 @@ async function runSeedMultiTenant() {
         );
 
         await asignarGruposAUsuario(nutri.email, 'NUTRICIONISTA');
+        await recrearCertificacionesNutricionista(
+          dataSource,
+          idPersona,
+          nutri.certificaciones,
+        );
+        await recrearFormacionNutricionista(dataSource, idPersona, indice + 10);
       }
 
       // Crear agendas para todos los nutricionistas demo
@@ -652,7 +856,9 @@ async function runSeedMultiTenant() {
             ],
           );
         }
-        console.log(`Agenda creada para nutricionista ID ${idNutri}: ${bloques.length} bloques`);
+        console.log(
+          `Agenda creada para nutricionista ID ${idNutri}: ${bloques.length} bloques`,
+        );
       }
 
       console.log(`Total nutricionistas: ${ids.length}`);

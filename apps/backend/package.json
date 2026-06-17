@@ -20,8 +20,9 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "typeorm": "npx typeorm",
     "migration:generate": "npx typeorm migration:generate src/infrastructure/persistence/typeorm/migrations/InitMigration -d src/infrastructure/config/typeorm/migration.schema.ts",
-    "migration:run": "ts-node -r tsconfig-paths/register ../../node_modules/typeorm/cli.js migration:run -d src/infrastructure/config/typeorm/migration.schema.ts",
-    "migration:revert": "ts-node -r tsconfig-paths/register ../../node_modules/typeorm/cli.js migration:revert -d src/infrastructure/config/typeorm/migration.schema.ts",
+    "migration:repair-history": "npm run build && node dist/scripts/repair-migration-history.js",
+    "migration:run": "npm run build && npm run migration:repair-history && node ../../node_modules/typeorm/cli.js migration:run -d dist/infrastructure/config/typeorm/migration.schema.js",
+    "migration:revert": "npm run build && node ../../node_modules/typeorm/cli.js migration:revert -d dist/infrastructure/config/typeorm/migration.schema.js",
     "seed:multi-tenant": "ts-node -r tsconfig-paths/register src/seed-multi-tenant.ts"
   },
   "dependencies": {

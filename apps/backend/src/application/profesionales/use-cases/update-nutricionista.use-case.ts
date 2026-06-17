@@ -24,6 +24,10 @@ import {
 } from 'src/domain/services/object-storage.service';
 import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
 import { AccionAuditoria } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
+import {
+  normalizarCertificaciones,
+  normalizarFormacionAcademica,
+} from '../helpers/trayectoria-profesional.helper';
 
 @Injectable()
 export class UpdateNutricionistaUseCase implements BaseUseCase {
@@ -118,6 +122,16 @@ export class UpdateNutricionistaUseCase implements BaseUseCase {
       nutricionista.duracionTurnoMin = payload.duracionTurnoMin;
     if (payload.presentacion !== undefined)
       nutricionista.presentacion = payload.presentacion;
+    if (payload.formacionAcademica !== undefined) {
+      nutricionista.formacionAcademica = normalizarFormacionAcademica(
+        payload.formacionAcademica,
+      );
+    }
+    if (payload.certificaciones !== undefined) {
+      nutricionista.certificaciones = normalizarCertificaciones(
+        payload.certificaciones,
+      );
+    }
 
     // Update foto de perfil if provided
     if (fotoPerfilKey) {

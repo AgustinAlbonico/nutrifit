@@ -27,6 +27,8 @@ import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/
 import { ObservacionClinicaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/observacion-clinica.entity';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
+import { normalizarTexto } from 'src/common/utils/text.util';
+import { stripAccentsLowerSql } from 'src/common/utils/sql-text.util';
 
 @Injectable()
 export class GetTurnosDelDiaUseCase implements BaseUseCase {
@@ -161,21 +163,25 @@ export class GetTurnosDelDiaUseCase implements BaseUseCase {
     query: GetTurnosDelDiaQueryDto,
   ): void {
     if (query.socio?.trim()) {
-      const searchTerm = query.socio.trim();
+      const termino = `%${normalizarTexto(query.socio)}%`;
       queryBuilder.andWhere(
-        '(LOWER(socio.nombre) LIKE :socioTerm OR LOWER(socio.apellido) LIKE :socioTerm OR socio.dni LIKE :dniTerm)',
+        `(${stripAccentsLowerSql(
+          'LOWER(socio.nombre)',
+        )} LIKE :socioTerm OR ${stripAccentsLowerSql(
+          'LOWER(socio.apellido)',
+        )} LIKE :socioTerm OR LOWER(socio.dni) LIKE :dniTerm)`,
         {
-          socioTerm: `%${searchTerm.toLowerCase()}%`,
-          dniTerm: `%${searchTerm}%`,
+          socioTerm: termino,
+          dniTerm: termino,
         },
       );
     }
 
     if (query.objetivo?.trim()) {
       queryBuilder.andWhere(
-        'LOWER(fichaSalud.objetivoPersonal) LIKE :objetivo',
+        `${stripAccentsLowerSql('LOWER(fichaSalud.objetivoPersonal)')} LIKE :objetivo`,
         {
-          objetivo: `%${query.objetivo.trim().toLowerCase()}%`,
+          objetivo: `%${normalizarTexto(query.objetivo)}%`,
         },
       );
     }

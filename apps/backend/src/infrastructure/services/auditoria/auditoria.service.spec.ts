@@ -214,10 +214,9 @@ describe('AuditoriaService', () => {
         'auditoria.gimnasioId = :gimnasioId',
         { gimnasioId: 1 },
       );
-      expect(qb.andWhere).toHaveBeenCalledWith(
-        'auditoria.accion = :accion',
-        { accion: 'TURNO_ESTADO_CAMBIO' },
-      );
+      expect(qb.andWhere).toHaveBeenCalledWith('auditoria.accion = :accion', {
+        accion: 'TURNO_ESTADO_CAMBIO',
+      });
     });
 
     it('debe acotar la query al mes natural de la fecha de referencia', async () => {
@@ -231,7 +230,7 @@ describe('AuditoriaService', () => {
       );
 
       // Capturamos el andWhere del rango de fechas (5to en la cadena).
-      const andWhereCalls = (qb.andWhere as jest.Mock).mock.calls;
+      const andWhereCalls = qb.andWhere.mock.calls;
       const callInicio = andWhereCalls.find(
         ([sql]) => typeof sql === 'string' && sql.includes('inicioMes'),
       );

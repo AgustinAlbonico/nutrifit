@@ -71,20 +71,31 @@ describe('GetPerfilProfesionalPublicoUseCase', () => {
       ],
       formacionAcademica: [
         {
-          idFormacion: 1,
+          idFormacionAcademica: 1,
           titulo: 'Lic. en Nutrición',
           institucion: 'UBA',
-          anioInicio: 2010,
-          anioFin: 2015,
+          añoComienzo: 2010,
+          añoFin: 2015,
+          nivel: 'GRADO',
         },
       ],
       turnos: [],
+      diplomas: [],
       fotoPerfilKey: null,
       matriculaDocumentoKey: null,
       gimnasioId: 1,
       fechaBaja: null,
       presentacion: 'Soy Ana',
-      certificaciones: 'Cert. A',
+      certificaciones: [
+        {
+          idCertificacion: 1,
+          nombre: 'Cert. A',
+          entidad: 'UBA',
+          anio: 2022,
+          cargaHoraria: 60,
+          nivel: 'CURSO',
+        },
+      ],
     } as never);
 
     const result = await useCase.execute(10);
@@ -102,11 +113,13 @@ describe('GetPerfilProfesionalPublicoUseCase', () => {
     expect(result.idPersona).toBe(10);
     expect(result.matricula).toBe('MN-100');
     expect(result.presentacion).toBe('Soy Ana');
-    expect(result.certificaciones).toBe('Cert. A');
+    expect(result.certificaciones).toHaveLength(1);
+    expect(result.certificaciones[0].nombre).toBe('Cert. A');
     expect(result.duracionTurnoMin).toBe(30);
-    expect(result.diplomaUrl).toBeNull();
+    expect(result.diplomas).toEqual([]);
     expect(result.formacionAcademica).toHaveLength(1);
     expect(result.formacionAcademica[0].titulo).toBe('Lic. en Nutrición');
+    expect(result.formacionAcademica[0].nivel).toBe('GRADO');
     expect(result.horarios).toHaveLength(1);
   });
 
@@ -130,12 +143,13 @@ describe('GetPerfilProfesionalPublicoUseCase', () => {
       agendas: [],
       formacionAcademica: [],
       turnos: [],
+      diplomas: [],
       fotoPerfilKey: null,
       matriculaDocumentoKey: null,
       gimnasioId: 999, // otro gimnasio
       fechaBaja: null,
       presentacion: null,
-      certificaciones: null,
+      certificaciones: [],
     } as never);
 
     await expect(useCase.execute(20)).rejects.toBeInstanceOf(NotFoundError);
@@ -161,12 +175,13 @@ describe('GetPerfilProfesionalPublicoUseCase', () => {
       agendas: [],
       formacionAcademica: [],
       turnos: [],
+      diplomas: [],
       fotoPerfilKey: null,
       matriculaDocumentoKey: null,
       gimnasioId: 1,
       fechaBaja: new Date('2025-01-01'),
       presentacion: null,
-      certificaciones: null,
+      certificaciones: [],
     } as never);
 
     await expect(useCase.execute(30)).rejects.toBeInstanceOf(NotFoundError);

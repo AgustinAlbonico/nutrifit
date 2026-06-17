@@ -32,9 +32,12 @@ export class AusenciaTurnoScheduler {
 
     const turnos = await this.turnoRepository
       .createQueryBuilder('turno')
+      .leftJoinAndSelect('turno.socio', 'socio')
+      .leftJoinAndSelect('turno.nutricionista', 'nutricionista')
+      .leftJoinAndSelect('turno.gimnasio', 'gimnasio')
       .where('turno.fechaTurno = :fecha', { fecha: fechaHoy })
       .andWhere('turno.estadoTurno IN (:...estados)', {
-        estados: [EstadoTurno.PROGRAMADO],
+        estados: [EstadoTurno.CONFIRMADO],
       })
       .getMany();
 
@@ -74,7 +77,10 @@ export class AusenciaTurnoScheduler {
             });
           }
         } catch (error) {
-          this.logger.error(`Error al notificar ausencias del turno ${turno.idTurno}`, error);
+          this.logger.error(
+            `Error al notificar ausencias del turno ${turno.idTurno}`,
+            error,
+          );
         }
       }
     }

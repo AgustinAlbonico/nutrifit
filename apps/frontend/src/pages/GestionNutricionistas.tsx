@@ -1,19 +1,20 @@
-﻿import { useState, useEffect, useCallback, useMemo, type FormEvent, type ReactNode } from 'react';
+﻿import { useState, useEffect, useCallback, useMemo, useRef, type FormEvent, type ReactNode } from 'react';
 import { toast } from 'sonner';
-import { AlertCircle, ChevronDown, Search, Users, XIcon } from 'lucide-react';
+import { AlertCircle, ChevronDown, Search, Trash2, Upload, Users, XIcon } from 'lucide-react';
 import { format as formatearFechaIso } from 'date-fns';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { Can } from '@/components/auth/Can';
 import { ACCIONES } from '@nutrifit/shared';
 import { apiRequest, obtenerUrlFoto } from '@/lib/api';
+import { agregarValorAFormData } from '@/lib/formData';
 import {
   formatearFechaArgentinaCorta,
   formatearFechaArgentinaParaInput,
 } from '@/lib/fechasArgentina';
 import { REGEX_DNI, REGEX_TELEFONO, REGEX_EMAIL } from '@/lib/validaciones';
 import { normalizarTexto } from '@/lib/text';
-import type { Nutricionista, CrearNutricionistaDto, Genero } from '@/types/nutricionista';
+import type { Nutricionista, CrearNutricionistaDto, Genero, DiplomaDto } from '@/types/nutricionista';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
@@ -44,6 +45,7 @@ import {
   AvatarFallback,
 } from '@/components/ui/avatar';
 import { SelectorImagen } from '@/components/imagen/SelectorImagen';
+import { EditorTrayectoriaProfesional } from '@/components/profesionales/EditorTrayectoriaProfesional';
 import type { ApiResponse } from '@/types/api';
 
 type CampoFormularioCreacion = keyof CrearNutricionistaDto;
@@ -51,7 +53,6 @@ type CampoFormularioEdicion = keyof CrearNutricionistaDto;
 type ErroresFormularioCreacion = Partial<Record<CampoFormularioCreacion, string>>;
 type ErroresFormularioEdicion = Partial<Record<CampoFormularioEdicion, string>>;
 type EstadoFoto = string | File | null;
-type EstadoDiploma = string | File | null;
 
 const FORMULARIO_NUTRICIONISTA_INICIAL: CrearNutricionistaDto = {
   nombre: '',
@@ -69,6 +70,8 @@ const FORMULARIO_NUTRICIONISTA_INICIAL: CrearNutricionistaDto = {
   tarifaSesion: 0,
   duracionTurnoMin: 30,
   presentacion: '',
+  certificaciones: [],
+  formacionAcademica: [],
 };
 
 type ClaveSeccion = 'datos-personales' | 'contacto-ubicacion' | 'datos-profesionales';
@@ -175,9 +178,12 @@ export function GestionNutricionistas() {
   const [errorGeneralCreacion, setErrorGeneralCreacion] = useState<string | null>(null);
   const [enviandoCreacion, setEnviandoCreacion] = useState(false);
   const [fotoCreacion, setFotoCreacion] = useState<EstadoFoto>(null);
-  const [diplomaCreacion, setDiplomaCreacion] = useState<EstadoDiploma>(null);
+  const [diplomasCreacion, setDiplomasCreacion] = useState<File[]>([]);
   const [fotoEdicion, setFotoEdicion] = useState<EstadoFoto>(null);
-  const [diplomaEdicion, setDiplomaEdicion] = useState<EstadoDiploma>(null);
+  const [diplomasEditando, setDiplomasEditando] = useState<DiplomaDto[]>([]);
+  const [subiendoDiplomaEditando, setSubiendoDiplomaEditando] = useState(false);
+  const [eliminandoDiplomas, setEliminandoDiplomas] = useState<Set<number>>(new Set());
+  const inputDiplomaEditRef = useRef<HTMLInputElement | null>(null);
   const [nutricionistaFormEdicion, setNutricionistaFormEdicion] = useState<CrearNutricionistaDto>(FORMULARIO_NUTRICIONISTA_INICIAL);
   const [erroresEdicion, setErroresEdicion] = useState<ErroresFormularioCreacion>({});
 
@@ -299,7 +305,7 @@ export function GestionNutricionistas() {
     setErroresCreacion({});
     setErrorGeneralCreacion(null);
     setFotoCreacion(null);
-    setDiplomaCreacion(null);
+    setDiplomasCreacion([]);
     setEnviandoCreacion(false);
   }, []);
 
@@ -488,14 +494,14 @@ export function GestionNutricionistas() {
 
     try {
       const hayFoto = fotoCreacion instanceof File;
-      const hayDiploma = diplomaCreacion instanceof File;
+      const hayDiplomas = diplomasCreacion.length > 0;
 
       let respuesta;
       if (hayFoto) {
         const formData = new FormData();
         formData.append('foto', fotoCreacion);
         Object.entries(nutricionistaForm).forEach(([key, value]) => {
-          formData.append(key, String(value));
+          agregarValorAFormData(formData, key, value);
         });
         respuesta = await apiRequest<ApiResponse<Nutricionista & { contrasenaProvisional?: string }>>(
           '/profesional',
@@ -519,14 +525,16 @@ export function GestionNutricionistas() {
       const nutriCreado = respuesta.data;
       const idNuevo = nutriCreado?.idPersona;
 
-      if (hayDiploma && idNuevo) {
-        const diplomaForm = new FormData();
-        diplomaForm.append('diploma', diplomaCreacion);
-        await apiRequest(`/profesional/${idNuevo}/diploma`, {
-          method: 'POST',
-          token,
-          formData: diplomaForm,
-        });
+      if (hayDiplomas && idNuevo) {
+        for (const archivo of diplomasCreacion) {
+          const diplomaForm = new FormData();
+          diplomaForm.append('diploma', archivo);
+          await apiRequest(`/profesional/${idNuevo}/diplomas`, {
+            method: 'POST',
+            token,
+            formData: diplomaForm,
+          });
+        }
       }
 
       if (nutriCreado?.contrasenaProvisional) {
@@ -579,10 +587,12 @@ export function GestionNutricionistas() {
       tarifaSesion: nutricionista.tarifaSesion,
       duracionTurnoMin: nutricionista.duracionTurnoMin,
       presentacion: nutricionista.presentacion ?? '',
+      certificaciones: nutricionista.certificaciones ?? [],
+      formacionAcademica: nutricionista.formacionAcademica ?? [],
     });
     setErroresEdicion({});
-    setFotoEdicion(nutricionista.fotoPerfilUrl ?? null);
-    setDiplomaEdicion(nutricionista.diplomaUrl ?? null);
+    setFotoEdicion(obtenerUrlFoto(nutricionista.fotoPerfilUrl) ?? null);
+    setDiplomasEditando(nutricionista.diplomas ?? []);
     setMostrarFormularioEdicion(true);
   };
 
@@ -601,13 +611,10 @@ export function GestionNutricionistas() {
     try {
       const esFileFoto = fotoEdicion instanceof File;
       const esNullFoto = fotoEdicion === null;
-      const esFileDiploma = diplomaEdicion instanceof File;
-      const esNullDiploma = diplomaEdicion === null;
       const nutricionistaSiendoEditado = nutricionistas.find(
         (n) => n.idPersona === idNutricionistaEditando,
       );
       const nutricionistaTeniaFoto = nutricionistaSiendoEditado?.fotoPerfilUrl;
-      const nutricionistaTeniaDiploma = nutricionistaSiendoEditado?.diplomaUrl;
 
       const enviarFotoComoFormData = esFileFoto || (esNullFoto && nutricionistaTeniaFoto);
 
@@ -620,7 +627,7 @@ export function GestionNutricionistas() {
           formData.append('eliminarFoto', 'true');
         }
         Object.entries(nutricionistaFormEdicion).forEach(([key, value]) => {
-          formData.append(key, String(value));
+          agregarValorAFormData(formData, key, value);
         });
         await apiRequest(`/profesional/${idNutricionistaEditando}`, {
           method: 'PUT',
@@ -635,31 +642,58 @@ export function GestionNutricionistas() {
         });
       }
 
-      if (esFileDiploma) {
-        const diplomaForm = new FormData();
-        diplomaForm.append('diploma', diplomaEdicion);
-        await apiRequest(`/profesional/${idNutricionistaEditando}/diploma`, {
-          method: 'POST',
-          token,
-          formData: diplomaForm,
-        });
-      } else if (esNullDiploma && nutricionistaTeniaDiploma) {
-        await apiRequest(`/profesional/${idNutricionistaEditando}/diploma`, {
-          method: 'DELETE',
-          token,
-        });
-      }
-
       toast.success('Nutricionista actualizado exitosamente');
       setMostrarFormularioEdicion(false);
       setIdNutricionistaEditando(null);
       setErroresEdicion({});
       setFotoEdicion(null);
-      setDiplomaEdicion(null);
+      setDiplomasEditando([]);
       await cargarNutricionistas();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'No se pudo editar el nutricionista';
       toast.error(errorMessage);
+    }
+  };
+
+  const manejarSubirDiplomaEditando = async (archivo: File) => {
+    if (!token || idNutricionistaEditando === null) return;
+    try {
+      setSubiendoDiplomaEditando(true);
+      const formData = new FormData();
+      formData.append('diploma', archivo);
+      const response = await apiRequest<ApiResponse<DiplomaDto>>(
+        `/profesional/${idNutricionistaEditando}/diplomas`,
+        { method: 'POST', token, formData },
+      );
+      setDiplomasEditando((prev) => [...prev, response.data]);
+      toast.success('Diploma subido correctamente.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al subir diploma';
+      toast.error(msg);
+    } finally {
+      setSubiendoDiplomaEditando(false);
+    }
+  };
+
+  const manejarEliminarDiplomaEditando = async (diplomaId: number) => {
+    if (!token || idNutricionistaEditando === null) return;
+    try {
+      setEliminandoDiplomas((prev) => new Set(prev).add(diplomaId));
+      await apiRequest(`/profesional/${idNutricionistaEditando}/diplomas/${diplomaId}`, {
+        method: 'DELETE',
+        token,
+      });
+      setDiplomasEditando((prev) => prev.filter((d) => d.idDiploma !== diplomaId));
+      toast.success('Diploma eliminado.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al eliminar diploma';
+      toast.error(msg);
+    } finally {
+      setEliminandoDiplomas((prev) => {
+        const next = new Set(prev);
+        next.delete(diplomaId);
+        return next;
+      });
     }
   };
 
@@ -1303,25 +1337,43 @@ export function GestionNutricionistas() {
                       className="min-h-[100px]"
                     />
                   </div>
+                  <div className="md:col-span-2">
+                    <EditorTrayectoriaProfesional
+                      formacionAcademica={nutricionistaForm.formacionAcademica ?? []}
+                      certificaciones={nutricionistaForm.certificaciones ?? []}
+                      alCambiarFormacionAcademica={(formacionAcademica) =>
+                        setNutricionistaForm((prev) => ({ ...prev, formacionAcademica }))
+                      }
+                      alCambiarCertificaciones={(certificaciones) =>
+                        setNutricionistaForm((prev) => ({ ...prev, certificaciones }))
+                      }
+                      deshabilitado={enviandoCreacion}
+                    />
+                  </div>
                   <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="crear-diploma">Diploma / Matrícula profesional (PDF o imagen, opcional)</Label>
+                    <Label htmlFor="crear-diplomas">Diplomas / Matrícula profesional (PDF o imagen, opcional)</Label>
                     <Input
-                      id="crear-diploma"
+                      id="crear-diplomas"
                       type="file"
+                      multiple
                       accept="application/pdf,image/*"
                       onChange={(e) => {
-                        const archivo = e.target.files?.[0];
-                        setDiplomaCreacion(archivo ?? null);
+                        const archivos = Array.from(e.target.files ?? []);
+                        setDiplomasCreacion((prev) => [...prev, ...archivos]);
                         e.target.value = '';
                       }}
                     />
-                    {diplomaCreacion instanceof File && (
-                      <p className="text-xs text-muted-foreground">
-                        Archivo seleccionado: {diplomaCreacion.name}
-                      </p>
+                    {diplomasCreacion.length > 0 && (
+                      <ul className="space-y-1">
+                        {diplomasCreacion.map((f, i) => (
+                          <li key={i} className="text-xs text-muted-foreground">
+                            {f.name}
+                          </li>
+                        ))}
+                      </ul>
                     )}
                     <p className="text-xs text-muted-foreground">
-                      El documento se mostrará al socio desde el perfil del profesional.
+                      Los documentos se mostrarán al socio desde el perfil del profesional.
                     </p>
                   </div>
                 </div>
@@ -1384,7 +1436,7 @@ export function GestionNutricionistas() {
             setIdNutricionistaEditando(null);
             setErroresEdicion({});
             setFotoEdicion(null);
-            setDiplomaEdicion(null);
+            setDiplomasEditando([]);
           }
         }}>
         <DialogContent className="max-w-4xl p-0">
@@ -1533,34 +1585,76 @@ export function GestionNutricionistas() {
                     <Label htmlFor="editar-presentacion">Presentación (opcional)</Label>
                     <Textarea id="editar-presentacion" value={nutricionistaFormEdicion.presentacion || ''} onChange={(e) => setNutricionistaFormEdicion({ ...nutricionistaFormEdicion, presentacion: e.target.value })} placeholder="Breve biografía o presentación del profesional..." className="min-h-[100px]" />
                   </div>
+                  <div className="md:col-span-2">
+                    <EditorTrayectoriaProfesional
+                      formacionAcademica={nutricionistaFormEdicion.formacionAcademica ?? []}
+                      certificaciones={nutricionistaFormEdicion.certificaciones ?? []}
+                      alCambiarFormacionAcademica={(formacionAcademica) =>
+                        setNutricionistaFormEdicion((prev) => ({
+                          ...prev,
+                          formacionAcademica,
+                        }))
+                      }
+                      alCambiarCertificaciones={(certificaciones) =>
+                        setNutricionistaFormEdicion((prev) => ({
+                          ...prev,
+                          certificaciones,
+                        }))
+                      }
+                    />
+                  </div>
                   <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="editar-diploma">Reemplazar diploma / matrícula (opcional)</Label>
+                    <Label>Diplomas / Matrícula profesional</Label>
+
+                    {diplomasEditando.length > 0 && (
+                      <div className="space-y-2">
+                        {diplomasEditando.map((d) => (
+                          <div
+                            key={d.idDiploma}
+                            className="flex items-center justify-between rounded-lg border p-2"
+                          >
+                            <span className="text-sm">
+                              {d.nombreOriginal ?? `Diploma #${d.idDiploma}`}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => manejarEliminarDiplomaEditando(d.idDiploma)}
+                              disabled={eliminandoDiplomas.has(d.idDiploma)}
+                            >
+                              {eliminandoDiplomas.has(d.idDiploma) ? (
+                                <span className="text-xs">Eliminando…</span>
+                              ) : (
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              )}
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     <Input
-                      id="editar-diploma"
+                      ref={inputDiplomaEditRef}
                       type="file"
                       accept="application/pdf,image/*"
+                      className="hidden"
                       onChange={(e) => {
                         const archivo = e.target.files?.[0];
-                        setDiplomaEdicion(archivo ?? null);
+                        if (archivo) void manejarSubirDiplomaEditando(archivo);
                         e.target.value = '';
                       }}
                     />
-                    {diplomaEdicion instanceof File && (
-                      <p className="text-xs text-muted-foreground">
-                        Nuevo archivo: {diplomaEdicion.name}
-                      </p>
-                    )}
-                    {diplomaEdicion === null &&
-                      (() => {
-                        const nutriActual = nutricionistas.find(
-                          (n) => n.idPersona === idNutricionistaEditando,
-                        );
-                        return nutriActual?.diplomaUrl ? (
-                          <p className="text-xs text-amber-700">
-                            Se eliminará el diploma actual al guardar.
-                          </p>
-                        ) : null;
-                      })()}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => inputDiplomaEditRef.current?.click()}
+                      disabled={subiendoDiplomaEditando}
+                    >
+                      <Upload className="mr-2 h-4 w-4" />
+                      {subiendoDiplomaEditando ? 'Subiendo…' : 'Agregar diploma'}
+                    </Button>
                   </div>
                 </div>
               </SeccionColapsable>
@@ -1570,7 +1664,7 @@ export function GestionNutricionistas() {
                   setMostrarFormularioEdicion(false);
                   setIdNutricionistaEditando(null);
                   setFotoEdicion(null);
-                  setDiplomaEdicion(null);
+                  setDiplomasEditando([]);
                 }}>
                 Cancelar
               </Button>
@@ -1698,15 +1792,20 @@ export function GestionNutricionistas() {
                       <p className="text-xs font-medium uppercase text-muted-foreground">
                         Diploma / Matrícula profesional
                       </p>
-                      {nutricionistaSeleccionado.diplomaUrl ? (
-                        <a
-                          href={nutricionistaSeleccionado.diplomaUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm font-medium text-primary underline-offset-4 hover:underline"
-                        >
-                          Ver documento
-                        </a>
+                      {nutricionistaSeleccionado.diplomas?.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {nutricionistaSeleccionado.diplomas.map((d) => (
+                            <a
+                              key={d.idDiploma}
+                              href={d.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                            >
+                              {d.nombreOriginal ?? `Diploma #${d.idDiploma}`}
+                            </a>
+                          ))}
+                        </div>
                       ) : (
                         <p className="text-sm text-muted-foreground">Sin diploma cargado</p>
                       )}

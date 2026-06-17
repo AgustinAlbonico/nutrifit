@@ -1,5 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Not, Repository } from 'typeorm';
 import { ConfigureAgendaDto } from 'src/application/agenda/dtos/configure-agenda.dto';
+import { ConfigureAgendaResponseDto } from 'src/application/agenda/dtos/configure-agenda-response.dto';
 import { BaseUseCase } from 'src/application/shared/use-case.base';
 import { AgendaEntity } from 'src/domain/entities/Agenda/agenda.entity';
 import { DiaSemana } from 'src/domain/entities/Agenda/dia-semana';
@@ -13,12 +16,21 @@ import {
 } from 'src/domain/entities/Persona/Nutricionista/nutricionista.repository';
 import {
   BadRequestError,
+  ConflictError,
   NotFoundError,
 } from 'src/domain/exceptions/custom-exceptions';
 import {
   APP_LOGGER_SERVICE,
   IAppLoggerService,
 } from 'src/domain/services/logger.service';
+import { EstadoTurno } from 'src/domain/entities/Turno/EstadoTurno';
+import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities';
+import { SlotComputationService } from 'src/application/turnos/services/slot-computation.service';
+import {
+  formatArgentinaDate,
+  getArgentinaStartOfToday,
+  getArgentinaWeekdayIndex,
+} from 'src/common/utils/argentina-datetime.util';
 
 type TimeInterval = {
   start: number;
@@ -32,6 +44,9 @@ export class ConfigureAgendaUseCase implements BaseUseCase {
     private readonly agendaRepository: IAgendaRepository,
     @Inject(NUTRICIONISTA_REPOSITORY)
     private readonly nutricionistaRepository: NutricionistaRepository,
+    @InjectRepository(TurnoOrmEntity)
+    private readonly turnoRepository: Repository<TurnoOrmEntity>,
+    private readonly slotComputationService: SlotComputationService,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
   ) {}
@@ -39,7 +54,7 @@ export class ConfigureAgendaUseCase implements BaseUseCase {
   async execute(
     nutricionistaId: number,
     payload: ConfigureAgendaDto,
-  ): Promise<AgendaEntity[]> {
+  ): Promise<ConfigureAgendaResponseDto> {
     const nutricionista =
       await this.nutricionistaRepository.findById(nutricionistaId);
 
@@ -55,6 +70,32 @@ export class ConfigureAgendaUseCase implements BaseUseCase {
 
     this.validateAgenda(payload);
 
+    const agendaActual =
+      await this.agendaRepository.findByNutricionistaId(nutricionistaId);
+    const turnosFuturos = await this.findTurnosFuturos(nutricionistaId);
+    const duracionActual =
+      nutricionista.duracionTurnoMin ?? agendaActual[0]?.duracionTurno ?? 30;
+    const turnosFueraDeAgenda = this.countTurnosFueraDeAgenda(
+      turnosFuturos,
+      payload.agendas,
+    );
+    const turnosConDuracionActual =
+      payload.duracionTurno !== duracionActual ? turnosFuturos.length : 0;
+
+    if (
+      !payload.confirmarCambiosConTurnos &&
+      (turnosFueraDeAgenda > 0 || turnosConDuracionActual > 0)
+    ) {
+      throw new ConflictError('La agenda tiene turnos futuros afectados.', {
+        requiereConfirmacion: true,
+        turnosFueraDeAgenda,
+        turnosConDuracionActual,
+      });
+    }
+
+    nutricionista.duracionTurnoMin = payload.duracionTurno;
+    await this.nutricionistaRepository.update(nutricionistaId, nutricionista);
+
     const agendas = payload.agendas.map(
       (agenda) =>
         new AgendaEntity(
@@ -62,7 +103,7 @@ export class ConfigureAgendaUseCase implements BaseUseCase {
           agenda.dia,
           agenda.horaInicio,
           agenda.horaFin,
-          agenda.duracionTurno,
+          payload.duracionTurno,
         ),
     );
 
@@ -76,7 +117,22 @@ export class ConfigureAgendaUseCase implements BaseUseCase {
       `Agenda configurada para profesional ${nutricionistaId} con ${configuredAgenda.length} bloques.`,
     );
 
-    return configuredAgenda;
+    const slotsDisponiblesProximos60Dias =
+      await this.slotComputationService.contarSlotsProximos(
+        nutricionistaId,
+        60,
+      );
+
+    return {
+      agendas: configuredAgenda.map((agenda) => ({
+        idAgenda: agenda.idAgenda ?? 0,
+        dia: agenda.dia,
+        horaInicio: agenda.horaInicio,
+        horaFin: agenda.horaFin,
+        duracionTurno: agenda.duracionTurno,
+      })),
+      slotsDisponiblesProximos60Dias,
+    };
   }
 
   private validateAgenda(payload: ConfigureAgendaDto): void {
@@ -98,9 +154,9 @@ export class ConfigureAgendaUseCase implements BaseUseCase {
         );
       }
 
-      if (end - start < agenda.duracionTurno) {
+      if (end - start < payload.duracionTurno) {
         throw new BadRequestError(
-          `La duracion del turno en ${agenda.dia} supera el rango horario disponible.`,
+          `Con esta duración y los rangos definidos, el rango del día ${agenda.dia} no genera slots completos. Ajustá la duración o los rangos.`,
         );
       }
 
@@ -128,5 +184,52 @@ export class ConfigureAgendaUseCase implements BaseUseCase {
   private timeToMinutes(time: string): number {
     const [hours, minutes] = time.split(':').map((value) => Number(value));
     return hours * 60 + minutes;
+  }
+
+  private async findTurnosFuturos(
+    nutricionistaId: number,
+  ): Promise<TurnoOrmEntity[]> {
+    const today = formatArgentinaDate(getArgentinaStartOfToday());
+    const turnos = await this.turnoRepository.find({
+      where: {
+        nutricionista: { idPersona: nutricionistaId },
+        estadoTurno: Not(EstadoTurno.CANCELADO),
+      },
+      relations: ['nutricionista'],
+    });
+
+    return turnos.filter(
+      (turno) => formatArgentinaDate(turno.fechaTurno) >= today,
+    );
+  }
+
+  private countTurnosFueraDeAgenda(
+    turnos: TurnoOrmEntity[],
+    agendas: ConfigureAgendaDto['agendas'],
+  ): number {
+    return turnos.filter((turno) => {
+      const diaTurno = this.mapDateToDiaSemana(turno.fechaTurno);
+      const horaTurno = this.timeToMinutes(turno.horaTurno.slice(0, 5));
+
+      return !agendas.some((agenda) => {
+        if (agenda.dia !== diaTurno) return false;
+        const inicio = this.timeToMinutes(agenda.horaInicio);
+        const fin = this.timeToMinutes(agenda.horaFin);
+        return horaTurno >= inicio && horaTurno < fin;
+      });
+    }).length;
+  }
+
+  private mapDateToDiaSemana(date: Date): DiaSemana {
+    const days = [
+      DiaSemana.DOMINGO,
+      DiaSemana.LUNES,
+      DiaSemana.MARTES,
+      DiaSemana.MIERCOLES,
+      DiaSemana.JUEVES,
+      DiaSemana.VIERNES,
+      DiaSemana.SABADO,
+    ];
+    return days[getArgentinaWeekdayIndex(date)];
   }
 }

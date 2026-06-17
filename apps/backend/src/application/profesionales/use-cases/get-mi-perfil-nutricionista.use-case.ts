@@ -36,7 +36,8 @@ export class GetMiPerfilNutricionistaUseCase implements BaseUseCase {
       throw new NotFoundError('No tenés un perfil de nutricionista asociado.');
     }
 
-    const nutricionista = await this.nutricionistaRepository.findById(idPersona);
+    const nutricionista =
+      await this.nutricionistaRepository.findById(idPersona);
     if (!nutricionista) {
       this.logger.warn(
         `El usuario ${usuarioId} (persona ${idPersona}) no es un nutricionista válido.`,

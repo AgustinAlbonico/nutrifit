@@ -8,6 +8,25 @@ Stack: NestJS (backend) + React + Vite (frontend) + MySQL + TypeORM, en monorepo
 
 ---
 
+## Git Workflow — Regla Absoluta
+
+**Trabajamos siempre sobre `main`. No usar worktrees, no crear feature branches, no PRs.**
+
+- **Cada cambio que se haga** (sin importar el tamaño) debe commitearse y pushearse a GitHub en `origin main`.
+- Branch base: `main`. Todos los commits van directo contra `main`.
+- Mensajes en formato **Conventional Commits** (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`, `style:`, `perf:`, `build:`, `ci:`).
+- **No** agregar `Co-Authored-By` ni ninguna atribución de IA en los commits.
+- Antes de commitear: revisar `git status` y `git diff` para confirmar que solo se commitea lo intencionalado y nunca secretos.
+- Si el usuario lo pide explícitamente, se puede commitear + pushear. Por defecto, **asumí que cada cambio va commit + push al terminarlo** (a menos que el usuario indique lo contrario en esa sesión).
+- Flujo estándar al cerrar un cambio:
+  1. `git status` + `git diff` (revisar archivos y contenido).
+  2. `git add` solo de los archivos intencionales.
+  3. `git commit -m "conventional-commit-message"`.
+  4. `git push origin main`.
+- No usar `--force`, no usar `git commit --amend` sobre commits ya pusheados, no saltar hooks, no crear commits vacíos.
+
+---
+
 ## Skill Routing
 
 Invoke the appropriate skill before starting any task. Match by **file context** (file extension/folder) and **task context** (what you're doing).

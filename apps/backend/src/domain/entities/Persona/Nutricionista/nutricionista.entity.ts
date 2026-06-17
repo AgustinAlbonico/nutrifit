@@ -1,4 +1,6 @@
 import { AgendaEntity } from '../../Agenda/agenda.entity';
+import { CertificacionEntity } from '../../Certificacion/certificacion.entity';
+import { DiplomaEntity } from '../../Diploma/diploma.entity';
 import { FormacionAcademicaEntity } from '../../FormacionAcademica/formacion-academica.entity';
 import { TurnoEntity } from '../../Turno/turno.entity';
 import { Genero } from '../Genero';
@@ -11,10 +13,11 @@ export class NutricionistaEntity extends PersonaEntity {
   aniosExperiencia: number;
   agendas: AgendaEntity[];
   formacionAcademica: FormacionAcademicaEntity[];
+  certificaciones: CertificacionEntity[];
+  diplomas: DiplomaEntity[];
   turnos: TurnoEntity[];
   fotoPerfilKey: string | null;
   presentacion: string | null;
-  certificaciones: string | null;
   duracionTurnoMin: number;
   matriculaDocumentoKey: string | null;
 
@@ -33,11 +36,12 @@ export class NutricionistaEntity extends PersonaEntity {
     tarifaSesion: number,
     agendas: AgendaEntity[] = [],
     formacionAcademica: FormacionAcademicaEntity[] = [],
+    certificaciones: CertificacionEntity[] = [],
+    diplomas: DiplomaEntity[] = [],
     turnos: TurnoEntity[] = [],
     fechaBaja: Date | null = null,
     email: string = '',
     presentacion: string | null = null,
-    certificaciones: string | null = null,
     duracionTurnoMin: number = 30,
     matriculaDocumentoKey: string | null = null,
   ) {
@@ -61,11 +65,12 @@ export class NutricionistaEntity extends PersonaEntity {
     this.aniosExperiencia = experiencia;
     this.agendas = agendas;
     this.formacionAcademica = formacionAcademica;
+    this.certificaciones = certificaciones;
+    this.diplomas = diplomas;
     this.turnos = turnos;
     this.fechaBaja = fechaBaja;
     this.fotoPerfilKey = null;
     this.presentacion = presentacion;
-    this.certificaciones = certificaciones;
     this.duracionTurnoMin = duracionTurnoMin;
     this.matriculaDocumentoKey = matriculaDocumentoKey;
   }

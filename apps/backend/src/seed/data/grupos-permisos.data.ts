@@ -56,7 +56,7 @@ export const GRUPOS_PERMISOS: Record<string, GrupoPermisoData> = {
     clave: 'PROFESIONAL',
     nombre: 'Profesional',
     descripcion: 'Permisos base para profesionales del gimnasio',
-    acciones: ['profesionales.*'],
+    acciones: [ACCIONES.NUTRICIONISTAS_EDITAR, ACCIONES.NUTRICIONISTAS_VER],
   },
   SOCIO: {
     clave: 'SOCIO',

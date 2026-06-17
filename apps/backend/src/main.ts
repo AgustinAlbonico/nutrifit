@@ -38,6 +38,12 @@ async function bootstrap() {
   app.use(
     helmet({
       crossOriginResourcePolicy: { policy: 'cross-origin' },
+      contentSecurityPolicy: {
+        directives: {
+          ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+          'frame-ancestors': ["'self'", ...mainConfig.getCorsAllowedOrigins()],
+        },
+      },
     }),
   );
 
@@ -73,7 +79,7 @@ async function bootstrap() {
     SwaggerModule.setup('openapi', app, document);
   }
 
-  await app.listen(mainConfig.getPort() ?? 3000);
+  await app.listen(mainConfig.getPort() ?? 3000, '0.0.0.0');
 }
 
 void bootstrap();

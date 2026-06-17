@@ -77,21 +77,23 @@ export class ConfirmarTurnoSocioUseCase implements BaseUseCase {
       await this.validarTokenConfirmacion(turnoId, tokenConfirmacion);
     }
 
-    if (turno.estadoTurno !== EstadoTurno.PROGRAMADO) {
+    if (turno.estadoTurno !== EstadoTurno.CONFIRMADO) {
       throw new BadRequestError(
-        'Solo se pueden confirmar turnos en estado PROGRAMADO.',
+        'Solo se pueden confirmar turnos en estado CONFIRMADO.',
       );
     }
 
     this.validateConfirmationWindow(turno.fechaTurno, turno.horaTurno);
 
-    turno.estadoTurno = EstadoTurno.PRESENTE;
+    // La confirmación del socio por email/token deja el turno en CONFIRMADO
+    // (es solo una "confirmación de asistencia" declarativa). El paso a
+    // PRESENTE lo dispara la recepción vía check-in.
     const updatedTurno = await this.turnoRepository.save(turno);
 
     if (turno.socio.idPersona) {
       await this.notificacionesService.crear({
         destinatarioId: turno.socio.idPersona,
-        tipo: TipoNotificacion.TURNO_RESERVADO,
+        tipo: TipoNotificacion.TURNO_CONFIRMADO,
         titulo: 'Turno confirmado',
         mensaje: `Tu turno del ${formatArgentinaDate(turno.fechaTurno)} a las ${normalizeTimeToHHmm(turno.horaTurno)} fue confirmado.`,
         metadata: { turnoId: turno.idTurno },
@@ -101,7 +103,7 @@ export class ConfirmarTurnoSocioUseCase implements BaseUseCase {
     if (turno.nutricionista.idPersona) {
       await this.notificacionesService.crear({
         destinatarioId: turno.nutricionista.idPersona,
-        tipo: TipoNotificacion.TURNO_RESERVADO,
+        tipo: TipoNotificacion.TURNO_CONFIRMADO,
         titulo: 'Turno confirmado por socio',
         mensaje: `El socio confirmó el turno #${turno.idTurno} del ${formatArgentinaDate(turno.fechaTurno)} a las ${normalizeTimeToHHmm(turno.horaTurno)}.`,
         metadata: { turnoId: turno.idTurno },

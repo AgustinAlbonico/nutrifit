@@ -21,7 +21,6 @@ export interface CrearGimnasioConAdminRequest extends CrearGimnasioRequest {
   admin: {
     nombre: string;
     email: string;
-    contrasena: string;
   };
 }
 

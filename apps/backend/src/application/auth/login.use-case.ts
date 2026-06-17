@@ -35,9 +35,12 @@ export class LoginUseCase implements BaseUseCase {
     private readonly loggerService: IAppLoggerService,
   ) {}
 
-  async execute(
-    payload: LoginDto,
-  ): Promise<{ token: string; rol: Rol; acciones: string[] }> {
+  async execute(payload: LoginDto): Promise<{
+    token: string;
+    rol: Rol;
+    acciones: string[];
+    debeCambiarPassword: boolean;
+  }> {
     this.loggerService.log(
       'LoginUseCase: Ejecutando el caso de uso de login para el usuario: ' +
         payload.email,
@@ -94,6 +97,11 @@ export class LoginUseCase implements BaseUseCase {
       'LoginUseCase: Login exitoso para el usuario: ' + user.email,
     );
 
-    return { token, rol: user.rol, acciones: user.getAccionesEfectivas() };
+    return {
+      token,
+      rol: user.rol,
+      acciones: user.getAccionesEfectivas(),
+      debeCambiarPassword: user.debeCambiarPassword,
+    };
   }
 }

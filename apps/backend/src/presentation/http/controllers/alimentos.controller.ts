@@ -11,7 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, FindOptionsWhere } from 'typeorm';
+import { Repository } from 'typeorm';
 import {
   AlimentosSyncService,
   EstadoSyncAlimentos,
@@ -29,6 +29,8 @@ import { ActualizarAlimentoDto } from 'src/application/alimentos/dtos/actualizar
 import { CrearAlimentoUseCase } from 'src/application/alimentos/use-cases/crear-alimento.use-case';
 import { ActualizarAlimentoUseCase } from 'src/application/alimentos/use-cases/actualizar-alimento.use-case';
 import { EliminarAlimentoUseCase } from 'src/application/alimentos/use-cases/eliminar-alimento.use-case';
+import { normalizarTexto } from 'src/common/utils/text.util';
+import { stripAccentsLowerSql } from 'src/common/utils/sql-text.util';
 
 export class AlimentoResponseDto {
   idAlimento: number;
@@ -97,20 +99,26 @@ export class AlimentosController {
   ): Promise<AlimentoResponseDto[]> {
     const take = limit ? Math.min(parseInt(limit, 10), 100) : 50;
 
-    const where: FindOptionsWhere<AlimentoOrmEntity> = {};
+    const queryBuilder = this.alimentoRepo
+      .createQueryBuilder('alimento')
+      .orderBy('alimento.nombre', 'ASC')
+      .take(take)
+      .leftJoinAndSelect(
+        'alimento.grupoAlimenticio',
+        'grupoAlimenticio',
+        grupoId ? 'grupoAlimenticio.idGrupoAlimenticio = :grupoId' : '1=1',
+        grupoId ? { grupoId: parseInt(grupoId, 10) } : {},
+      );
+
     if (search) {
-      where.nombre = Like(`%${search}%`);
-    }
-    if (grupoId) {
-      where.grupoAlimenticio = { idGrupoAlimenticio: parseInt(grupoId, 10) };
+      const termino = `%${normalizarTexto(search)}%`;
+      queryBuilder.andWhere(
+        `${stripAccentsLowerSql('LOWER(alimento.nombre)')} LIKE :termino`,
+        { termino },
+      );
     }
 
-    const alimentos = await this.alimentoRepo.find({
-      where,
-      take,
-      order: { nombre: 'ASC' },
-      relations: grupoId ? ['grupoAlimenticio'] : [],
-    });
+    const alimentos = await queryBuilder.getMany();
 
     return alimentos.map((a) => this.mapToResponse(a));
   }

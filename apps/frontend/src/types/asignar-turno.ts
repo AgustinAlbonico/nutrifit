@@ -18,9 +18,6 @@ export type CreadoPorFrontend = 'SOCIO' | 'RECEPCION' | 'ADMIN' | 'NUTRICIONISTA
  *
  * `idPersona` es la PK de la persona; el backend filtra por gimnasio
  * del actor via `TenantContext`.
- *
- * `email` se mantiene opcional porque el endpoint legado que usa
- * `AsignarTurnoModal` no lo expone en todas las respuestas.
  */
 export interface SocioConFicha {
   idPersona: number;

@@ -8,7 +8,10 @@ import {
   SocioTurnoConfirmadoDto,
 } from 'src/application/turnos/dtos/datos-turno-socio-response.dto';
 import { EstadoTurno } from 'src/domain/entities/Turno/EstadoTurno';
-import { ForbiddenError, NotFoundError } from 'src/domain/exceptions/custom-exceptions';
+import {
+  ForbiddenError,
+  NotFoundError,
+} from 'src/domain/exceptions/custom-exceptions';
 import {
   SocioOrmEntity,
   TurnoOrmEntity,
@@ -54,9 +57,7 @@ export class GetTurnoSocioByIdUseCase implements BaseUseCase {
     }
 
     if (turno.socio?.idPersona !== socio.idPersona) {
-      throw new ForbiddenError(
-        'No tenés permiso para consultar este turno.',
-      );
+      throw new ForbiddenError('No tenés permiso para consultar este turno.');
     }
 
     const socioResponse: SocioTurnoConfirmadoDto = {

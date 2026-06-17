@@ -16,13 +16,17 @@ export class CleanDuplicateAgenda20260608000000 implements MigrationInterface {
     `);
 
     // Agregar unique constraint para evitar futuros duplicados
-    await queryRunner.query(`
+    await queryRunner
+      .query(
+        `
       ALTER TABLE \`agenda\`
       ADD UNIQUE INDEX \`UQ_AGENDA_NUTRI_DIA_HORARIO\`
         (\`id_nutricionista\`, \`dia\`, \`hora_inicio\`, \`hora_fin\`)
-    `).catch(() => {
-      // Ignorar si el index ya existe (puede haberse agregado manualmente)
-    });
+    `,
+      )
+      .catch(() => {
+        // Ignorar si el index ya existe (puede haberse agregado manualmente)
+      });
   }
 
   async down(queryRunner: QueryRunner): Promise<void> {

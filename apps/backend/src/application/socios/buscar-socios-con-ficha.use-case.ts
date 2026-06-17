@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SocioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/persona.entity';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
+import { normalizarTexto } from 'src/common/utils/text.util';
+import { stripAccentsLowerSql } from 'src/common/utils/sql-text.util';
 
 export interface SocioConFichaDto {
   idPersona: number;
@@ -37,10 +39,14 @@ export class BuscarSociosConFichaUseCase {
     }
 
     if (busqueda && busqueda.trim()) {
-      const termino = `%${busqueda.trim().toLowerCase()}%`;
+      const termino = `%${normalizarTexto(busqueda)}%`;
       queryBuilder.andWhere(
-        '(LOWER(socio.nombre) LIKE :busqueda OR LOWER(socio.apellido) LIKE :busqueda OR socio.dni LIKE :busqueda)',
-        { busqueda: termino },
+        `(${stripAccentsLowerSql(
+          'LOWER(socio.nombre)',
+        )} LIKE :termino OR ${stripAccentsLowerSql(
+          'LOWER(socio.apellido)',
+        )} LIKE :termino OR LOWER(socio.dni) LIKE :termino)`,
+        { termino },
       );
     }
 

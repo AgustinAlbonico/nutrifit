@@ -1,19 +1,35 @@
-import { useState, useEffect, useCallback, type FormEvent } from 'react';
+import { useState, useEffect, useCallback, useRef, type FormEvent } from 'react';
 import { toast } from 'sonner';
-import { User, CheckCircle2 } from 'lucide-react';
+import {
+  User,
+  CheckCircle2,
+  Upload,
+  FileText,
+  Trash2,
+  ExternalLink,
+  Loader2,
+} from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { apiRequest } from '@/lib/api';
+import { apiRequest, obtenerUrlFoto } from '@/lib/api';
+import { agregarValorAFormData } from '@/lib/formData';
 import { formatearFechaArgentinaParaInput } from '@/lib/fechasArgentina';
+import { EditorTrayectoriaProfesional } from '@/components/profesionales/EditorTrayectoriaProfesional';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import type { Nutricionista, Genero } from '@/types/nutricionista';
+import { SelectorImagen } from '@/components/imagen/SelectorImagen';
+import { GaleriaDiplomas } from '@/components/diplomas/GaleriaDiplomas';
+import type {
+  CertificacionDto,
+  DiplomaDto,
+  FormacionAcademicaDto,
+  Genero,
+  Nutricionista,
+} from '@/types/nutricionista';
 import type { ApiResponse } from '@/types/api';
-
-
 
 interface FormularioMiPerfil {
   nombre: string;
@@ -59,6 +75,18 @@ export function MiPerfilNutricionista() {
   const [formulario, setFormulario] = useState<FormularioMiPerfil>(FORMULARIO_INICIAL);
   const [idPersona, setIdPersona] = useState<number | null>(null);
 
+  const [fotoPerfilUrlActual, setFotoPerfilUrlActual] = useState<string | null>(null);
+  const [fotoPerfilArchivo, setFotoPerfilArchivo] = useState<File | null>(null);
+  const [quitarFoto, setQuitarFoto] = useState(false);
+
+  const [diplomas, setDiplomas] = useState<DiplomaDto[]>([]);
+  const [certificaciones, setCertificaciones] = useState<CertificacionDto[]>([]);
+  const [formacionAcademica, setFormacionAcademica] = useState<FormacionAcademicaDto[]>([]);
+  const [subiendoDiploma, setSubiendoDiploma] = useState(false);
+  const [eliminandoDiplomas, setEliminandoDiplomas] = useState<Set<number>>(new Set());
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const inputDiplomaRef = useRef<HTMLInputElement | null>(null);
+
   const cargarPerfil = useCallback(async () => {
     if (!token) return;
     try {
@@ -69,6 +97,12 @@ export function MiPerfilNutricionista() {
       );
       const n = response.data;
       setIdPersona(n.idPersona);
+      setFotoPerfilUrlActual(n.fotoPerfilUrl);
+      setDiplomas(n.diplomas ?? []);
+      setCertificaciones(n.certificaciones ?? []);
+      setFormacionAcademica(n.formacionAcademica ?? []);
+      setFotoPerfilArchivo(null);
+      setQuitarFoto(false);
       setFormulario({
         nombre: n.nombre,
         apellido: n.apellido,
@@ -121,6 +155,52 @@ export function MiPerfilNutricionista() {
     return Object.keys(nuevosErrores).length === 0;
   };
 
+  const manejarSubirDiploma = async (archivo: File) => {
+    if (!token || idPersona === null) return;
+    try {
+      setSubiendoDiploma(true);
+      const formData = new FormData();
+      formData.append('diploma', archivo);
+      const response = await apiRequest<ApiResponse<DiplomaDto>>(
+        `/profesional/${idPersona}/diplomas`,
+        {
+          method: 'POST',
+          token,
+          formData,
+        },
+      );
+      setDiplomas((prev) => [...prev, response.data]);
+      toast.success('Diploma subido correctamente.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al subir diploma';
+      toast.error(msg);
+    } finally {
+      setSubiendoDiploma(false);
+    }
+  };
+
+  const manejarEliminarDiploma = async (diplomaId: number) => {
+    if (!token || idPersona === null) return;
+    try {
+      setEliminandoDiplomas((prev) => new Set(prev).add(diplomaId));
+      await apiRequest(`/profesional/${idPersona}/diplomas/${diplomaId}`, {
+        method: 'DELETE',
+        token,
+      });
+      setDiplomas((prev) => prev.filter((d) => d.idDiploma !== diplomaId));
+      toast.success('Diploma eliminado.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al eliminar diploma';
+      toast.error(msg);
+    } finally {
+      setEliminandoDiplomas((prev) => {
+        const next = new Set(prev);
+        next.delete(diplomaId);
+        return next;
+      });
+    }
+  };
+
   const guardarCambios = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!token || idPersona === null) return;
@@ -131,17 +211,48 @@ export function MiPerfilNutricionista() {
 
     try {
       setEnviando(true);
-      const payload = { ...formulario };
+
+      const payload = {
+        ...formulario,
+        formacionAcademica,
+        certificaciones,
+      };
       if (!payload.contrasena) {
-        delete (payload as Partial<FormularioMiPerfil>).contrasena;
+        delete (payload as Partial<typeof payload>).contrasena;
       }
-      await apiRequest(`/profesional/${idPersona}`, {
-        method: 'PUT',
-        token,
-        body: payload,
-      });
+
+      const hayFotoNueva = fotoPerfilArchivo instanceof File;
+      const hayQueEliminarFoto = quitarFoto && fotoPerfilUrlActual;
+
+      if (hayFotoNueva || hayQueEliminarFoto) {
+        const formData = new FormData();
+        if (hayFotoNueva) {
+          formData.append('foto', fotoPerfilArchivo);
+        }
+        if (hayQueEliminarFoto && !hayFotoNueva) {
+          formData.append('eliminarFoto', 'true');
+        }
+        Object.entries(payload).forEach(([key, value]) => {
+          agregarValorAFormData(formData, key, value);
+        });
+        await apiRequest(`/profesional/${idPersona}`, {
+          method: 'PUT',
+          token,
+          formData,
+        });
+      } else {
+        await apiRequest(`/profesional/${idPersona}`, {
+          method: 'PUT',
+          token,
+          body: payload,
+        });
+      }
+
       toast.success('Perfil actualizado correctamente.');
       setFormulario((prev) => ({ ...prev, contrasena: '' }));
+      setFotoPerfilArchivo(null);
+      setQuitarFoto(false);
+      await cargarPerfil();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'No se pudo actualizar tu perfil';
       toast.error(message);
@@ -301,6 +412,31 @@ export function MiPerfilNutricionista() {
               />
               {errores.provincia && <p className="text-xs text-destructive">{errores.provincia}</p>}
             </div>
+            <div className="md:col-span-2">
+              <SelectorImagen
+                valorActual={quitarFoto ? null : obtenerUrlFoto(fotoPerfilUrlActual)}
+                alCambiarFoto={(archivo) => {
+                  setFotoPerfilArchivo(archivo);
+                  setQuitarFoto(archivo === null && !!fotoPerfilUrlActual);
+                }}
+                etiqueta="Foto de perfil"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Trayectoria profesional</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <EditorTrayectoriaProfesional
+              formacionAcademica={formacionAcademica}
+              certificaciones={certificaciones}
+              alCambiarFormacionAcademica={setFormacionAcademica}
+              alCambiarCertificaciones={setCertificaciones}
+              deshabilitado={enviando}
+            />
           </CardContent>
         </Card>
 
@@ -387,12 +523,143 @@ export function MiPerfilNutricionista() {
           </CardContent>
         </Card>
 
-        <div className="flex justify-end">
+        <Card>
+          <CardHeader>
+            <CardTitle>Diplomas / Matrícula</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {diplomas.length > 0 ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {diplomas.map((d, index) => {
+                  const extensionEsImagen = d.nombreOriginal
+                    ? /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(d.nombreOriginal)
+                    : false;
+                  const esImagen =
+                    d.mimeType?.startsWith('image/') ?? extensionEsImagen;
+                  const eliminando = eliminandoDiplomas.has(d.idDiploma);
+                  return (
+                    <div
+                      key={d.idDiploma}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setLightboxIndex(index)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setLightboxIndex(index);
+                        }
+                      }}
+                      className="group relative cursor-pointer overflow-hidden rounded-lg border bg-card transition hover:border-orange-500/50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                      data-testid="diploma-card"
+                    >
+                      <div className="aspect-[4/3] flex items-center justify-center bg-muted/30">
+                        {esImagen ? (
+                          <img
+                            src={obtenerUrlFoto(d.url) ?? ''}
+                            alt={d.nombreOriginal ?? 'Diploma'}
+                            className="h-full w-full object-contain p-2 transition group-hover:scale-105"
+                          />
+                        ) : (
+                          <div className="flex flex-col items-center gap-2 text-muted-foreground transition group-hover:scale-105">
+                            <FileText className="h-12 w-12" />
+                            <span className="text-xs">PDF</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between gap-2 p-3">
+                        <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                          {d.nombreOriginal ?? `Diploma #${d.idDiploma}`}
+                        </p>
+                        <div className="flex shrink-0 gap-1">
+                          <a
+                            href={obtenerUrlFoto(d.url) ?? '#'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Button type="button" variant="ghost" size="icon" className="h-8 w-8">
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
+                          </a>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            disabled={eliminando}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void manejarEliminarDiploma(d.idDiploma);
+                            }}
+                          >
+                            {eliminando ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Todavía no subiste ningún diploma.</p>
+            )}
+
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={subiendoDiploma}
+                onClick={() => inputDiplomaRef.current?.click()}
+              >
+                {subiendoDiploma ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Subiendo...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Agregar diploma
+                  </>
+                )}
+              </Button>
+              <input
+                ref={inputDiplomaRef}
+                type="file"
+                accept="image/*,.pdf"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    void manejarSubirDiploma(file);
+                  }
+                  if (inputDiplomaRef.current) {
+                    inputDiplomaRef.current.value = '';
+                  }
+                }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="flex justify-end gap-3">
           <Button type="submit" disabled={enviando}>
             {enviando ? 'Guardando...' : 'Guardar cambios'}
           </Button>
         </div>
       </form>
+
+      {lightboxIndex !== null && diplomas[lightboxIndex] && (
+        <GaleriaDiplomas
+          diplomas={diplomas}
+          indiceInicial={lightboxIndex}
+          onCerrar={() => setLightboxIndex(null)}
+        />
+      )}
     </div>
   );
 }

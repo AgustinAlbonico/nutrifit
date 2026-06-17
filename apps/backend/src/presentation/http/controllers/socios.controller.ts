@@ -97,10 +97,15 @@ export class SocioController {
       this.logger.log(`Foto de perfil subida: ${fotoPerfilKey}`);
     }
 
-    return await this.registrarSocioUseCase.execute(
+    const resultado = await this.registrarSocioUseCase.execute(
       registrarSocioDto,
       fotoPerfilKey,
     );
+    return {
+      message: 'Socio registrado exitosamente',
+      id: resultado.socio.idPersona,
+      contrasenaProvisional: resultado.contrasenaProvisional,
+    };
   }
 
   @Put(':id')

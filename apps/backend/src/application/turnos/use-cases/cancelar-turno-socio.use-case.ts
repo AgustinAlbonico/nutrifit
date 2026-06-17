@@ -89,9 +89,9 @@ export class CancelarTurnoSocioUseCase implements BaseUseCase {
       await this.validarTokenConfirmacion(turnoId, tokenConfirmacion);
     }
 
-    if (turno.estadoTurno !== EstadoTurno.PROGRAMADO) {
+    if (turno.estadoTurno !== EstadoTurno.CONFIRMADO) {
       throw new BadRequestError(
-        'Solo se pueden cancelar turnos en estado PROGRAMADO.',
+        'Solo se pueden cancelar turnos en estado CONFIRMADO.',
       );
     }
 
@@ -110,7 +110,7 @@ export class CancelarTurnoSocioUseCase implements BaseUseCase {
       entidad: 'Turno',
       entidadId: turnoId,
       metadata: {
-        estadoAnterior: EstadoTurno.PROGRAMADO,
+        estadoAnterior: EstadoTurno.CONFIRMADO,
         estadoNuevo: EstadoTurno.CANCELADO,
         motivo: turno.motivoCancelacion,
       },

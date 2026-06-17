@@ -74,7 +74,7 @@ export class RevertirAusenteTurnoUseCase {
       hizoCheckIn = true;
       ventanaNota = ` + check-in directo (${llegadaTardeMin} min tarde)`;
     } else {
-      turno.estadoTurno = EstadoTurno.PROGRAMADO;
+      turno.estadoTurno = EstadoTurno.CONFIRMADO;
     }
 
     await this.turnoRepository.save(turno);

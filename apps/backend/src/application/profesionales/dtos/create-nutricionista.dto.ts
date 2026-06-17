@@ -10,8 +10,27 @@ import {
   Max,
   Min,
 } from 'class-validator';
+import { NivelFormacion } from 'src/domain/entities/Certificacion/nivel-formacion';
 import { Genero } from 'src/domain/entities/Persona/Genero';
 import { IsValidDni } from 'src/infrastructure/validators/dni.validator';
+
+export interface FormacionAcademicaPayloadDto {
+  idFormacionAcademica?: number | null;
+  titulo: string;
+  institucion: string;
+  anioInicio: number;
+  anioFin: number | null;
+  nivel: NivelFormacion;
+}
+
+export interface CertificacionPayloadDto {
+  idCertificacion?: number | null;
+  nombre: string;
+  entidad: string;
+  anio: number | null;
+  cargaHoraria: number | null;
+  nivel: NivelFormacion | null;
+}
 
 export class CreateNutricionistaDto {
   @IsEmail()
@@ -79,4 +98,10 @@ export class CreateNutricionistaDto {
   @IsString()
   @IsOptional()
   presentacion?: string;
+
+  @IsOptional()
+  formacionAcademica?: FormacionAcademicaPayloadDto[] | string;
+
+  @IsOptional()
+  certificaciones?: CertificacionPayloadDto[] | string;
 }

@@ -23,6 +23,8 @@ import { Rol } from 'src/domain/entities/Usuario/Rol';
 import { Rol as RolesDecorator } from 'src/infrastructure/auth/decorators/role.decorator';
 import { CurrentUserId } from 'src/infrastructure/auth/decorators/current-user.decorator';
 import { CrearGimnasioUseCase } from 'src/application/gimnasios/use-cases/crear-gimnasio.use-case';
+import { CrearAdminGimnasioUseCase } from 'src/application/gimnasios/use-cases/crear-admin-gimnasio.use-case';
+import { ListarAdminsGimnasioUseCase } from 'src/application/gimnasios/use-cases/listar-admins-gimnasio.use-case';
 import { ListarGimnasiosUseCase } from 'src/application/gimnasios/use-cases/listar-gimnasios.use-case';
 import { ObtenerGimnasioUseCase } from 'src/application/gimnasios/use-cases/obtener-gimnasio.use-case';
 import { ActualizarGimnasioUseCase } from 'src/application/gimnasios/use-cases/actualizar-gimnasio.use-case';
@@ -32,6 +34,7 @@ import {
   CrearGimnasioDto,
   ActualizarGimnasioDto,
 } from 'src/domain/entities/Gimnasio/gimnasio.repository';
+import { CrearAdminGimnasioDto } from 'src/application/gimnasios/dtos/crear-admin-gimnasio.dto';
 
 @ApiTags('Gimnasios')
 @ApiBearerAuth()
@@ -41,6 +44,8 @@ import {
 export class GimnasiosController {
   constructor(
     private readonly crearGimnasioUseCase: CrearGimnasioUseCase,
+    private readonly crearAdminGimnasioUseCase: CrearAdminGimnasioUseCase,
+    private readonly listarAdminsGimnasioUseCase: ListarAdminsGimnasioUseCase,
     private readonly listarGimnasiosUseCase: ListarGimnasiosUseCase,
     private readonly obtenerGimnasioUseCase: ObtenerGimnasioUseCase,
     private readonly actualizarGimnasioUseCase: ActualizarGimnasioUseCase,
@@ -49,9 +54,21 @@ export class GimnasiosController {
   ) {}
 
   @Post()
-  @ApiOperation({ summary: 'Crear un nuevo gimnasio' })
+  @ApiOperation({ summary: 'Crear un nuevo gimnasio (con admin opcional)' })
   async crear(@Body() dto: CrearGimnasioDto) {
     const gimnasio = await this.crearGimnasioUseCase.execute(dto);
+
+    let contrasenaProvisional: string | undefined;
+
+    if (dto.admin) {
+      const resultadoAdmin = await this.crearAdminGimnasioUseCase.execute(
+        dto.admin.nombre,
+        dto.admin.email,
+        gimnasio.id,
+      );
+      contrasenaProvisional = resultadoAdmin.contrasenaProvisional;
+    }
+
     return {
       id: gimnasio.id,
       nombre: gimnasio.nombre,
@@ -60,6 +77,7 @@ export class GimnasiosController {
       email: gimnasio.email,
       activo: gimnasio.activo,
       fechaAlta: gimnasio.fechaAlta,
+      contrasenaProvisional,
     };
   }
 
@@ -137,5 +155,31 @@ export class GimnasiosController {
       body.email,
     );
     return resultado;
+  }
+
+  @Get(':id/admins')
+  @ApiOperation({ summary: 'Listar admins de un gimnasio' })
+  @ApiParam({ name: 'id', type: 'number' })
+  async listarAdmins(@Param('id', ParseIntPipe) gimnasioId: number) {
+    return this.listarAdminsGimnasioUseCase.execute(gimnasioId);
+  }
+
+  @Post(':id/admins')
+  @ApiOperation({ summary: 'Agregar un admin a un gimnasio existente' })
+  @ApiParam({ name: 'id', type: 'number' })
+  async crearAdmin(
+    @Param('id', ParseIntPipe) gimnasioId: number,
+    @Body() dto: CrearAdminGimnasioDto,
+  ) {
+    const resultado = await this.crearAdminGimnasioUseCase.execute(
+      dto.nombre,
+      dto.email,
+      gimnasioId,
+    );
+    return {
+      usuarioId: resultado.usuarioId,
+      personaId: resultado.personaId,
+      contrasenaProvisional: resultado.contrasenaProvisional,
+    };
   }
 }

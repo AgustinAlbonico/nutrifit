@@ -8,7 +8,7 @@
  * - El modal muestra la fecha de consentimiento cuando se pasa.
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -26,6 +26,10 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
 }
 
 describe('FichaSaludConsentimientoModal', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('RGPD-1: renderiza el texto RGPD en lenguaje claro', () => {
     render(
       <FichaSaludConsentimientoModal
@@ -97,5 +101,23 @@ describe('FichaSaludConsentimientoModal', () => {
     expect(
       within(dialog).getByText(/Expresaste tu consentimiento el/i),
     ).toBeInTheDocument();
+  });
+
+  it('RGPD-5: abre sin warnings de accesibilidad del Dialog', () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    render(
+      <FichaSaludConsentimientoModal
+        open
+        onClose={vi.fn()}
+        onAceptar={vi.fn()}
+      />,
+    );
+
+    expect(
+      errorSpy.mock.calls.some(([mensaje]) =>
+        String(mensaje).includes('DialogContent'),
+      ),
+    ).toBe(false);
   });
 });

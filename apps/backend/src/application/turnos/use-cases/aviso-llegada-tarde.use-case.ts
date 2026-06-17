@@ -7,6 +7,10 @@ import { BadRequestError } from 'src/domain/exceptions/custom-exceptions';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
+import {
+  combineArgentinaDateAndTime,
+  getArgentinaNow,
+} from 'src/common/utils/argentina-datetime.util';
 
 @Injectable()
 export class AvisoLlegadaTardeUseCase {
@@ -25,7 +29,10 @@ export class AvisoLlegadaTardeUseCase {
     const turno = await this.turnoRepository.findOne({
       where: {
         idTurno: turnoId,
-        socio: { idPersona: socioId, gimnasioId: this.tenantContext.gimnasioId },
+        socio: {
+          idPersona: socioId,
+          gimnasioId: this.tenantContext.gimnasioId,
+        },
       },
       relations: { socio: true, nutricionista: true },
     });
@@ -34,8 +41,22 @@ export class AvisoLlegadaTardeUseCase {
       throw new BadRequestError('Turno no encontrado o no pertenece al socio');
     }
 
-    if (turno.estadoTurno !== EstadoTurno.PROGRAMADO) {
-      throw new BadRequestError('Solo se puede avisar llegada tarde para turnos programados');
+    if (turno.estadoTurno !== EstadoTurno.CONFIRMADO) {
+      throw new BadRequestError(
+        'Solo se puede avisar llegada tarde para turnos confirmados',
+      );
+    }
+
+    const ahora = getArgentinaNow();
+    const horaTurno = combineArgentinaDateAndTime(
+      turno.fechaTurno,
+      turno.horaTurno,
+    );
+
+    if (ahora >= horaTurno) {
+      throw new BadRequestError(
+        'Ya pasó la hora del turno. No podés avisar que llegás tarde.',
+      );
     }
 
     if (turno.nutricionista?.idPersona) {

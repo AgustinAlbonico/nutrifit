@@ -1,9 +1,12 @@
 export { CreateNutricionistaUseCase } from './create-nutricionista.use-case';
 export { DeleteNutricionistaUseCase } from './delete-nutricionista.use-case';
+export { EliminarDiplomaUseCase } from './eliminar-diploma.use-case';
 export { GetPerfilProfesionalPublicoUseCase } from './get-perfil-profesional-publico.use-case';
 export { GetNutricionistaUseCase } from './get-nutricionista.use-case';
 export { GetMiPerfilNutricionistaUseCase } from './get-mi-perfil-nutricionista.use-case';
+export { ListarDiplomasUseCase } from './listar-diplomas.use-case';
 export { ListNutricionistasUseCase } from './list-nutricionistas.use-case';
 export { ListProfesionalesPublicosUseCase } from './list-profesionales-publicos.use-case';
 export { ReactivarNutricionistaUseCase } from './reactivar-nutricionista.use-case';
+export { SubirDiplomaUseCase } from './subir-diploma.use-case';
 export { UpdateNutricionistaUseCase } from './update-nutricionista.use-case';

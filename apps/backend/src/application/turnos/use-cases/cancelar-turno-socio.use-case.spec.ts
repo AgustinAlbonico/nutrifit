@@ -56,7 +56,7 @@ describe('CancelarTurnoSocioUseCase', () => {
       idTurno: 1,
       fechaTurno: new Date(Date.now() + 48 * 60 * 60 * 1000), // 48 hours from now
       horaTurno: '10:00',
-      estadoTurno: EstadoTurno.PROGRAMADO,
+      estadoTurno: EstadoTurno.CONFIRMADO,
       checkInAt: null,
       consultaIniciadaAt: null,
       consultaFinalizadaAt: null,
@@ -176,7 +176,7 @@ describe('CancelarTurnoSocioUseCase', () => {
       await expect(useCase.execute(100, 1)).rejects.toThrow(ForbiddenError);
     });
 
-    it('debe lanzar BadRequestError cuando el turno no esta en estado PROGRAMADO', async () => {
+    it('debe lanzar BadRequestError cuando el turno no esta en estado CONFIRMADO', async () => {
       // Arrange
       usuarioRepository.findOne.mockResolvedValue(mockUsuario);
       socioRepository.findOne.mockResolvedValue(mockSocio);

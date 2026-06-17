@@ -5,4 +5,5 @@ export interface LoginResponse {
   token: string;
   rol: Rol;
   acciones: string[];
+  debeCambiarPassword: boolean;
 }

@@ -46,7 +46,7 @@ export class GetTurnosKpiUseCase {
       total += Number(row.cantidad);
     }
 
-    const programados = counts[EstadoTurno.PROGRAMADO] || 0;
+    const programados = counts[EstadoTurno.CONFIRMADO] || 0;
     const presentes = counts[EstadoTurno.PRESENTE] || 0;
     const ausentes = counts[EstadoTurno.AUSENTE] || 0;
     const cancelados = counts[EstadoTurno.CANCELADO] || 0;

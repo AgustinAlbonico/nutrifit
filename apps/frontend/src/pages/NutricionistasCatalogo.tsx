@@ -56,6 +56,7 @@ interface NutricionistaCard {
   fotoUrl: string | null;
   presentacion: string | null;
   duracionTurnoMin: number;
+  agendaConfigurada: boolean;
   slotsProximos7Dias: number;
 }
 
@@ -370,7 +371,7 @@ function NutricionistaCardItem({ nutri }: { nutri: NutricionistaCard }) {
             <Award className="h-3 w-3" />
             {nutri.aniosExperiencia} años
           </Badge>
-          {nutri.slotsProximos7Dias > 0 && (
+          {nutri.agendaConfigurada && nutri.slotsProximos7Dias > 0 && (
             <Badge
               variant="default"
               className="gap-1 bg-emerald-600 hover:bg-emerald-700"
@@ -401,15 +402,22 @@ function NutricionistaCardItem({ nutri }: { nutri: NutricionistaCard }) {
               Ver perfil
             </Link>
           </Button>
-          <Button asChild size="sm" className="flex-1">
-            <Link
-              to="/turnos/agendar"
-              search={{ nutricionistaId: nutri.idPersona }}
-            >
+          {nutri.agendaConfigurada ? (
+            <Button asChild size="sm" className="flex-1">
+              <Link
+                to="/turnos/agendar"
+                search={{ nutricionistaId: nutri.idPersona }}
+              >
+                <Calendar className="h-4 w-4" />
+                Reservar
+              </Link>
+            </Button>
+          ) : (
+            <Button size="sm" className="flex-1" disabled>
               <Calendar className="h-4 w-4" />
-              Reservar
-            </Link>
-          </Button>
+              Sin agenda
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

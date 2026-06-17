@@ -37,13 +37,22 @@ export function PlanAlimenticioCard() {
   const { data: response, isLoading } = useQuery({
     queryKey: ['plan-activo', personaId, token],
     queryFn: async () => {
-      const resp = await apiRequest<ApiResponse<PlanActivo | null>>(
-        `/planes-alimentacion/socio/${personaId}/activo`,
-        { token }
-      );
-      return resp;
+      try {
+        const resp = await apiRequest<ApiResponse<PlanActivo | null>>(
+          `/planes-alimentacion/socio/${personaId}/activo`,
+          { token }
+        );
+        return resp;
+      } catch (error) {
+        const errorConStatus = error as Error & { status?: number };
+        if (errorConStatus.status === 404) {
+          return { data: null } as ApiResponse<PlanActivo | null>;
+        }
+        throw error;
+      }
     },
     enabled: !!token && !!personaId,
+    retry: false,
   });
 
   const plan = response?.data;

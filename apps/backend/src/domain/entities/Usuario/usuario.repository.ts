@@ -24,4 +24,8 @@ export abstract class UsuarioRepository implements BaseRepository<UsuarioEntity>
     gimnasioId: number,
   ): Promise<UsuarioEntity | null>;
   abstract findByPersonaId(personaId: number): Promise<UsuarioEntity | null>;
+  abstract findAllByRolAndGimnasioId(
+    rol: UsuarioEntity['rol'],
+    gimnasioId: number,
+  ): Promise<UsuarioEntity[]>;
 }

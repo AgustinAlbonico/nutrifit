@@ -23,22 +23,21 @@ import {
   AvatarFallback,
 } from '@/components/ui/avatar';
 import { CalendarioEmbed } from '@/components/catalogo/CalendarioEmbed';
+import { GaleriaDiplomas } from '@/components/diplomas/GaleriaDiplomas';
 import type { SlotDisponible } from '@/components/catalogo/CalendarioEmbed';
 import type { ApiResponse } from '@/types/api';
-
-
+import type {
+  CertificacionDto,
+  DiplomaDto,
+  FormacionAcademicaDto,
+  NivelFormacion,
+} from '@/types/nutricionista';
 
 interface HorarioProfesional {
   dia: string;
   horaInicio: string;
   horaFin: string;
   duracionTurno: number;
-}
-
-interface FormacionProfesional {
-  titulo: string;
-  institucion: string;
-  anio: number;
 }
 
 interface PerfilNutricionista {
@@ -52,11 +51,12 @@ interface PerfilNutricionista {
   tarifaSesion: number;
   matricula: string;
   presentacion: string | null;
-  certificaciones: string | null;
+  certificaciones: CertificacionDto[];
   fotoUrl: string | null;
-  diplomaUrl: string | null;
+  diplomas: DiplomaDto[];
   duracionTurnoMin: number;
-  formacionAcademica: FormacionProfesional[];
+  agendaConfigurada: boolean;
+  formacionAcademica: FormacionAcademicaDto[];
   horarios: HorarioProfesional[];
 }
 
@@ -99,6 +99,30 @@ function formatearTarifa(tarifa: number): { texto: string; esGratis: boolean } {
   };
 }
 
+function formatearNivelFormacion(nivel: NivelFormacion | null): string {
+  if (!nivel) return 'Sin nivel';
+
+  const etiquetas: Record<NivelFormacion, string> = {
+    GRADO: 'Grado',
+    POSGRADO: 'Posgrado',
+    MAESTRIA: 'Maestría',
+    DOCTORADO: 'Doctorado',
+    ESPECIALIZACION: 'Especialización',
+    DIPLOMATURA: 'Diplomatura',
+    CURSO: 'Curso',
+  };
+
+  return etiquetas[nivel];
+}
+
+function formatearPeriodoFormacion(formacion: FormacionAcademicaDto): string {
+  if (formacion.enCurso || formacion.anioFin === null) {
+    return `${formacion.anioInicio} - En curso`;
+  }
+
+  return `${formacion.anioInicio} - ${formacion.anioFin}`;
+}
+
 export function PerfilNutricionista() {
   const { token, rol } = useAuth();
   const params = useParams({ strict: false }) as { id?: string };
@@ -107,6 +131,7 @@ export function PerfilNutricionista() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [perfil, setPerfil] = useState<PerfilNutricionista | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (!token || !id) {
@@ -255,19 +280,26 @@ export function PerfilNutricionista() {
 
             {/* Sticky button "Reservar turno" */}
             <div className="lg:sticky lg:top-4 lg:self-start">
-              <Button
-                asChild
-                size="lg"
-                className="w-full lg:w-auto"
-              >
-                <Link
-                  to="/turnos/agendar"
-                  search={{ nutricionistaId: perfil.idPersona }}
+              {perfil.agendaConfigurada ? (
+                <Button
+                  asChild
+                  size="lg"
+                  className="w-full lg:w-auto"
                 >
+                  <Link
+                    to="/turnos/agendar"
+                    search={{ nutricionistaId: perfil.idPersona }}
+                  >
+                    <Calendar className="h-5 w-5" />
+                    Reservar turno
+                  </Link>
+                </Button>
+              ) : (
+                <Button size="lg" className="w-full lg:w-auto" disabled>
                   <Calendar className="h-5 w-5" />
-                  Reservar turno
-                </Link>
-              </Button>
+                  Sin agenda
+                </Button>
+              )}
             </div>
           </div>
 
@@ -285,7 +317,7 @@ export function PerfilNutricionista() {
             </Card>
           )}
 
-          {/* Matrícula profesional con diploma */}
+          {/* Matrícula profesional con diplomas */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
@@ -293,30 +325,62 @@ export function PerfilNutricionista() {
                 Matrícula profesional
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-4">
               <div>
                 <p className="text-xs font-medium uppercase text-muted-foreground">
                   Número de matrícula
                 </p>
                 <p className="text-sm font-medium">{perfil.matricula}</p>
               </div>
-              <div>
+              <div className="space-y-2">
                 <p className="text-xs font-medium uppercase text-muted-foreground">
-                  Diploma / Certificado
+                  Diplomas y certificados
                 </p>
-                {perfil.diplomaUrl ? (
-                  <a
-                    href={perfil.diplomaUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    data-testid="ver-diploma"
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-primary underline-offset-4 hover:underline"
+                {perfil.diplomas && perfil.diplomas.length > 0 ? (
+                  <div
+                    className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+                    data-testid="galeria-diplomas-socio"
                   >
-                    Ver documento
-                  </a>
+                    {perfil.diplomas.map((d, index) => {
+                      const extensionEsImagen = d.nombreOriginal
+                        ? /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(
+                            d.nombreOriginal,
+                          )
+                        : false;
+                      const esImagen =
+                        d.mimeType?.startsWith('image/') ?? extensionEsImagen;
+                      return (
+                        <button
+                          key={d.idDiploma}
+                          type="button"
+                          onClick={() => setLightboxIndex(index)}
+                          className="group relative cursor-pointer overflow-hidden rounded-lg border bg-card text-left transition hover:border-orange-500/50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                          data-testid="diploma-card-socio"
+                        >
+                          <div className="flex aspect-[4/3] items-center justify-center bg-muted/30">
+                            {esImagen ? (
+                              <img
+                                src={obtenerUrlFoto(d.url) ?? ''}
+                                alt={d.nombreOriginal ?? 'Diploma'}
+                                className="h-full w-full object-contain p-2 transition group-hover:scale-105"
+                              />
+                            ) : (
+                              <div className="flex flex-col items-center gap-2 text-muted-foreground transition group-hover:scale-105">
+                                <FileText className="h-12 w-12" />
+                                <span className="text-xs">PDF</span>
+                              </div>
+                            )}
+                          </div>
+                          <p className="truncate p-2 text-xs text-muted-foreground">
+                            {d.nombreOriginal ?? `Diploma #${d.idDiploma}`}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    El profesional aún no cargó su diploma.
+                    El profesional aún no cargó sus diplomas.
                   </p>
                 )}
               </div>
@@ -324,15 +388,41 @@ export function PerfilNutricionista() {
           </Card>
 
           {/* Certificaciones */}
-          {perfil.certificaciones && (
+          {perfil.certificaciones.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Certificaciones</CardTitle>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Award className="h-5 w-5 text-orange-500" />
+                  Certificaciones
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="whitespace-pre-line text-sm text-muted-foreground">
-                  {perfil.certificaciones}
-                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {perfil.certificaciones.map((certificacion, idx) => (
+                    <div
+                      key={`${certificacion.idCertificacion ?? idx}-${certificacion.nombre}`}
+                      className="rounded-md border p-3"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <p className="font-medium">{certificacion.nombre}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {certificacion.entidad}
+                          </p>
+                        </div>
+                        {certificacion.nivel && (
+                          <Badge variant="outline">{formatearNivelFormacion(certificacion.nivel)}</Badge>
+                        )}
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                        {certificacion.anio && <span>Año {certificacion.anio}</span>}
+                        {certificacion.cargaHoraria && (
+                          <span>{certificacion.cargaHoraria} hs</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           )}
@@ -350,12 +440,22 @@ export function PerfilNutricionista() {
                 <div className="grid gap-3 sm:grid-cols-2">
                   {perfil.formacionAcademica.map((formacion, idx) => (
                     <div
-                      key={`${formacion.titulo}-${idx}`}
+                      key={`${formacion.idFormacionAcademica ?? idx}-${formacion.titulo}`}
                       className="rounded-md border p-3"
                     >
-                      <p className="font-medium">{formacion.titulo}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formacion.institucion} · {formacion.anio}
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <p className="font-medium">{formacion.titulo}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formacion.institucion}
+                          </p>
+                        </div>
+                        <Badge variant={formacion.enCurso ? 'default' : 'outline'}>
+                          {formatearNivelFormacion(formacion.nivel)}
+                        </Badge>
+                      </div>
+                      <p className="mt-3 text-xs text-muted-foreground">
+                        {formatearPeriodoFormacion(formacion)}
                       </p>
                     </div>
                   ))}
@@ -404,14 +504,39 @@ export function PerfilNutricionista() {
             </Card>
           )}
 
-          {/* Calendario embebido para reservar slots */}
-          <CalendarioEmbed
-            nutricionistaId={perfil.idPersona}
-            duracionMin={perfil.duracionTurnoMin}
-            onSeleccionarSlot={handleSlotSelect}
-          />
+          {perfil.agendaConfigurada ? (
+            <CalendarioEmbed
+              nutricionistaId={perfil.idPersona}
+              duracionMin={perfil.duracionTurnoMin}
+              onSeleccionarSlot={handleSlotSelect}
+            />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Calendar className="h-5 w-5 text-orange-500" />
+                  Disponibilidad
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Este profesional todavía no configuró su agenda horaria.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
       ) : null}
+
+      {lightboxIndex !== null &&
+        perfil &&
+        perfil.diplomas[lightboxIndex] && (
+          <GaleriaDiplomas
+            diplomas={perfil.diplomas}
+            indiceInicial={lightboxIndex}
+            onCerrar={() => setLightboxIndex(null)}
+          />
+        )}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import type { EstadoTurno } from '@nutrifit/shared';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import type { ApiResponse } from '@/types/api';
 import { toast } from 'sonner';
+import { BloqueoRangoModal } from '@/components/agenda/BloqueoRangoModal';
 import { format } from 'date-fns';
 import { 
   CalendarDays, 
@@ -61,19 +62,25 @@ interface AgendaFormItem {
   dia: DiaSemanaOption;
   horaInicio: string;
   horaFin: string;
-  duracionTurno: number;
 }
 
 interface ConfigureAgendaPayload {
+  duracionTurno: number;
   agendas: Array<{
     dia: DiaSemanaOption;
     horaInicio: string;
     horaFin: string;
-    duracionTurno: number;
   }>;
 }
 
 // Tipos para gestión de excepciones (Bloqueos)
+interface ExcepcionDisponibilidad {
+  idExcepcion: number;
+  fechaInicio: string;
+  fechaFin: string;
+  motivo: string | null;
+}
+
 interface AgendaSlot {
   horaInicio: string;
   horaFin: string;
@@ -93,7 +100,6 @@ const createEmptyAgendaFormItem = (): AgendaFormItem => ({
   dia: 'Lunes',
   horaInicio: '09:00',
   horaFin: '13:00',
-  duracionTurno: 30,
 });
 
 const mapAgendaToForm = (items: AgendaItem[]): AgendaFormItem[] => {
@@ -106,7 +112,6 @@ const mapAgendaToForm = (items: AgendaItem[]): AgendaFormItem[] => {
     dia: item.dia as DiaSemanaOption,
     horaInicio: item.horaInicio.slice(0, 5),
     horaFin: item.horaFin.slice(0, 5),
-    duracionTurno: item.duracionTurno,
   }));
 };
 
@@ -123,6 +128,7 @@ export function Agenda() {
   const [agendaForm, setAgendaForm] = useState<AgendaFormItem[]>([
     createEmptyAgendaFormItem(),
   ]);
+  const [duracionTurnoGlobal, setDuracionTurnoGlobal] = useState(30);
   const [cargandoConfig, setCargandoConfig] = useState(true);
   const [guardandoAgenda, setGuardandoAgenda] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -132,6 +138,11 @@ export function Agenda() {
   const [slotsExcepcion, setSlotsExcepcion] = useState<AgendaSlot[]>([]);
   const [cargandoExcepciones, setCargandoExcepciones] = useState(false);
   const [procesandoExcepcion, setProcesandoExcepcion] = useState<string | null>(null);
+
+  // State for Range Exceptions
+  const [excepcionesRango, setExcepcionesRango] = useState<ExcepcionDisponibilidad[]>([]);
+  const [cargandoExcepcionesRango, setCargandoExcepcionesRango] = useState(false);
+  const [modalBloqueoRangoOpen, setModalBloqueoRangoOpen] = useState(false);
 
   // --- Logic for Configuration Tab ---
   const cargarAgendaConfig = useCallback(async () => {
@@ -151,6 +162,7 @@ export function Agenda() {
 
       const agendaData = agendaResponse.data ?? [];
       setAgenda(agendaData);
+      setDuracionTurnoGlobal(agendaData[0]?.duracionTurno ?? 30);
       setAgendaForm(mapAgendaToForm(agendaData));
     } catch (requestError) {
       const message =
@@ -194,19 +206,26 @@ export function Agenda() {
     event.preventDefault();
     if (!token || !personaId || rol !== 'NUTRICIONISTA') return;
 
+    if (!Number.isFinite(duracionTurnoGlobal) || duracionTurnoGlobal < 5) {
+      toast.error('La duracion minima del turno es 5 minutos.');
+      return;
+    }
+
     for (const bloque of agendaForm) {
       if (!bloque.horaInicio || !bloque.horaFin) {
         toast.error('Completa hora de inicio y hora de fin en todos los bloques.');
-        return;
-      }
-      if (bloque.duracionTurno < 5) {
-        toast.error('La duracion minima del turno es 5 minutos.');
         return;
       }
       const inicio = minutesFromHour(bloque.horaInicio);
       const fin = minutesFromHour(bloque.horaFin);
       if (fin <= inicio) {
         toast.error('La hora de fin debe ser mayor a la hora de inicio.');
+        return;
+      }
+      if (fin - inicio < duracionTurnoGlobal) {
+        toast.error(
+          `Con esta duración, el rango del día ${bloque.dia} no genera slots completos.`,
+        );
         return;
       }
     }
@@ -235,11 +254,11 @@ export function Agenda() {
     }
 
     const payload: ConfigureAgendaPayload = {
+      duracionTurno: duracionTurnoGlobal,
       agendas: agendaForm.map((item) => ({
         dia: item.dia,
         horaInicio: item.horaInicio.slice(0, 5),
         horaFin: item.horaFin.slice(0, 5),
-        duracionTurno: item.duracionTurno,
       })),
     };
 
@@ -284,6 +303,27 @@ export function Agenda() {
   useEffect(() => {
     void cargarExcepciones();
   }, [cargarExcepciones]);
+
+  // --- Logic for Range Exceptions ---
+  const cargarExcepcionesRango = useCallback(async () => {
+    if (!token || !personaId || rol !== 'NUTRICIONISTA') return;
+    try {
+      setCargandoExcepcionesRango(true);
+      const response = await apiRequest<ApiResponse<ExcepcionDisponibilidad[]>>(
+        `/agenda/${personaId}/excepciones-disponibilidad`,
+        { token },
+      );
+      setExcepcionesRango(response.data ?? []);
+    } catch {
+      setExcepcionesRango([]);
+    } finally {
+      setCargandoExcepcionesRango(false);
+    }
+  }, [token, personaId, rol]);
+
+  useEffect(() => {
+    void cargarExcepcionesRango();
+  }, [cargarExcepcionesRango]);
 
   const bloquearTurno = async (hora: string) => {
     if (!token || !personaId || !fechaExcepcion) return;
@@ -438,6 +478,28 @@ export function Agenda() {
                   </div>
                 ) : (
                   <form onSubmit={guardarConfiguracionAgenda} className="space-y-6">
+                    <div className="rounded-xl border bg-orange-50/50 p-5 shadow-sm">
+                      <div className="max-w-xs space-y-2">
+                        <Label htmlFor="agenda-duracion-global" className="text-xs font-bold uppercase text-muted-foreground">
+                          Duración global del turno (min)
+                        </Label>
+                        <Input
+                          id="agenda-duracion-global"
+                          type="number"
+                          min={5}
+                          step={5}
+                          className="bg-background focus-visible:ring-orange-500 transition-all shadow-sm"
+                          value={duracionTurnoGlobal}
+                          onChange={(e) => setDuracionTurnoGlobal(Number(e.target.value) || 0)}
+                          disabled={guardandoAgenda}
+                          required
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Esta duración se aplica a todos los bloques configurados.
+                        </p>
+                      </div>
+                    </div>
+
                     <div className="space-y-4">
                       {agendaForm.map((bloque) => (
                         <div key={bloque.id} className="relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm transition-all hover:shadow-md group">
@@ -491,21 +553,6 @@ export function Agenda() {
                                     required
                                   />
                               </div>
-                            </div>
-
-                            <div className="flex-1 space-y-2">
-                              <Label htmlFor={`agenda-duracion-${bloque.id}`} className="text-xs font-bold uppercase text-muted-foreground">Duración (min)</Label>
-                              <Input
-                                id={`agenda-duracion-${bloque.id}`}
-                                type="number"
-                                min={5}
-                                step={5}
-                                className="focus-visible:ring-orange-500 transition-all shadow-sm"
-                                value={bloque.duracionTurno}
-                                onChange={(e) => actualizarBloqueAgenda(bloque.id, 'duracionTurno', Number(e.target.value) || 0)}
-                                disabled={guardandoAgenda}
-                                required
-                              />
                             </div>
 
                             <Button
@@ -602,7 +649,7 @@ export function Agenda() {
                          </div>
                          <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
                             <RefreshCw className="h-4 w-4 text-orange-500/70" />
-                            <span>Duración: <span className="font-medium">{item.duracionTurno} min</span></span>
+                             <span>Duración: <span className="font-medium">{duracionTurnoGlobal} min</span></span>
                          </div>
                       </div>
                     </div>
@@ -615,6 +662,62 @@ export function Agenda() {
 
         <TabsContent value="excepciones" className="focus-visible:outline-none focus-visible:ring-0">
           <div className="space-y-8">
+            {/* Seccion: Bloqueo por Rango */}
+            <div className="rounded-2xl border border-border/50 bg-gradient-to-br from-violet-50/40 to-muted/10 p-6 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-600 shadow-inner">
+                    <CalendarRange className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg tracking-tight">Bloqueo por Rango</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Bloqueá tu disponibilidad por un período continuo (vacaciones, licencia, etc.)
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => setModalBloqueoRangoOpen(true)}
+                  className="bg-gradient-to-r from-violet-500 to-purple-500 text-white hover:from-violet-600 hover:to-purple-600 shadow-md shrink-0"
+                >
+                  <CalendarRange className="mr-2 h-4 w-4" />
+                  Nuevo Bloqueo por Rango
+                </Button>
+              </div>
+
+              {cargandoExcepcionesRango ? (
+                <div className="flex items-center justify-center py-6 mt-4 text-muted-foreground rounded-xl border border-dashed">
+                  <Loader2 className="h-5 w-5 animate-spin mr-2 text-violet-500" />
+                  <span className="text-sm">Cargando bloqueos vigentes...</span>
+                </div>
+              ) : excepcionesRango.length === 0 ? (
+                <div className="mt-4 flex items-center justify-center rounded-xl border border-dashed bg-muted/10 py-6 text-center text-sm text-muted-foreground">
+                  No tenés bloqueos por rango activos.
+                </div>
+              ) : (
+                <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {excepcionesRango.map((exc) => (
+                    <div
+                      key={exc.idExcepcion}
+                      className="group relative overflow-hidden rounded-xl border bg-white p-4 shadow-sm transition-all hover:shadow-md"
+                    >
+                      <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-violet-400 to-purple-400" />
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold uppercase text-muted-foreground tracking-wider">
+                          {exc.fechaInicio.slice(0, 10)} → {exc.fechaFin.slice(0, 10)}
+                        </span>
+                      </div>
+                      {exc.motivo ? (
+                        <p className="text-sm font-medium text-foreground">{exc.motivo}</p>
+                      ) : (
+                        <p className="text-xs italic text-muted-foreground">Sin motivo</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="flex flex-col items-center justify-center rounded-2xl border bg-gradient-to-b from-muted/30 to-muted/10 p-10 shadow-sm text-center max-w-3xl mx-auto">
               <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-rose-100 text-rose-600 shadow-inner">
                 <CalendarRange className="h-8 w-8" />
@@ -754,6 +857,14 @@ export function Agenda() {
           </div>
         </TabsContent>
       </Tabs>
+
+      <BloqueoRangoModal
+        isOpen={modalBloqueoRangoOpen}
+        onClose={() => setModalBloqueoRangoOpen(false)}
+        onSuccess={() => void cargarExcepcionesRango()}
+        personaId={personaId}
+        token={token ?? ''}
+      />
     </div>
   );
 }

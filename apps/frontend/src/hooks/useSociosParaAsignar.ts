@@ -10,10 +10,9 @@ import { useDebounce } from '@/hooks/useDebounce';
  * Hook que busca socios por nombre / apellido / DNI / email para
  * asignarles un turno.
  *
- * Wrapper sobre `GET /socio/buscar-con-ficha?q=...` (mismo endpoint
- * que usa `AsignarTurnoModal`). El query solo se dispara con
- * busquedas de >= 2 caracteres y respeta un debounce de 300ms para
- * evitar requests en cada keystroke.
+ * Wrapper sobre `GET /socio/buscar-con-ficha?q=...`.
+ * El query solo se dispara con busquedas de >= 2 caracteres y
+ * respeta un debounce de 300ms para evitar requests en cada keystroke.
  *
  * Devuelve `data: []` cuando la busqueda es muy corta, para que
  * los consumidores no tengan que filtrar manualmente.

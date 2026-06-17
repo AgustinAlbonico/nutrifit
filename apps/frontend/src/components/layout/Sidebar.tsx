@@ -125,6 +125,12 @@ export function Sidebar() {
       roles: ['NUTRICIONISTA'],
     },
     {
+      to: '/profesional/mi-perfil',
+      label: 'Mi Perfil',
+      icon: UserCog,
+      roles: ['NUTRICIONISTA'],
+    },
+    {
       to: '/turnos',
       label: 'Mis Turnos',
       icon: Calendar,

@@ -2,6 +2,18 @@ import { Inject, Injectable } from '@nestjs/common';
 import { TipoRecordatorio } from 'src/infrastructure/persistence/typeorm/entities/recordatorio-enviado.entity';
 import { CreadoPor } from 'src/domain/entities/Turno/creado-por.enum';
 import { IEmailProvider } from './contracts/email-provider.interface';
+import {
+  recordatorioTemplate,
+  type RecordatorioTemplateData,
+} from './templates/recordatorio.template';
+import {
+  nuevoTurnoNutriTemplate,
+  type NuevoTurnoNutriTemplateData,
+} from './templates/nuevo-turno-nutri.template';
+import {
+  bienvenidaTemplate,
+  type BienvenidaTemplateData,
+} from './templates/bienvenida.template';
 
 export const EMAIL_PROVIDER = 'EMAIL_PROVIDER';
 
@@ -16,23 +28,6 @@ interface TurnoEmailData {
   gimnasioId?: number;
 }
 
-/**
- * Datos para notificar al nutricionista que un tercero (recepcion,
- * admin, o el mismo nutri desde el nuevo endpoint POST /turnos/crear)
- * agendo un turno en su agenda.
- *
- * El `nombreNutricionista` es el del profesional destinatario; el
- * `nombreSocio` y `dniSocio` permiten identificar al paciente. El
- * `creadoPor` se incluye en el cuerpo del email para que el nutri
- * sepa quien origino la reserva (recepcion/admin/el mismo).
- *
- * Tipamos `creadoPor` con el enum `CreadoPor` completo (4 valores
- * posibles) aunque en la practica solo llegan 3 desde el nuevo
- * use-case (`RECEPCION`/`ADMIN`/`NUTRICIONISTA`); asi mantenemos
- * el shape consistente con el resto del codigo y permitimos que
- * un futuro emisor del tipo `SOCIO` (auto-reserva) reuso este
- * metodo sin tocar el contrato.
- */
 export interface NotificacionTurnoParaNutriData {
   email: string;
   nombreNutricionista: string;
@@ -59,68 +54,58 @@ export class EmailService {
       tipo === TipoRecordatorio.REMINDER_24H
         ? 'Recordatorio de turno (24h)'
         : 'Recordatorio de turno (48h)';
-    const html = `<p>Hola ${turno.nombreSocio}, recordatorio de tu turno con ${turno.nombreProfesional} el ${turno.fecha} a las ${turno.hora}.</p><p><a href="${turno.enlaceConfirmacion}">Confirmar</a> | <a href="${turno.enlaceCancelacion}">Cancelar</a></p>`;
+    const data: RecordatorioTemplateData = {
+      nombreSocio: turno.nombreSocio,
+      nombreProfesional: turno.nombreProfesional,
+      fecha: turno.fecha,
+      hora: turno.hora,
+      enlaceConfirmacion: turno.enlaceConfirmacion,
+      enlaceCancelacion: turno.enlaceCancelacion,
+    };
     await this.emailProvider.enviar({
       to: turno.email,
       subject: asunto,
-      html,
+      html: recordatorioTemplate(data),
       gimnasioId: turno.gimnasioId,
     });
   }
 
-  /**
-   * Envia una notificacion por email al nutricionista cuando un
-   * tercero agenda un turno en su agenda.
-   *
-   * Implementa el spec literal `crear-turno-en-nombre-del-socio-endpoint.md`
-   * seccion `Eventos` (subseccion `Emails Disparados`, punto 2:
-   * "Nutricionista: Recibe notificacion del nuevo turno agendado en
-   * su agenda."). La design §11.G decia "no notificar al nutri" como
-   * desviacion justificada por consistencia con `AsignarTurnoManual`;
-   * el orquestador sobreescribio esa decision a favor del spec
-   * literal y por eso este metodo existe.
-   *
-   * Best-effort: si el provider falla, el error se propaga al caller
-   * (no se traga) para que el use-case decida que hacer (en PR-2 se
-   * loguea y se continua con la operacion, para no abortar la
-   * creacion del turno por un fallo de email).
-   */
+  async enviarBienvenida(data: BienvenidaTemplateData): Promise<void> {
+    await this.emailProvider.enviar({
+      to: data.email,
+      subject: 'Bienvenido a NutriFit Supervisor',
+      html: bienvenidaTemplate({
+        ...data,
+        loginUrl: this.construirUrlFrontend('/login'),
+      }),
+    });
+  }
+
   async enviarNotificacionTurnoParaNutri(
     data: NotificacionTurnoParaNutriData,
   ): Promise<void> {
-    const lugar = this.mapearCreadoPorALugar(data.creadoPor);
-    const subject = `Nuevo turno agendado en tu agenda (${lugar})`;
-    const html = `
-      <p>Hola ${data.nombreNutricionista},</p>
-      <p>Se agendo un nuevo turno en tu agenda:</p>
-      <ul>
-        <li><strong>Paciente:</strong> ${data.nombreSocio}${data.dniSocio ? ` (DNI ${data.dniSocio})` : ''}</li>
-        <li><strong>Fecha:</strong> ${data.fecha}</li>
-        <li><strong>Hora:</strong> ${data.hora}</li>
-        <li><strong>Agendado por:</strong> ${lugar}</li>
-      </ul>
-      <p>Podes ver el detalle en tu agenda del gimnasio.</p>
-    `.trim();
+    const subject = 'Nuevo turno agendado en tu agenda';
+    const templateData: NuevoTurnoNutriTemplateData = {
+      nombreNutricionista: data.nombreNutricionista,
+      nombreSocio: data.nombreSocio,
+      dniSocio: data.dniSocio,
+      fecha: data.fecha,
+      hora: data.hora,
+      creadoPor: data.creadoPor,
+      agendaUrl: this.construirUrlFrontend('/agenda'),
+    };
     await this.emailProvider.enviar({
       to: data.email,
       subject,
-      html,
+      html: nuevoTurnoNutriTemplate(templateData),
       gimnasioId: data.gimnasioId,
     });
   }
 
-  private mapearCreadoPorALugar(creadoPor: CreadoPor): string {
-    switch (creadoPor) {
-      case CreadoPor.RECEPCION:
-        return 'recepcion';
-      case CreadoPor.ADMIN:
-        return 'administracion';
-      case CreadoPor.NUTRICIONISTA:
-        return 'el mismo profesional';
-      case CreadoPor.SOCIO:
-        return 'el socio';
-      default:
-        return 'staff del gimnasio';
-    }
+  private construirUrlFrontend(path: string): string {
+    const baseUrl = process.env.FRONTEND_URL?.trim() || 'http://localhost:5173';
+    const normalizedBaseUrl = baseUrl.replace(/\/+$/, '');
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    return `${normalizedBaseUrl}${normalizedPath}`;
   }
 }
