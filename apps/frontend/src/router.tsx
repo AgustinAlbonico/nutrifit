@@ -28,6 +28,7 @@ import { PlanEditorPage } from '@/pages/PlanEditorPage';
 import { MiPlanPage } from '@/pages/MiPlanPage';
 import { ProgresoSocioPage } from '@/pages/ProgresoSocioPage';
 import { ProgresoPacientePage } from '@/pages/ProgresoPacientePage';
+import { FichaPacientePage } from '@/pages/FichaPacientePage';
 import { PacientesPage } from '@/pages/PacientesPage';
 import { GestionPlanesPage } from '@/pages/GestionPlanesPage';
 import { GestionAlimentosPage } from '@/pages/GestionAlimentosPage';
@@ -288,6 +289,12 @@ const progresoPacienteRoute = createRoute({
   component: ProgresoPacientePage,
 });
 
+const fichaPacienteRoute = createRoute({
+  getParentRoute: () => authLayoutRoute,
+  path: '/profesional/paciente/$socioId/ficha',
+  component: FichaPacientePage,
+});
+
 // Pacientes del nutricionista
 const pacientesRoute = createRoute({
   getParentRoute: () => authLayoutRoute,
@@ -411,6 +418,7 @@ const routeTree = rootRoute.addChildren([
     planEditorRoute,
     miProgresoRoute,
     progresoPacienteRoute,
+    fichaPacienteRoute,
     pacientesRoute,
     planesRoute,
     alimentosRoute,

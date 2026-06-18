@@ -120,6 +120,7 @@ export type TipoFoto = 'frente' | 'perfil' | 'espalda' | 'otro';
 export interface FotoProgreso {
   idFoto: number;
   socioId: number;
+  turnoId: number | null;
   tipoFoto: TipoFoto;
   objectKey: string;
   mimeType: string;
@@ -133,8 +134,17 @@ export interface FotosPorTipo {
   fotos: FotoProgreso[];
 }
 
+export interface FotosSesion {
+  turnoId: number | null;
+  fechaTurno: string | null;
+  horaTurno: string | null;
+  fotos: FotosPorTipo[];
+}
+
 export interface GaleriaFotos {
   fotos: FotosPorTipo[];
+  sesiones?: FotosSesion[];
+  fotosHistoricasSinSesion?: FotosPorTipo[];
 }
 
 // Tipos para objetivos

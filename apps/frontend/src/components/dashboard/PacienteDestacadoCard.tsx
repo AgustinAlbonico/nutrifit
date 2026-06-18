@@ -34,6 +34,9 @@ interface Medicion {
   imc?: number;
 }
 
+interface HistorialMedicionesPaciente {
+  mediciones: Medicion[];
+}
 
 
 export function PacienteDestacadoCard() {
@@ -57,11 +60,11 @@ export function PacienteDestacadoCard() {
   const { data: progreso, isLoading: cargandoProgreso } = useQuery({
     queryKey: ['progreso-paciente', pacienteSeleccionado, personaId, token],
     queryFn: async () => {
-      const response = await apiRequest<ApiResponse<Medicion[]>>(
+      const response = await apiRequest<ApiResponse<HistorialMedicionesPaciente>>(
         `/turnos/profesional/${personaId}/pacientes/${pacienteSeleccionado}/historial-mediciones`,
         { token },
       );
-      return response.data ?? [];
+      return response.data?.mediciones ?? [];
     },
     enabled: !!pacienteSeleccionado && !!token && !!personaId,
   });
@@ -130,7 +133,11 @@ export function PacienteDestacadoCard() {
                         border: '1px solid #e5e7eb',
                         borderRadius: '8px',
                       }}
-                      formatter={(valor: number | undefined) => valor !== undefined ? [`${valor} kg`, 'Peso'] : ['', 'Peso']}
+                      formatter={(valor) =>
+                        typeof valor === 'number'
+                          ? [`${valor} kg`, 'Peso']
+                          : ['', 'Peso']
+                      }
                     />
                     <Line
                       type="monotone"

@@ -14,6 +14,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 import React from 'react';
@@ -193,6 +194,34 @@ const handlerAdjuntosTurnoCerrado = http.get('/turnos/2/adjuntos', () => {
   });
 });
 
+const handlerFotosProgresoVacias = http.get('/progreso/:socioId/fotos', () => {
+  return HttpResponse.json({
+    success: true,
+    message: 'Fotos encontradas',
+    data: {
+      fotos: [],
+      sesiones: [],
+      fotosHistoricasSinSesion: [],
+    },
+    timestamp: '2026-05-02T09:00:00Z',
+  });
+});
+
+const handlerHistorialMedicionesVacio = http.get('/turnos/profesional/:nutricionistaId/pacientes/:socioId/historial-mediciones', () => {
+  return HttpResponse.json({
+    success: true,
+    message: 'Historial encontrado',
+    data: {
+      socioId: 10,
+      nombreSocio: 'Juan',
+      apellidoSocio: 'Pérez',
+      altura: 175,
+      mediciones: [],
+    },
+    timestamp: '2026-05-02T09:00:00Z',
+  });
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers de render
 // ─────────────────────────────────────────────────────────────────────────────
@@ -212,6 +241,17 @@ function configurarTurnoId(turnoId: string) {
   routerConfig.turnoId = turnoId;
 }
 
+async function esperarConsultaCargada() {
+  await waitFor(() => {
+    expect(screen.queryByText('Cargando datos de la consulta...')).not.toBeInTheDocument();
+  }, { timeout: 5000 });
+}
+
+async function abrirEtapa(nombre: RegExp) {
+  const user = userEvent.setup();
+  await user.click(screen.getByRole('tab', { name: nombre }));
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // TESTS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -224,7 +264,12 @@ describe('ConsultaProfesionalPage - Post-Cierre UI Blocking (TDD 4.4)', () => {
     configurarTurnoId('1');
     // Reset handlers y configurar por defecto (turno abierto)
     server.resetHandlers();
-    server.use(handlerTurnoAbierto, handlerAdjuntosTurnoAbierto);
+    server.use(
+      handlerTurnoAbierto,
+      handlerAdjuntosTurnoAbierto,
+      handlerFotosProgresoVacias,
+      handlerHistorialMedicionesVacio,
+    );
   });
 
   afterEach(() => {
@@ -250,13 +295,11 @@ describe('ConsultaProfesionalPage - Post-Cierre UI Blocking (TDD 4.4)', () => {
       // Act
       render(crearProveedorQuery(<ConsultaProfesionalPage />));
 
-      // Wait for loading to finish
-      await waitFor(() => {
-        expect(screen.queryByText('Cargando datos de la consulta...')).not.toBeInTheDocument();
-      }, { timeout: 5000 });
+      await esperarConsultaCargada();
+      await abrirEtapa(/mediciones/i);
 
       // Assert: el campo de peso debe estar deshabilitado
-      const pesoInput = screen.getByLabelText(/peso \(kg\)/i);
+      const pesoInput = await screen.findByLabelText(/peso \(kg\)/i);
       expect(pesoInput).toBeDisabled();
     });
 
@@ -268,12 +311,11 @@ describe('ConsultaProfesionalPage - Post-Cierre UI Blocking (TDD 4.4)', () => {
       // Act
       render(crearProveedorQuery(<ConsultaProfesionalPage />));
 
-      await waitFor(() => {
-        expect(screen.queryByText('Cargando datos de la consulta...')).not.toBeInTheDocument();
-      }, { timeout: 5000 });
+      await esperarConsultaCargada();
+      await abrirEtapa(/mediciones/i);
 
       // Assert
-      const guardarBtn = screen.getByRole('button', { name: /guardar mediciones/i });
+      const guardarBtn = await screen.findByRole('button', { name: /guardar mediciones/i });
       expect(guardarBtn).toBeDisabled();
     });
 
@@ -285,9 +327,7 @@ describe('ConsultaProfesionalPage - Post-Cierre UI Blocking (TDD 4.4)', () => {
       // Act
       render(crearProveedorQuery(<ConsultaProfesionalPage />));
 
-      await waitFor(() => {
-        expect(screen.queryByText('Cargando datos de la consulta...')).not.toBeInTheDocument();
-      }, { timeout: 5000 });
+      await esperarConsultaCargada();
 
       // Assert: el label "Subir archivo" no debe existir
       expect(screen.queryByText('Subir archivo')).not.toBeInTheDocument();
@@ -301,12 +341,12 @@ describe('ConsultaProfesionalPage - Post-Cierre UI Blocking (TDD 4.4)', () => {
       // Act
       render(crearProveedorQuery(<ConsultaProfesionalPage />));
 
-      await waitFor(() => {
-        expect(screen.queryByText('Cargando datos de la consulta...')).not.toBeInTheDocument();
-      }, { timeout: 5000 });
+      await esperarConsultaCargada();
+      await abrirEtapa(/adjuntos/i);
 
-      // Assert: el nombre del adjunto debe estar visible
-      expect(screen.getByText('resultado-closed.jpg')).toBeInTheDocument();
+      // Assert: el nombre del adjunto debe estar visible en solo lectura
+      expect(await screen.findByText('resultado-closed.jpg')).toBeInTheDocument();
+      expect(screen.queryByText('Seleccionar archivo')).not.toBeInTheDocument();
     });
 
     it('TDD-4.4-5: cuando turno estado REALIZADO, botón eliminar adjunto NO está visible', async () => {
@@ -317,9 +357,8 @@ describe('ConsultaProfesionalPage - Post-Cierre UI Blocking (TDD 4.4)', () => {
       // Act
       render(crearProveedorQuery(<ConsultaProfesionalPage />));
 
-      await waitFor(() => {
-        expect(screen.queryByText('Cargando datos de la consulta...')).not.toBeInTheDocument();
-      }, { timeout: 5000 });
+      await esperarConsultaCargada();
+      await abrirEtapa(/adjuntos/i);
 
       // Assert: no debe haber botón de eliminar con title="Eliminar archivo"
       const deleteButtons = screen.queryAllByTitle('Eliminar archivo');
@@ -336,54 +375,49 @@ describe('ConsultaProfesionalPage - Post-Cierre UI Blocking (TDD 4.4)', () => {
       // Act
       render(crearProveedorQuery(<ConsultaProfesionalPage />));
 
-      await waitFor(() => {
-        expect(screen.queryByText('Cargando datos de la consulta...')).not.toBeInTheDocument();
-      }, { timeout: 5000 });
+      await esperarConsultaCargada();
+      await abrirEtapa(/mediciones/i);
 
       // Assert: el campo de peso debe estar habilitado
-      const pesoInput = screen.getByLabelText(/peso \(kg\)/i);
+      const pesoInput = await screen.findByLabelText(/peso \(kg\)/i);
       expect(pesoInput).not.toBeDisabled();
     });
 
-    it('TDD-4.4-7: cuando turno estado EN_CURSO, upload de adjuntos SÍ está visible', async () => {
+    it('TDD-4.4-7: cuando turno estado EN_CURSO, upload de adjuntos NO está visible inicialmente', async () => {
       // Act
       configurarTurnoId('1');
       render(crearProveedorQuery(<ConsultaProfesionalPage />));
 
-      await waitFor(() => {
-        expect(screen.queryByText('Cargando datos de la consulta...')).not.toBeInTheDocument();
-      }, { timeout: 5000 });
+      await esperarConsultaCargada();
 
-      // Assert
-      expect(screen.getByText('Subir archivo')).toBeInTheDocument();
+      // Assert: Ahora está en la pestaña Adjuntos, no está visible en el primer render
+      expect(screen.queryByText('Seleccionar archivo')).not.toBeInTheDocument();
     });
 
-    it('TDD-4.4-8: cuando turno estado EN_CURSO, botón eliminar adjunto SÍ está visible', async () => {
+    it('TDD-4.4-8: cuando turno estado EN_CURSO, botón eliminar adjunto NO está visible inicialmente', async () => {
       // Act
       configurarTurnoId('1');
       render(crearProveedorQuery(<ConsultaProfesionalPage />));
 
-      await waitFor(() => {
-        expect(screen.queryByText('Cargando datos de la consulta...')).not.toBeInTheDocument();
-      }, { timeout: 5000 });
+      await esperarConsultaCargada();
 
       // Assert
       const deleteButtons = screen.queryAllByTitle('Eliminar archivo');
-      expect(deleteButtons).toHaveLength(1);
+      expect(deleteButtons).toHaveLength(0);
     });
 
-    it('TDD-4.4-9: cuando turno estado EN_CURSO, botón "Finalizar consulta" está habilitado', async () => {
+    it('TDD-4.4-9: cuando turno estado EN_CURSO, cierre queda bloqueado si faltan mínimos clínicos', async () => {
       // Act
       configurarTurnoId('1');
       render(crearProveedorQuery(<ConsultaProfesionalPage />));
 
-      await waitFor(() => {
-        expect(screen.queryByText('Cargando datos de la consulta...')).not.toBeInTheDocument();
-      }, { timeout: 5000 });
+      await esperarConsultaCargada();
+      await abrirEtapa(/revisión/i);
 
       // Assert
-      const finalizarBtn = screen.getByRole('button', { name: /finalizar consulta/i });
-      expect(finalizarBtn).not.toBeDisabled();
+      const finalizarBtn = await screen.findByRole('button', { name: /finalizar consulta/i });
+      expect(finalizarBtn).toBeDisabled();
+      expect(screen.getByText(/faltan mínimos para cerrar/i)).toBeInTheDocument();
     });
   });
 
@@ -397,9 +431,8 @@ describe('ConsultaProfesionalPage - Post-Cierre UI Blocking (TDD 4.4)', () => {
       // Act
       render(crearProveedorQuery(<ConsultaProfesionalPage />));
 
-      await waitFor(() => {
-        expect(screen.queryByText('Cargando datos de la consulta...')).not.toBeInTheDocument();
-      }, { timeout: 5000 });
+      await esperarConsultaCargada();
+      await abrirEtapa(/mediciones/i);
 
       // Assert: mensaje de consulta cerrada visible (hay 2 mensajes - mediciones y adjuntos)
       expect(screen.getAllByText(/consulta está cerrada/i).length).toBeGreaterThanOrEqual(1);

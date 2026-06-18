@@ -222,12 +222,12 @@ export function PacientesPage() {
                   {/* Acciones */}
                   <div className="flex items-center gap-2">
                     <Link
-                      to="/profesional/paciente/$socioId/progreso"
+                      to="/profesional/paciente/$socioId/ficha"
                       params={{ socioId: String(paciente.socioId ?? '') }}
                     >
                       <Button variant="outline" size="sm">
-                        <TrendingUp className="mr-2 h-4 w-4" />
-                        Progreso
+                        <FileText className="mr-2 h-4 w-4" />
+                        Ficha
                       </Button>
                     </Link>
                     <DropdownMenu>
@@ -255,9 +255,14 @@ export function PacientesPage() {
                             Ver plan alimenticio
                           </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <FileText className="mr-2 h-4 w-4" />
-                          Ver ficha de salud
+                        <DropdownMenuItem asChild>
+                          <Link
+                            to="/profesional/paciente/$socioId/ficha"
+                            params={{ socioId: String(paciente.socioId ?? '') }}
+                          >
+                            <FileText className="mr-2 h-4 w-4" />
+                            Ver ficha longitudinal
+                          </Link>
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
