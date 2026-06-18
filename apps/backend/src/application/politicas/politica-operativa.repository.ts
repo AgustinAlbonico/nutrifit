@@ -7,4 +7,6 @@ export interface IPoliticaOperativaRepository {
   getPlazoCancelacion(gimnasioId: number): Promise<number>;
   getPlazoReprogramacion(gimnasioId: number): Promise<number>;
   getUmbralAusente(gimnasioId: number): Promise<number>;
+  getUmbralCierreConsultaMin(gimnasioId: number): Promise<number>;
+  getPreavisoCierreConsultaMin(gimnasioId: number): Promise<number>;
 }

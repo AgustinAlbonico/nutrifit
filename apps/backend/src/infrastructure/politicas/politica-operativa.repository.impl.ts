@@ -12,6 +12,8 @@ import {
 const DEFAULT_PLAZO_CANCELACION_HORAS = 24;
 const DEFAULT_PLAZO_REPROGRAMACION_HORAS = 24;
 const DEFAULT_UMBRAL_AUSENTE_MINUTOS = 15;
+const DEFAULT_UMBRAL_CIERRE_CONSULTA_MIN = 30;
+const DEFAULT_PREAVISO_CIERRE_CONSULTA_MIN = 5;
 
 @Injectable()
 export class PoliticaOperativaRepositoryImpl implements IPoliticaOperativaRepository {
@@ -47,6 +49,16 @@ export class PoliticaOperativaRepositoryImpl implements IPoliticaOperativaReposi
     return politica?.umbralAusenteMinutos ?? DEFAULT_UMBRAL_AUSENTE_MINUTOS;
   }
 
+  async getUmbralCierreConsultaMin(gimnasioId: number): Promise<number> {
+    const politica = await this.findByGimnasioId(gimnasioId);
+    return politica?.umbralCierreConsultaMin ?? DEFAULT_UMBRAL_CIERRE_CONSULTA_MIN;
+  }
+
+  async getPreavisoCierreConsultaMin(gimnasioId: number): Promise<number> {
+    const politica = await this.findByGimnasioId(gimnasioId);
+    return politica?.preavisoCierreConsultaMin ?? DEFAULT_PREAVISO_CIERRE_CONSULTA_MIN;
+  }
+
   private toDomain(orm: PoliticaOperativaOrmEntity): PoliticaOperativaEntity {
     return new PoliticaOperativaEntity(
       orm.id,
@@ -54,6 +66,8 @@ export class PoliticaOperativaRepositoryImpl implements IPoliticaOperativaReposi
       orm.plazoCancelacionHoras,
       orm.plazoReprogramacionHoras,
       orm.umbralAusenteMinutos,
+      orm.umbralCierreConsultaMin,
+      orm.preavisoCierreConsultaMin,
     );
   }
 }
