@@ -19,6 +19,7 @@ export * from './guardar-mediciones.dto';
 export * from './guardar-observaciones.dto';
 export * from './historial-consulta-paciente-response.dto';
 export * from './historial-ficha-salud.dto';
+export * from './historial-turno-paciente-response.dto';
 export * from './list-mis-turnos-query.dto';
 export * from './marcar-ausente-manual.dto';
 export * from './list-pacientes-profesional-query.dto';

@@ -13,6 +13,7 @@ export * from './get-ficha-salud-paciente.use-case';
 export * from './get-ficha-salud-socio.use-case';
 export * from './get-historial-consultas-paciente.use-case';
 export * from './get-historial-mediciones.use-case';
+export * from './get-historial-turnos-paciente.use-case';
 export * from './get-resumen-progreso.use-case';
 export * from './get-turnos-del-dia.use-case';
 export * from './get-turnos-recepcion-dia.use-case';

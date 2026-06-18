@@ -37,6 +37,7 @@ import {
   GuardarObservacionesDto,
   HistorialConsultaPacienteResponseDto,
   HistorialFichaSaludItemDto,
+  HistorialTurnoPacienteResponseDto,
   ListMisTurnosQueryDto,
   ListPacientesProfesionalQueryDto,
   MarcarAusenteManualDto,
@@ -69,6 +70,7 @@ import {
   GetFichaSaludSocioUseCase,
   GetHistorialConsultasPacienteUseCase,
   GetHistorialMedicionesUseCase,
+  GetHistorialTurnosPacienteUseCase,
   GetResumenProgresoUseCase,
   GetTurnoByIdUseCase,
   GetTurnoSocioByIdUseCase,
@@ -138,6 +140,7 @@ export class TurnosController {
     private readonly getFichaSaludSocioUseCase: GetFichaSaludSocioUseCase,
     private readonly getHistorialConsultasPacienteUseCase: GetHistorialConsultasPacienteUseCase,
     private readonly getHistorialMedicionesUseCase: GetHistorialMedicionesUseCase,
+    private readonly getHistorialTurnosPacienteUseCase: GetHistorialTurnosPacienteUseCase,
     private readonly getResumenProgresoUseCase: GetResumenProgresoUseCase,
     private readonly getTurnoByIdUseCase: GetTurnoByIdUseCase,
     private readonly getTurnoSocioByIdUseCase: GetTurnoSocioByIdUseCase,
@@ -351,6 +354,23 @@ export class TurnosController {
     );
 
     return this.getHistorialConsultasPacienteUseCase.execute(
+      nutricionistaId,
+      socioId,
+    );
+  }
+
+  @Get('profesional/:nutricionistaId/pacientes/:socioId/historial-turnos')
+  @Rol(RolEnum.NUTRICIONISTA)
+  @UseGuards(NutricionistaOwnershipGuard)
+  async getHistorialTurnosPaciente(
+    @Param('nutricionistaId', ParseIntPipe) nutricionistaId: number,
+    @Param('socioId', ParseIntPipe) socioId: number,
+  ): Promise<HistorialTurnoPacienteResponseDto[]> {
+    this.logger.log(
+      `Consultando historial de turnos. Profesional=${nutricionistaId}, socio=${socioId}.`,
+    );
+
+    return this.getHistorialTurnosPacienteUseCase.execute(
       nutricionistaId,
       socioId,
     );
