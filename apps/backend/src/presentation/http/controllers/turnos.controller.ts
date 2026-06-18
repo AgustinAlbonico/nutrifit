@@ -91,6 +91,7 @@ import {
   RegistrarAsistenciaTurnoUseCase,
   ReservarTurnoSocioUseCase,
   RevertirAusenteTurnoUseCase,
+  ReabrirConsultaCerradaAutoUseCase,
   RevertirCheckinTurnoUseCase,
   UpsertFichaSaludSocioUseCase,
 } from 'src/application/turnos/use-cases';
@@ -159,6 +160,7 @@ export class TurnosController {
     private readonly registrarAsistenciaTurnoUseCase: RegistrarAsistenciaTurnoUseCase,
     private readonly reservarTurnoSocioUseCase: ReservarTurnoSocioUseCase,
     private readonly revertirAusenteTurnoUseCase: RevertirAusenteTurnoUseCase,
+    private readonly reabrirConsultaCerradaAutoUseCase: ReabrirConsultaCerradaAutoUseCase,
     private readonly revertirCheckinTurnoUseCase: RevertirCheckinTurnoUseCase,
     private readonly upsertFichaSaludSocioUseCase: UpsertFichaSaludSocioUseCase,
     private readonly adjuntoClinicoService: AdjuntoClinicoService,
@@ -699,6 +701,26 @@ export class TurnosController {
     this.logger.log(`Finalizando consulta para turno ${turnoId}.`);
 
     return this.finalizarConsultaUseCase.execute(turnoId);
+  }
+
+  @Post(':id/reabrir-cierre-auto')
+  @Rol(RolEnum.NUTRICIONISTA)
+  @UseGuards(TurnoNutricionistaAccessGuard)
+  async reabrirConsultaCerradaAuto(
+    @Param('id', ParseIntPipe) turnoId: number,
+    @ResourceAccess() access: ContextoAccesoRecurso,
+  ): Promise<{ success: boolean; estado: string }> {
+    const nutricionistaId = access.actorPersonaId;
+
+    if (nutricionistaId == null) {
+      throw new ForbiddenException('No se pudo resolver el profesional.');
+    }
+
+    this.logger.log(
+      `Reabriendo consulta cerrada automaticamente para turno ${turnoId}.`,
+    );
+
+    return this.reabrirConsultaCerradaAutoUseCase.execute(turnoId, nutricionistaId);
   }
 
   // PR #1 — spec 17: marcar ausente manual (nutricionista dueno o RECEPCIONISTA/ADMIN del mismo gym)

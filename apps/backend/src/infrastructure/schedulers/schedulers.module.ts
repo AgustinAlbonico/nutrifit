@@ -11,6 +11,8 @@ import { NotificacionOrmEntity } from '../persistence/typeorm/entities/notificac
 import { TurnoReminderScheduler } from './turno-reminder.scheduler';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import { EmailModule } from 'src/application/email/email.module';
+import { FinalizarConsultaPorInactividadUseCase } from 'src/application/turnos/use-cases/finalizar-consulta-por-inactividad.use-case';
+import { CierreConsultaScheduler } from './cierre-consulta.scheduler';
 
 @Module({
   imports: [
@@ -26,7 +28,9 @@ import { EmailModule } from 'src/application/email/email.module';
   providers: [
     AusenciaTurnoScheduler,
     TurnoReminderScheduler,
+    CierreConsultaScheduler,
     NotificacionesService,
+    FinalizarConsultaPorInactividadUseCase,
     AlimentosSyncService,
     AlimentosSyncScheduler,
   ],
