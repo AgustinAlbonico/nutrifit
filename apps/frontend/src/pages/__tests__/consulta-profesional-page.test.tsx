@@ -8,7 +8,7 @@
  * - 3.4: Post-cierre UI blocking (consultaCerrada) y sección de adjuntos clínicos
  * - 4.4: Vitest P1 - UI bloqueada post-cierre + adjuntos visibles/accionables
  *
- * Estado: 11 tests passing
+ * Estado: 13 tests passing
  * Última ejecución: 2026-05-02
  */
 
@@ -222,6 +222,36 @@ const handlerHistorialMedicionesVacio = http.get('/turnos/profesional/:nutricion
   });
 });
 
+const handlerHistorialConsultasConDatos = http.get('/turnos/profesional/:nutricionistaId/pacientes/:socioId/historial-consultas', () => {
+  return HttpResponse.json({
+    success: true,
+    message: 'Historial encontrado',
+    data: [
+      {
+        idTurno: 99,
+        fechaTurno: '20/04/2026',
+        horaTurno: '09:30',
+        estadoTurno: 'REALIZADO',
+        tipoConsulta: 'Consulta nutricional',
+        notasProfesional: 'Buena adherencia al plan y mejora del apetito.',
+        sugerencias: 'Mantener colaciones y aumentar hidratación.',
+        esPublica: false,
+        archivosAdjuntos: [],
+      },
+    ],
+    timestamp: '2026-05-02T09:00:00Z',
+  });
+});
+
+const handlerHistorialConsultasVacio = http.get('/turnos/profesional/:nutricionistaId/pacientes/:socioId/historial-consultas', () => {
+  return HttpResponse.json({
+    success: true,
+    message: 'Historial encontrado',
+    data: [],
+    timestamp: '2026-05-02T09:00:00Z',
+  });
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers de render
 // ─────────────────────────────────────────────────────────────────────────────
@@ -269,6 +299,7 @@ describe('ConsultaProfesionalPage - Post-Cierre UI Blocking (TDD 4.4)', () => {
       handlerAdjuntosTurnoAbierto,
       handlerFotosProgresoVacias,
       handlerHistorialMedicionesVacio,
+      handlerHistorialConsultasConDatos,
     );
   });
 
@@ -419,11 +450,31 @@ describe('ConsultaProfesionalPage - Post-Cierre UI Blocking (TDD 4.4)', () => {
       expect(finalizarBtn).toBeDisabled();
       expect(screen.getByText(/faltan mínimos para cerrar/i)).toBeInTheDocument();
     });
+
+    it('TDD-4.4-10: contexto muestra resumen ampliado con última consulta y hábitos expandibles', async () => {
+      configurarTurnoId('1');
+      render(crearProveedorQuery(<ConsultaProfesionalPage />));
+
+      await esperarConsultaCargada();
+
+      expect(await screen.findByText(/resumen clínico inicial/i)).toBeInTheDocument();
+      expect(await screen.findByText(/banderas clínicas/i)).toBeInTheDocument();
+      expect(await screen.findByText(/última consulta registrada/i)).toBeInTheDocument();
+      expect(
+        await screen.findByText(/buena adherencia al plan y mejora del apetito/i),
+      ).toBeInTheDocument();
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole('button', { name: /hábitos diarios/i }));
+
+      expect(screen.getByText(/consumo de agua/i)).toBeInTheDocument();
+      expect(screen.getByText(/2000 ml/i)).toBeInTheDocument();
+    });
   });
 
   // ── REFACTOR ─────────────────────────────────────────────────────────────────
   describe('REFACTOR - Validación de mensajes de estado', () => {
-    it('TDD-4.4-10: cuando turno estado REALIZADO, se muestra mensaje de consulta cerrada', async () => {
+    it('TDD-4.4-11: cuando turno estado REALIZADO, se muestra mensaje de consulta cerrada', async () => {
       // Arrange
       server.use(handlerTurnoCerrado, handlerAdjuntosTurnoCerrado);
       configurarTurnoId('2');
@@ -436,6 +487,20 @@ describe('ConsultaProfesionalPage - Post-Cierre UI Blocking (TDD 4.4)', () => {
 
       // Assert: mensaje de consulta cerrada visible (hay 2 mensajes - mediciones y adjuntos)
       expect(screen.getAllByText(/consulta está cerrada/i).length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('TDD-4.4-12: si no hay historial previo, contexto informa primera consulta', async () => {
+      server.use(handlerHistorialConsultasVacio);
+      configurarTurnoId('1');
+
+      render(crearProveedorQuery(<ConsultaProfesionalPage />));
+
+      await esperarConsultaCargada();
+
+      expect(await screen.findByText(/primera consulta/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/no hay consultas previas registradas para este paciente con este profesional/i),
+      ).toBeInTheDocument();
     });
   });
 });
