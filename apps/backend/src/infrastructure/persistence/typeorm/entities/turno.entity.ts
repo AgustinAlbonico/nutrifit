@@ -47,6 +47,38 @@ export class TurnoOrmEntity extends AuditableOrmEntity {
   @Column({ name: 'consulta_finalizada_at', type: 'datetime', nullable: true })
   consultaFinalizadaAt: Date | null;
 
+  @Column({ name: 'cierre_automatico', type: 'boolean', default: false })
+  cierreAutomatico: boolean;
+
+  @Column({
+    name: 'motivo_cierre_automatico',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
+  motivoCierreAutomatico: string | null;
+
+  @Column({
+    name: 'cierre_automatico_en',
+    type: 'datetime',
+    nullable: true,
+  })
+  cierreAutomaticoEn: Date | null;
+
+  @Column({
+    name: 'preaviso_cierre_auto_enviado_en',
+    type: 'datetime',
+    nullable: true,
+  })
+  preavisoCierreAutoEnviadoEn: Date | null;
+
+  @Column({
+    name: 'reabierta_por_cierre_auto',
+    type: 'boolean',
+    default: false,
+  })
+  reabiertaPorCierreAuto: boolean;
+
   @Column({ name: 'ausente_at', type: 'datetime', nullable: true })
   ausenteAt: Date | null;
 

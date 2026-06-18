@@ -24,6 +24,20 @@ export class PoliticaOperativaOrmEntity {
   @Column({ name: 'umbral_ausente_minutos', type: 'int' })
   umbralAusenteMinutos: number;
 
+  @Column({
+    name: 'umbral_cierre_consulta_min',
+    type: 'int',
+    nullable: true,
+  })
+  umbralCierreConsultaMin: number | null;
+
+  @Column({
+    name: 'preaviso_cierre_consulta_min',
+    type: 'int',
+    nullable: true,
+  })
+  preavisoCierreConsultaMin: number | null;
+
   @ManyToOne(() => GimnasioOrmEntity, (gimnasio) => gimnasio.turnos)
   gimnasio: GimnasioOrmEntity;
 }
