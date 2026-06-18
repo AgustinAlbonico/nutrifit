@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/turno.entity';
+import { MedicionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/medicion.entity';
+import { ObservacionClinicaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/observacion-clinica.entity';
 import { EstadoTurno } from 'src/domain/entities/Turno/EstadoTurno';
 import { BadRequestError } from 'src/domain/exceptions/custom-exceptions';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
@@ -9,12 +11,17 @@ import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notifica
 import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
 import { AccionAuditoria } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
+import { validarCierreConsulta } from 'src/application/turnos/helpers/validar-cierre-consulta.helper';
 
 @Injectable()
 export class FinalizarConsultaUseCase {
   constructor(
     @InjectRepository(TurnoOrmEntity)
     private readonly turnoRepository: Repository<TurnoOrmEntity>,
+    @InjectRepository(MedicionOrmEntity)
+    private readonly medicionRepository: Repository<MedicionOrmEntity>,
+    @InjectRepository(ObservacionClinicaOrmEntity)
+    private readonly observacionRepository: Repository<ObservacionClinicaOrmEntity>,
     private readonly notificacionesService: NotificacionesService,
     private readonly auditoriaService: AuditoriaService,
     private readonly tenantContext: TenantContextService,
@@ -43,6 +50,26 @@ export class FinalizarConsultaUseCase {
 
     if (turno.consultaFinalizadaAt !== null) {
       throw new BadRequestError('La consulta ya fue finalizada');
+    }
+
+    const [cantidadMediciones, observacion] = await Promise.all([
+      this.medicionRepository.count({
+        where: { turno: { idTurno: turnoId } },
+      }),
+      this.observacionRepository.findOne({
+        where: { turno: { idTurno: turnoId } },
+      }),
+    ]);
+
+    const resultadoCierre = validarCierreConsulta({
+      tieneMedicionBase: cantidadMediciones > 0,
+      tieneComentarioClinico: Boolean(observacion?.comentario?.trim()),
+    });
+
+    if (!resultadoCierre.puedeCerrar) {
+      throw new BadRequestError(
+        `No se puede finalizar la consulta. Faltantes: ${resultadoCierre.faltantes.join(', ')}`,
+      );
     }
 
     turno.estadoTurno = EstadoTurno.REALIZADO;
