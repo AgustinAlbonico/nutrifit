@@ -4,6 +4,7 @@ import {
   Search,
   User,
   FileText,
+  History,
   TrendingUp,
   Utensils,
   Calendar,
@@ -227,16 +228,32 @@ export function PacientesPage() {
                     >
                       <Button variant="outline" size="sm">
                         <FileText className="mr-2 h-4 w-4" />
-                        Ficha
+                        Ver ficha
                       </Button>
                     </Link>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Mas acciones"
+                        >
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link
+                            to="/profesional/paciente/$socioId/ficha"
+                            params={{
+                              socioId: String(paciente.socioId ?? ''),
+                            }}
+                            hash="historial-turnos"
+                          >
+                            <History className="mr-2 h-4 w-4" />
+                            Historial de turnos
+                          </Link>
+                        </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                           <Link
                             to="/profesional/paciente/$socioId/progreso"
@@ -248,20 +265,20 @@ export function PacientesPage() {
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                           <Link
-                            to="/profesional/plan/$socioId/editar"
-                            params={{ socioId: String(paciente.socioId ?? '') }}
-                          >
-                            <Utensils className="mr-2 h-4 w-4" />
-                            Ver plan alimenticio
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link
                             to="/profesional/paciente/$socioId/ficha"
                             params={{ socioId: String(paciente.socioId ?? '') }}
                           >
                             <FileText className="mr-2 h-4 w-4" />
                             Ver ficha longitudinal
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link
+                            to="/profesional/plan/$socioId/editar"
+                            params={{ socioId: String(paciente.socioId ?? '') }}
+                          >
+                            <Utensils className="mr-2 h-4 w-4" />
+                            Ver plan alimenticio
                           </Link>
                         </DropdownMenuItem>
                       </DropdownMenuContent>

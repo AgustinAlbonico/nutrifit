@@ -55,7 +55,7 @@ export function HistorialTurnosPaciente({
 
   if (cargando) {
     return (
-      <Card>
+      <Card id="historial-turnos">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <History className="h-5 w-5 text-primary" />
@@ -71,7 +71,7 @@ export function HistorialTurnosPaciente({
 
   if (turnos.length === 0) {
     return (
-      <Card className="border-dashed">
+      <Card id="historial-turnos" className="border-dashed">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <History className="h-5 w-5 text-primary" />
