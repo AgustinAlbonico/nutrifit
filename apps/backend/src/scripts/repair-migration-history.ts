@@ -8,7 +8,7 @@ import {
   resolveMigrationsToRecord,
 } from 'src/infrastructure/config/typeorm/migration-history';
 
-type QueryRow = Record<string, unknown>;
+type MigrationRow = { timestamp: number; name: string };
 
 async function tableExists(
   dataSource: DataSource,
@@ -117,11 +117,11 @@ async function main(): Promise<void> {
       }
     }
 
-    const repairedRecorded = await dataSource.query(
+    const repairedRecorded = (await dataSource.query(
       'SELECT timestamp, name FROM migrations ORDER BY timestamp',
-    );
+    )) as MigrationRow[];
 
-    const recordedMigrationNames = new Set(
+    const recordedMigrationNames = new Set<string>(
       repairedRecorded.map((migration) => migration.name),
     );
 
