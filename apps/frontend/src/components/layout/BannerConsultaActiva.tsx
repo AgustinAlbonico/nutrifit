@@ -44,19 +44,26 @@ export function BannerConsultaActiva() {
   if (!turnoActivo) return null;
 
   return (
-    <div className="sticky top-0 z-50 w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md">
-      <div className="container mx-auto px-4 h-12 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <Activity className="h-4 w-4 animate-pulse text-violet-200" />
-          <span>Consulta en curso: {turnoActivo.socio.nombreCompleto}</span>
+    <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
+      <div className="rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 p-1.5 shadow-xl flex items-center gap-3 pr-2 ring-1 ring-white/20">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 shadow-inner">
+          <Activity className="h-5 w-5 animate-pulse text-white" />
+        </div>
+        <div className="flex flex-col">
+          <span className="text-[10px] font-bold text-violet-200 uppercase tracking-wider leading-none">
+            En curso
+          </span>
+          <span className="text-sm font-bold text-white leading-none mt-1">
+            {turnoActivo.socio.nombreCompleto}
+          </span>
         </div>
         <Button 
           size="sm" 
           variant="secondary" 
-          className="h-8 text-xs font-semibold bg-white/20 hover:bg-white/30 text-white border-0"
+          className="ml-2 rounded-full h-8 px-4 text-xs font-bold bg-white text-violet-700 hover:bg-violet-50 hover:text-violet-800 shadow-sm transition-all"
           onClick={() => navigate({ to: `/profesional/consulta/${turnoActivo.idTurno}` })}
         >
-          Volver a la consulta
+          Volver
         </Button>
       </div>
     </div>
