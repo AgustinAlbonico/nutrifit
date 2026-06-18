@@ -17,6 +17,21 @@ export class DatosTurnoResponseDto {
    * frontend enlazar el form de consulta sin pedirlo por separado.
    */
   consultaId: number | null;
+
+  /**
+   * Indica si la consulta fue cerrada automaticamente por inactividad.
+   */
+  cierreAutomatico: boolean;
+
+  /**
+   * Motivo del cierre automatico (si aplica).
+   */
+  motivoCierreAutomatico: string | null;
+
+  /**
+   * Indica si la consulta fue reabierta tras un cierre automatico.
+   */
+  reabiertaPorCierreAuto: boolean;
 }
 
 export class ObservacionClinicaDto {

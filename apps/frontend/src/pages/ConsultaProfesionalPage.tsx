@@ -24,6 +24,12 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRequest } from '@/lib/api';
 import { Button } from '@/components/ui/button';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,7 +42,7 @@ import { RevisionFinalConsulta } from '@/components/consulta/RevisionFinalConsul
 import { useFotosProgreso } from '@/components/progreso/useFotosProgreso';
 import { obtenerEtapasConsulta, puedeCerrarConsulta } from '@/lib/consulta/estadoEtapas';
 import type { HistorialMediciones } from '@/components/progreso/types';
-import type { IdEtapaConsulta } from '@/types/consulta';
+import type { HistorialConsultaPaciente, IdEtapaConsulta } from '@/types/consulta';
 
 type NivelActividadFisica = 'Sedentario' | 'Moderado' | 'Intenso';
 type FrecuenciaComidas = '1-2 comidas' | '3 comidas' | '4-5 comidas' | '6 o más comidas';
@@ -73,6 +79,9 @@ interface DatosTurno {
   observacionClinica: ObservacionClinica | null;
   fichaActualizada?: boolean;
   consultaId?: number | null;
+  cierreAutomatico: boolean;
+  motivoCierreAutomatico: string | null;
+  reabiertaPorCierreAuto: boolean;
   socio: {
     idPersona: number;
     nombre: string;
@@ -197,6 +206,99 @@ function SeccionColapsable({
   );
 }
 
+function obtenerTextoOPlaceholder(
+  valor: string | number | null | undefined,
+  placeholder = 'No registrado',
+) {
+  if (valor === null || valor === undefined || valor === '') {
+    return placeholder;
+  }
+
+  return String(valor);
+}
+
+function formatearSiNo(valor: boolean) {
+  return valor ? 'Sí' : 'No';
+}
+
+function formatearHorasSueno(horas: number | null) {
+  if (horas === null || horas <= 0) {
+    return 'No registrado';
+  }
+
+  return `${horas} h`;
+}
+
+function formatearConsumoAgua(consumoAguaDiario: number | null) {
+  if (consumoAguaDiario === null || consumoAguaDiario <= 0) {
+    return 'No registrado';
+  }
+
+  return `${consumoAguaDiario} ml`;
+}
+
+function renderizarEtiquetas(items: string[], tono: 'rojo' | 'ambar' | 'gris' = 'gris') {
+  if (items.length === 0) {
+    return <p className="text-sm text-muted-foreground">Sin registros</p>;
+  }
+
+  const clases = {
+    rojo: 'border-red-200 bg-red-50 text-red-800',
+    ambar: 'border-amber-200 bg-amber-50 text-amber-800',
+    gris: 'border-border/70 bg-muted/40 text-foreground/80',
+  };
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {items.map((item) => (
+        <span
+          key={item}
+          className={`rounded-full border px-2.5 py-1 text-xs font-medium ${clases[tono]}`}
+        >
+          {item}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function ItemDatoContexto({
+  etiqueta,
+  valor,
+  destacar = false,
+}: {
+  etiqueta: string;
+  valor: string;
+  destacar?: boolean;
+}) {
+  return (
+    <div className="space-y-1 rounded-xl border border-border/50 bg-background/70 p-3">
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{etiqueta}</p>
+      <p className={destacar ? 'text-sm font-semibold text-foreground' : 'text-sm text-foreground/80'}>
+        {valor}
+      </p>
+    </div>
+  );
+}
+
+function TarjetaMetricaContexto({
+  titulo,
+  valor,
+  detalle,
+}: {
+  titulo: string;
+  valor: string;
+  detalle: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-border/60 bg-background/80 p-4 shadow-sm">
+      <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">{titulo}</p>
+      <p className="mt-2 text-2xl font-semibold text-foreground">{valor}</p>
+      <p className="mt-1 text-sm text-muted-foreground">{detalle}</p>
+    </div>
+  );
+}
+
 export function ConsultaProfesionalPage() {
   const { token, rol, personaId } = useAuth();
   const { turnoId } = useParams({ from: '/auth/profesional/consulta/$turnoId' });
@@ -211,6 +313,7 @@ export function ConsultaProfesionalPage() {
   const [guardandoMediciones, setGuardandoMediciones] = useState(false);
   const [guardandoObservaciones, setGuardandoObservaciones] = useState(false);
   const [finalizandoConsulta, setFinalizandoConsulta] = useState(false);
+  const [reabriendoConsulta, setReabriendoConsulta] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mensajeExito, setMensajeExito] = useState<string | null>(null);
   const [mensajeExitoObservaciones, setMensajeExitoObservaciones] = useState<string | null>(null);
@@ -218,6 +321,9 @@ export function ConsultaProfesionalPage() {
   const [historialMediciones, setHistorialMediciones] = useState<HistorialMediciones | null>(null);
   const [cargandoEvolucion, setCargandoEvolucion] = useState(false);
   const [errorEvolucion, setErrorEvolucion] = useState(false);
+  const [historialConsultas, setHistorialConsultas] = useState<HistorialConsultaPaciente[]>([]);
+  const [cargandoHistorialConsultas, setCargandoHistorialConsultas] = useState(false);
+  const [errorHistorialConsultas, setErrorHistorialConsultas] = useState(false);
 
   // Estado para adjuntos clínicos
   const [adjuntos, setAdjuntos] = useState<AdjuntoClinico[]>([]);
@@ -282,25 +388,43 @@ export function ConsultaProfesionalPage() {
     return null;
   }, [consultaCerrada, datosTurno]);
 
-  const cargarEvolucionPaciente = useCallback(async () => {
+  const cargarResumenClinicoPaciente = useCallback(async () => {
     if (!token || !personaId || !datosTurno?.socio.idPersona) {
       return;
     }
 
-    try {
-      setCargandoEvolucion(true);
-      setErrorEvolucion(false);
-      const response = await apiRequest<ApiResponse<HistorialMediciones>>(
+    setCargandoEvolucion(true);
+    setErrorEvolucion(false);
+    setCargandoHistorialConsultas(true);
+    setErrorHistorialConsultas(false);
+
+    const [resultadoMediciones, resultadoConsultas] = await Promise.allSettled([
+      apiRequest<ApiResponse<HistorialMediciones>>(
         `/turnos/profesional/${personaId}/pacientes/${datosTurno.socio.idPersona}/historial-mediciones`,
         { token },
-      );
-      setHistorialMediciones(response.data);
-    } catch {
+      ),
+      apiRequest<ApiResponse<HistorialConsultaPaciente[]>>(
+        `/turnos/profesional/${personaId}/pacientes/${datosTurno.socio.idPersona}/historial-consultas`,
+        { token },
+      ),
+    ]);
+
+    if (resultadoMediciones.status === 'fulfilled') {
+      setHistorialMediciones(resultadoMediciones.value.data);
+    } else {
       setErrorEvolucion(true);
       setHistorialMediciones(null);
-    } finally {
-      setCargandoEvolucion(false);
     }
+
+    if (resultadoConsultas.status === 'fulfilled') {
+      setHistorialConsultas(resultadoConsultas.value.data ?? []);
+    } else {
+      setErrorHistorialConsultas(true);
+      setHistorialConsultas([]);
+    }
+
+    setCargandoEvolucion(false);
+    setCargandoHistorialConsultas(false);
   }, [datosTurno?.socio.idPersona, personaId, token]);
 
   const cargarDatosTurno = useCallback(async () => {
@@ -375,8 +499,8 @@ export function ConsultaProfesionalPage() {
   }, [cargarDatosTurno, cargarAdjuntos]);
 
   useEffect(() => {
-    void cargarEvolucionPaciente();
-  }, [cargarEvolucionPaciente]);
+    void cargarResumenClinicoPaciente();
+  }, [cargarResumenClinicoPaciente]);
 
   const imc = useMemo(() => {
     const pesoNum = Number(formulario.peso);
@@ -587,7 +711,7 @@ export function ConsultaProfesionalPage() {
       });
 
       setMensajeExito('Mediciones guardadas correctamente');
-      await cargarEvolucionPaciente();
+      await cargarResumenClinicoPaciente();
       toast.success('Mediciones guardadas');
     } catch (requestError) {
       const mensaje =
@@ -684,6 +808,32 @@ export function ConsultaProfesionalPage() {
     }
   };
 
+  const reabrirConsultaCerradaAuto = async () => {
+    if (!token || !turnoId) {
+      return;
+    }
+
+    try {
+      setReabriendoConsulta(true);
+
+      await apiRequest(`/turnos/${turnoId}/reabrir-cierre-auto`, {
+        method: 'POST',
+        token,
+      });
+
+      toast.success('Consulta reabierta — ya podés completar los datos clínicos');
+      void cargarDatosTurno();
+    } catch (requestError) {
+      const mensaje =
+        requestError instanceof Error
+          ? requestError.message
+          : 'Error al reabrir la consulta';
+      toast.error(mensaje);
+    } finally {
+      setReabriendoConsulta(false);
+    }
+  };
+
   if (!esNutricionista) {
     return (
       <Card>
@@ -744,6 +894,11 @@ export function ConsultaProfesionalPage() {
   });
   const puedeCerrar = puedeCerrarConsulta(etapasConsulta);
   const ultimaMedicion = historialMediciones?.mediciones.at(0);
+  const consultasRealizadas = historialConsultas.filter(
+    (consulta) => consulta.estadoTurno === 'REALIZADO',
+  );
+  const ultimaConsultaRegistrada =
+    consultasRealizadas[0] ?? historialConsultas[0] ?? null;
 
   return (
     <div className="space-y-6">
@@ -778,6 +933,46 @@ export function ConsultaProfesionalPage() {
         onCambiarEtapa={setEtapaActiva}
       />
 
+      {datosTurno.estadoTurno === 'REALIZADO' && datosTurno.cierreAutomatico && !datosTurno.reabiertaPorCierreAuto && (
+        <Card className="border-blue-200 bg-blue-50/60 shadow-sm">
+          <CardContent className="flex items-center justify-between pt-6">
+            <div className="flex items-start gap-3 text-blue-900">
+              <FileWarning className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+              <div>
+                <p className="text-sm font-medium">
+                  Esta consulta fue cerrada automáticamente por inactividad
+                </p>
+                <p className="text-sm text-blue-700/70">
+                  {datosTurno.motivoCierreAutomatico
+                    ? `Motivo: ${datosTurno.motivoCierreAutomatico}`
+                    : 'Podés reabrirla para completar los datos clínicos pendientes.'}
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={reabrirConsultaCerradaAuto}
+              disabled={reabriendoConsulta}
+              className="shrink-0 border-blue-300 text-blue-700 hover:bg-blue-100"
+            >
+              {reabriendoConsulta ? 'Reabriendo...' : 'Reabrir consulta'}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {datosTurno.estadoTurno === 'REALIZADO' && datosTurno.cierreAutomatico && datosTurno.reabiertaPorCierreAuto && (
+        <Card className="border-emerald-200 bg-emerald-50/60 shadow-sm">
+          <CardContent className="flex items-start gap-3 pt-6 text-emerald-900">
+            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+            <p className="text-sm font-medium">
+              Consulta reabierta — ya podés completar los datos clínicos pendientes.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       <Tabs
         value={etapaActiva}
         onValueChange={(valor) => setEtapaActiva(valor as IdEtapaConsulta)}
@@ -792,77 +987,318 @@ export function ConsultaProfesionalPage() {
         </TabsList>
 
         <TabsContent value="contexto" className="space-y-6 animate-in fade-in-50 duration-500">
-          {/* Datos del Socio */}
-          <Card className="border-border/50 shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-lg font-medium text-foreground/80">Datos del Socio</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-muted-foreground">Nombre completo</p>
-                  <p className="text-base font-medium">
-                    {socio.nombre} {socio.apellido}
+          {datosTurno.fichaActualizada && (
+            <Card className="border-amber-200 bg-amber-50/60 shadow-sm">
+              <CardContent className="flex items-start gap-3 pt-6 text-amber-900">
+                <FileWarning className="mt-0.5 h-5 w-5 shrink-0" />
+                <p className="text-sm font-medium">
+                  La ficha de salud fue actualizada después de la última consulta.
+                  Revisá este contexto antes de avanzar.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card className="overflow-hidden border-orange-200/70 bg-gradient-to-br from-orange-50/90 via-background to-rose-50/60 shadow-sm">
+            <CardHeader className="border-b border-orange-100/80 pb-4">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="space-y-2">
+                  <CardTitle className="text-xl font-semibold text-foreground">
+                    Resumen clínico inicial
+                  </CardTitle>
+                  <p className="max-w-2xl text-sm text-muted-foreground">
+                    Panorama rápido para arrancar la consulta con antecedentes,
+                    métricas de referencia y la última interacción registrada.
                   </p>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-muted-foreground">DNI</p>
-                  <p className="text-base">{socio.dni}</p>
+                <Button asChild variant="outline" size="sm">
+                  <Link
+                    to="/profesional/paciente/$socioId/ficha"
+                    params={{ socioId: socio.idPersona.toString() }}
+                  >
+                    Ver ficha longitudinal
+                  </Link>
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6 pt-6">
+              <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+                <div className="rounded-2xl border border-orange-100/80 bg-background/90 p-5 shadow-sm">
+                  <div className="flex items-start gap-4">
+                    <div className="rounded-2xl bg-orange-100 p-3 text-orange-700">
+                      <User className="h-6 w-6" />
+                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-[0.2em] text-orange-700/80">
+                          Paciente en consulta
+                        </p>
+                        <h2 className="text-2xl font-semibold text-foreground">
+                          {socio.nombre} {socio.apellido}
+                        </h2>
+                      </div>
+
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <ItemDatoContexto etiqueta="DNI" valor={obtenerTextoOPlaceholder(socio.dni)} />
+                        <ItemDatoContexto etiqueta="Teléfono" valor={obtenerTextoOPlaceholder(socio.telefono)} />
+                        <ItemDatoContexto etiqueta="Email" valor={obtenerTextoOPlaceholder(socio.email)} />
+                        <ItemDatoContexto
+                          etiqueta="Turno actual"
+                          valor={`${datosTurno.fechaTurno} - ${datosTurno.horaTurno}`}
+                          destacar
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-muted-foreground">Email</p>
-                  <p className="text-base">{socio.email}</p>
+
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                  <TarjetaMetricaContexto
+                    titulo="Objetivo personal"
+                    valor={obtenerTextoOPlaceholder(
+                      fichaSalud?.objetivoPersonal,
+                      'Sin objetivo cargado',
+                    )}
+                    detalle="Motivo principal declarado por el socio"
+                  />
+                  <TarjetaMetricaContexto
+                    titulo="Actividad física"
+                    valor={obtenerTextoOPlaceholder(
+                      fichaSalud?.nivelActividadFisica,
+                      'Sin registro',
+                    )}
+                    detalle="Nivel reportado en ficha de salud"
+                  />
                 </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-muted-foreground">Teléfono</p>
-                  <p className="text-base">{socio.telefono ?? 'No registrado'}</p>
-                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <TarjetaMetricaContexto
+                  titulo="Peso de referencia"
+                  valor={fichaSalud ? `${fichaSalud.peso} kg` : '-'}
+                  detalle="Peso cargado al completar la ficha"
+                />
+                <TarjetaMetricaContexto
+                  titulo="Altura de referencia"
+                  valor={fichaSalud ? `${fichaSalud.altura} cm` : '-'}
+                  detalle="Base inicial para cálculo e interpretación"
+                />
+                <TarjetaMetricaContexto
+                  titulo="Último peso"
+                  valor={ultimaMedicion ? `${ultimaMedicion.peso} kg` : '-'}
+                  detalle={
+                    ultimaMedicion
+                      ? `Registrado el ${new Date(ultimaMedicion.fecha).toLocaleDateString('es-AR')}`
+                      : 'Todavía no hay mediciones previas'
+                  }
+                />
+                <TarjetaMetricaContexto
+                  titulo="Consultas previas"
+                  valor={String(consultasRealizadas.length)}
+                  detalle={
+                    ultimaConsultaRegistrada
+                      ? `Última: ${ultimaConsultaRegistrada.fechaTurno}`
+                      : 'Se trataría de una primera consulta'
+                  }
+                />
               </div>
             </CardContent>
           </Card>
 
-          {/* Ficha de Salud (readonly) */}
-          {fichaSalud ? (
-            <Card className="border-border/50 shadow-sm">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg font-medium text-foreground/80">Ficha de Salud (Lectura)</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Altura</p>
-                    <p className="text-base font-medium">{fichaSalud.altura} cm</p>
+          <Card className="border-border/50 shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-medium text-foreground/80">
+                Banderas clínicas
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Datos que pueden cambiar decisiones rápidas durante la consulta.
+              </p>
+            </CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-2xl border border-red-100 bg-red-50/60 p-4">
+                <p className="mb-2 text-sm font-semibold text-red-900">Alergias</p>
+                {renderizarEtiquetas(fichaSalud?.alergias ?? [], 'rojo')}
+              </div>
+              <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-4">
+                <p className="mb-2 text-sm font-semibold text-amber-900">Patologías</p>
+                {renderizarEtiquetas(fichaSalud?.patologias ?? [], 'ambar')}
+              </div>
+              <div className="rounded-2xl border border-border/60 bg-background/80 p-4">
+                <p className="mb-2 text-sm font-semibold text-foreground">Restricciones alimentarias</p>
+                <p className="text-sm text-muted-foreground">
+                  {obtenerTextoOPlaceholder(
+                    fichaSalud?.restriccionesAlimentarias,
+                    'Sin restricciones declaradas',
+                  )}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-border/60 bg-background/80 p-4">
+                <p className="mb-2 text-sm font-semibold text-foreground">Medicación actual</p>
+                <p className="text-sm text-muted-foreground">
+                  {obtenerTextoOPlaceholder(
+                    fichaSalud?.medicacionActual,
+                    'Sin medicación informada',
+                  )}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/50 shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-medium text-foreground/80">
+                Última consulta registrada
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                El resumen clínico previo queda visible en contexto para no perder continuidad.
+              </p>
+            </CardHeader>
+            <CardContent>
+              {cargandoHistorialConsultas ? (
+                <div className="rounded-2xl border border-dashed bg-muted/10 p-5 text-sm text-muted-foreground">
+                  Cargando última consulta...
+                </div>
+              ) : errorHistorialConsultas ? (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
+                  No se pudo cargar el historial de consultas. Podés continuar, pero el resumen previo no está disponible ahora.
+                </div>
+              ) : ultimaConsultaRegistrada ? (
+                <div className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <ItemDatoContexto
+                      etiqueta="Fecha"
+                      valor={obtenerTextoOPlaceholder(ultimaConsultaRegistrada.fechaTurno)}
+                      destacar
+                    />
+                    <ItemDatoContexto
+                      etiqueta="Hora"
+                      valor={obtenerTextoOPlaceholder(ultimaConsultaRegistrada.horaTurno)}
+                    />
+                    <ItemDatoContexto
+                      etiqueta="Estado"
+                      valor={obtenerTextoOPlaceholder(ultimaConsultaRegistrada.estadoTurno)}
+                    />
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Peso ref.</p>
-                    <p className="text-base font-medium">{fichaSalud.peso} kg</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Nivel actividad</p>
-                    <p className="text-base">{fichaSalud.nivelActividadFisica}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Objetivo</p>
-                    <p className="text-base">{fichaSalud.objetivoPersonal}</p>
+
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    <div className="rounded-2xl border border-border/60 bg-background/80 p-4">
+                      <p className="mb-2 text-sm font-semibold text-foreground">Comentario clínico</p>
+                      <p className="text-sm leading-6 text-muted-foreground">
+                        {obtenerTextoOPlaceholder(
+                          ultimaConsultaRegistrada.notasProfesional,
+                          'Sin comentario clínico registrado',
+                        )}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-border/60 bg-background/80 p-4">
+                      <p className="mb-2 text-sm font-semibold text-foreground">Sugerencias previas</p>
+                      <p className="text-sm leading-6 text-muted-foreground">
+                        {obtenerTextoOPlaceholder(
+                          ultimaConsultaRegistrada.sugerencias,
+                          'Sin sugerencias registradas',
+                        )}
+                      </p>
+                    </div>
                   </div>
                 </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed bg-muted/10 p-6 text-center">
+                  <p className="text-base font-medium text-foreground">Primera consulta</p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    No hay consultas previas registradas para este paciente con este profesional.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-                {(fichaSalud.alergias.length > 0 || fichaSalud.patologias.length > 0) && (
-                  <div className="grid gap-4 md:grid-cols-2 pt-2 border-t border-border/50">
-                    {fichaSalud.alergias.length > 0 && (
-                      <div className="rounded-lg border border-red-100 bg-red-50/50 p-3">
-                        <p className="text-sm font-medium text-red-800 mb-1">Alergias</p>
-                        <p className="text-sm text-red-700/80">{fichaSalud.alergias.join(', ')}</p>
+          {fichaSalud ? (
+            <Card className="border-border/50 shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-medium text-foreground/80">
+                  Hábitos y antecedentes
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Información ampliada de ficha para entender rutina, soporte y riesgos asociados.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <Accordion type="multiple" className="w-full space-y-4">
+                  <AccordionItem value="habitos" className="rounded-2xl border border-border/60 px-4">
+                    <AccordionTrigger className="text-base font-medium hover:no-underline">
+                      Hábitos diarios
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-0">
+                      <div className="grid gap-3 pb-4 md:grid-cols-2 xl:grid-cols-3">
+                        <ItemDatoContexto
+                          etiqueta="Frecuencia de comidas"
+                          valor={obtenerTextoOPlaceholder(fichaSalud.frecuenciaComidas)}
+                        />
+                        <ItemDatoContexto
+                          etiqueta="Consumo de agua"
+                          valor={formatearConsumoAgua(fichaSalud.consumoAguaDiario)}
+                        />
+                        <ItemDatoContexto
+                          etiqueta="Horas de sueño"
+                          valor={formatearHorasSueno(fichaSalud.horasSueno)}
+                        />
+                        <ItemDatoContexto
+                          etiqueta="Consumo de alcohol"
+                          valor={obtenerTextoOPlaceholder(fichaSalud.consumoAlcohol)}
+                        />
+                        <ItemDatoContexto
+                          etiqueta="Tabaco"
+                          valor={formatearSiNo(fichaSalud.fumaTabaco)}
+                        />
+                        <ItemDatoContexto
+                          etiqueta="Suplementos actuales"
+                          valor={obtenerTextoOPlaceholder(
+                            fichaSalud.suplementosActuales,
+                            'Sin suplementos informados',
+                          )}
+                        />
                       </div>
-                    )}
-                    {fichaSalud.patologias.length > 0 && (
-                      <div className="rounded-lg border border-amber-100 bg-amber-50/50 p-3">
-                        <p className="text-sm font-medium text-amber-800 mb-1">Patologías</p>
-                        <p className="text-sm text-amber-700/80">{fichaSalud.patologias.join(', ')}</p>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem value="antecedentes" className="rounded-2xl border border-border/60 px-4">
+                    <AccordionTrigger className="text-base font-medium hover:no-underline">
+                      Antecedentes y soporte
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-0">
+                      <div className="grid gap-3 pb-4 md:grid-cols-2">
+                        <ItemDatoContexto
+                          etiqueta="Cirugías previas"
+                          valor={obtenerTextoOPlaceholder(
+                            fichaSalud.cirugiasPrevias,
+                            'Sin cirugías registradas',
+                          )}
+                        />
+                        <ItemDatoContexto
+                          etiqueta="Antecedentes familiares"
+                          valor={obtenerTextoOPlaceholder(
+                            fichaSalud.antecedentesFamiliares,
+                            'Sin antecedentes declarados',
+                          )}
+                        />
+                        <ItemDatoContexto
+                          etiqueta="Contacto de emergencia"
+                          valor={obtenerTextoOPlaceholder(
+                            fichaSalud.contactoEmergenciaNombre,
+                            'Sin contacto cargado',
+                          )}
+                        />
+                        <ItemDatoContexto
+                          etiqueta="Tel. emergencia"
+                          valor={obtenerTextoOPlaceholder(
+                            fichaSalud.contactoEmergenciaTelefono,
+                            'Sin teléfono cargado',
+                          )}
+                        />
                       </div>
-                    )}
-                  </div>
-                )}
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               </CardContent>
             </Card>
           ) : (
@@ -878,17 +1314,6 @@ export function ConsultaProfesionalPage() {
             </Card>
           )}
 
-          {datosTurno.fichaActualizada && (
-            <Card className="border-amber-200 bg-amber-50/60 shadow-sm">
-              <CardContent className="flex items-start gap-3 pt-6 text-amber-900">
-                <FileWarning className="mt-0.5 h-5 w-5 shrink-0" />
-                <p className="text-sm font-medium">
-                  La ficha de salud fue actualizada después de la última consulta.
-                  Revisá este contexto antes de avanzar.
-                </p>
-              </CardContent>
-            </Card>
-          )}
         </TabsContent>
 
         <TabsContent value="evolucion" className="space-y-6 animate-in fade-in-50 duration-500">

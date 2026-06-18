@@ -42,6 +42,7 @@ export class ReabrirConsultaCerradaAutoUseCase {
 
     turno.estadoTurno = EstadoTurno.EN_CURSO;
     turno.reabiertaPorCierreAuto = true;
+    turno.consultaFinalizadaAt = null;
 
     await this.turnoRepository.save(turno);
 

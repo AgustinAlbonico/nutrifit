@@ -52,6 +52,7 @@ describe('ReabrirConsultaCerradaAutoUseCase', () => {
     expect(turno.estadoTurno).toBe(EstadoTurno.EN_CURSO);
     expect(turno.reabiertaPorCierreAuto).toBe(true);
     expect(turno.cierreAutomatico).toBe(true);
+    expect(turno.consultaFinalizadaAt).toBeNull();
     expect(turnoRepo.save).toHaveBeenCalled();
   });
 

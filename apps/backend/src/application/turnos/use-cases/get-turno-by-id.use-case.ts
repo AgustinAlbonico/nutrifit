@@ -178,6 +178,9 @@ export class GetTurnoByIdUseCase implements BaseUseCase {
       socio: socioResponse,
       fichaSalud: fichaSaludResponse,
       fichaActualizada,
+      cierreAutomatico: turno.cierreAutomatico,
+      motivoCierreAutomatico: turno.motivoCierreAutomatico,
+      reabiertaPorCierreAuto: turno.reabiertaPorCierreAuto,
       consultaId: turno.observacionClinica?.idObservacion ?? null,
       observacionClinica: turno.observacionClinica
         ? {
