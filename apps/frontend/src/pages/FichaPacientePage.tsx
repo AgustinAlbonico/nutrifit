@@ -1,4 +1,4 @@
-import { Link, useParams } from '@tanstack/react-router';
+import { Link, useParams, useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Calendar, FileText, HeartPulse, Scale, Target, Utensils } from 'lucide-react';
 
@@ -6,11 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ComparadorFotosSesion } from '@/components/progreso/ComparadorFotosSesion';
+import { HistorialTurnosPaciente } from '@/components/pacientes/HistorialTurnosPaciente';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRequest } from '@/lib/api';
 import type { ApiResponse } from '@/types/api';
 import type { GaleriaFotos, HistorialMediciones } from '@/components/progreso/types';
-import type { HistorialConsultaPaciente } from '@/types/consulta';
+import type {
+  HistorialConsultaPaciente,
+  HistorialTurnoPaciente,
+} from '@/types/consulta';
 
 interface FichaSaludPaciente {
   fichaSaludId: number;
@@ -33,6 +37,7 @@ interface ListaObjetivosFicha {
 
 export function FichaPacientePage() {
   const { token, personaId } = useAuth();
+  const navigate = useNavigate();
   const { socioId: socioIdParam } = useParams({ from: '/auth/profesional/paciente/$socioId/ficha' });
   const socioId = Number(socioIdParam);
 
@@ -74,6 +79,18 @@ export function FichaPacientePage() {
     enabled: habilitado,
   });
 
+  const historialTurnosQuery = useQuery({
+    queryKey: ['ficha-paciente', 'turnos', personaId, socioId, token],
+    queryFn: async () => {
+      const response = await apiRequest<ApiResponse<HistorialTurnoPaciente[]>>(
+        `/turnos/profesional/${personaId}/pacientes/${socioId}/historial-turnos`,
+        { token },
+      );
+      return response.data ?? [];
+    },
+    enabled: habilitado,
+  });
+
   const fotosQuery = useQuery({
     queryKey: ['ficha-paciente', 'fotos', socioId, token],
     queryFn: async () => {
@@ -106,12 +123,13 @@ export function FichaPacientePage() {
     fichaQuery.isLoading ||
     historialQuery.isLoading ||
     consultasQuery.isLoading ||
+    historialTurnosQuery.isLoading ||
     fotosQuery.isLoading ||
     objetivosQuery.isLoading;
   const ficha = fichaQuery.data;
   const historial = historialQuery.data;
-  const consultas = consultasQuery.data ?? [];
   const objetivosActivos = objetivosQuery.data?.activos ?? [];
+  const turnos = historialTurnosQuery.data ?? [];
   const ultimaMedicion = historial?.mediciones.at(0);
   const nombrePaciente = historial
     ? `${historial.nombreSocio} ${historial.apellidoSocio}`.trim()
@@ -154,7 +172,7 @@ export function FichaPacientePage() {
           <div className="grid gap-4 md:grid-cols-4">
             <MetricaFicha icono={Scale} etiqueta="Peso actual" valor={ultimaMedicion ? `${ultimaMedicion.peso} kg` : '-'} />
             <MetricaFicha icono={HeartPulse} etiqueta="IMC actual" valor={ultimaMedicion?.imc ? ultimaMedicion.imc.toFixed(1) : '-'} />
-            <MetricaFicha icono={Calendar} etiqueta="Consultas cerradas" valor={String(consultas.length)} />
+            <MetricaFicha icono={Calendar} etiqueta="Turnos con el profesional" valor={String(turnos.length)} />
             <MetricaFicha icono={Target} etiqueta="Objetivos activos" valor={String(objetivosActivos.length)} />
           </div>
 
@@ -205,28 +223,13 @@ export function FichaPacientePage() {
             </Card>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Historial de consultas</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {consultas.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No hay consultas cerradas todavía.</p>
-              ) : (
-                consultas.map((consulta) => (
-                  <div key={consulta.idTurno} className="rounded-xl border p-4">
-                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                      <p className="font-semibold">{consulta.fechaTurno} - {consulta.horaTurno}</p>
-                      <span className="text-xs uppercase tracking-wide text-muted-foreground">{consulta.estadoTurno}</span>
-                    </div>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      {consulta.notasProfesional ?? 'Sin comentario clínico visible.'}
-                    </p>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
+          <HistorialTurnosPaciente
+            turnos={turnos}
+            cargando={historialTurnosQuery.isLoading}
+            onRetomarTurno={(idTurno) => {
+              void navigate({ to: `/profesional/consulta/${idTurno}` });
+            }}
+          />
 
           <ComparadorFotosSesion sesiones={fotosQuery.data?.sesiones ?? []} />
         </>

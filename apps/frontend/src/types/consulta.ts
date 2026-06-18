@@ -44,3 +44,23 @@ export interface HistorialConsultaPaciente {
   esPublica?: boolean;
   archivosAdjuntos?: string[];
 }
+
+export type EstadoTurnoHistorial =
+  | 'PROGRAMADO'
+  | 'CONFIRMADO'
+  | 'PRESENTE'
+  | 'EN_CURSO'
+  | 'REALIZADO'
+  | 'AUSENTE'
+  | 'CANCELADO';
+
+export interface HistorialTurnoPaciente {
+  idTurno: number;
+  fechaTurno: string;
+  horaTurno: string;
+  estadoTurno: EstadoTurnoHistorial;
+  tieneMedicion: boolean;
+  tieneObservacion: boolean;
+  cantidadAdjuntos: number;
+  cantidadFotos: number;
+}
