@@ -6,6 +6,7 @@ import { FotoProgresoRepository } from './foto-progreso.repository';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 import { SocioOrmEntity } from '../entities/persona.entity';
 import { TipoFoto } from 'src/domain/entities/FotoProgreso/tipo-foto.enum';
+import { TurnoOrmEntity } from '../entities/turno.entity';
 
 // Use string literal to avoid enum import issues in tests
 const TIPO_FOTO_FRENTE = 'frente' as TipoFoto;
@@ -25,6 +26,14 @@ describe('FotoProgresoRepository - tenant scoping', () => {
     fechaBaja: null,
   });
 
+  const mockTurno = (gimnasioId: number): Partial<TurnoOrmEntity> => ({
+    idTurno: 22,
+    fechaTurno: new Date('2026-06-18T00:00:00.000Z'),
+    horaTurno: '10:00',
+    gimnasio: { idGimnasio: gimnasioId } as TurnoOrmEntity['gimnasio'],
+    socio: mockSocio(gimnasioId) as SocioOrmEntity,
+  });
+
   const mockFotoProgreso = (
     gimnasioId: number,
   ): Partial<FotoProgresoOrmEntity> => ({
@@ -35,6 +44,7 @@ describe('FotoProgresoRepository - tenant scoping', () => {
     mimeType: 'image/jpeg',
     notas: null,
     fecha: new Date(),
+    turno: mockTurno(gimnasioId) as TurnoOrmEntity,
   });
 
   beforeEach(async () => {
@@ -44,6 +54,9 @@ describe('FotoProgresoRepository - tenant scoping', () => {
       create: jest.fn(),
       save: jest.fn(),
       delete: jest.fn(),
+      manager: {
+        findOne: jest.fn(),
+      },
     } as any;
 
     mockTenantContext = {
@@ -90,7 +103,7 @@ describe('FotoProgresoRepository - tenant scoping', () => {
 
       expect(mockFotoRepository.find).toHaveBeenCalledWith({
         where: { socio: { idPersona: 1, gimnasioId: gimnasioIdMock } },
-        relations: { socio: true },
+        relations: { socio: true, turno: true },
         order: { fecha: 'DESC' },
       });
       expect(resultado).toHaveLength(2);
@@ -128,6 +141,30 @@ describe('FotoProgresoRepository - tenant scoping', () => {
     });
   });
 
+  describe('findByTurnoId', () => {
+    it('debe filtrar por turno y gimnasioId del tenant context', async () => {
+      const fotos = [mockFotoProgreso(gimnasioIdMock)];
+      mockFotoRepository.find.mockResolvedValue(
+        fotos as FotoProgresoOrmEntity[],
+      );
+
+      const resultado = await (
+        fotoRepo as unknown as {
+          findByTurnoId: (turnoId: number) => Promise<FotoProgresoOrmEntity[]>;
+        }
+      ).findByTurnoId(22);
+
+      expect(mockFotoRepository.find).toHaveBeenCalledWith({
+        where: {
+          turno: { idTurno: 22, gimnasio: { idGimnasio: gimnasioIdMock } },
+        },
+        relations: { socio: true, turno: true },
+        order: { fecha: 'DESC' },
+      });
+      expect(resultado).toHaveLength(1);
+    });
+  });
+
   describe('findByIdAndSocioId', () => {
     it('debe filtrar por id, socioId y gimnasioId', async () => {
       const foto = mockFotoProgreso(gimnasioIdMock);
@@ -142,7 +179,7 @@ describe('FotoProgresoRepository - tenant scoping', () => {
           idFoto: 1,
           socio: { idPersona: 1, gimnasioId: gimnasioIdMock },
         },
-        relations: { socio: true },
+        relations: { socio: true, turno: true },
       });
       expect(resultado).not.toBeNull();
     });
@@ -189,6 +226,99 @@ describe('FotoProgresoRepository - tenant scoping', () => {
 
       expect(mockFotoRepository.create).toHaveBeenCalledWith(entity);
       expect(resultado.idFoto).toBe(10);
+    });
+  });
+
+  describe('saveForSocio', () => {
+    it('debe resolver socio y turno dentro del gimnasio actual antes de guardar', async () => {
+      const socio = mockSocio(gimnasioIdMock) as SocioOrmEntity;
+      const turno = mockTurno(gimnasioIdMock) as TurnoOrmEntity;
+      const fotoCreada = {
+        socio,
+        turno,
+        tipoFoto: TIPO_FOTO_FRENTE,
+        notas: 'Sesion inicial',
+        objectKey: 'fotos/test.jpg',
+        mimeType: 'image/jpeg',
+      } as FotoProgresoOrmEntity;
+      const fotoGuardada = { ...fotoCreada, idFoto: 33 };
+      jest
+        .mocked(mockFotoRepository.manager.findOne)
+        .mockResolvedValueOnce(socio)
+        .mockResolvedValueOnce(turno);
+      mockFotoRepository.create.mockReturnValue(fotoCreada);
+      mockFotoRepository.save.mockResolvedValue(fotoGuardada);
+
+      const resultado = await (
+        fotoRepo as unknown as {
+          saveForSocio: (
+            entity: Partial<FotoProgresoOrmEntity> & {
+              socioId: number;
+              turnoId?: number;
+            },
+          ) => Promise<FotoProgresoOrmEntity>;
+        }
+      ).saveForSocio({
+        socioId: 1,
+        turnoId: 22,
+        tipoFoto: TIPO_FOTO_FRENTE,
+        notas: 'Sesion inicial',
+        objectKey: 'fotos/test.jpg',
+        mimeType: 'image/jpeg',
+      });
+
+      expect(mockFotoRepository.manager.findOne).toHaveBeenNthCalledWith(
+        1,
+        SocioOrmEntity,
+        { where: { idPersona: 1, gimnasioId: gimnasioIdMock } },
+      );
+      expect(mockFotoRepository.manager.findOne).toHaveBeenNthCalledWith(
+        2,
+        TurnoOrmEntity,
+        {
+          where: {
+            idTurno: 22,
+            socio: { idPersona: 1, gimnasioId: gimnasioIdMock },
+          },
+          relations: { socio: true },
+        },
+      );
+      expect(mockFotoRepository.create).toHaveBeenCalledWith({
+        tipoFoto: TIPO_FOTO_FRENTE,
+        notas: 'Sesion inicial',
+        objectKey: 'fotos/test.jpg',
+        mimeType: 'image/jpeg',
+        socio,
+        turno,
+      });
+      expect(resultado.idFoto).toBe(33);
+    });
+
+    it('debe rechazar un turno que no pertenece al socio o gimnasio actual', async () => {
+      const socio = mockSocio(gimnasioIdMock) as SocioOrmEntity;
+      jest
+        .mocked(mockFotoRepository.manager.findOne)
+        .mockResolvedValueOnce(socio)
+        .mockResolvedValueOnce(null);
+
+      await expect(
+        (
+          fotoRepo as unknown as {
+            saveForSocio: (
+              entity: Partial<FotoProgresoOrmEntity> & {
+                socioId: number;
+                turnoId?: number;
+              },
+            ) => Promise<FotoProgresoOrmEntity>;
+          }
+        ).saveForSocio({
+          socioId: 1,
+          turnoId: 99,
+          tipoFoto: TIPO_FOTO_FRENTE,
+          objectKey: 'fotos/test.jpg',
+          mimeType: 'image/jpeg',
+        }),
+      ).rejects.toThrow('Turno no pertenece al socio o gimnasio actual');
     });
   });
 

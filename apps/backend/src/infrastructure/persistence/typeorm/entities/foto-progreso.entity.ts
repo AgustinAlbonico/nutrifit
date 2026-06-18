@@ -7,6 +7,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { SocioOrmEntity } from './persona.entity';
+import { TurnoOrmEntity } from './turno.entity';
 import { TipoFoto } from 'src/domain/entities/FotoProgreso/tipo-foto.enum';
 import { AuditableOrmEntity } from '../common/auditable.orm-entity';
 
@@ -18,6 +19,10 @@ export class FotoProgresoOrmEntity extends AuditableOrmEntity {
   @ManyToOne(() => SocioOrmEntity, { nullable: false, eager: false })
   @JoinColumn({ name: 'id_socio' })
   socio: SocioOrmEntity;
+
+  @ManyToOne(() => TurnoOrmEntity, { nullable: true, eager: false })
+  @JoinColumn({ name: 'id_turno' })
+  turno: TurnoOrmEntity | null;
 
   @Column({ name: 'tipo_foto', type: 'enum', enum: TipoFoto })
   tipoFoto: TipoFoto;

@@ -61,6 +61,7 @@ export class ProgresoController {
     @UploadedFile() file: Express.Multer.File,
     @Body('tipoFoto') tipoFoto: string,
     @Body('notas') notas?: string,
+    @Body('turnoId') turnoIdRaw?: string,
   ) {
     this.logger.log(`Subiendo foto de progreso para socio ${socioId}`);
 
@@ -73,6 +74,7 @@ export class ProgresoController {
         socioId,
         tipoFoto: tipoFoto.toLowerCase() as TipoFoto,
         notas,
+        turnoId: turnoIdRaw ? Number(turnoIdRaw) : undefined,
       },
       file.buffer,
       file.mimetype,

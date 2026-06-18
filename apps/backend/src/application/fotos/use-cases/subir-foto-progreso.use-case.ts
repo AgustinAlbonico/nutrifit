@@ -10,7 +10,6 @@ import {
 } from 'src/domain/services/object-storage.service';
 import { FotoProgresoRepository } from 'src/infrastructure/persistence/typeorm/repositories/foto-progreso.repository';
 import { FotoProgresoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/foto-progreso.entity';
-import { SocioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/persona.entity';
 
 @Injectable()
 export class SubirFotoProgresoUseCase implements BaseUseCase {
@@ -38,8 +37,9 @@ export class SubirFotoProgresoUseCase implements BaseUseCase {
       mimeType,
     );
 
-    const fotoGuardada = await this.fotoProgresoRepository.save({
-      socio: { idPersona: payload.socioId } as SocioOrmEntity,
+    const fotoGuardada = await this.fotoProgresoRepository.saveForSocio({
+      socioId: payload.socioId,
+      turnoId: payload.turnoId,
       tipoFoto: payload.tipoFoto,
       notas: payload.notas ?? null,
       objectKey,
@@ -67,6 +67,7 @@ export class SubirFotoProgresoUseCase implements BaseUseCase {
     return {
       idFoto: foto.idFoto,
       socioId: foto.socio.idPersona ?? 0,
+      turnoId: foto.turno?.idTurno ?? null,
       tipoFoto: foto.tipoFoto,
       objectKey: foto.objectKey,
       mimeType: foto.mimeType,

@@ -4,11 +4,13 @@ export class SubirFotoProgresoDto {
   socioId: number;
   tipoFoto: TipoFoto;
   notas?: string;
+  turnoId?: number;
 }
 
 export class FotoProgresoResponseDto {
   idFoto: number;
   socioId: number;
+  turnoId: number | null;
   tipoFoto: TipoFoto;
   objectKey: string;
   mimeType: string;
@@ -22,6 +24,15 @@ export class FotosPorTipoResponseDto {
   fotos: FotoProgresoResponseDto[];
 }
 
+export class FotosSesionResponseDto {
+  turnoId: number | null;
+  fechaTurno: string | null;
+  horaTurno: string | null;
+  fotos: FotosPorTipoResponseDto[];
+}
+
 export class GaleriaFotosResponseDto {
   fotos: FotosPorTipoResponseDto[];
+  sesiones: FotosSesionResponseDto[];
+  fotosHistoricasSinSesion: FotosPorTipoResponseDto[];
 }

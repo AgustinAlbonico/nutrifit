@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TipoFoto } from 'src/domain/entities/FotoProgreso/tipo-foto.enum';
 import { FotoProgresoOrmEntity } from '../entities/foto-progreso.entity';
+import { SocioOrmEntity } from '../entities/persona.entity';
+import { TurnoOrmEntity } from '../entities/turno.entity';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 function obtenerGimnasioIdActual(
@@ -34,7 +36,18 @@ export class FotoProgresoRepository {
     const gimnasioId = this.gimnasioIdActual;
     return this.fotoProgresoOrmRepository.find({
       where: { socio: { idPersona: socioId, gimnasioId } },
-      relations: { socio: true },
+      relations: { socio: true, turno: true },
+      order: { fecha: 'DESC' },
+    });
+  }
+
+  async findByTurnoId(turnoId: number): Promise<FotoProgresoOrmEntity[]> {
+    const gimnasioId = this.gimnasioIdActual;
+    return this.fotoProgresoOrmRepository.find({
+      where: {
+        turno: { idTurno: turnoId, gimnasio: { idGimnasio: gimnasioId } },
+      },
+      relations: { socio: true, turno: true },
       order: { fecha: 'DESC' },
     });
   }
@@ -46,7 +59,7 @@ export class FotoProgresoRepository {
     const gimnasioId = this.gimnasioIdActual;
     return this.fotoProgresoOrmRepository.find({
       where: { socio: { idPersona: socioId, gimnasioId }, tipoFoto },
-      relations: { socio: true },
+      relations: { socio: true, turno: true },
       order: { fecha: 'DESC' },
     });
   }
@@ -55,7 +68,7 @@ export class FotoProgresoRepository {
     const gimnasioId = this.gimnasioIdActual;
     return this.fotoProgresoOrmRepository.find({
       where: { socio: { idPersona: socioId, gimnasioId } },
-      relations: { socio: true },
+      relations: { socio: true, turno: true },
       order: { fecha: 'DESC' },
       take: 10,
     });
@@ -68,8 +81,52 @@ export class FotoProgresoRepository {
     const gimnasioId = this.gimnasioIdActual;
     return this.fotoProgresoOrmRepository.findOne({
       where: { idFoto, socio: { idPersona: socioId, gimnasioId } },
-      relations: { socio: true },
+      relations: { socio: true, turno: true },
     });
+  }
+
+  async saveForSocio(
+    entity: Partial<FotoProgresoOrmEntity> & {
+      socioId: number;
+      turnoId?: number;
+    },
+  ): Promise<FotoProgresoOrmEntity> {
+    const gimnasioId = this.gimnasioIdActual;
+    const socio = await this.fotoProgresoOrmRepository.manager.findOne(
+      SocioOrmEntity,
+      {
+        where: { idPersona: entity.socioId, gimnasioId },
+      },
+    );
+
+    if (!socio) {
+      throw new Error('Socio no pertenece al gimnasio actual');
+    }
+
+    const turno = entity.turnoId
+      ? await this.fotoProgresoOrmRepository.manager.findOne(TurnoOrmEntity, {
+          where: {
+            idTurno: entity.turnoId,
+            socio: { idPersona: entity.socioId, gimnasioId },
+          },
+          relations: { socio: true },
+        })
+      : null;
+
+    if (entity.turnoId && !turno) {
+      throw new Error('Turno no pertenece al socio o gimnasio actual');
+    }
+
+    const foto = this.fotoProgresoOrmRepository.create({
+      tipoFoto: entity.tipoFoto,
+      notas: entity.notas ?? null,
+      objectKey: entity.objectKey,
+      mimeType: entity.mimeType,
+      socio,
+      turno,
+    });
+
+    return this.fotoProgresoOrmRepository.save(foto);
   }
 
   async save(
