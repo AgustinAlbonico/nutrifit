@@ -2,7 +2,11 @@ import type { ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
 
-import type { KpiEvolucion, RangoTemporalEvolucion } from './types';
+import type {
+  KpiEvolucion,
+  RangoTemporalEvolucion,
+  RiesgoCardiovascular,
+} from './types';
 
 interface PropiedadesPanelResumenEvolucion {
   titulo: string;
@@ -13,8 +17,24 @@ interface PropiedadesPanelResumenEvolucion {
     pesoActual?: KpiEvolucion;
     cinturaActual?: KpiEvolucion;
   };
+  riesgoCardiovascular?: {
+    relacion: number | null;
+    categoria: RiesgoCardiovascular | null;
+  };
   acciones?: ReactNode;
 }
+
+const ETIQUETAS_RIESGO: Record<RiesgoCardiovascular, string> = {
+  bajo: 'Bajo',
+  moderado: 'Moderado',
+  alto: 'Alto',
+};
+
+const COLORES_RIESGO: Record<RiesgoCardiovascular, string> = {
+  bajo: 'bg-emerald-100 text-emerald-700',
+  moderado: 'bg-amber-100 text-amber-700',
+  alto: 'bg-rose-100 text-rose-700',
+};
 
 const RANGOS: Array<{ id: RangoTemporalEvolucion; label: string }> = [
   { id: '30d', label: '30 dias' },
@@ -57,6 +77,7 @@ export function PanelResumenEvolucion({
   rangoTemporal,
   onCambiarRango,
   kpis,
+  riesgoCardiovascular,
   acciones,
 }: PropiedadesPanelResumenEvolucion) {
   return (
@@ -96,9 +117,33 @@ export function PanelResumenEvolucion({
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:max-w-3xl">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 xl:max-w-4xl">
           <TarjetaKpi titulo="Peso actual" kpi={kpis.pesoActual} />
           <TarjetaKpi titulo="Cintura actual" kpi={kpis.cinturaActual} />
+          {riesgoCardiovascular ? (
+            <div className="rounded-[1.75rem] border border-orange-950/10 bg-white/80 p-5 shadow-sm backdrop-blur-sm">
+              <p className="text-xs font-medium uppercase tracking-[0.22em] text-slate-500">Riesgo cardiovascular</p>
+              <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">
+                {riesgoCardiovascular.relacion != null
+                  ? riesgoCardiovascular.relacion.toFixed(2)
+                  : '-'}
+              </p>
+              {riesgoCardiovascular.categoria ? (
+                <span
+                  className={`mt-2 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${COLORES_RIESGO[riesgoCardiovascular.categoria]}`}
+                >
+                  {ETIQUETAS_RIESGO[riesgoCardiovascular.categoria]}
+                </span>
+              ) : (
+                <>
+                  <p className="mt-2 text-3xl font-black tracking-tight text-slate-950">No aplica</p>
+                  <p className="mt-2 text-sm text-slate-600">
+                    Requiere sexo biologico clasificado para calcularse.
+                  </p>
+                </>
+              )}
+            </div>
+          ) : null}
         </div>
       </div>
     </section>

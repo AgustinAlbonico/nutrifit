@@ -6,6 +6,7 @@ export interface FilaTablaEvolucionPaciente {
   peso: string;
   imc: string;
   cintura: string;
+  pecho: string;
   deltaPeso: string;
   detalle: string;
 }
@@ -43,6 +44,7 @@ export function TablaEvolucionPaciente({ filas }: PropiedadesTablaEvolucionPacie
               <th className="py-3 pr-4 font-medium">Peso</th>
               <th className="py-3 pr-4 font-medium">IMC</th>
               <th className="py-3 pr-4 font-medium">Cintura</th>
+              <th className="py-3 pr-4 font-medium">Pecho</th>
               <th className="py-3 pr-4 font-medium">Delta peso</th>
               <th className="py-3 font-medium">Accion</th>
             </tr>
@@ -55,6 +57,7 @@ export function TablaEvolucionPaciente({ filas }: PropiedadesTablaEvolucionPacie
                   <td className="py-4 pr-4 text-slate-700">{fila.peso}</td>
                   <td className="py-4 pr-4 text-slate-700">{fila.imc}</td>
                   <td className="py-4 pr-4 text-slate-700">{fila.cintura}</td>
+                  <td className="py-4 pr-4 text-slate-700">{fila.pecho}</td>
                   <td className="py-4 pr-4 text-slate-700">{fila.deltaPeso}</td>
                   <td className="py-4">
                     <button
@@ -70,7 +73,7 @@ export function TablaEvolucionPaciente({ filas }: PropiedadesTablaEvolucionPacie
                 </tr>
                 {filaExpandida === fila.id && (
                   <tr className="border-b border-slate-100 bg-slate-50/80">
-                    <td colSpan={6} className="px-4 py-4 text-sm text-slate-600">
+                    <td colSpan={7} className="px-4 py-4 text-sm text-slate-600">
                       {fila.detalle}
                     </td>
                   </tr>

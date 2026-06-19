@@ -219,6 +219,10 @@ export function DashboardProgreso({
         rangoTemporal={rangoTemporal}
         onCambiarRango={setRangoTemporal}
         kpis={seriesEvolucion.kpis}
+        riesgoCardiovascular={{
+          relacion: resumen?.relacionCinturaCadera.actual ?? null,
+          categoria: resumen?.relacionCinturaCadera.riesgoCardiovascular ?? null,
+        }}
         acciones={
           <>
             {esVistaNutricionista && (
@@ -428,6 +432,7 @@ export function DashboardProgreso({
             peso: `${medicion.peso} kg`,
             imc: medicion.imc.toFixed(1),
             cintura: medicion.perimetroCintura ? `${medicion.perimetroCintura} cm` : '-',
+            pecho: medicion.perimetroPecho ? `${medicion.perimetroPecho} cm` : '-',
             deltaPeso:
               indice === 0
                 ? '-'

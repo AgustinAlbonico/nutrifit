@@ -5,6 +5,7 @@ import { MedicionOrmEntity } from 'src/infrastructure/persistence/typeorm/entiti
 import { SocioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/persona.entity';
 import { NotFoundError } from 'src/domain/exceptions/custom-exceptions';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
+import { Genero } from 'src/domain/entities/Persona/Genero';
 
 export type Tendencia = 'subiendo' | 'bajando' | 'estable';
 export type CategoriaIMC = 'bajo_peso' | 'normal' | 'sobrepeso' | 'obesidad';
@@ -206,7 +207,7 @@ export class GetResumenProgresoUseCase {
         : null,
     );
     const riesgoCardiovascular = relacionActual
-      ? this.evaluarRiesgoCardiovascular(relacionActual)
+      ? this.evaluarRiesgoCardiovascular(relacionActual, socio.genero)
       : null;
 
     return {
@@ -294,11 +295,21 @@ export class GetResumenProgresoUseCase {
     return parseFloat((cintura / cadera).toFixed(3));
   }
 
-  private evaluarRiesgoCardiovascular(relacion: number): RiesgoCardiovascular {
-    // Valores generales (deberían ajustarse por género en una implementación real)
-    if (relacion < 0.85) return 'bajo';
-    if (relacion < 0.9) return 'moderado';
-    return 'alto';
+  private evaluarRiesgoCardiovascular(
+    relacion: number,
+    genero: Genero | null,
+  ): RiesgoCardiovascular | null {
+    if (genero === Genero.Masculino) {
+      if (relacion < 0.9) return 'bajo';
+      if (relacion < 1) return 'moderado';
+      return 'alto';
+    }
+    if (genero === Genero.Femenino) {
+      if (relacion < 0.8) return 'bajo';
+      if (relacion < 0.9) return 'moderado';
+      return 'alto';
+    }
+    return null;
   }
 
   private calcularPesoPorIMC(alturaCm: number, imc: number): number {

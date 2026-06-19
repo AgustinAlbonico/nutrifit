@@ -13,6 +13,7 @@ describe('TablaEvolucionPaciente', () => {
             peso: '75 kg',
             imc: '27.5',
             cintura: '86 cm',
+            pecho: '98 cm',
             deltaPeso: '-5 kg',
             detalle: 'Buen progreso',
           },
@@ -22,6 +23,7 @@ describe('TablaEvolucionPaciente', () => {
 
     expect(screen.getByText('Peso')).toBeInTheDocument();
     expect(screen.getByText('IMC')).toBeInTheDocument();
+    expect(screen.getByText('Pecho')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /ver detalle/i }));
     expect(screen.getByText('Buen progreso')).toBeInTheDocument();
   });
