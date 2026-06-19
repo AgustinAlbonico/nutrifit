@@ -52,10 +52,9 @@ describe('GaleriaFotos', () => {
     expect(screen.getByText('Espalda (0)')).toBeInTheDocument();
     expect(screen.getByText('Otro (0)')).toBeInTheDocument();
 
-    expect(screen.getByText('Sin foto de frente')).toBeInTheDocument();
-    expect(screen.getByText('Sin foto de perfil')).toBeInTheDocument();
-    expect(screen.getByText('Sin foto de espalda')).toBeInTheDocument();
-    expect(screen.getByText('Sin foto de otro')).toBeInTheDocument();
+    expect(
+      screen.getAllByText('Empezá por cargar al menos una foto para este ángulo.'),
+    ).toHaveLength(4);
 
     expect(screen.getByRole('button', { name: 'Cargar foto de frente' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Cargar foto de perfil' })).toBeInTheDocument();
@@ -63,7 +62,7 @@ describe('GaleriaFotos', () => {
     expect(screen.getByRole('button', { name: 'Cargar foto de otro' })).toBeInTheDocument();
   });
 
-  it('mantiene los bloques vacios visibles aunque solo exista un tipo cargado', () => {
+  it('mantiene el indice visible aunque solo exista un tipo cargado', () => {
     render(
       <GaleriaFotos
         socioId={9}
@@ -81,11 +80,12 @@ describe('GaleriaFotos', () => {
     expect(screen.getByText('Espalda (0)')).toBeInTheDocument();
     expect(screen.getByText('Otro (0)')).toBeInTheDocument();
 
-    expect(screen.getByAltText('Unica foto de frente')).toBeInTheDocument();
-    expect(screen.getByText('Sin foto de perfil')).toBeInTheDocument();
-    expect(screen.getByText('Sin foto de espalda')).toBeInTheDocument();
-    expect(screen.getByText('Sin foto de otro')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Agregar otra foto de frente' })).toBeInTheDocument();
+    expect(screen.getByAltText('Preview de frente')).toBeInTheDocument();
+    expect(
+      screen.getAllByText('Empezá por cargar al menos una foto para este ángulo.'),
+    ).toHaveLength(3);
+    expect(screen.getByRole('button', { name: 'Abrir historial' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Agregar foto' })).toBeInTheDocument();
   });
 
   it('usa por defecto la primera foto como antes y la ultima como despues', () => {
@@ -105,13 +105,37 @@ describe('GaleriaFotos', () => {
       />,
     );
 
+    expect(screen.getByRole('button', { name: 'Abrir comparación' })).toBeInTheDocument();
+  });
+
+  it('usa por defecto la primera foto como antes y la ultima como despues dentro del modal', async () => {
+    const usuario = userEvent.setup();
+
+    render(
+      <GaleriaFotos
+        socioId={9}
+        galeria={crearGaleria([
+          {
+            tipoFoto: 'perfil',
+            fotos: [
+              crearFoto(11, 'perfil', '2026-01-10T10:00:00.000Z'),
+              crearFoto(12, 'perfil', '2026-03-10T10:00:00.000Z'),
+              crearFoto(13, 'perfil', '2026-06-10T10:00:00.000Z'),
+            ],
+          },
+        ])}
+      />,
+    );
+
+    await usuario.click(screen.getByRole('button', { name: 'Abrir comparación' }));
+
     expect(screen.getByText('Antes: 10 de ene 2026')).toBeInTheDocument();
     expect(screen.getByText('Después: 10 de jun 2026')).toBeInTheDocument();
     expect(screen.getByAltText('Antes: 10 de ene 2026')).toBeInTheDocument();
     expect(screen.getByAltText('Después: 10 de jun 2026')).toBeInTheDocument();
   });
 
-  it('permite cambiar manualmente la foto antes desde las miniaturas', async () => {
+  it('permite cambiar manualmente la foto antes desde las miniaturas del modal', async () => {
     const usuario = userEvent.setup();
 
     render(
@@ -129,6 +153,8 @@ describe('GaleriaFotos', () => {
         ])}
       />,
     );
+
+    await usuario.click(screen.getByRole('button', { name: 'Abrir comparación' }));
 
     await usuario.click(
       screen.getByRole('button', {

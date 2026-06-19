@@ -1,11 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { ImageIcon, Plus, RotateCcw } from 'lucide-react';
+import { Camera, ImageIcon, Plus, RotateCcw } from 'lucide-react';
 import { ReactCompareSlider } from 'react-compare-slider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import type { GaleriaFotos, FotoProgreso, TipoFoto } from './types';
 
 interface PropiedadesGaleriaFotos {
@@ -59,6 +66,9 @@ export function GaleriaFotos({
   });
 
   const hayAlgunaFoto = ORDEN_TIPOS.some((tipo) => fotosPorTipo[tipo].length > 0);
+  const [tipoModalActivo, setTipoModalActivo] = useState<TipoFoto | null>(null);
+
+  const fotosTipoActivo = tipoModalActivo ? fotosPorTipo[tipoModalActivo] : [];
 
   if (cargando) {
     return (
@@ -107,66 +117,133 @@ export function GaleriaFotos({
         </Card>
       )}
 
-      {ORDEN_TIPOS.map((tipo) => {
-        const fotos = fotosPorTipo[tipo];
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {ORDEN_TIPOS.map((tipo) => (
+          <TarjetaIndiceTipo
+            key={tipo}
+            tipo={tipo}
+            fotos={fotosPorTipo[tipo]}
+            puedeEditar={puedeEditar}
+            onAbrir={() => setTipoModalActivo(tipo)}
+            onSubirFotoTipo={onSubirFotoTipo}
+          />
+        ))}
+      </div>
 
-        return (
-          <Card key={tipo}>
-            <CardHeader>
-              <CardTitle className="text-lg">
-                {ETIQUETAS_TIPO[tipo]} ({fotos.length})
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">{DESCRIPCIONES_TIPO[tipo]}</p>
-            </CardHeader>
-            <CardContent>
-              {fotos.length > 0 ? (
-                <div className="space-y-4">
-                  {puedeEditar && onSubirFotoTipo && (
-                    <div className="flex justify-end">
-                      <Button
-                        variant="outline"
-                        onClick={() => onSubirFotoTipo(tipo)}
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Agregar otra foto de {ETIQUETAS_TIPO[tipo].toLowerCase()}
-                      </Button>
-                    </div>
-                  )}
+      <Dialog open={tipoModalActivo !== null} onOpenChange={(open) => !open && setTipoModalActivo(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-6xl">
+          {tipoModalActivo && (
+            <>
+              <DialogHeader>
+                <DialogTitle>
+                  {ETIQUETAS_TIPO[tipoModalActivo]}: comparación y evolución visual
+                </DialogTitle>
+                <DialogDescription>
+                  Compará la primera y la última foto por defecto, y ajustá manualmente el antes y el después desde el historial de tomas.
+                </DialogDescription>
+              </DialogHeader>
 
-                  <ComparadorFotosPorTipo
-                    tipo={tipo}
-                    fotos={fotos}
-                    puedeEditar={puedeEditar}
-                    fotoEliminando={fotoEliminando}
-                    onEliminarFoto={onEliminarFoto}
-                  />
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex min-h-44 flex-col items-center justify-center rounded-xl border border-dashed border-muted-foreground/25 bg-muted/20 px-6 py-8 text-center">
-                    <ImageIcon className="mb-3 h-10 w-10 text-muted-foreground" />
-                    <p className="font-medium text-foreground">
-                      Sin foto de {ETIQUETAS_TIPO[tipo].toLowerCase()}
-                    </p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Cargala para mantener la comparacion visual completa en tu seguimiento.
-                    </p>
-                  </div>
-                  {puedeEditar && onSubirFotoTipo && (
-                    <div className="flex justify-center">
-                      <Button onClick={() => onSubirFotoTipo(tipo)}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Cargar foto de {ETIQUETAS_TIPO[tipo].toLowerCase()}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        );
-      })}
+              <ComparadorFotosPorTipo
+                tipo={tipoModalActivo}
+                fotos={fotosTipoActivo}
+                puedeEditar={puedeEditar}
+                fotoEliminando={fotoEliminando}
+                onEliminarFoto={onEliminarFoto}
+              />
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+}
+
+function TarjetaIndiceTipo({
+  tipo,
+  fotos,
+  puedeEditar,
+  onAbrir,
+  onSubirFotoTipo,
+}: {
+  tipo: TipoFoto;
+  fotos: FotoProgreso[];
+  puedeEditar: boolean;
+  onAbrir: () => void;
+  onSubirFotoTipo?: (tipo: TipoFoto) => void;
+}) {
+  const fotosOrdenadasCronologicamente = useMemo(
+    () =>
+      [...fotos].sort(
+        (a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime(),
+      ),
+    [fotos],
+  );
+
+  const primeraFoto = fotosOrdenadasCronologicamente[0] ?? null;
+  const ultimaFoto = fotosOrdenadasCronologicamente.at(-1) ?? null;
+  const fotoPreview = fotos[0] ?? null;
+
+  return (
+    <Card className="overflow-hidden border-border/70 shadow-sm">
+      <div className="aspect-[4/3] overflow-hidden border-b bg-muted/20">
+        {fotoPreview ? (
+          <img
+            src={fotoPreview.urlFirmada}
+            alt={`Preview de ${ETIQUETAS_TIPO[tipo].toLowerCase()}`}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
+            <Camera className="h-10 w-10" />
+            <span className="text-sm">Sin fotos todavía</span>
+          </div>
+        )}
+      </div>
+
+      <CardHeader className="space-y-2">
+        <CardTitle className="text-lg">
+          {ETIQUETAS_TIPO[tipo]} ({fotos.length})
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">{DESCRIPCIONES_TIPO[tipo]}</p>
+      </CardHeader>
+
+      <CardContent className="space-y-4">
+        {fotos.length > 0 ? (
+          <div className="space-y-2 text-sm text-muted-foreground">
+            <p>
+              Primera: <span className="font-medium text-foreground">{formatearFechaFoto(primeraFoto)}</span>
+            </p>
+            <p>
+              Última: <span className="font-medium text-foreground">{formatearFechaFoto(ultimaFoto)}</span>
+            </p>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Empezá por cargar al menos una foto para este ángulo.
+          </p>
+        )}
+
+        <div className="flex flex-col gap-2">
+          {fotos.length > 0 ? (
+            <Button onClick={onAbrir}>
+              {fotos.length >= 2 ? 'Abrir comparación' : 'Abrir historial'}
+            </Button>
+          ) : puedeEditar && onSubirFotoTipo ? (
+            <Button onClick={() => onSubirFotoTipo(tipo)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Cargar foto de {ETIQUETAS_TIPO[tipo].toLowerCase()}
+            </Button>
+          ) : null}
+
+          {fotos.length > 0 && puedeEditar && onSubirFotoTipo && (
+            <Button variant="outline" onClick={() => onSubirFotoTipo(tipo)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Agregar foto
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

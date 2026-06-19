@@ -13,6 +13,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -144,6 +145,9 @@ export function FotoUploader({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Subir foto de progreso</DialogTitle>
+          <DialogDescription>
+            Elegí el ángulo, seleccioná una imagen y cargala al seguimiento visual.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
