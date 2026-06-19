@@ -222,6 +222,47 @@ const handlerHistorialMedicionesVacio = http.get('/turnos/profesional/:nutricion
   });
 });
 
+const handlerHistorialMedicionesConUltima = http.get(
+  '/turnos/profesional/:nutricionistaId/pacientes/:socioId/historial-mediciones',
+  () => {
+    return HttpResponse.json({
+      success: true,
+      message: 'Historial encontrado',
+      data: {
+        socioId: 10,
+        nombreSocio: 'Juan',
+        apellidoSocio: 'Pérez',
+        altura: 178,
+        mediciones: [
+          {
+            idMedicion: 7,
+            fecha: '2026-04-15T10:00:00.000Z',
+            peso: 84,
+            altura: 178,
+            imc: 26.5,
+            perimetroCintura: 92,
+            perimetroCadera: 102,
+            perimetroBrazo: 32,
+            perimetroMuslo: 58,
+            perimetroPecho: 99,
+            pliegueTriceps: 18,
+            pliegueAbdominal: 22,
+            pliegueMuslo: 20,
+            porcentajeGrasa: 26,
+            masaMagra: 62.2,
+            frecuenciaCardiaca: 72,
+            tensionSistolica: 120,
+            tensionDiastolica: 80,
+            notasMedicion: 'Buen progreso',
+            profesional: { id: 1, nombre: 'Nutri', apellido: 'Demo' },
+          },
+        ],
+      },
+      timestamp: '2026-05-02T09:00:00Z',
+    });
+  },
+);
+
 const handlerHistorialConsultasConDatos = http.get('/turnos/profesional/:nutricionistaId/pacientes/:socioId/historial-consultas', () => {
   return HttpResponse.json({
     success: true,
@@ -469,6 +510,33 @@ describe('ConsultaProfesionalPage - Post-Cierre UI Blocking (TDD 4.4)', () => {
 
       expect(screen.getByText(/consumo de agua/i)).toBeInTheDocument();
       expect(screen.getByText(/2000 ml/i)).toBeInTheDocument();
+    });
+  });
+
+  describe('PREFILL - Última medición como punto de partida', () => {
+    it('TDD-4.4-PREFILL: precarga el peso con la última medición cuando hay historial', async () => {
+      server.use(handlerHistorialMedicionesConUltima);
+      configurarTurnoId('1');
+
+      render(crearProveedorQuery(<ConsultaProfesionalPage />));
+
+      await esperarConsultaCargada();
+      await abrirEtapa(/mediciones/i);
+
+      const pesoInput = (await screen.findByLabelText(/peso \(kg\)/i)) as HTMLInputElement;
+      expect(pesoInput.value).toBe('84');
+    });
+
+    it('TDD-4.4-PREFILL-VACIO: deja el formulario vacio si no hay historial', async () => {
+      configurarTurnoId('1');
+
+      render(crearProveedorQuery(<ConsultaProfesionalPage />));
+
+      await esperarConsultaCargada();
+      await abrirEtapa(/mediciones/i);
+
+      const pesoInput = (await screen.findByLabelText(/peso \(kg\)/i)) as HTMLInputElement;
+      expect(pesoInput.value).toBe('');
     });
   });
 

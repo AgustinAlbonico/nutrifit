@@ -186,13 +186,20 @@ export function FichaPacientePage() {
               </CardHeader>
               <CardContent className="grid gap-4 md:grid-cols-2">
                 <DatoFicha etiqueta="Altura" valor={ficha ? `${ficha.altura} cm` : '-'} />
-                <DatoFicha etiqueta="Peso de referencia" valor={ficha ? `${ficha.peso} kg` : '-'} />
-                <DatoFicha etiqueta="Actividad física" valor={ficha?.nivelActividadFisica ?? '-'} />
-                <DatoFicha etiqueta="Sueño" valor={ficha?.horasSueno ? `${ficha.horasSueno} h` : '-'} />
+                <DatoFicha
+                  etiqueta="Ultimo peso registrado"
+                  valor={ultimaMedicion ? `${ultimaMedicion.peso} kg` : 'Sin registros'}
+                />
+                <DatoFicha
+                  etiqueta="IMC de la ultima medicion"
+                  valor={ultimaMedicion?.imc ? ultimaMedicion.imc.toFixed(1) : '-'}
+                />
+                <DatoFicha etiqueta="Actividad fisica" valor={ficha?.nivelActividadFisica ?? '-'} />
+                <DatoFicha etiqueta="Sueno" valor={ficha?.horasSueno ? `${ficha.horasSueno} h` : '-'} />
                 <DatoFicha etiqueta="Objetivo personal" valor={ficha?.objetivoPersonal ?? '-'} ancho />
                 <DatoFicha etiqueta="Restricciones" valor={ficha?.restriccionesAlimentarias ?? '-'} ancho />
                 <DatoFicha etiqueta="Alergias" valor={ficha?.alergias?.join(', ') || '-'} />
-                <DatoFicha etiqueta="Patologías" valor={ficha?.patologias?.join(', ') || '-'} />
+                <DatoFicha etiqueta="Patologias" valor={ficha?.patologias?.join(', ') || '-'} />
               </CardContent>
             </Card>
 

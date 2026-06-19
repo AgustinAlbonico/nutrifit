@@ -2,7 +2,6 @@ import { Suspense, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import {
   ArrowLeft,
-  BarChart3,
   History,
   TrendingUp,
   Camera,
@@ -14,14 +13,17 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 
 // Progreso components
-import { TarjetasResumenProgreso } from '@/components/progreso/TarjetasResumenProgreso';
+import {
+  GraficoPrincipalEvolucion,
+  type ModoGraficoPrincipal,
+} from '@/components/progreso/GraficoPrincipalEvolucion';
+import { PanelComposicionCorporal } from '@/components/progreso/PanelComposicionCorporal';
+import { PanelPlieguesEvolucion } from '@/components/progreso/PanelPlieguesEvolucion';
+import { PanelResumenEvolucion } from '@/components/progreso/PanelResumenEvolucion';
+import { TablaEvolucionPaciente } from '@/components/progreso/TablaEvolucionPaciente';
+import { TimelineEvolucionClinica } from '@/components/progreso/TimelineEvolucionClinica';
 import { useProgresoData } from '@/components/progreso/useProgresoData';
-import { GraficoEvolucionPeso } from '@/components/progreso/GraficoEvolucionPeso';
-import { GraficoEvolucionIMC } from '@/components/progreso/GraficoEvolucionIMC';
-import { GraficoPerimetros } from '@/components/progreso/GraficoPerimetros';
-import { GraficoComposicionCorporal } from '@/components/progreso/GraficoComposicionCorporal';
-import { GraficoSignosVitales } from '@/components/progreso/GraficoSignosVitales';
-import { TablaHistorialMediciones } from '@/components/progreso/TablaHistorialMediciones';
+import { derivarSeriesEvolucion } from '@/components/progreso/useSeriesEvolucion';
 import { RangoSaludableBadge } from '@/components/progreso/IndicadoresProgreso';
 
 // PDF Export
@@ -43,8 +45,9 @@ import {
   useActualizarObjetivo,
   useMarcarObjetivo,
 } from '@/components/progreso/useObjetivos';
+import type { RangoTemporalEvolucion } from '@/components/progreso/types';
 
-type TabActivo = 'resumen' | 'fotos' | 'objetivos' | 'graficos' | 'historial';
+type TabActivo = 'resumen' | 'fotos' | 'objetivos' | 'historial';
 
 interface PropiedadesDashboardProgreso {
   socioId: number;
@@ -60,11 +63,13 @@ export function DashboardProgreso({
 }: PropiedadesDashboardProgreso) {
   const { token, rol } = useAuth();
   const [tabActivo, setTabActivo] = useState<TabActivo>('resumen');
+  const [rangoTemporal, setRangoTemporal] = useState<RangoTemporalEvolucion>('todo');
+  const [modoGraficoPrincipal, setModoGraficoPrincipal] = useState<ModoGraficoPrincipal>('peso');
   const [subirFotoAbierto, establecerSubirFotoAbierto] = useState(false);
   const [crearObjetivoAbierto, establecerCrearObjetivoAbierto] = useState(false);
 
   // Datos de mediciones
-  const { historial, resumen, isLoading, isError } = useProgresoData({
+  const { historial, resumen, isError } = useProgresoData({
     socioId,
     nutricionistaId,
     token,
@@ -89,6 +94,54 @@ export function DashboardProgreso({
   const marcarObjetivo = useMarcarObjetivo(socioId, token);
 
   const puedeEditar = rol === 'SOCIO' || rol === 'NUTRICIONISTA';
+  const seriesEvolucion = derivarSeriesEvolucion(historial, rangoTemporal);
+  const historialFiltrado = historial
+    ? { ...historial, mediciones: seriesEvolucion.mediciones }
+    : undefined;
+  const eventosTimeline = [
+    ...seriesEvolucion.mediciones.map((medicion) => ({
+      id: `medicion-${medicion.idMedicion}`,
+      fecha: new Date(medicion.fecha).toLocaleDateString('es-AR', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }),
+      titulo: `Medicion registrada: ${medicion.peso} kg`,
+      descripcion: medicion.notasMedicion ?? 'Sin notas adicionales para esta sesion.',
+      orden: new Date(medicion.fecha).getTime(),
+    })),
+    ...(listaObjetivos?.activos ?? []).map((objetivo) => ({
+      id: `objetivo-activo-${objetivo.idObjetivo}`,
+      fecha: new Date(objetivo.fechaInicio).toLocaleDateString('es-AR', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }),
+      titulo: `Objetivo activo: ${objetivo.tipoMetrica}`,
+      descripcion: `Meta ${objetivo.valorObjetivo} con progreso actual ${objetivo.progreso}%.`,
+      orden: new Date(objetivo.fechaInicio).getTime(),
+    })),
+    ...(galeriaFotos?.sesiones ?? []).map((sesion, indice) => ({
+      id: `fotos-sesion-${sesion.turnoId ?? indice}`,
+      fecha: sesion.fechaTurno
+        ? new Date(sesion.fechaTurno).toLocaleDateString('es-AR', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          })
+        : 'Sesion sin fecha',
+      titulo: 'Sesion con fotos de progreso',
+      descripcion: `${sesion.fotos.reduce((total, grupo) => total + grupo.fotos.length, 0)} imagenes registradas para comparacion visual.`,
+      orden: sesion.fechaTurno ? new Date(sesion.fechaTurno).getTime() : 0,
+    })),
+  ]
+    .sort((a, b) => b.orden - a.orden)
+    .map((evento) => ({
+      id: evento.id,
+      fecha: evento.fecha,
+      titulo: evento.titulo,
+      descripcion: evento.descripcion,
+    }));
 
   if (isError) {
     return (
@@ -119,8 +172,8 @@ export function DashboardProgreso({
     ? `Progreso de ${nombrePacienteMostrar}`
     : 'Mi Progreso';
   const subtitulo = esVistaNutricionista
-    ? `${resumen?.totalMediciones ?? 0} mediciones registradas`
-    : 'Seguí tu evolución sesión a sesión';
+    ? `${resumen?.totalMediciones ?? 0} mediciones registradas${resumen?.primeraMedicion ? ` desde ${new Date(resumen.primeraMedicion).toLocaleDateString('es-AR')}` : ''}`
+    : `Segui tu evolucion sesion a sesion${resumen?.primeraMedicion ? ` desde ${new Date(resumen.primeraMedicion).toLocaleDateString('es-AR')}` : ''}`;
   const manejarSubirFoto = async (archivo: File, tipoFoto: 'frente' | 'perfil' | 'espalda' | 'otro', notas?: string) => {
     await subirFoto.mutateAsync({
       archivo,
@@ -153,43 +206,29 @@ export function DashboardProgreso({
 
   const tabs = [
     { id: 'resumen' as TabActivo, label: 'Resumen', icon: TrendingUp },
+    { id: 'historial' as TabActivo, label: 'Historial', icon: History },
     { id: 'fotos' as TabActivo, label: 'Fotos', icon: Camera },
     { id: 'objetivos' as TabActivo, label: 'Objetivos', icon: Target },
-    { id: 'graficos' as TabActivo, label: 'Gráficos', icon: BarChart3 },
-    { id: 'historial' as TabActivo, label: 'Historial', icon: History },
   ];
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-10">
-      {/* Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-orange-500/10 via-rose-500/10 to-transparent p-8 border border-orange-500/20 shadow-sm">
-        <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4">
+      <PanelResumenEvolucion
+        titulo={titulo}
+        subtitulo={subtitulo}
+        rangoTemporal={rangoTemporal}
+        onCambiarRango={setRangoTemporal}
+        kpis={seriesEvolucion.kpis}
+        acciones={
+          <>
             {esVistaNutricionista && (
               <Link to="/turnos-profesional">
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" className="rounded-full bg-white/70">
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Volver
                 </Button>
               </Link>
             )}
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 to-rose-600 bg-clip-text text-transparent flex items-center gap-3">
-                <TrendingUp className="h-8 w-8 text-orange-500" />
-                {titulo}
-              </h1>
-              <p className="mt-2 text-muted-foreground max-w-2xl text-base">
-                {subtitulo}
-                {resumen?.primeraMedicion && (
-                  <span>
-                    {' '}
-                    desde {new Date(resumen.primeraMedicion).toLocaleDateString('es-AR')}
-                  </span>
-                )}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
             {resumen?.imc.categoriaActual && (
               <RangoSaludableBadge categoria={resumen.imc.categoriaActual} />
             )}
@@ -201,11 +240,9 @@ export function DashboardProgreso({
               nombreSocio={esVistaNutricionista ? (nombrePaciente || 'Paciente') : `${historial?.nombreSocio || ''} ${historial?.apellidoSocio || ''}`.trim() || 'Yo'}
               socioId={socioId}
             />
-          </div>
-        </div>
-        <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-orange-500/10 blur-3xl" />
-        <div className="absolute -bottom-10 right-20 h-32 w-32 rounded-full bg-rose-500/10 blur-3xl" />
-      </div>
+          </>
+        }
+      />
 
       {/* Mensaje motivacional */}
       {!esVistaNutricionista && resumen?.peso.tendencia === 'bajando' && (
@@ -213,36 +250,6 @@ export function DashboardProgreso({
           <p className="text-green-700">
             ¡Excelente! Vas muy bien, continuá así con tu progreso.
           </p>
-        </div>
-      )}
-
-      {/* Info del paciente (solo para nutricionista) */}
-      {esVistaNutricionista && historial && (
-        <div className="grid grid-cols-2 gap-4 rounded-lg border bg-gray-50 p-4 sm:grid-cols-4">
-          <div>
-            <p className="text-xs text-gray-500">Altura</p>
-            <p className="font-semibold">{historial.altura} cm</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500">Peso actual</p>
-            <p className="font-semibold">
-              {resumen?.peso.actual ? `${resumen.peso.actual} kg` : '-'}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500">IMC actual</p>
-            <p className="font-semibold">
-              {resumen?.imc.actual ? resumen.imc.actual.toFixed(1) : '-'}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500">Rango saludable</p>
-            <p className="font-semibold text-sm">
-              {resumen?.rangoSaludable.pesoMinimo
-                ? `${resumen.rangoSaludable.pesoMinimo}-${resumen.rangoSaludable.pesoMaximo} kg`
-                : '-'}
-            </p>
-          </div>
         </div>
       )}
 
@@ -270,12 +277,21 @@ export function DashboardProgreso({
       {/* Contenido de tabs */}
       {tabActivo === 'resumen' && (
         <div className="space-y-6">
-          <TarjetasResumenProgreso resumen={resumen} isLoading={isLoading} />
-
-          {/* Gráfico principal */}
           <Suspense fallback={<Skeleton className="h-80" />}>
-            <GraficoEvolucionPeso historial={historial} resumen={resumen} />
+            <GraficoPrincipalEvolucion
+              modo={modoGraficoPrincipal}
+              onCambiarModo={setModoGraficoPrincipal}
+              historial={historialFiltrado}
+              resumen={resumen}
+            />
           </Suspense>
+
+          <PanelComposicionCorporal
+            grasaCorporal={seriesEvolucion.kpis.grasaCorporalActual}
+            masaMagra={seriesEvolucion.kpis.masaMagraActual}
+          />
+
+          <PanelPlieguesEvolucion historial={historialFiltrado ?? undefined} />
 
           {/* Resumen de objetivos activos */}
           {listaObjetivos?.activos && listaObjetivos.activos.length > 0 && (
@@ -294,6 +310,8 @@ export function DashboardProgreso({
               </div>
             </div>
           )}
+
+          <TimelineEvolucionClinica eventos={eventosTimeline} />
         </div>
       )}
 
@@ -398,25 +416,25 @@ export function DashboardProgreso({
         </div>
       )}
 
-      {tabActivo === 'graficos' && (
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Suspense fallback={<Skeleton className="h-80" />}>
-            <GraficoEvolucionIMC historial={historial} />
-          </Suspense>
-          <Suspense fallback={<Skeleton className="h-80" />}>
-            <GraficoPerimetros historial={historial} />
-          </Suspense>
-          <Suspense fallback={<Skeleton className="h-80" />}>
-            <GraficoComposicionCorporal historial={historial} />
-          </Suspense>
-          <Suspense fallback={<Skeleton className="h-80" />}>
-            <GraficoSignosVitales historial={historial} />
-          </Suspense>
-        </div>
-      )}
-
       {tabActivo === 'historial' && (
-        <TablaHistorialMediciones historial={historial} isLoading={isLoading} />
+        <TablaEvolucionPaciente
+          filas={seriesEvolucion.mediciones.map((medicion, indice) => ({
+            id: medicion.idMedicion,
+            fecha: new Date(medicion.fecha).toLocaleDateString('es-AR', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric',
+            }),
+            peso: `${medicion.peso} kg`,
+            imc: medicion.imc.toFixed(1),
+            cintura: medicion.perimetroCintura ? `${medicion.perimetroCintura} cm` : '-',
+            deltaPeso:
+              indice === 0
+                ? '-'
+                : `${Number((medicion.peso - seriesEvolucion.mediciones[0].peso).toFixed(1))} kg`,
+            detalle: medicion.notasMedicion ?? 'Sin notas de medicion',
+          }))}
+        />
       )}
     </div>
   );

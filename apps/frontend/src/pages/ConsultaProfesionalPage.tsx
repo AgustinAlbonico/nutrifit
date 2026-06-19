@@ -502,6 +502,36 @@ export function ConsultaProfesionalPage() {
     void cargarResumenClinicoPaciente();
   }, [cargarResumenClinicoPaciente]);
 
+  useEffect(() => {
+    if (!historialMediciones) return;
+    const ultima = historialMediciones.mediciones[0];
+    if (!ultima) return;
+
+    setFormulario((previo) => {
+      if (previo.peso || previo.perimetroCintura) {
+        return previo;
+      }
+      const numeroATexto = (valor: number | null | undefined) =>
+        valor == null ? '' : String(valor);
+      return {
+        ...previo,
+        peso: numeroATexto(ultima.peso),
+        perimetroCintura: numeroATexto(ultima.perimetroCintura),
+        perimetroCadera: numeroATexto(ultima.perimetroCadera),
+        perimetroBrazo: numeroATexto(ultima.perimetroBrazo),
+        perimetroMuslo: numeroATexto(ultima.perimetroMuslo),
+        perimetroPecho: numeroATexto(ultima.perimetroPecho),
+        pliegueTriceps: numeroATexto(ultima.pliegueTriceps),
+        pliegueAbdominal: numeroATexto(ultima.pliegueAbdominal),
+        pliegueMuslo: numeroATexto(ultima.pliegueMuslo),
+        porcentajeGrasa: numeroATexto(ultima.porcentajeGrasa),
+        frecuenciaCardiaca: numeroATexto(ultima.frecuenciaCardiaca),
+        tensionSistolica: numeroATexto(ultima.tensionSistolica),
+        tensionDiastolica: numeroATexto(ultima.tensionDiastolica),
+      };
+    });
+  }, [historialMediciones]);
+
   const imc = useMemo(() => {
     const pesoNum = Number(formulario.peso);
     const alturaNum = Number(formulario.altura);

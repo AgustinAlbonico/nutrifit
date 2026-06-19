@@ -79,6 +79,39 @@ export interface HistorialMediciones {
   mediciones: MedicionHistorial[];
 }
 
+export type RangoTemporalEvolucion = '30d' | '90d' | '6m' | '12m' | 'todo';
+
+export interface KpiEvolucion {
+  valor: number | null;
+  deltaLineaBase: number | null;
+  deltaPorcentual: number | null;
+  unidad: string;
+  tendenciaTexto: string | null;
+}
+
+export interface PuntoSeriePliegues {
+  fecha: string;
+  fechaFormateada: string;
+  triceps: number | null;
+  abdominal: number | null;
+  muslo: number | null;
+  sumaPliegues: number | null;
+}
+
+export interface ResultadoSeriesEvolucion {
+  mediciones: MedicionHistorial[];
+  kpis: {
+    pesoActual: KpiEvolucion;
+    cinturaActual: KpiEvolucion;
+    grasaCorporalActual: KpiEvolucion;
+    masaMagraActual: KpiEvolucion;
+  };
+  series: {
+    peso: MedicionHistorial[];
+    pliegues: PuntoSeriePliegues[];
+  };
+}
+
 // Datos formateados para gráficos
 export interface DatoGraficoPeso {
   fecha: string;
