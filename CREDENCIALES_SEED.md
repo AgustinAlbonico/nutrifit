@@ -147,19 +147,27 @@ Este archivo resume las credenciales cargadas por `apps/backend/src/seed-multi-t
 | Gym Central | `test-socio@nutrifit.com` | `41234567` |
 | Gym Central | `socio-test-e2e@nutrifit.com` | `77777001` |
 
+### NUTRICIONISTA con historial evolutivo
 
-## Qué conviene probar con cada cuenta
+| Gimnasio | Email | Matrícula |
+|---|---|---|
+| Gym Central | `nutri-evolucion@nutrifit.com` | `MN-3001` |
 
-| Cuenta | Ideal para probar |
-|---|---|
-| `superadmin@nutrifit.com` | acceso global, impersonación, multi-tenant |
-| `admin-central@nutrifit.com` | administración de Gym Central |
-| `admin-norte@nutrifit.com` | administración de Gym Norte |
-| `admin-sur@nutrifit.com` | administración de Gym Sur |
-| `nutri-*@nutrifit.com` | agenda, turnos, pacientes, clínica |
-| `socio-*@nutrifit.com` | catálogo de nutricionistas, reservas, progreso, planes |
-| `recepcion-*@nutrifit.com` | gestión de socios, nutricionistas y turnos en el gimnasio |
-| `nutri.demo.*@gym*.com` | catalogo nutricionistas con datos variados, agendas, tarifas |
+### SOCIO con historial evolutivo (caso de uso longitudinal)
+
+| Gimnasio | Email | DNI | Género | Altura |
+|---|---|---|---|---|
+| Gym Central | `martin-evolucion@nutrifit.com` | `50004001` | MASCULINO | 175 cm |
+
+**Para qué sirve:** este socio tiene **11 turnos REALIZADOS** entre `2026-01-12` y `2026-06-01` (uno cada ~2 semanas) con observaciones clínicas, sugerencias, hábitos y mediciones completas (peso, perímetros de cintura/cadera/brazo/muslo/pecho, pliegues, %grasa, masa magra, tensión arterial, frecuencia cardíaca). Está atendido por `nutri-evolucion@nutrifit.com`.
+
+**Ideal para probar:**
+
+- Pantalla de progreso longitudinal del paciente (`/profesional/paciente/:id/progreso`) con curva real de 5 meses, KPIs, deltas y Riesgo Cardiovascular bajando de Moderado a Bajo.
+- Gráficos de evolución (peso, perímetros, composición corporal) con datos para todos los puntos del eje X.
+- Tabla de evolución con columna Pecho incluida.
+- Comparador de fotos de progreso (subir fotos en distintos turnos para ver el comparador).
+- Vista de ficha del paciente (`/profesional/paciente/:id/ficha`) con historial de consultas, turnos y galería.
 
 ## Siguiente paso
 
