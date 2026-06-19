@@ -11,7 +11,7 @@ import type {
 
 export function useObjetivos(socioId: number, token: string | null) {
   return useQuery<ListaObjetivos>({
-    queryKey: ['progreso', socioId, 'objetivos', token],
+    queryKey: ['paciente', socioId, 'objetivos', token],
     queryFn: async () => {
       const response = await apiRequest<ApiResponse<ListaObjetivos>>(
         `/progreso/${socioId}/objetivos`,
@@ -39,7 +39,7 @@ export function useCrearObjetivo(socioId: number, token: string | null) {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['progreso', socioId, 'objetivos'] });
+      queryClient.invalidateQueries({ queryKey: ['paciente', socioId, 'objetivos'] });
     },
   });
 }
@@ -60,7 +60,7 @@ export function useActualizarObjetivo(socioId: number, token: string | null) {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['progreso', socioId, 'objetivos'] });
+      queryClient.invalidateQueries({ queryKey: ['paciente', socioId, 'objetivos'] });
     },
   });
 }
@@ -81,7 +81,7 @@ export function useMarcarObjetivo(socioId: number, token: string | null) {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['progreso', socioId, 'objetivos'] });
+      queryClient.invalidateQueries({ queryKey: ['paciente', socioId, 'objetivos'] });
     },
   });
 }

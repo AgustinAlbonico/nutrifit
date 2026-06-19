@@ -12,7 +12,7 @@ interface SubirFotoParams {
 
 export function useFotosProgreso(socioId: number, token: string | null) {
   return useQuery<GaleriaFotos>({
-    queryKey: ['progreso', socioId, 'fotos', token],
+    queryKey: ['paciente', socioId, 'fotos', token],
     queryFn: async () => {
       const response = await apiRequest<ApiResponse<GaleriaFotos>>(
         `/progreso/${socioId}/fotos`,
@@ -57,7 +57,7 @@ export function useSubirFoto(socioId: number, token: string | null) {
       return responseBody.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['progreso', socioId, 'fotos'] });
+      queryClient.invalidateQueries({ queryKey: ['paciente', socioId, 'fotos'] });
     },
   });
 }
@@ -73,7 +73,7 @@ export function useEliminarFoto(socioId: number, token: string | null) {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['progreso', socioId, 'fotos'] });
+      queryClient.invalidateQueries({ queryKey: ['paciente', socioId, 'fotos'] });
     },
   });
 }

@@ -56,7 +56,7 @@ export function FichaPacientePage() {
   });
 
   const historialQuery = useQuery({
-    queryKey: ['ficha-paciente', 'mediciones', personaId, socioId, token],
+    queryKey: ['paciente', socioId, 'mediciones', personaId, token],
     queryFn: async () => {
       const response = await apiRequest<ApiResponse<HistorialMediciones>>(
         `/turnos/profesional/${personaId}/pacientes/${socioId}/historial-mediciones`,
@@ -92,7 +92,7 @@ export function FichaPacientePage() {
   });
 
   const fotosQuery = useQuery({
-    queryKey: ['ficha-paciente', 'fotos', socioId, token],
+    queryKey: ['paciente', socioId, 'fotos', token],
     queryFn: async () => {
       const response = await apiRequest<ApiResponse<GaleriaFotos>>(
         `/progreso/${socioId}/fotos`,
@@ -104,7 +104,7 @@ export function FichaPacientePage() {
   });
 
   const objetivosQuery = useQuery({
-    queryKey: ['ficha-paciente', 'objetivos', socioId, token],
+    queryKey: ['paciente', socioId, 'objetivos', token],
     queryFn: async () => {
       const response = await apiRequest<ApiResponse<ListaObjetivosFicha>>(
         `/progreso/${socioId}/objetivos`,

@@ -14,7 +14,7 @@ export function useProgresoData(options: UseProgresoDataOptions = {}) {
 
   // Hook para obtener historial de mediciones
   const historialQuery = useQuery<HistorialMediciones>({
-    queryKey: ['progreso', 'historial', socioId, nutricionistaId, token],
+    queryKey: ['paciente', socioId, 'mediciones', nutricionistaId, token],
     queryFn: async () => {
       const endpoint =
         socioId && nutricionistaId
@@ -31,7 +31,7 @@ export function useProgresoData(options: UseProgresoDataOptions = {}) {
 
   // Hook para obtener resumen de progreso
   const resumenQuery = useQuery<ResumenProgreso>({
-    queryKey: ['progreso', 'resumen', socioId, nutricionistaId, token],
+    queryKey: ['paciente', socioId, 'resumen', nutricionistaId, token],
     queryFn: async () => {
       const endpoint =
         socioId && nutricionistaId
@@ -65,7 +65,7 @@ export function useHistorialMediciones(
   token?: string | null,
 ) {
   return useQuery<HistorialMediciones>({
-    queryKey: ['progreso', 'historial', socioId, nutricionistaId, token],
+    queryKey: ['paciente', socioId, 'mediciones', nutricionistaId, token],
     queryFn: async () => {
       const endpoint =
         socioId && nutricionistaId
@@ -87,7 +87,7 @@ export function useResumenProgreso(
   token?: string | null,
 ) {
   return useQuery<ResumenProgreso>({
-    queryKey: ['progreso', 'resumen', socioId, nutricionistaId, token],
+    queryKey: ['paciente', socioId, 'resumen', nutricionistaId, token],
     queryFn: async () => {
       const endpoint =
         socioId && nutricionistaId
