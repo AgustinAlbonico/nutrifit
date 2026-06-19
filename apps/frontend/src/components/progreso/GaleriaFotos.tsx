@@ -23,6 +23,13 @@ const ETIQUETAS_TIPO: Record<string, string> = {
   otro: 'Otro',
 };
 
+const DESCRIPCIONES_TIPO: Record<TipoFoto, string> = {
+  frente: 'Vista frontal para comparar postura y composicion.',
+  perfil: 'Vista lateral para seguir abdomen y alineacion.',
+  espalda: 'Vista posterior para cambios de composicion.',
+  otro: 'Toma complementaria o detalle clinico adicional.',
+};
+
 export function GaleriaFotos({
   galeria,
   cargando = false,
@@ -31,6 +38,22 @@ export function GaleriaFotos({
   fotoEliminando,
   onSubirFoto,
 }: PropiedadesGaleriaFotos) {
+  const fotosPorTipo = ORDEN_TIPOS.reduce((acc, tipo) => {
+    acc[tipo] = [];
+    return acc;
+  }, {} as Record<TipoFoto, FotoProgreso[]>);
+
+  galeria?.fotos?.forEach((grupo) => {
+    const tipo = grupo.tipoFoto as TipoFoto;
+    if (fotosPorTipo[tipo]) {
+      fotosPorTipo[tipo] = grupo.fotos.sort(
+        (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
+      );
+    }
+  });
+
+  const hayAlgunaFoto = ORDEN_TIPOS.some((tipo) => fotosPorTipo[tipo].length > 0);
+
   if (cargando) {
     return (
       <div className="space-y-6">
@@ -55,53 +78,31 @@ export function GaleriaFotos({
     );
   }
 
-  if (!galeria?.fotos || galeria.fotos.length === 0) {
-    return (
-      <Card>
-        <CardContent className="flex flex-col items-center justify-center py-12">
-          <ImageIcon className="h-16 w-16 text-muted-foreground mb-4" />
-          <p className="text-muted-foreground text-center mb-4">
-            No hay fotos de progreso registradas
-          </p>
-          {puedeEditar && onSubirFoto && (
-            <Button onClick={onSubirFoto}>
-              <Plus className="h-4 w-4 mr-2" />
-              Subir primera foto
-            </Button>
-          )}
-        </CardContent>
-      </Card>
-    );
-  }
-
-  const fotosPorTipo = ORDEN_TIPOS.reduce((acc, tipo) => {
-    acc[tipo] = [];
-    return acc;
-  }, {} as Record<TipoFoto, FotoProgreso[]>);
-
-  galeria.fotos.forEach((grupo) => {
-    const tipo = grupo.tipoFoto as TipoFoto;
-    if (fotosPorTipo[tipo]) {
-      fotosPorTipo[tipo] = grupo.fotos.sort(
-        (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
-      );
-    }
-  });
-
   return (
     <div className="space-y-6">
       {puedeEditar && onSubirFoto && (
         <div className="flex justify-end">
           <Button onClick={onSubirFoto}>
             <Plus className="h-4 w-4 mr-2" />
-            Subir foto
+            {hayAlgunaFoto ? 'Subir foto' : 'Subir primera foto'}
           </Button>
         </div>
       )}
 
+      {!hayAlgunaFoto && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-8 text-center">
+            <ImageIcon className="mb-4 h-12 w-12 text-muted-foreground" />
+            <p className="font-medium text-foreground">Todavia no hay fotos de progreso</p>
+            <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+              Cuando cargues imagenes, vas a poder organizarlas por frente, perfil, espalda u otra toma complementaria.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {ORDEN_TIPOS.map((tipo) => {
         const fotos = fotosPorTipo[tipo];
-        if (fotos.length === 0) return null;
 
         return (
           <Card key={tipo}>
@@ -109,19 +110,32 @@ export function GaleriaFotos({
               <CardTitle className="text-lg">
                 {ETIQUETAS_TIPO[tipo]} ({fotos.length})
               </CardTitle>
+              <p className="text-sm text-muted-foreground">{DESCRIPCIONES_TIPO[tipo]}</p>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {fotos.map((foto) => (
-                  <TarjetaFoto
-                    key={foto.idFoto}
-                    foto={foto}
-                    puedeEliminar={puedeEditar}
-                    onDelete={() => onEliminarFoto?.(foto.idFoto)}
-                    eliminando={fotoEliminando === foto.idFoto}
-                  />
-                ))}
-              </div>
+              {fotos.length > 0 ? (
+                <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+                  {fotos.map((foto) => (
+                    <TarjetaFoto
+                      key={foto.idFoto}
+                      foto={foto}
+                      puedeEliminar={puedeEditar}
+                      onDelete={() => onEliminarFoto?.(foto.idFoto)}
+                      eliminando={fotoEliminando === foto.idFoto}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex min-h-44 flex-col items-center justify-center rounded-xl border border-dashed border-muted-foreground/25 bg-muted/20 px-6 py-8 text-center">
+                  <ImageIcon className="mb-3 h-10 w-10 text-muted-foreground" />
+                  <p className="font-medium text-foreground">
+                    Sin foto de {ETIQUETAS_TIPO[tipo].toLowerCase()}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Cargala para mantener la comparacion visual completa en tu seguimiento.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         );
