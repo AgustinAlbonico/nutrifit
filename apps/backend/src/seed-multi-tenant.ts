@@ -1035,8 +1035,8 @@ async function runSeedMultiTenant() {
       const emailSocio = 'martin-evolucion@nutrifit.com';
 
       const resultFicha: unknown = await dataSource.query(
-        `INSERT INTO ficha_salud (altura, peso, objetivo_personal, nivel_actividad_fisica, medicacion_actual, frecuencia_comidas, consumo_agua_diario, consumo_alcohol, fuma_tabaco, horas_sueno, contacto_emergencia_nombre, contacto_emergencia_telefono, completada, consent_at)
-         VALUES (?, ?, 'Reducir peso corporal del 31% al 25% de grasa y mejorar composicion corporal general', 'SEDENTARIO', 'Ninguna', '3 comidas', 1.5, 'Ocasional', FALSE, 6, 'Laura Evolucion', '341-555-9000', TRUE, NOW())`,
+        `INSERT INTO ficha_salud (altura, peso, objetivo_personal, nivel_actividad_fisica, medicacion_actual, frecuencia_comidas, consumo_agua_diario, consumo_alcohol, fuma_tabaco, horas_sueno, contacto_emergencia_nombre, contacto_emergencia_telefono, completada, consent_at, completada_at, actualizada_at)
+         VALUES (?, ?, 'Reducir peso corporal del 31% al 25% de grasa y mejorar composicion corporal general', 'SEDENTARIO', 'Ninguna', '3 comidas', 1.5, 'Ocasional', FALSE, 6, 'Laura Evolucion', '341-555-9000', TRUE, NOW(), NOW(), NOW())`,
         [alturaCm, 95.0],
       );
 
@@ -1062,9 +1062,36 @@ async function runSeedMultiTenant() {
 
       await asignarGruposAUsuario(emailSocio, 'SOCIO');
 
+      const snapshotInicial = JSON.stringify({
+        altura: alturaCm,
+        peso: 95.0,
+        objetivo_personal:
+          'Reducir peso corporal del 31% al 25% de grasa y mejorar composicion corporal general',
+        nivel_actividad_fisica: 'SEDENTARIO',
+        medicacion_actual: 'Ninguna',
+        frecuencia_comidas: '3 comidas',
+        consumo_agua_diario: 1.5,
+        consumo_alcohol: 'Ocasional',
+        fuma_tabaco: false,
+        horas_sueno: 6,
+        contacto_emergencia_nombre: 'Laura Evolucion',
+        contacto_emergencia_telefono: '341-555-9000',
+        alergias: [],
+        patologias: [],
+      });
+
+      const resultVersion: unknown = await dataSource.query(
+        `INSERT INTO ficha_salud_version (id_ficha_salud, id_socio, version, datos_json, created_at, created_by)
+         VALUES (?, ?, 1, ?, NOW(), NULL)`,
+        [idFichaSalud, idSocioPersona, snapshotInicial],
+      );
+
+      const filaVersion = resultVersion as { insertId: number };
+      const idVersion = filaVersion.insertId;
+
       await dataSource.query(
         `UPDATE ficha_salud SET version_actual_id = ? WHERE id_ficha_salud = ?`,
-        [idFichaSalud, idFichaSalud],
+        [idVersion, idFichaSalud],
       );
 
       console.log(`SOCIO evolucion: ${emailSocio} (ID persona: ${idSocioPersona})`);
@@ -1121,8 +1148,8 @@ async function runSeedMultiTenant() {
         const idTurno = filaTurno.insertId;
 
         const resultObs: unknown = await dataSource.query(
-          `INSERT INTO observacion_clinica (comentario, peso, altura, imc, sugerencias, habitos_socio, objetivos_socio)
-           VALUES (?, ?, ?, ?, ?, ?, 'Reducir grasa corporal y mejorar composicion')`,
+          `INSERT INTO observacion_clinica (comentario, peso, altura, imc, sugerencias, habitos_socio, objetivos_socio, version, es_publica)
+           VALUES (?, ?, ?, ?, ?, ?, 'Reducir grasa corporal y mejorar composicion', 1, 1)`,
           [d.comentario, d.peso, alturaCm, d.imc, d.sugerencias, d.habitos],
         );
 
