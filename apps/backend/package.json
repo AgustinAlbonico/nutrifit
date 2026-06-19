@@ -23,7 +23,8 @@
     "migration:repair-history": "npm run build && node dist/scripts/repair-migration-history.js",
     "migration:run": "npm run build && npm run migration:repair-history && node ../../node_modules/typeorm/cli.js migration:run -d dist/infrastructure/config/typeorm/migration.schema.js",
     "migration:revert": "npm run build && node ../../node_modules/typeorm/cli.js migration:revert -d dist/infrastructure/config/typeorm/migration.schema.js",
-    "seed:multi-tenant": "ts-node -r tsconfig-paths/register src/seed-multi-tenant.ts"
+    "seed:multi-tenant": "ts-node -r tsconfig-paths/register src/seed-multi-tenant.ts",
+    "seed:martin-fotos": "ts-node -r tsconfig-paths/register src/scripts/seed-martin-evolucion-fotos.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

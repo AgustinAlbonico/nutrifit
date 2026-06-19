@@ -3,11 +3,36 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { GaleriaFotos } from './GaleriaFotos';
-import type { GaleriaFotos as TipoGaleriaFotos } from './types';
+import type { FotoProgreso, GaleriaFotos as TipoGaleriaFotos } from './types';
+
+vi.mock('react-compare-slider', () => ({
+  ReactCompareSlider: ({ itemOne, itemTwo }: { itemOne: React.ReactNode; itemTwo: React.ReactNode }) => (
+    <div>
+      {itemOne}
+      {itemTwo}
+    </div>
+  ),
+}));
 
 const crearGaleria = (fotos: TipoGaleriaFotos['fotos'] = []): TipoGaleriaFotos => ({
   fotos,
   sesiones: [],
+});
+
+const crearFoto = (
+  idFoto: number,
+  tipoFoto: FotoProgreso['tipoFoto'],
+  fecha: string,
+): FotoProgreso => ({
+  idFoto,
+  socioId: 9,
+  turnoId: 100 + idFoto,
+  tipoFoto,
+  objectKey: `fotos/${tipoFoto}-${idFoto}.jpg`,
+  mimeType: 'image/jpeg',
+  notas: `Foto ${tipoFoto} ${idFoto}`,
+  fecha,
+  urlFirmada: `https://example.com/${tipoFoto}-${idFoto}.jpg`,
 });
 
 describe('GaleriaFotos', () => {
@@ -43,22 +68,7 @@ describe('GaleriaFotos', () => {
       <GaleriaFotos
         socioId={9}
         galeria={crearGaleria([
-          {
-            tipoFoto: 'frente',
-            fotos: [
-              {
-                idFoto: 1,
-                socioId: 9,
-                turnoId: 101,
-                tipoFoto: 'frente',
-                objectKey: 'fotos/frente.jpg',
-                mimeType: 'image/jpeg',
-                notas: null,
-                fecha: '2026-06-19T10:00:00.000Z',
-                urlFirmada: 'https://example.com/frente.jpg',
-              },
-            ],
-          },
+          { tipoFoto: 'frente', fotos: [crearFoto(1, 'frente', '2026-06-19T10:00:00.000Z')] },
         ])}
         puedeEditar
         onSubirFoto={vi.fn()}
@@ -71,11 +81,64 @@ describe('GaleriaFotos', () => {
     expect(screen.getByText('Espalda (0)')).toBeInTheDocument();
     expect(screen.getByText('Otro (0)')).toBeInTheDocument();
 
-    expect(screen.getByAltText('Foto frente')).toBeInTheDocument();
+    expect(screen.getByAltText('Unica foto de frente')).toBeInTheDocument();
     expect(screen.getByText('Sin foto de perfil')).toBeInTheDocument();
     expect(screen.getByText('Sin foto de espalda')).toBeInTheDocument();
     expect(screen.getByText('Sin foto de otro')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Agregar otra foto de frente' })).toBeInTheDocument();
+  });
+
+  it('usa por defecto la primera foto como antes y la ultima como despues', () => {
+    render(
+      <GaleriaFotos
+        socioId={9}
+        galeria={crearGaleria([
+          {
+            tipoFoto: 'perfil',
+            fotos: [
+              crearFoto(11, 'perfil', '2026-01-10T10:00:00.000Z'),
+              crearFoto(12, 'perfil', '2026-03-10T10:00:00.000Z'),
+              crearFoto(13, 'perfil', '2026-06-10T10:00:00.000Z'),
+            ],
+          },
+        ])}
+      />,
+    );
+
+    expect(screen.getByText('Antes: 10 de ene 2026')).toBeInTheDocument();
+    expect(screen.getByText('Después: 10 de jun 2026')).toBeInTheDocument();
+    expect(screen.getByAltText('Antes: 10 de ene 2026')).toBeInTheDocument();
+    expect(screen.getByAltText('Después: 10 de jun 2026')).toBeInTheDocument();
+  });
+
+  it('permite cambiar manualmente la foto antes desde las miniaturas', async () => {
+    const usuario = userEvent.setup();
+
+    render(
+      <GaleriaFotos
+        socioId={9}
+        galeria={crearGaleria([
+          {
+            tipoFoto: 'perfil',
+            fotos: [
+              crearFoto(21, 'perfil', '2026-01-10T10:00:00.000Z'),
+              crearFoto(22, 'perfil', '2026-03-10T10:00:00.000Z'),
+              crearFoto(23, 'perfil', '2026-06-10T10:00:00.000Z'),
+            ],
+          },
+        ])}
+      />,
+    );
+
+    await usuario.click(
+      screen.getByRole('button', {
+        name: 'Usar 10 de mar 2026 como antes en Perfil',
+      }),
+    );
+
+    expect(screen.getByText('Antes: 10 de mar 2026')).toBeInTheDocument();
+    expect(screen.getByAltText('Antes: 10 de mar 2026')).toBeInTheDocument();
+    expect(screen.getByText('Después: 10 de jun 2026')).toBeInTheDocument();
   });
 
   it('dispara la accion contextual con el tipo correcto', async () => {

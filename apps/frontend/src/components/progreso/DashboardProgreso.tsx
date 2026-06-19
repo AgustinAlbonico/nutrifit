@@ -32,8 +32,6 @@ import { ExportProgresoPDFButton } from '@/components/progreso/ExportProgresoPDF
 // Photo components
 import { GaleriaFotos } from '@/components/progreso/GaleriaFotos';
 import { FotoUploader } from '@/components/progreso/FotoUploader';
-import { ComparacionFotos } from '@/components/progreso/ComparacionFotos';
-import { ComparadorFotosSesion } from '@/components/progreso/ComparadorFotosSesion';
 import { useFotosProgreso, useSubirFoto, useEliminarFoto } from '@/components/progreso/useFotosProgreso';
 
 // Goal components
@@ -337,9 +335,6 @@ export function DashboardProgreso({
             onSubirFoto={() => manejarAbrirUploaderFoto('frente')}
             onSubirFotoTipo={manejarAbrirUploaderFoto}
           />
-
-          <ComparacionFotos galeria={galeriaFotos} cargando={cargandoFotos} />
-          <ComparadorFotosSesion sesiones={galeriaFotos?.sesiones ?? []} />
 
           <FotoUploader
             abierto={subirFotoAbierto}
