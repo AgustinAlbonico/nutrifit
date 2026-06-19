@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Upload, X, ImagePlus, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -31,6 +31,7 @@ interface PropiedadesFotoUploader {
   onCerrar: () => void;
   onSubir: (archivo: File, tipoFoto: TipoFoto, notas?: string) => Promise<void>;
   cargando?: boolean;
+  tipoFotoInicial?: TipoFoto;
 }
 
 const OPCIONES_TIPO: { valor: TipoFoto; etiqueta: string }[] = [
@@ -45,10 +46,11 @@ export function FotoUploader({
   onCerrar,
   onSubir,
   cargando = false,
+  tipoFotoInicial = 'frente',
 }: PropiedadesFotoUploader) {
   const [archivo, establecerArchivo] = useState<File | null>(null);
   const [previewUrl, establecerPreviewUrl] = useState<string | null>(null);
-  const [tipoFoto, establecerTipoFoto] = useState<TipoFoto>('frente');
+  const [tipoFoto, establecerTipoFoto] = useState<TipoFoto>(tipoFotoInicial);
   const [notas, establecerNotas] = useState('');
   const [error, establecerError] = useState<string | null>(null);
   const [arrastrando, establecerArrastrando] = useState(false);
@@ -60,10 +62,16 @@ export function FotoUploader({
     }
     establecerArchivo(null);
     establecerPreviewUrl(null);
-    establecerTipoFoto('frente');
+    establecerTipoFoto(tipoFotoInicial);
     establecerNotas('');
     establecerError(null);
-  }, [previewUrl]);
+  }, [previewUrl, tipoFotoInicial]);
+
+  useEffect(() => {
+    if (abierto) {
+      establecerTipoFoto(tipoFotoInicial);
+    }
+  }, [abierto, tipoFotoInicial]);
 
   const manejarCerrar = () => {
     limpiarEstado();
@@ -146,6 +154,25 @@ export function FotoUploader({
             </Alert>
           )}
 
+          <div className="space-y-2">
+            <Label>Tipo de foto</Label>
+            <Select
+              value={tipoFoto}
+              onValueChange={(valor) => establecerTipoFoto(valor as TipoFoto)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {OPCIONES_TIPO.map((opcion) => (
+                  <SelectItem key={opcion.valor} value={opcion.valor}>
+                    {opcion.etiqueta}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {!archivo ? (
             <div
               className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
@@ -204,25 +231,6 @@ export function FotoUploader({
 
           {archivo && (
             <>
-              <div className="space-y-2">
-                <Label>Tipo de foto</Label>
-                <Select
-                  value={tipoFoto}
-                  onValueChange={(valor) => establecerTipoFoto(valor as TipoFoto)}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {OPCIONES_TIPO.map((opcion) => (
-                      <SelectItem key={opcion.valor} value={opcion.valor}>
-                        {opcion.etiqueta}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
               <div className="space-y-2">
                 <Label>Notas (opcional)</Label>
                 <Textarea

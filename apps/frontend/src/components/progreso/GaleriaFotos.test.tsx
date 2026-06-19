@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 import { GaleriaFotos } from './GaleriaFotos';
 import type { GaleriaFotos as TipoGaleriaFotos } from './types';
@@ -17,6 +18,7 @@ describe('GaleriaFotos', () => {
         galeria={crearGaleria()}
         puedeEditar
         onSubirFoto={vi.fn()}
+        onSubirFotoTipo={vi.fn()}
       />,
     );
 
@@ -29,6 +31,11 @@ describe('GaleriaFotos', () => {
     expect(screen.getByText('Sin foto de perfil')).toBeInTheDocument();
     expect(screen.getByText('Sin foto de espalda')).toBeInTheDocument();
     expect(screen.getByText('Sin foto de otro')).toBeInTheDocument();
+
+    expect(screen.getByRole('button', { name: 'Cargar foto de frente' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cargar foto de perfil' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cargar foto de espalda' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cargar foto de otro' })).toBeInTheDocument();
   });
 
   it('mantiene los bloques vacios visibles aunque solo exista un tipo cargado', () => {
@@ -53,6 +60,9 @@ describe('GaleriaFotos', () => {
             ],
           },
         ])}
+        puedeEditar
+        onSubirFoto={vi.fn()}
+        onSubirFotoTipo={vi.fn()}
       />,
     );
 
@@ -65,5 +75,25 @@ describe('GaleriaFotos', () => {
     expect(screen.getByText('Sin foto de perfil')).toBeInTheDocument();
     expect(screen.getByText('Sin foto de espalda')).toBeInTheDocument();
     expect(screen.getByText('Sin foto de otro')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Agregar otra foto de frente' })).toBeInTheDocument();
+  });
+
+  it('dispara la accion contextual con el tipo correcto', async () => {
+    const usuario = userEvent.setup();
+    const onSubirFotoTipo = vi.fn();
+
+    render(
+      <GaleriaFotos
+        socioId={9}
+        galeria={crearGaleria()}
+        puedeEditar
+        onSubirFoto={vi.fn()}
+        onSubirFotoTipo={onSubirFotoTipo}
+      />,
+    );
+
+    await usuario.click(screen.getByRole('button', { name: 'Cargar foto de perfil' }));
+
+    expect(onSubirFotoTipo).toHaveBeenCalledWith('perfil');
   });
 });

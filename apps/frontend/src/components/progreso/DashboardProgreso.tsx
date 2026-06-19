@@ -66,6 +66,7 @@ export function DashboardProgreso({
   const [rangoTemporal, setRangoTemporal] = useState<RangoTemporalEvolucion>('todo');
   const [modoGraficoPrincipal, setModoGraficoPrincipal] = useState<ModoGraficoPrincipal>('peso');
   const [subirFotoAbierto, establecerSubirFotoAbierto] = useState(false);
+  const [tipoFotoInicial, establecerTipoFotoInicial] = useState<'frente' | 'perfil' | 'espalda' | 'otro'>('frente');
   const [crearObjetivoAbierto, establecerCrearObjetivoAbierto] = useState(false);
 
   // Datos de mediciones
@@ -184,6 +185,11 @@ export function DashboardProgreso({
 
   const manejarEliminarFoto = async (fotoId: number) => {
     await eliminarFoto.mutateAsync(fotoId);
+  };
+
+  const manejarAbrirUploaderFoto = (tipo: 'frente' | 'perfil' | 'espalda' | 'otro' = 'frente') => {
+    establecerTipoFotoInicial(tipo);
+    establecerSubirFotoAbierto(true);
   };
 
   const manejarCrearObjetivo = async (dto: { tipoMetrica: 'PESO' | 'CINTURA' | 'CADERA' | 'BRAZO' | 'MUSLO' | 'PECHO'; valorInicial: number; valorObjetivo: number; fechaObjetivo?: string }) => {
@@ -328,7 +334,8 @@ export function DashboardProgreso({
             puedeEditar={puedeEditar && !esVistaNutricionista}
             onEliminarFoto={manejarEliminarFoto}
             fotoEliminando={eliminarFoto.isPending ? 1 : null}
-            onSubirFoto={() => establecerSubirFotoAbierto(true)}
+            onSubirFoto={() => manejarAbrirUploaderFoto('frente')}
+            onSubirFotoTipo={manejarAbrirUploaderFoto}
           />
 
           <ComparacionFotos galeria={galeriaFotos} cargando={cargandoFotos} />
@@ -339,6 +346,7 @@ export function DashboardProgreso({
             onCerrar={() => establecerSubirFotoAbierto(false)}
             onSubir={manejarSubirFoto}
             cargando={subirFoto.isPending}
+            tipoFotoInicial={tipoFotoInicial}
           />
         </div>
       )}

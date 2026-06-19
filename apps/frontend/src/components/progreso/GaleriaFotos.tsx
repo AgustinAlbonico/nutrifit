@@ -12,6 +12,7 @@ interface PropiedadesGaleriaFotos {
   onEliminarFoto?: (fotoId: number) => void;
   fotoEliminando?: number | null;
   onSubirFoto?: () => void;
+  onSubirFotoTipo?: (tipo: TipoFoto) => void;
 }
 
 const ORDEN_TIPOS: TipoFoto[] = ['frente', 'perfil', 'espalda', 'otro'];
@@ -37,6 +38,7 @@ export function GaleriaFotos({
   onEliminarFoto,
   fotoEliminando,
   onSubirFoto,
+  onSubirFotoTipo,
 }: PropiedadesGaleriaFotos) {
   const fotosPorTipo = ORDEN_TIPOS.reduce((acc, tipo) => {
     acc[tipo] = [];
@@ -114,26 +116,49 @@ export function GaleriaFotos({
             </CardHeader>
             <CardContent>
               {fotos.length > 0 ? (
-                <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-                  {fotos.map((foto) => (
-                    <TarjetaFoto
-                      key={foto.idFoto}
-                      foto={foto}
-                      puedeEliminar={puedeEditar}
-                      onDelete={() => onEliminarFoto?.(foto.idFoto)}
-                      eliminando={fotoEliminando === foto.idFoto}
-                    />
-                  ))}
+                <div className="space-y-4">
+                  {puedeEditar && onSubirFotoTipo && (
+                    <div className="flex justify-end">
+                      <Button
+                        variant="outline"
+                        onClick={() => onSubirFotoTipo(tipo)}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Agregar otra foto de {ETIQUETAS_TIPO[tipo].toLowerCase()}
+                      </Button>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+                    {fotos.map((foto) => (
+                      <TarjetaFoto
+                        key={foto.idFoto}
+                        foto={foto}
+                        puedeEliminar={puedeEditar}
+                        onDelete={() => onEliminarFoto?.(foto.idFoto)}
+                        eliminando={fotoEliminando === foto.idFoto}
+                      />
+                    ))}
+                  </div>
                 </div>
               ) : (
-                <div className="flex min-h-44 flex-col items-center justify-center rounded-xl border border-dashed border-muted-foreground/25 bg-muted/20 px-6 py-8 text-center">
-                  <ImageIcon className="mb-3 h-10 w-10 text-muted-foreground" />
-                  <p className="font-medium text-foreground">
-                    Sin foto de {ETIQUETAS_TIPO[tipo].toLowerCase()}
-                  </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Cargala para mantener la comparacion visual completa en tu seguimiento.
-                  </p>
+                <div className="space-y-4">
+                  <div className="flex min-h-44 flex-col items-center justify-center rounded-xl border border-dashed border-muted-foreground/25 bg-muted/20 px-6 py-8 text-center">
+                    <ImageIcon className="mb-3 h-10 w-10 text-muted-foreground" />
+                    <p className="font-medium text-foreground">
+                      Sin foto de {ETIQUETAS_TIPO[tipo].toLowerCase()}
+                    </p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Cargala para mantener la comparacion visual completa en tu seguimiento.
+                    </p>
+                  </div>
+                  {puedeEditar && onSubirFotoTipo && (
+                    <div className="flex justify-center">
+                      <Button onClick={() => onSubirFotoTipo(tipo)}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Cargar foto de {ETIQUETAS_TIPO[tipo].toLowerCase()}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
