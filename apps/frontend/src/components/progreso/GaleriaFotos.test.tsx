@@ -131,6 +131,8 @@ describe('GaleriaFotos', () => {
 
     expect(screen.getAllByText('10 de ene 2026').length).toBeGreaterThan(0);
     expect(screen.getAllByText('10 de jun 2026').length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'Estoy eligiendo: Antes' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Estoy eligiendo: Después' })).toBeInTheDocument();
     expect(screen.getByAltText('Antes: 10 de ene 2026')).toBeInTheDocument();
     expect(screen.getByAltText('Después: 10 de jun 2026')).toBeInTheDocument();
   });
@@ -158,13 +160,43 @@ describe('GaleriaFotos', () => {
 
     await usuario.click(
       screen.getByRole('button', {
-        name: 'Usar 10 de mar 2026 como antes en Perfil',
+        name: 'Seleccionar 10 de mar 2026 para antes en Perfil',
       }),
     );
 
     expect(screen.getAllByText('10 de mar 2026').length).toBeGreaterThan(0);
     expect(screen.getByAltText('Antes: 10 de mar 2026')).toBeInTheDocument();
     expect(screen.getAllByText('10 de jun 2026').length).toBeGreaterThan(0);
+  });
+
+  it('permite cambiar manualmente la foto despues eligiendo el slot activo', async () => {
+    const usuario = userEvent.setup();
+
+    render(
+      <GaleriaFotos
+        socioId={9}
+        galeria={crearGaleria([
+          {
+            tipoFoto: 'perfil',
+            fotos: [
+              crearFoto(31, 'perfil', '2026-01-10T10:00:00.000Z'),
+              crearFoto(32, 'perfil', '2026-03-10T10:00:00.000Z'),
+              crearFoto(33, 'perfil', '2026-06-10T10:00:00.000Z'),
+            ],
+          },
+        ])}
+      />,
+    );
+
+    await usuario.click(screen.getByRole('button', { name: 'Abrir comparación' }));
+    await usuario.click(screen.getByRole('button', { name: 'Estoy eligiendo: Después' }));
+    await usuario.click(
+      screen.getByRole('button', {
+        name: 'Seleccionar 10 de mar 2026 para despues en Perfil',
+      }),
+    );
+
+    expect(screen.getByAltText('Después: 10 de mar 2026')).toBeInTheDocument();
   });
 
   it('dispara la accion contextual con el tipo correcto', async () => {

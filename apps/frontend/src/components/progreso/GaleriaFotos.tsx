@@ -269,6 +269,7 @@ function ComparadorFotosPorTipo({
 
   const fotoInicialAntes = fotosOrdenadas[0] ?? null;
   const fotoInicialDespues = fotosOrdenadas.at(-1) ?? null;
+  const [slotActivo, setSlotActivo] = useState<'antes' | 'despues'>('antes');
   const [fotoAntesId, setFotoAntesId] = useState<number | null>(
     fotoInicialAntes?.idFoto ?? null,
   );
@@ -323,6 +324,15 @@ function ComparadorFotosPorTipo({
   const restablecerPrimeraVsUltima = () => {
     setFotoAntesId(fotoInicialAntes?.idFoto ?? null);
     setFotoDespuesId(fotoInicialDespues?.idFoto ?? null);
+  };
+
+  const seleccionarFotoParaSlotActivo = (fotoId: number) => {
+    if (slotActivo === 'antes') {
+      usarComoAntes(fotoId);
+      return;
+    }
+
+    usarComoDespues(fotoId);
   };
 
   return (
@@ -380,6 +390,33 @@ function ComparadorFotosPorTipo({
         )}
       </div>
 
+      <div className="flex items-center justify-center gap-2">
+        <button
+          type="button"
+          onClick={() => setSlotActivo('antes')}
+          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+            slotActivo === 'antes'
+              ? 'bg-blue-500 text-white'
+              : 'bg-muted text-muted-foreground hover:bg-blue-100 hover:text-blue-700'
+          }`}
+          aria-pressed={slotActivo === 'antes'}
+        >
+          Estoy eligiendo: Antes
+        </button>
+        <button
+          type="button"
+          onClick={() => setSlotActivo('despues')}
+          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+            slotActivo === 'despues'
+              ? 'bg-emerald-500 text-white'
+              : 'bg-muted text-muted-foreground hover:bg-emerald-100 hover:text-emerald-700'
+          }`}
+          aria-pressed={slotActivo === 'despues'}
+        >
+          Estoy eligiendo: Después
+        </button>
+      </div>
+
       <div className="flex gap-2 overflow-x-auto pb-2">
         {fotosOrdenadas.map((foto) => {
           const esAntes = fotoAntes?.idFoto === foto.idFoto;
@@ -392,12 +429,19 @@ function ComparadorFotosPorTipo({
 
           return (
             <div key={foto.idFoto} className="w-20 shrink-0 space-y-1.5">
-              <div className={`relative overflow-hidden rounded-lg border-2 ${borde}`}>
-                <img
-                  src={foto.urlFirmada}
-                  alt={`Foto ${foto.tipoFoto} del ${formatearFechaFoto(foto)}`}
-                  className="aspect-[3/4] w-full object-cover"
-                />
+              <div className="group relative">
+                <button
+                  type="button"
+                  onClick={() => seleccionarFotoParaSlotActivo(foto.idFoto)}
+                  className={`relative w-full overflow-hidden rounded-lg border-2 transition-transform hover:scale-[1.02] ${borde}`}
+                  aria-label={`Seleccionar ${formatearFechaFoto(foto)} para ${slotActivo} en ${ETIQUETAS_TIPO[tipo]}`}
+                >
+                  <img
+                    src={foto.urlFirmada}
+                    alt={`Foto ${foto.tipoFoto} del ${formatearFechaFoto(foto)}`}
+                    className="aspect-[3/4] w-full object-cover"
+                  />
+                </button>
                 {puedeEditar && (
                   <button
                     type="button"
@@ -413,31 +457,10 @@ function ComparadorFotosPorTipo({
               <p className="text-center text-[11px] leading-tight text-muted-foreground">
                 {formatearFechaCorta(foto)}
               </p>
-              <div className="flex gap-1">
-                <button
-                  type="button"
-                  onClick={() => usarComoAntes(foto.idFoto)}
-                  className={`flex-1 rounded px-1 py-0.5 text-[11px] font-medium transition-colors ${
-                    esAntes
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-muted text-muted-foreground hover:bg-blue-100 hover:text-blue-700'
-                  }`}
-                  aria-label={`Usar ${formatearFechaFoto(foto)} como antes en ${ETIQUETAS_TIPO[tipo]}`}
-                >
-                  Antes
-                </button>
-                <button
-                  type="button"
-                  onClick={() => usarComoDespues(foto.idFoto)}
-                  className={`flex-1 rounded px-1 py-0.5 text-[11px] font-medium transition-colors ${
-                    esDespues
-                      ? 'bg-emerald-500 text-white'
-                      : 'bg-muted text-muted-foreground hover:bg-emerald-100 hover:text-emerald-700'
-                  }`}
-                  aria-label={`Usar ${formatearFechaFoto(foto)} como despues en ${ETIQUETAS_TIPO[tipo]}`}
-                >
-                  Después
-                </button>
+              <div className="flex items-center justify-center gap-1 text-[10px] font-medium">
+                <span className={esAntes ? 'text-blue-600' : 'text-muted-foreground'}>A</span>
+                <span className="text-muted-foreground">·</span>
+                <span className={esDespues ? 'text-emerald-600' : 'text-muted-foreground'}>D</span>
               </div>
             </div>
           );
