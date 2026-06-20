@@ -129,8 +129,8 @@ describe('GaleriaFotos', () => {
 
     await usuario.click(screen.getByRole('button', { name: 'Abrir comparación' }));
 
-    expect(screen.getByText('Antes: 10 de ene 2026')).toBeInTheDocument();
-    expect(screen.getByText('Después: 10 de jun 2026')).toBeInTheDocument();
+    expect(screen.getAllByText('10 de ene 2026').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('10 de jun 2026').length).toBeGreaterThan(0);
     expect(screen.getByAltText('Antes: 10 de ene 2026')).toBeInTheDocument();
     expect(screen.getByAltText('Después: 10 de jun 2026')).toBeInTheDocument();
   });
@@ -162,9 +162,9 @@ describe('GaleriaFotos', () => {
       }),
     );
 
-    expect(screen.getByText('Antes: 10 de mar 2026')).toBeInTheDocument();
+    expect(screen.getAllByText('10 de mar 2026').length).toBeGreaterThan(0);
     expect(screen.getByAltText('Antes: 10 de mar 2026')).toBeInTheDocument();
-    expect(screen.getByText('Después: 10 de jun 2026')).toBeInTheDocument();
+    expect(screen.getAllByText('10 de jun 2026').length).toBeGreaterThan(0);
   });
 
   it('dispara la accion contextual con el tipo correcto', async () => {

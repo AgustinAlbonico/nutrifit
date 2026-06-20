@@ -5,7 +5,6 @@ import { Camera, ImageIcon, Plus, RotateCcw } from 'lucide-react';
 import { ReactCompareSlider } from 'react-compare-slider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -131,15 +130,15 @@ export function GaleriaFotos({
       </div>
 
       <Dialog open={tipoModalActivo !== null} onOpenChange={(open) => !open && setTipoModalActivo(null)}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-6xl">
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
           {tipoModalActivo && (
             <>
               <DialogHeader>
-                <DialogTitle>
-                  {ETIQUETAS_TIPO[tipoModalActivo]}: comparación y evolución visual
+                <DialogTitle className="text-base">
+                  {ETIQUETAS_TIPO[tipoModalActivo]}
                 </DialogTitle>
-                <DialogDescription>
-                  Compará la primera y la última foto por defecto, y ajustá manualmente el antes y el después desde el historial de tomas.
+                <DialogDescription className="sr-only">
+                  Comparación visual de fotos de {ETIQUETAS_TIPO[tipoModalActivo].toLowerCase()}.
                 </DialogDescription>
               </DialogHeader>
 
@@ -327,142 +326,122 @@ function ComparadorFotosPorTipo({
   };
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge variant="secondary">
-          Antes: {formatearFechaFoto(fotoAntes)}
-        </Badge>
-        <Badge variant="secondary">
-          Después: {formatearFechaFoto(fotoDespues)}
-        </Badge>
-        {fotosOrdenadas.length >= 2 && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={restablecerPrimeraVsUltima}
-            className="ml-auto"
-          >
-            <RotateCcw className="mr-2 h-4 w-4" />
-            Primera vs última
-          </Button>
-        )}
-      </div>
-
+    <div className="space-y-4">
       {tieneComparacion ? (
-        <div className="space-y-3">
-          <div className="overflow-hidden rounded-2xl border bg-muted/30">
-            <div className="aspect-[4/3] min-h-[260px]">
-              <ReactCompareSlider
-                itemOne={<ImagenComparacion foto={fotoAntes!} etiqueta="Antes" />}
-                itemTwo={<ImagenComparacion foto={fotoDespues!} etiqueta="Después" />}
-              />
-            </div>
+        <div className="mx-auto max-w-2xl overflow-hidden rounded-xl border bg-muted/30">
+          <div className="aspect-[4/3] max-h-[340px]">
+            <ReactCompareSlider
+              itemOne={<ImagenComparacion foto={fotoAntes!} etiqueta="Antes" />}
+              itemTwo={<ImagenComparacion foto={fotoDespues!} etiqueta="Después" />}
+            />
           </div>
-          <p className="text-sm text-muted-foreground">
-            Por defecto ves la primera y la última foto de {ETIQUETAS_TIPO[tipo].toLowerCase()}. Podés cambiar ambas desde las miniaturas de abajo.
-          </p>
         </div>
       ) : (
-        <div className="flex min-h-52 flex-col items-center justify-center rounded-2xl border border-dashed bg-muted/20 px-6 py-8 text-center">
+        <div className="mx-auto flex max-w-md flex-col items-center justify-center rounded-xl border border-dashed bg-muted/20 px-6 py-10 text-center">
           {fotoAntes ? (
             <>
               <img
                 src={fotoAntes.urlFirmada}
                 alt={`Unica foto de ${ETIQUETAS_TIPO[tipo].toLowerCase()}`}
-                className="mb-4 h-44 w-full max-w-sm rounded-xl object-cover"
+                className="mb-3 h-32 w-full max-w-[200px] rounded-lg object-cover"
               />
-              <p className="font-medium text-foreground">
-                Todavía no alcanza para comparar
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Ya hay una foto de {ETIQUETAS_TIPO[tipo].toLowerCase()}. Cuando cargues otra de otra sesión, el antes/después se arma solo.
+              <p className="text-sm font-medium text-foreground">Falta una segunda foto</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Cargá otra de otra sesión para activar la comparación.
               </p>
             </>
           ) : (
             <>
-              <ImageIcon className="mb-3 h-10 w-10 text-muted-foreground" />
-              <p className="font-medium text-foreground">
-                Sin historial suficiente para comparar
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Necesitás al menos dos fotos de este ángulo para ver cambios reales.
-              </p>
+              <ImageIcon className="mb-2 h-8 w-8 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">Sin fotos para comparar</p>
             </>
           )}
         </div>
       )}
 
-      <div className="space-y-3">
-        <p className="text-sm font-medium text-foreground">Historial de tomas</p>
-        <div className="flex gap-4 overflow-x-auto pb-2">
-          {fotosOrdenadas.map((foto) => {
-            const esAntes = fotoAntes?.idFoto === foto.idFoto;
-            const esDespues = fotoDespues?.idFoto === foto.idFoto;
+      <div className="flex items-center justify-center gap-3 text-sm">
+        <span className={fotoAntes ? 'font-medium text-foreground' : 'text-muted-foreground'}>
+          {formatearFechaFoto(fotoAntes)}
+        </span>
+        <span className="text-muted-foreground">→</span>
+        <span className={fotoDespues ? 'font-medium text-foreground' : 'text-muted-foreground'}>
+          {formatearFechaFoto(fotoDespues)}
+        </span>
+        {fotosOrdenadas.length >= 2 && (
+          <button
+            type="button"
+            onClick={restablecerPrimeraVsUltima}
+            className="ml-2 inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            aria-label="Restablecer primera vs última"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            Reset
+          </button>
+        )}
+      </div>
 
-            return (
-              <div
-                key={foto.idFoto}
-                className="w-56 shrink-0 space-y-3 rounded-2xl border bg-card p-3"
-              >
-                <div className="relative overflow-hidden rounded-xl border bg-muted/20">
-                  <img
-                    src={foto.urlFirmada}
-                    alt={`Foto ${foto.tipoFoto} del ${formatearFechaFoto(foto)}`}
-                    className="aspect-[4/5] w-full object-cover"
-                  />
-                  <div className="absolute left-2 top-2 flex gap-2">
-                    {esAntes && <Badge>Antes</Badge>}
-                    {esDespues && <Badge variant="secondary">Después</Badge>}
-                  </div>
-                </div>
+      <div className="flex gap-2 overflow-x-auto pb-2">
+        {fotosOrdenadas.map((foto) => {
+          const esAntes = fotoAntes?.idFoto === foto.idFoto;
+          const esDespues = fotoDespues?.idFoto === foto.idFoto;
+          const borde = esAntes
+            ? 'border-blue-500 ring-1 ring-blue-500/30'
+            : esDespues
+              ? 'border-emerald-500 ring-1 ring-emerald-500/30'
+              : 'border-border';
 
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-foreground">
-                    {formatearFechaFoto(foto)}
-                  </p>
-                  {foto.notas && (
-                    <p className="line-clamp-2 text-xs text-muted-foreground">{foto.notas}</p>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    type="button"
-                    variant={esAntes ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => usarComoAntes(foto.idFoto)}
-                    aria-label={`Usar ${formatearFechaFoto(foto)} como antes en ${ETIQUETAS_TIPO[tipo]}`}
-                  >
-                    Antes
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={esDespues ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => usarComoDespues(foto.idFoto)}
-                    aria-label={`Usar ${formatearFechaFoto(foto)} como despues en ${ETIQUETAS_TIPO[tipo]}`}
-                  >
-                    Después
-                  </Button>
-                </div>
-
+          return (
+            <div key={foto.idFoto} className="w-20 shrink-0 space-y-1.5">
+              <div className={`relative overflow-hidden rounded-lg border-2 ${borde}`}>
+                <img
+                  src={foto.urlFirmada}
+                  alt={`Foto ${foto.tipoFoto} del ${formatearFechaFoto(foto)}`}
+                  className="aspect-[3/4] w-full object-cover"
+                />
                 {puedeEditar && (
-                  <Button
+                  <button
                     type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="w-full text-destructive hover:text-destructive"
+                    className="absolute right-1 top-1 rounded bg-black/60 p-1 text-white opacity-0 transition-opacity hover:bg-black/80 group-hover:opacity-100"
                     disabled={fotoEliminando === foto.idFoto}
                     onClick={() => onEliminarFoto?.(foto.idFoto)}
+                    aria-label={`Eliminar foto del ${formatearFechaFoto(foto)}`}
                   >
-                    {fotoEliminando === foto.idFoto ? 'Eliminando...' : 'Eliminar'}
-                  </Button>
+                    <span className="text-xs leading-none">✕</span>
+                  </button>
                 )}
               </div>
-            );
-          })}
-        </div>
+              <p className="text-center text-[11px] leading-tight text-muted-foreground">
+                {formatearFechaCorta(foto)}
+              </p>
+              <div className="flex gap-1">
+                <button
+                  type="button"
+                  onClick={() => usarComoAntes(foto.idFoto)}
+                  className={`flex-1 rounded px-1 py-0.5 text-[11px] font-medium transition-colors ${
+                    esAntes
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-muted text-muted-foreground hover:bg-blue-100 hover:text-blue-700'
+                  }`}
+                  aria-label={`Usar ${formatearFechaFoto(foto)} como antes en ${ETIQUETAS_TIPO[tipo]}`}
+                >
+                  Antes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => usarComoDespues(foto.idFoto)}
+                  className={`flex-1 rounded px-1 py-0.5 text-[11px] font-medium transition-colors ${
+                    esDespues
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-muted text-muted-foreground hover:bg-emerald-100 hover:text-emerald-700'
+                  }`}
+                  aria-label={`Usar ${formatearFechaFoto(foto)} como despues en ${ETIQUETAS_TIPO[tipo]}`}
+                >
+                  Después
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -482,14 +461,15 @@ function ImagenComparacion({
         alt={`${etiqueta}: ${formatearFechaFoto(foto)}`}
         className="h-full w-full object-cover"
       />
-      <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/70 to-transparent px-4 pb-4 pt-10 text-white">
-        <span className="rounded-full bg-black/40 px-3 py-1 text-sm font-medium">
-          {etiqueta}
-        </span>
-        <span className="text-sm">{formatearFechaFoto(foto)}</span>
-      </div>
+      <span className="absolute bottom-2 left-2 rounded bg-black/60 px-2 py-0.5 text-xs font-medium text-white">
+        {etiqueta}
+      </span>
     </div>
   );
+}
+
+function formatearFechaCorta(foto: FotoProgreso): string {
+  return format(new Date(foto.fecha), "d MMM yy", { locale: es });
 }
 
 function formatearFechaFoto(foto: FotoProgreso | null): string {
