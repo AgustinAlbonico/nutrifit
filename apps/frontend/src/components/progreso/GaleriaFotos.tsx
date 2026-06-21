@@ -573,11 +573,11 @@ function ImagenComparacion({
   etiqueta: 'Antes' | 'Después';
 }) {
   return (
-    <div className="relative h-full w-full">
+    <div className="relative flex h-full w-full items-center justify-center bg-black/5">
       <img
         src={foto.urlFirmada}
         alt={`${etiqueta}: ${formatearFechaFoto(foto)}`}
-        className="h-full w-full object-cover"
+        className="h-full w-full object-contain"
       />
       <span className="absolute bottom-2 left-2 rounded bg-black/60 px-2 py-0.5 text-xs font-medium text-white">
         {etiqueta}
