@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Camera, ImageIcon, Plus, RotateCcw } from 'lucide-react';
+import { Camera, ImageIcon, Maximize2, Plus, RotateCcw } from 'lucide-react';
 import { ReactCompareSlider } from 'react-compare-slider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -272,6 +272,18 @@ function ComparadorFotosPorTipo({
   const [slotActivo, setSlotActivo] = useState<'antes' | 'despues'>('antes');
   const [fotoAntesId, setFotoAntesId] = useState<number | null>(null);
   const [fotoDespuesId, setFotoDespuesId] = useState<number | null>(null);
+  const [fotoAmpliada, setFotoAmpliada] = useState<FotoProgreso | null>(null);
+
+  useEffect(() => {
+    if (!fotoAmpliada) return;
+
+    const manejarTecla = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setFotoAmpliada(null);
+    };
+
+    document.addEventListener('keydown', manejarTecla);
+    return () => document.removeEventListener('keydown', manejarTecla);
+  }, [fotoAmpliada]);
 
   const fotoAntes =
     fotosOrdenadas.find((foto) => foto.idFoto === fotoAntesId) ?? fotoInicialAntes;
@@ -454,6 +466,17 @@ function ComparadorFotosPorTipo({
                     <span className="text-xs leading-none">✕</span>
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFotoAmpliada(foto);
+                  }}
+                  className="absolute bottom-1 right-1 rounded bg-black/60 p-1 text-white opacity-0 transition-opacity hover:bg-black/80 group-hover:opacity-100"
+                  aria-label={`Ver ${formatearFechaFoto(foto)} en grande`}
+                >
+                  <Maximize2 className="h-3 w-3" />
+                </button>
               </div>
               <p className="text-center text-[11px] leading-tight text-muted-foreground">
                 {formatearFechaCorta(foto)}
@@ -465,6 +488,38 @@ function ComparadorFotosPorTipo({
           );
         })}
       </div>
+
+      {fotoAmpliada && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4"
+          onClick={() => setFotoAmpliada(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Foto ampliada: ${formatearFechaFoto(fotoAmpliada)}`}
+        >
+          <button
+            type="button"
+            onClick={() => setFotoAmpliada(null)}
+            className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80"
+            aria-label="Cerrar foto ampliada"
+          >
+            <span className="text-lg font-bold">✕</span>
+          </button>
+          <div
+            className="flex max-h-[90vh] max-w-[90vw] flex-col items-center gap-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={fotoAmpliada.urlFirmada}
+              alt={`Foto ampliada: ${formatearFechaFoto(fotoAmpliada)}`}
+              className="max-h-[75vh] w-auto max-w-full rounded-lg object-contain"
+            />
+            <p className="text-sm font-medium text-white/80">
+              {ETIQUETAS_TIPO[tipo]} — {formatearFechaFoto(fotoAmpliada)}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
