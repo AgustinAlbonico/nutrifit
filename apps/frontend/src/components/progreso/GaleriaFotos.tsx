@@ -334,8 +334,8 @@ function ComparadorFotosPorTipo({
   return (
     <div className="min-w-0 space-y-4">
       {tieneComparacion ? (
-        <div className="mx-auto w-full max-w-2xl overflow-hidden rounded-xl border bg-muted/30">
-          <div className="h-[280px] w-full sm:h-[340px]">
+        <div className="w-full overflow-hidden rounded-xl border bg-muted/30">
+          <div className="h-[320px] w-full sm:h-[450px] lg:h-[560px]">
             <ReactCompareSlider
               className="h-full w-full"
               style={{ height: '100%', width: '100%' }}
@@ -550,15 +550,15 @@ function BotonSeleccionComparador({
       onClick={onClick}
       aria-label={etiqueta}
       aria-pressed={activo}
-      className={`min-h-28 rounded-2xl border-2 p-4 text-left shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${activo ? colorActivo : colorInactivo}`}
+      className={`rounded-2xl border-2 p-3 text-left shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-h-24 md:p-4 ${activo ? colorActivo : colorInactivo}`}
     >
-      <span className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+      <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground md:text-[11px]">
         {esAntes ? 'Paso 1' : 'Paso 2'}
       </span>
-      <span className="mt-1 block text-base font-black leading-tight sm:text-lg">
+      <span className="mt-1 block text-sm font-black leading-tight sm:text-base">
         {etiqueta}
       </span>
-      <span className="mt-2 block text-sm font-medium text-muted-foreground">
+      <span className="mt-1 block text-xs font-medium text-muted-foreground sm:text-sm">
         {foto ? formatearFechaFoto(foto) : 'Sin seleccionar'}
       </span>
     </button>
