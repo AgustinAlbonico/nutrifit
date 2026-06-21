@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Camera, ImageIcon, Plus, RotateCcw } from 'lucide-react';
@@ -130,7 +130,7 @@ export function GaleriaFotos({
       </div>
 
       <Dialog open={tipoModalActivo !== null} onOpenChange={(open) => !open && setTipoModalActivo(null)}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+        <DialogContent className="max-h-[90vh] w-[calc(100vw-2rem)] max-w-3xl overflow-y-auto overflow-x-hidden p-4 sm:max-w-3xl sm:p-6">
           {tipoModalActivo && (
             <>
               <DialogHeader>
@@ -270,28 +270,8 @@ function ComparadorFotosPorTipo({
   const fotoInicialAntes = fotosOrdenadas[0] ?? null;
   const fotoInicialDespues = fotosOrdenadas.at(-1) ?? null;
   const [slotActivo, setSlotActivo] = useState<'antes' | 'despues'>('antes');
-  const [fotoAntesId, setFotoAntesId] = useState<number | null>(
-    fotoInicialAntes?.idFoto ?? null,
-  );
-  const [fotoDespuesId, setFotoDespuesId] = useState<number | null>(
-    fotoInicialDespues?.idFoto ?? null,
-  );
-
-  useEffect(() => {
-    setFotoAntesId((actual) => {
-      if (actual && fotosOrdenadas.some((foto) => foto.idFoto === actual)) {
-        return actual;
-      }
-      return fotoInicialAntes?.idFoto ?? null;
-    });
-
-    setFotoDespuesId((actual) => {
-      if (actual && fotosOrdenadas.some((foto) => foto.idFoto === actual)) {
-        return actual;
-      }
-      return fotoInicialDespues?.idFoto ?? null;
-    });
-  }, [fotosOrdenadas, fotoInicialAntes?.idFoto, fotoInicialDespues?.idFoto]);
+  const [fotoAntesId, setFotoAntesId] = useState<number | null>(null);
+  const [fotoDespuesId, setFotoDespuesId] = useState<number | null>(null);
 
   const fotoAntes =
     fotosOrdenadas.find((foto) => foto.idFoto === fotoAntesId) ?? fotoInicialAntes;
@@ -302,28 +282,32 @@ function ComparadorFotosPorTipo({
     fotoAntes != null &&
     fotoDespues != null &&
     fotoAntes.idFoto !== fotoDespues.idFoto;
+  const diferenciaTemporal =
+    tieneComparacion && fotoAntes && fotoDespues
+      ? formatearDiferenciaTemporal(fotoAntes, fotoDespues)
+      : null;
 
   const usarComoAntes = (fotoId: number) => {
     setFotoAntesId(fotoId);
-    if (fotoDespuesId === fotoId) {
+    if (fotoDespues?.idFoto === fotoId) {
       const reemplazo = [...fotosOrdenadas]
         .reverse()
         .find((foto) => foto.idFoto !== fotoId);
-      setFotoDespuesId(reemplazo?.idFoto ?? fotoId);
+      setFotoDespuesId(reemplazo?.idFoto ?? null);
     }
   };
 
   const usarComoDespues = (fotoId: number) => {
     setFotoDespuesId(fotoId);
-    if (fotoAntesId === fotoId) {
+    if (fotoAntes?.idFoto === fotoId) {
       const reemplazo = fotosOrdenadas.find((foto) => foto.idFoto !== fotoId);
-      setFotoAntesId(reemplazo?.idFoto ?? fotoId);
+      setFotoAntesId(reemplazo?.idFoto ?? null);
     }
   };
 
   const restablecerPrimeraVsUltima = () => {
-    setFotoAntesId(fotoInicialAntes?.idFoto ?? null);
-    setFotoDespuesId(fotoInicialDespues?.idFoto ?? null);
+    setFotoAntesId(null);
+    setFotoDespuesId(null);
   };
 
   const seleccionarFotoParaSlotActivo = (fotoId: number) => {
@@ -336,11 +320,13 @@ function ComparadorFotosPorTipo({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4">
       {tieneComparacion ? (
-        <div className="mx-auto max-w-2xl overflow-hidden rounded-xl border bg-muted/30">
-          <div className="aspect-[4/3] max-h-[340px]">
+        <div className="mx-auto w-full max-w-2xl overflow-hidden rounded-xl border bg-muted/30">
+          <div className="h-[280px] w-full sm:h-[340px]">
             <ReactCompareSlider
+              className="h-full w-full"
+              style={{ height: '100%', width: '100%' }}
               itemOne={<ImagenComparacion foto={fotoAntes!} etiqueta="Antes" />}
               itemTwo={<ImagenComparacion foto={fotoDespues!} etiqueta="Después" />}
             />
@@ -369,78 +355,93 @@ function ComparadorFotosPorTipo({
         </div>
       )}
 
-      <div className="flex items-center justify-center gap-3 text-sm">
-        <span className={fotoAntes ? 'font-medium text-foreground' : 'text-muted-foreground'}>
-          {formatearFechaFoto(fotoAntes)}
-        </span>
-        <span className="text-muted-foreground">→</span>
-        <span className={fotoDespues ? 'font-medium text-foreground' : 'text-muted-foreground'}>
-          {formatearFechaFoto(fotoDespues)}
-        </span>
-        {fotosOrdenadas.length >= 2 && (
-          <button
-            type="button"
-            onClick={restablecerPrimeraVsUltima}
-            className="ml-2 inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            aria-label="Restablecer primera vs última"
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-            Reset
-          </button>
-        )}
+      <div className="rounded-2xl border bg-muted/20 p-3 sm:p-4">
+        <div className="grid gap-3 md:grid-cols-[1fr_auto_1fr] md:items-stretch">
+          <BotonSeleccionComparador
+            tipo="antes"
+            activo={slotActivo === 'antes'}
+            foto={fotoAntes}
+            onClick={() => setSlotActivo('antes')}
+          />
+
+          <div className="flex items-center justify-center rounded-xl border bg-background px-4 py-3 text-center">
+            <div className="space-y-1" aria-live="polite">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Tiempo entre fotos
+              </p>
+              <p className="text-sm font-semibold text-foreground">
+                {diferenciaTemporal
+                  ? `Tiempo entre fotos: ${diferenciaTemporal}`
+                  : 'Elegí dos fotos distintas'}
+              </p>
+            </div>
+          </div>
+
+          <BotonSeleccionComparador
+            tipo="despues"
+            activo={slotActivo === 'despues'}
+            foto={fotoDespues}
+            onClick={() => setSlotActivo('despues')}
+          />
+        </div>
+
+        <div className="mt-3 flex flex-col gap-2 text-center text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-center">
+          <span>
+            {slotActivo === 'antes'
+              ? 'Ahora tocá la miniatura que querés usar como ANTES.'
+              : 'Ahora tocá la miniatura que querés usar como DESPUÉS.'}
+          </span>
+          {fotosOrdenadas.length >= 2 && (
+            <button
+              type="button"
+              onClick={restablecerPrimeraVsUltima}
+              className="inline-flex items-center justify-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="Restablecer primera vs última"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              Reset
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="flex items-center justify-center gap-2">
-        <button
-          type="button"
-          onClick={() => setSlotActivo('antes')}
-          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-            slotActivo === 'antes'
-              ? 'bg-blue-500 text-white'
-              : 'bg-muted text-muted-foreground hover:bg-blue-100 hover:text-blue-700'
-          }`}
-          aria-pressed={slotActivo === 'antes'}
-        >
-          Estoy eligiendo: Antes
-        </button>
-        <button
-          type="button"
-          onClick={() => setSlotActivo('despues')}
-          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-            slotActivo === 'despues'
-              ? 'bg-emerald-500 text-white'
-              : 'bg-muted text-muted-foreground hover:bg-emerald-100 hover:text-emerald-700'
-          }`}
-          aria-pressed={slotActivo === 'despues'}
-        >
-          Estoy eligiendo: Después
-        </button>
-      </div>
-
-      <div className="flex gap-2 overflow-x-auto pb-2">
+      <div className="flex w-full min-w-0 gap-2 overflow-x-auto pb-2">
         {fotosOrdenadas.map((foto) => {
           const esAntes = fotoAntes?.idFoto === foto.idFoto;
           const esDespues = fotoDespues?.idFoto === foto.idFoto;
           const borde = esAntes
-            ? 'border-blue-500 ring-1 ring-blue-500/30'
+            ? 'border-blue-500 ring-2 ring-blue-500/30'
             : esDespues
-              ? 'border-emerald-500 ring-1 ring-emerald-500/30'
-              : 'border-border';
+              ? 'border-emerald-500 ring-2 ring-emerald-500/30'
+              : slotActivo === 'antes'
+                ? 'border-border hover:border-blue-400'
+                : 'border-border hover:border-emerald-400';
+          const accionMiniatura = slotActivo === 'antes' ? 'antes' : 'después';
 
           return (
-            <div key={foto.idFoto} className="w-20 shrink-0 space-y-1.5">
+            <div key={foto.idFoto} className="w-24 shrink-0 space-y-1.5">
               <div className="group relative">
                 <button
                   type="button"
                   onClick={() => seleccionarFotoParaSlotActivo(foto.idFoto)}
-                  className={`relative w-full overflow-hidden rounded-lg border-2 transition-transform hover:scale-[1.02] ${borde}`}
-                  aria-label={`Seleccionar ${formatearFechaFoto(foto)} para ${slotActivo} en ${ETIQUETAS_TIPO[tipo]}`}
+                  className={`relative w-full overflow-hidden rounded-xl border-2 transition-transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${borde}`}
+                  aria-label={`Usar ${formatearFechaFoto(foto)} como foto ${accionMiniatura} en ${ETIQUETAS_TIPO[tipo]}`}
                 >
                   <img
                     src={foto.urlFirmada}
                     alt={`Foto ${foto.tipoFoto} del ${formatearFechaFoto(foto)}`}
                     className="aspect-[3/4] w-full object-cover"
                   />
+                  {esAntes && (
+                    <span className="absolute left-1 top-1 rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
+                      ANTES
+                    </span>
+                  )}
+                  {esDespues && (
+                    <span className="absolute left-1 top-1 rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
+                      DESPUÉS
+                    </span>
+                  )}
                 </button>
                 {puedeEditar && (
                   <button
@@ -457,16 +458,55 @@ function ComparadorFotosPorTipo({
               <p className="text-center text-[11px] leading-tight text-muted-foreground">
                 {formatearFechaCorta(foto)}
               </p>
-              <div className="flex items-center justify-center gap-1 text-[10px] font-medium">
-                <span className={esAntes ? 'text-blue-600' : 'text-muted-foreground'}>A</span>
-                <span className="text-muted-foreground">·</span>
-                <span className={esDespues ? 'text-emerald-600' : 'text-muted-foreground'}>D</span>
+              <div className="text-center text-[10px] font-medium text-muted-foreground">
+                {slotActivo === 'antes' ? 'Usar como ANTES' : 'Usar como DESPUÉS'}
               </div>
             </div>
           );
         })}
       </div>
     </div>
+  );
+}
+
+function BotonSeleccionComparador({
+  tipo,
+  activo,
+  foto,
+  onClick,
+}: {
+  tipo: 'antes' | 'despues';
+  activo: boolean;
+  foto: FotoProgreso | null;
+  onClick: () => void;
+}) {
+  const esAntes = tipo === 'antes';
+  const etiqueta = esAntes ? 'Seleccionar foto ANTES' : 'Seleccionar foto DESPUÉS';
+  const colorActivo = esAntes
+    ? 'border-blue-500 bg-blue-50 text-blue-950 ring-2 ring-blue-500/30'
+    : 'border-emerald-500 bg-emerald-50 text-emerald-950 ring-2 ring-emerald-500/30';
+  const colorInactivo = esAntes
+    ? 'border-border bg-background text-foreground hover:border-blue-300 hover:bg-blue-50/60'
+    : 'border-border bg-background text-foreground hover:border-emerald-300 hover:bg-emerald-50/60';
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={etiqueta}
+      aria-pressed={activo}
+      className={`min-h-28 rounded-2xl border-2 p-4 text-left shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${activo ? colorActivo : colorInactivo}`}
+    >
+      <span className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+        {esAntes ? 'Paso 1' : 'Paso 2'}
+      </span>
+      <span className="mt-1 block text-base font-black leading-tight sm:text-lg">
+        {etiqueta}
+      </span>
+      <span className="mt-2 block text-sm font-medium text-muted-foreground">
+        {foto ? formatearFechaFoto(foto) : 'Sin seleccionar'}
+      </span>
+    </button>
   );
 }
 
@@ -499,4 +539,47 @@ function formatearFechaFoto(foto: FotoProgreso | null): string {
   if (!foto) return 'Sin seleccionar';
 
   return format(new Date(foto.fecha), "d 'de' MMM yyyy", { locale: es });
+}
+
+function formatearDiferenciaTemporal(fotoAntes: FotoProgreso, fotoDespues: FotoProgreso): string {
+  const fechaAntes = new Date(fotoAntes.fecha);
+  const fechaDespues = new Date(fotoDespues.fecha);
+  const [inicio, fin] = fechaAntes <= fechaDespues
+    ? [fechaAntes, fechaDespues]
+    : [fechaDespues, fechaAntes];
+
+  let anios = fin.getFullYear() - inicio.getFullYear();
+  let meses = fin.getMonth() - inicio.getMonth();
+  let dias = fin.getDate() - inicio.getDate();
+
+  if (dias < 0) {
+    meses -= 1;
+    dias += new Date(fin.getFullYear(), fin.getMonth(), 0).getDate();
+  }
+
+  if (meses < 0) {
+    anios -= 1;
+    meses += 12;
+  }
+
+  const partes = [
+    formatearUnidadTemporal(anios, 'año', 'años'),
+    formatearUnidadTemporal(meses, 'mes', 'meses'),
+    formatearUnidadTemporal(dias, 'día', 'días'),
+  ].filter((parte): parte is string => Boolean(parte));
+
+  if (partes.length === 0) return 'mismo día';
+  if (partes.length === 1) return `${partes[0]} de diferencia`;
+
+  return `${partes.slice(0, -1).join(', ')} y ${partes.at(-1)} de diferencia`;
+}
+
+function formatearUnidadTemporal(
+  valor: number,
+  singular: string,
+  plural: string,
+): string | null {
+  if (valor <= 0) return null;
+
+  return `${valor} ${valor === 1 ? singular : plural}`;
 }

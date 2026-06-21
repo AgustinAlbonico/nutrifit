@@ -131,10 +131,11 @@ describe('GaleriaFotos', () => {
 
     expect(screen.getAllByText('10 de ene 2026').length).toBeGreaterThan(0);
     expect(screen.getAllByText('10 de jun 2026').length).toBeGreaterThan(0);
-    expect(screen.getByRole('button', { name: 'Estoy eligiendo: Antes' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Estoy eligiendo: Después' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Seleccionar foto ANTES' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Seleccionar foto DESPUÉS' })).toBeInTheDocument();
     expect(screen.getByAltText('Antes: 10 de ene 2026')).toBeInTheDocument();
     expect(screen.getByAltText('Después: 10 de jun 2026')).toBeInTheDocument();
+    expect(screen.getByText('Tiempo entre fotos: 5 meses de diferencia')).toBeInTheDocument();
   });
 
   it('permite cambiar manualmente la foto antes desde las miniaturas del modal', async () => {
@@ -157,10 +158,11 @@ describe('GaleriaFotos', () => {
     );
 
     await usuario.click(screen.getByRole('button', { name: 'Abrir comparación' }));
+    await usuario.click(screen.getByRole('button', { name: 'Seleccionar foto ANTES' }));
 
     await usuario.click(
       screen.getByRole('button', {
-        name: 'Seleccionar 10 de mar 2026 para antes en Perfil',
+        name: 'Usar 10 de mar 2026 como foto antes en Perfil',
       }),
     );
 
@@ -189,10 +191,10 @@ describe('GaleriaFotos', () => {
     );
 
     await usuario.click(screen.getByRole('button', { name: 'Abrir comparación' }));
-    await usuario.click(screen.getByRole('button', { name: 'Estoy eligiendo: Después' }));
+    await usuario.click(screen.getByRole('button', { name: 'Seleccionar foto DESPUÉS' }));
     await usuario.click(
       screen.getByRole('button', {
-        name: 'Seleccionar 10 de mar 2026 para despues en Perfil',
+        name: 'Usar 10 de mar 2026 como foto después en Perfil',
       }),
     );
 
