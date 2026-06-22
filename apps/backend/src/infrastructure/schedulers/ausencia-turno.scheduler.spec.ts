@@ -9,6 +9,11 @@ import {
   IPoliticaOperativaRepository,
 } from 'src/application/politicas/politica-operativa.repository';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
+import {
+  formatArgentinaDate,
+  getArgentinaNow,
+  parseArgentinaDateInput,
+} from 'src/common/utils/argentina-datetime.util';
 
 describe('AusenciaTurnoScheduler', () => {
   let scheduler: AusenciaTurnoScheduler;
@@ -50,15 +55,20 @@ describe('AusenciaTurnoScheduler', () => {
     );
   });
 
-  it('debe marcar turnos como AUSENTE después del umbral', async () => {
-    const ahora = new Date();
-    ahora.setHours(14, 0, 0, 0);
+  afterEach(() => {
+    jest.useRealTimers();
+  });
 
-    const fechaHoyStr = ahora.toISOString().split('T')[0];
+  it('debe marcar turnos como AUSENTE después del umbral', async () => {
+    // "Hoy" en AR es la fecha de referencia. Simulamos que el reloj
+    // de AR es 14:00 (2 horas después de un turno a las 13:00 con
+    // umbral 30min → claramente ausente).
+    const hoyArgentina = formatArgentinaDate(getArgentinaNow());
+    const fechaTurnoDate = parseArgentinaDateInput(hoyArgentina);
 
     const turnoAtrasado = {
       idTurno: 1,
-      fechaTurno: new Date(fechaHoyStr + 'T13:00:00.000Z'),
+      fechaTurno: fechaTurnoDate,
       horaTurno: '13:00',
       estadoTurno: EstadoTurno.CONFIRMADO,
       ausenteAt: null,
@@ -66,6 +76,7 @@ describe('AusenciaTurnoScheduler', () => {
     } as TurnoOrmEntity;
 
     const queryBuilder = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
       getMany: jest.fn().mockResolvedValue([turnoAtrasado]),
@@ -77,8 +88,13 @@ describe('AusenciaTurnoScheduler', () => {
         queryBuilder as unknown as SelectQueryBuilder<TurnoOrmEntity>,
       );
 
-    jest.useFakeTimers();
-    jest.setSystemTime(ahora);
+    // Fijamos el reloj del sistema a 14:00 hora AR. Mockeamos
+    // getArgentinaNow para no depender del timezone del server de tests.
+    const ahora = new Date(`${hoyArgentina}T14:00:00-03:00`);
+    jest.useFakeTimers().setSystemTime(ahora);
+    jest
+      .spyOn(require('src/common/utils/argentina-datetime.util'), 'getArgentinaNow')
+      .mockReturnValue(ahora);
 
     jest.spyOn(turnoRepository, 'save').mockResolvedValue({
       ...turnoAtrasado,
@@ -94,23 +110,23 @@ describe('AusenciaTurnoScheduler', () => {
         ausenteAt: expect.any(Date),
       }),
     );
-
-    jest.useRealTimers();
   });
 
   it('no debe marcar turnos dentro del umbral', async () => {
-    const ahora = new Date();
-    ahora.setHours(13, 15, 0, 0);
+    const hoyArgentina = formatArgentinaDate(getArgentinaNow());
+    const fechaTurnoDate = parseArgentinaDateInput(hoyArgentina);
 
     const turnoReciente = {
       idTurno: 1,
-      horaTurno: '13:00',
+      fechaTurno: fechaTurnoDate,
+      horaTurno: '14:30',
       estadoTurno: EstadoTurno.CONFIRMADO,
       ausenteAt: null,
       gimnasio: { idGimnasio: 1 },
     } as TurnoOrmEntity;
 
     const queryBuilder = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
       getMany: jest.fn().mockResolvedValue([turnoReciente]),
@@ -122,13 +138,15 @@ describe('AusenciaTurnoScheduler', () => {
         queryBuilder as unknown as SelectQueryBuilder<TurnoOrmEntity>,
       );
 
-    jest.useFakeTimers();
-    jest.setSystemTime(ahora);
+    // Reloj AR = 14:00 → turno 14:30, dentro del umbral de 30min
+    const ahora = new Date(`${hoyArgentina}T14:00:00-03:00`);
+    jest.useFakeTimers().setSystemTime(ahora);
+    jest
+      .spyOn(require('src/common/utils/argentina-datetime.util'), 'getArgentinaNow')
+      .mockReturnValue(ahora);
 
     await scheduler.marcarAusentesAutomaticos();
 
     expect(turnoRepository.save).not.toHaveBeenCalled();
-
-    jest.useRealTimers();
   });
 });

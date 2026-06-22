@@ -10,6 +10,12 @@ import {
 } from 'src/application/politicas/politica-operativa.repository';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
+import {
+  combineArgentinaDateAndTime,
+  formatArgentinaDate,
+  getArgentinaNow,
+  getArgentinaTodayDate,
+} from 'src/common/utils/argentina-datetime.util';
 
 @Injectable()
 export class AusenciaTurnoScheduler {
@@ -27,15 +33,17 @@ export class AusenciaTurnoScheduler {
   async marcarAusentesAutomaticos(): Promise<void> {
     this.logger.log('Ejecutando verificación de turnos ausentes...');
 
-    const ahora = new Date();
-    const fechaHoy = ahora.toISOString().split('T')[0];
+    const ahora = getArgentinaNow();
+    const fechaHoyArgentina = getArgentinaTodayDate(ahora);
 
     const turnos = await this.turnoRepository
       .createQueryBuilder('turno')
       .leftJoinAndSelect('turno.socio', 'socio')
       .leftJoinAndSelect('turno.nutricionista', 'nutricionista')
       .leftJoinAndSelect('turno.gimnasio', 'gimnasio')
-      .where('turno.fechaTurno = :fecha', { fecha: fechaHoy })
+      .leftJoinAndSelect('socio.usuario', 'socioUsuario')
+      .leftJoinAndSelect('nutricionista.usuario', 'nutriUsuario')
+      .where('turno.fechaTurno = :fecha', { fecha: fechaHoyArgentina })
       .andWhere('turno.estadoTurno IN (:...estados)', {
         estados: [EstadoTurno.CONFIRMADO],
       })
@@ -46,11 +54,13 @@ export class AusenciaTurnoScheduler {
       const umbralMinutos =
         await this.politicaRepository.getUmbralAusente(gimnasioId);
 
-      const [hora, minuto] = turno.horaTurno.split(':').map(Number);
-      const turnoTime = new Date(ahora);
-      turnoTime.setHours(hora, minuto + umbralMinutos, 0, 0);
+      const turnoDateTime = combineArgentinaDateAndTime(
+        turno.fechaTurno,
+        turno.horaTurno,
+      );
+      const umbralMs = umbralMinutos * 60 * 1000;
 
-      if (ahora > turnoTime) {
+      if (ahora.getTime() > turnoDateTime.getTime() + umbralMs) {
         turno.estadoTurno = EstadoTurno.AUSENTE;
         turno.ausenteAt = ahora;
         await this.turnoRepository.save(turno);
@@ -58,18 +68,18 @@ export class AusenciaTurnoScheduler {
 
         // Notificaciones
         try {
-          if (turno.socio?.idPersona) {
+          if (turno.socio?.usuario?.idUsuario != null) {
             await this.notificacionesService.crear({
-              destinatarioId: turno.socio.idPersona,
+              destinatarioId: turno.socio.usuario.idUsuario,
               tipo: TipoNotificacion.TURNO_AUSENTE_AUTO,
               titulo: 'Turno ausente',
-              mensaje: `Tu turno del ${turno.fechaTurno} a las ${turno.horaTurno} fue marcado como ausente porque no te presentaste.`,
+              mensaje: `Tu turno del ${formatArgentinaDate(turno.fechaTurno)} a las ${turno.horaTurno} fue marcado como ausente porque no te presentaste.`,
               metadata: { turnoId: turno.idTurno },
             });
           }
-          if (turno.nutricionista?.idPersona) {
+          if (turno.nutricionista?.usuario?.idUsuario != null) {
             await this.notificacionesService.crear({
-              destinatarioId: turno.nutricionista.idPersona,
+              destinatarioId: turno.nutricionista.usuario.idUsuario,
               tipo: TipoNotificacion.TURNO_AUSENTE_AUTO,
               titulo: 'Socio ausente',
               mensaje: `El socio ${turno.socio?.nombre} ${turno.socio?.apellido} no se presentó al turno #${turno.idTurno}.`,

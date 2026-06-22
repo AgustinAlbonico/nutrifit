@@ -9,6 +9,7 @@ import {
   TipoRecordatorio,
 } from '../persistence/typeorm/entities/recordatorio-enviado.entity';
 import { TurnoOrmEntity } from '../persistence/typeorm/entities/turno.entity';
+import { formatArgentinaDate } from 'src/common/utils/argentina-datetime.util';
 
 @Injectable()
 export class TurnoReminderScheduler {
@@ -65,7 +66,7 @@ export class TurnoReminderScheduler {
           email,
           nombreSocio: turno.socio?.nombre ?? 'Socio',
           nombreProfesional: turno.nutricionista?.nombre ?? 'Profesional',
-          fecha: turno.fechaTurno.toISOString().split('T')[0] ?? '',
+          fecha: formatArgentinaDate(turno.fechaTurno),
           hora: turno.horaTurno,
           enlaceConfirmacion: `${process.env.FRONTEND_URL ?? ''}/turnos/${turno.idTurno}/confirmar`,
           enlaceCancelacion: `${process.env.FRONTEND_URL ?? ''}/turnos/${turno.idTurno}/cancelar`,
@@ -101,10 +102,7 @@ export class TurnoReminderScheduler {
     turno: TurnoOrmEntity,
   ): TipoRecordatorio | null {
     const ahora = new Date();
-    const fechaStr =
-      typeof turno.fechaTurno === 'string'
-        ? turno.fechaTurno
-        : turno.fechaTurno.toISOString().split('T')[0];
+    const fechaStr = formatArgentinaDate(turno.fechaTurno);
     const turnoFecha = new Date(`${fechaStr}T${turno.horaTurno}:00`);
     const diffHoras = (turnoFecha.getTime() - ahora.getTime()) / 36e5;
 
