@@ -16,6 +16,7 @@ import { REGEX_DNI, REGEX_TELEFONO, REGEX_EMAIL } from '@/lib/validaciones';
 import { normalizarTexto } from '@/lib/text';
 import type { Socio, CrearSocioDto, CrearSocioResponseDto, DesactivarSocioResultDto, Genero } from '@/types/socio';
 import { Button } from '@/components/ui/button';
+import { ControlesPaginacion } from '@/components/ui/ControlesPaginacion';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -680,21 +681,9 @@ export function Socios() {
               Resultados: <span className="font-medium text-foreground">{sociosFiltradosOrdenados.length}</span>
             </p>
 
-            <div className="flex items-center gap-2">
-              <select
-                className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm"
-                value={limitePorPagina}
-                onChange={(event) => setLimitePorPagina(Number(event.target.value))}
-              >
-                <option value={6}>6 por página</option>
-                <option value={9}>9 por página</option>
-                <option value={12}>12 por página</option>
-                <option value={18}>18 por página</option>
-              </select>
-              <Button variant="outline" size="sm" onClick={limpiarFiltros}>
-                Limpiar filtros
-              </Button>
-            </div>
+            <Button variant="outline" size="sm" onClick={limpiarFiltros}>
+              Limpiar filtros
+            </Button>
           </div>
 
           {errorSocios && (
@@ -841,45 +830,20 @@ export function Socios() {
                 </Table>
               </div>
 
-              <div className="flex flex-col gap-2 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-muted-foreground">
-                  Mostrando{' '}
-                  <span className="font-medium text-foreground">{indiceInicio + 1}</span>
-                  {' - '}
-                  <span className="font-medium text-foreground">
-                    {Math.min(indiceFin, sociosFiltradosOrdenados.length)}
-                  </span>
-                  {' de '}
-                  <span className="font-medium text-foreground">
-                    {sociosFiltradosOrdenados.length}
-                  </span>
-                </p>
-
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setPaginaActual((previa) => Math.max(1, previa - 1))}
-                    disabled={paginaActual === 1}
-                  >
-                    Anterior
-                  </Button>
-
-                  <span className="text-sm text-muted-foreground">
-                    Página {paginaActual} de {totalPaginas}
-                  </span>
-
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() =>
-                      setPaginaActual((previa) => Math.min(totalPaginas, previa + 1))
-                    }
-                    disabled={paginaActual === totalPaginas}
-                  >
-                    Siguiente
-                  </Button>
-                </div>
+              <div className="border-t pt-4">
+                <ControlesPaginacion
+                  pagina={paginaActual}
+                  totalPaginas={totalPaginas}
+                  total={sociosFiltradosOrdenados.length}
+                  limite={limitePorPagina}
+                  opcionesLimite={[6, 9, 12, 18]}
+                  cargando={cargandoSocios}
+                  onCambiarPagina={setPaginaActual}
+                  onCambiarLimite={(nuevo) => {
+                    setLimitePorPagina(nuevo);
+                    setPaginaActual(1);
+                  }}
+                />
               </div>
             </>
           )}
