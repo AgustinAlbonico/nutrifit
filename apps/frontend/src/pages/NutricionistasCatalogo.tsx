@@ -10,8 +10,6 @@ import {
   Award,
   Sparkles,
   Filter,
-  ChevronLeft,
-  ChevronRight,
   Clock,
 } from 'lucide-react';
 
@@ -22,6 +20,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { ControlesPaginacion } from '@/components/ui/ControlesPaginacion';
 import {
   Avatar,
   AvatarImage,
@@ -233,19 +232,6 @@ export function NutricionistasCatalogo() {
             </select>
           </div>
 
-          <div className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground">Por página</p>
-            <select
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              value={limit}
-              onChange={(event) => setLimit(Number(event.target.value))}
-            >
-              <option value={6}>6</option>
-              <option value={12}>12</option>
-              <option value={24}>24</option>
-            </select>
-          </div>
-
           <div className="flex items-end gap-2">
             <div className="flex flex-1 items-center gap-2 rounded-md border border-input bg-background px-3 py-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
@@ -293,29 +279,19 @@ export function NutricionistasCatalogo() {
 
           {/* Paginación */}
           {catalogo.totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 pt-4">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Anterior
-              </Button>
-              <span className="text-sm text-muted-foreground">
-                Página {page} de {catalogo.totalPages}
-              </span>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setPage((p) => Math.min(catalogo.totalPages, p + 1))}
-                disabled={page === catalogo.totalPages}
-              >
-                Siguiente
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
+            <ControlesPaginacion
+              pagina={page}
+              totalPaginas={catalogo.totalPages}
+              total={catalogo.total}
+              limite={limit}
+              opcionesLimite={[6, 12, 24]}
+              cargando={cargando}
+              onCambiarPagina={setPage}
+              onCambiarLimite={(nuevo) => {
+                setLimit(nuevo);
+                setPage(1);
+              }}
+            />
           )}
         </>
       )}
