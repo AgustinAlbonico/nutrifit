@@ -36,7 +36,7 @@ function makeTurno(
     idTurno: 1,
     fechaTurno: '2026-06-15',
     horaTurno: '10:00',
-    estadoTurno: 'PROGRAMADO',
+    estadoTurno: 'CONFIRMADO',
     tieneMedicion: false,
     tieneObservacion: false,
     cantidadAdjuntos: 0,
@@ -90,7 +90,7 @@ describe('HistorialTurnosPaciente (TDD)', () => {
         idTurno: 177,
         fechaTurno: '2026-06-15',
         horaTurno: '10:30',
-        estadoTurno: 'PROGRAMADO',
+        estadoTurno: 'CONFIRMADO',
       }),
       makeTurno({
         idTurno: 175,
@@ -108,7 +108,7 @@ describe('HistorialTurnosPaciente (TDD)', () => {
     expect(screen.getByText('17/06/2026 · 11:00')).toBeInTheDocument();
     expect(screen.getByText('11/06/2026 · 12:00')).toBeInTheDocument();
 
-    expect(screen.getByText('Programado')).toBeInTheDocument();
+    expect(screen.getByText('Confirmado')).toBeInTheDocument();
     expect(screen.getByText('Cancelado')).toBeInTheDocument();
     expect(screen.getByText('Ausente')).toBeInTheDocument();
 
@@ -126,7 +126,7 @@ describe('HistorialTurnosPaciente (TDD)', () => {
 
   it('muestra el boton de retomar solo en turnos activos o pendientes', () => {
     renderizar([
-      makeTurno({ idTurno: 1, estadoTurno: 'PROGRAMADO' }),
+      makeTurno({ idTurno: 1, estadoTurno: 'CONFIRMADO' }),
       makeTurno({ idTurno: 2, estadoTurno: 'EN_CURSO' }),
       makeTurno({ idTurno: 3, estadoTurno: 'PRESENTE' }),
       makeTurno({ idTurno: 4, estadoTurno: 'REALIZADO' }),

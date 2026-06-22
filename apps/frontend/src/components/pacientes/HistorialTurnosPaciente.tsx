@@ -15,7 +15,6 @@ interface PropiedadesHistorialTurnosPaciente {
 }
 
 const etiquetasEstado: Record<EstadoTurnoHistorial, string> = {
-  PROGRAMADO: 'Programado',
   CONFIRMADO: 'Confirmado',
   PRESENTE: 'Presente',
   EN_CURSO: 'En curso',
@@ -25,7 +24,6 @@ const etiquetasEstado: Record<EstadoTurnoHistorial, string> = {
 };
 
 const estilosEstado: Record<EstadoTurnoHistorial, string> = {
-  PROGRAMADO: 'bg-blue-100 text-blue-800 border-blue-200',
   CONFIRMADO: 'bg-sky-100 text-sky-800 border-sky-200',
   PRESENTE: 'bg-amber-100 text-amber-800 border-amber-200',
   EN_CURSO: 'bg-violet-100 text-violet-800 border-violet-200',
@@ -35,7 +33,6 @@ const estilosEstado: Record<EstadoTurnoHistorial, string> = {
 };
 
 const estadosEditables: EstadoTurnoHistorial[] = [
-  'PROGRAMADO',
   'CONFIRMADO',
   'PRESENTE',
   'EN_CURSO',
