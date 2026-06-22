@@ -22,6 +22,7 @@ import {
   DesactivarSocioResultDto,
 } from 'src/application/socios/dtos/desactivar-socio.dto';
 import { SocioResponseDto } from 'src/application/socios/dtos/socio-response.dto';
+import { ListSociosQueryDto } from 'src/application/socios/dtos/list-socios-query.dto';
 import { RegistrarSocioUseCase } from 'src/application/socios/registrarSocio.use-case';
 import { ListarSociosUseCase } from 'src/application/socios/listarSocios.use-case';
 import { ActualizarSocioUseCase } from 'src/application/socios/actualizarSocio.use-case';
@@ -60,10 +61,13 @@ export class SocioController {
   @Get()
   @Rol(RolEnum.ADMIN, RolEnum.RECEPCIONISTA)
   @Actions('socios.ver')
-  async listarSocios() {
-    this.logger.log('Listando todos los socios');
-    const socios = await this.listarSociosUseCase.execute();
-    return socios.map((socio) => new SocioResponseDto(socio));
+  async listarSocios(@Query() query: ListSociosQueryDto) {
+    this.logger.log('Listando socios con paginacion');
+    const resultado = await this.listarSociosUseCase.execute(query);
+    return {
+      data: resultado.data.map((socio) => new SocioResponseDto(socio)),
+      pagination: resultado.pagination,
+    };
   }
 
   @Get('buscar-con-ficha')

@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect, useCallback, useMemo, type FormEvent } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { AlertCircle, Search, Users, XIcon } from 'lucide-react';
 import { format as formatearFechaIso } from 'date-fns';
@@ -13,10 +14,10 @@ import {
   formatearFechaArgentinaParaInput,
 } from '@/lib/fechasArgentina';
 import { REGEX_DNI, REGEX_TELEFONO, REGEX_EMAIL } from '@/lib/validaciones';
-import { normalizarTexto } from '@/lib/text';
 import type { Socio, CrearSocioDto, CrearSocioResponseDto, DesactivarSocioResultDto, Genero } from '@/types/socio';
 import { Button } from '@/components/ui/button';
 import { ControlesPaginacion } from '@/components/ui/ControlesPaginacion';
+import type { PaginatedData } from '@nutrifit/shared';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -96,10 +97,7 @@ const obtenerIniciales = (nombre: string, apellido: string): string => {
 
 export function Socios() {
   const { token } = useAuth();
-  
-  const [socios, setSocios] = useState<Socio[]>([]);
-  const [cargandoSocios, setCargandoSocios] = useState(false);
-  const [errorSocios, setErrorSocios] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const [busqueda, setBusqueda] = useState('');
   const [busquedaAplicada, setBusquedaAplicada] = useState('');
@@ -141,6 +139,55 @@ export function Socios() {
   const [desactivando, setDesactivando] = useState(false);
   const [resultadoDesactivacion, setResultadoDesactivacion] = useState<DesactivarSocioResultDto | null>(null);
 
+  const recargarSocios = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ['socios-filtros'] });
+    void queryClient.invalidateQueries({ queryKey: ['socios-pagina'] });
+  }, [queryClient]);
+
+  const { data: todosLosSocios = [] } = useQuery<Socio[]>({
+    queryKey: ['socios-filtros', token],
+    queryFn: async () => {
+      if (!token) return [];
+      const response = await apiRequest<ApiResponse<PaginatedData<Socio>>>(
+        '/socio?page=1&limit=100',
+        { token },
+      );
+      return response.data?.data ?? [];
+    },
+    enabled: !!token,
+    staleTime: 60_000,
+  });
+
+  const paramsPagina = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set('page', String(paginaActual));
+    params.set('limit', String(limitePorPagina));
+    if (busquedaAplicada) params.set('search', busquedaAplicada);
+    if (filtroEstado !== 'TODOS') params.set('estado', filtroEstado);
+    if (filtroProvincia !== 'TODAS') params.set('provincia', filtroProvincia);
+    if (filtroCiudad !== 'TODAS') params.set('ciudad', filtroCiudad);
+    params.set('ordenCampo', campoOrden);
+    params.set('ordenDireccion', direccionOrden);
+    return params.toString();
+  }, [paginaActual, limitePorPagina, busquedaAplicada, filtroEstado, filtroProvincia, filtroCiudad, campoOrden, direccionOrden]);
+
+  const { data: resultadoPagina, isLoading: cargandoSocios, error: queryError } = useQuery<PaginatedData<Socio> | null>({
+    queryKey: ['socios-pagina', token, paramsPagina],
+    queryFn: async () => {
+      if (!token) return null;
+      const response = await apiRequest<ApiResponse<PaginatedData<Socio>>>(
+        `/socio?${paramsPagina}`,
+        { token },
+      );
+      return response.data ?? null;
+    },
+    enabled: !!token,
+  });
+
+  const socios = resultadoPagina?.data ?? [];
+  const totalServidor = resultadoPagina?.pagination?.total ?? 0;
+  const errorSocios = queryError instanceof Error ? queryError.message : null;
+
   const abrirModalDetalles = (socio: Socio) => {
     setSocioSeleccionado(socio);
     setMostrarModalDetalles(true);
@@ -148,90 +195,26 @@ export function Socios() {
 
   const provinciasDisponibles = useMemo(() => {
     return Array.from(
-      new Set(socios.map((socio) => socio.provincia.trim())),
+      new Set(todosLosSocios.map((s) => s.provincia.trim())),
     )
       .filter(Boolean)
       .sort((a, b) => a.localeCompare(b));
-  }, [socios]);
+  }, [todosLosSocios]);
 
   const ciudadesDisponibles = useMemo(() => {
     const sociosPorProvincia =
       filtroProvincia === 'TODAS'
-        ? socios
-        : socios.filter((socio) => socio.provincia === filtroProvincia);
+        ? todosLosSocios
+        : todosLosSocios.filter((s) => s.provincia === filtroProvincia);
 
     return Array.from(
-      new Set(sociosPorProvincia.map((socio) => socio.ciudad.trim())),
+      new Set(sociosPorProvincia.map((s) => s.ciudad.trim())),
     )
       .filter(Boolean)
       .sort((a, b) => a.localeCompare(b));
-  }, [socios, filtroProvincia]);
+  }, [todosLosSocios, filtroProvincia]);
 
-  const sociosFiltradosOrdenados = useMemo(() => {
-    const textoBusqueda = normalizarTexto(busquedaAplicada);
-
-    return [...socios]
-      .filter((socio) => {
-        const coincideBusqueda =
-          !textoBusqueda ||
-          normalizarTexto(
-            `${socio.nombre} ${socio.apellido} ${socio.email} ${socio.dni} ${socio.ciudad} ${socio.provincia}`,
-          ).includes(textoBusqueda);
-
-        const coincideEstado =
-          filtroEstado === 'TODOS' ||
-          (filtroEstado === 'ACTIVO' ? socio.activo : !socio.activo);
-
-        const coincideProvincia =
-          filtroProvincia === 'TODAS' || socio.provincia === filtroProvincia;
-
-        const coincideCiudad = filtroCiudad === 'TODAS' || socio.ciudad === filtroCiudad;
-
-        return (
-          coincideBusqueda &&
-          coincideEstado &&
-          coincideProvincia &&
-          coincideCiudad
-        );
-      })
-      .sort((a, b) => {
-        const multiplicador = direccionOrden === 'ASC' ? 1 : -1;
-
-        switch (campoOrden) {
-          case 'ESTADO': {
-            const estadoA = a.activo ? 'ACTIVO' : 'INACTIVO';
-            const estadoB = b.activo ? 'ACTIVO' : 'INACTIVO';
-            return estadoA.localeCompare(estadoB) * multiplicador;
-          }
-          case 'NOMBRE':
-          default: {
-            const nombreA = `${a.apellido} ${a.nombre}`;
-            const nombreB = `${b.apellido} ${b.nombre}`;
-            return nombreA.localeCompare(nombreB) * multiplicador;
-          }
-        }
-      });
-  }, [
-    busquedaAplicada,
-    campoOrden,
-    direccionOrden,
-    filtroCiudad,
-    filtroEstado,
-    filtroProvincia,
-    socios,
-  ]);
-
-  const totalPaginas = Math.max(
-    1,
-    Math.ceil(sociosFiltradosOrdenados.length / limitePorPagina),
-  );
-
-  const indiceInicio = (paginaActual - 1) * limitePorPagina;
-  const indiceFin = indiceInicio + limitePorPagina;
-  const sociosPaginados = sociosFiltradosOrdenados.slice(
-    indiceInicio,
-    indiceFin,
-  );
+  const totalPaginas = Math.max(1, resultadoPagina?.pagination?.totalPages ?? 1);
 
   const limpiarFiltros = () => {
     setBusqueda('');
@@ -339,33 +322,6 @@ export function Socios() {
     setEnviandoCreacion(false);
   }, []);
 
-  const cargarSocios = useCallback(async () => {
-    if (!token) return;
-
-    try {
-      setCargandoSocios(true);
-      setErrorSocios(null);
-      const response = await apiRequest<ApiResponse<Socio[]>>('/socio', { token });
-      setSocios(response.data ?? []);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'No se pudieron cargar los socios';
-      setErrorSocios(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setCargandoSocios(false);
-    }
-  }, [token]);
-
-  useEffect(() => {
-    if (!token) {
-      setCargandoSocios(false);
-      setSocios([]);
-      return;
-    }
-
-    void cargarSocios();
-  }, [cargarSocios, token]);
-
   const crearSocio = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!token || enviandoCreacion) return;
@@ -409,7 +365,7 @@ export function Socios() {
       const resultado = responseData.data;
       setMostrarFormularioSocio(false);
       limpiarEstadoCreacion();
-      await cargarSocios();
+      recargarSocios();
       setContrasenaProvisional(resultado.contrasenaProvisional);
       setMostrarModalContrasenaProvisional(true);
     } catch (err) {
@@ -500,7 +456,7 @@ export function Socios() {
       setIdSocioEditando(null);
       setErroresEdicion({});
       setFotoEdicion(null);
-      await cargarSocios();
+      recargarSocios();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'No se pudo editar el socio';
       toast.error(errorMessage);
@@ -526,7 +482,7 @@ export function Socios() {
       });
 
       setResultadoDesactivacion(response.data);
-      await cargarSocios();
+      recargarSocios();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'No se pudo dar de baja el socio';
       toast.error(errorMessage);
@@ -547,7 +503,7 @@ export function Socios() {
       });
 
       toast.success('Socio reactivado exitosamente');
-      await cargarSocios();
+      recargarSocios();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'No se pudo reactivar el socio';
       toast.error(errorMessage);
@@ -574,7 +530,7 @@ export function Socios() {
           <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
-              onClick={() => void cargarSocios()}
+              onClick={() => recargarSocios()}
               type="button"
               disabled={cargandoSocios}
             >
@@ -678,7 +634,7 @@ export function Socios() {
 
           <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-4">
             <p className="text-sm text-muted-foreground">
-              Resultados: <span className="font-medium text-foreground">{sociosFiltradosOrdenados.length}</span>
+              Resultados: <span className="font-medium text-foreground">{totalServidor}</span>
             </p>
 
             <Button variant="outline" size="sm" onClick={limpiarFiltros}>
@@ -710,7 +666,7 @@ export function Socios() {
             <div className="rounded-md border border-dashed p-10 text-center text-muted-foreground">
               No hay socios registrados.
             </div>
-          ) : sociosFiltradosOrdenados.length === 0 ? (
+          ) : totalServidor === 0 ? (
             <div className="rounded-md border border-dashed p-10 text-center text-muted-foreground">
               No hay resultados para los filtros seleccionados.
             </div>
@@ -729,7 +685,7 @@ export function Socios() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sociosPaginados.map((socio) => (
+                    {socios.map((socio) => (
                       <TableRow key={socio.idPersona} className={!socio.activo ? 'opacity-60' : ''}>
                         <TableCell>
                           <div className="flex items-center gap-3">
@@ -834,7 +790,7 @@ export function Socios() {
                 <ControlesPaginacion
                   pagina={paginaActual}
                   totalPaginas={totalPaginas}
-                  total={sociosFiltradosOrdenados.length}
+                  total={totalServidor}
                   limite={limitePorPagina}
                   opcionesLimite={[6, 9, 12, 18]}
                   cargando={cargandoSocios}
