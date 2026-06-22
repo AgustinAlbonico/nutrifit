@@ -44,7 +44,7 @@ export function AvisoLlegadaTardeModal({
       await apiRequest(`/turnos/socio/${turnoId}/aviso-llegada-tarde`, {
         method: 'POST',
         token,
-        body: JSON.stringify({ minutosTarde: min }),
+        body: { minutosTarde: min },
       });
       toast.success('Aviso enviado a recepción');
       setMinutos('10');

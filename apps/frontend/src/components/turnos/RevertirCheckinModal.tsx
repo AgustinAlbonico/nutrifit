@@ -52,7 +52,7 @@ export function RevertirCheckinModal({
         {
           method: 'POST',
           token,
-          body: JSON.stringify({ motivo: motivoLimpio }),
+          body: { motivo: motivoLimpio },
         },
       );
 

@@ -66,10 +66,10 @@ export function RevertirAusenteModal({
         {
           method: 'PATCH',
           token,
-          body: JSON.stringify({
+          body: {
             motivoReversion: motivo,
             ...(minutos !== undefined ? { llegadaTardeMin: minutos } : {}),
-          }),
+          },
         },
       );
 
