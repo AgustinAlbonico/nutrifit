@@ -9,6 +9,7 @@ import {
 } from 'src/domain/exceptions/custom-exceptions';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 import {
+  combineArgentinaDateAndTime,
   getArgentinaNow,
   getArgentinaStartOfToday,
   getArgentinaWeekdayIndex,
@@ -84,13 +85,10 @@ export class ValidacionesCreacionTurno {
     }
 
     if (fechaTurno.getTime() === today.getTime()) {
-      const [hours, minutes] = horaTurno.split(':').map((v) => Number(v));
-      const turnoDateTime = new Date(now);
-      turnoDateTime.setHours(hours, minutes, 0, 0);
-
+      const turnoDateTime = combineArgentinaDateAndTime(fechaTurno, horaTurno);
       const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
 
-      if (turnoDateTime < oneHourFromNow) {
+      if (turnoDateTime.getTime() < oneHourFromNow.getTime()) {
         throw new BadRequestError(
           'Los turnos deben reservarse con al menos 1 hora de anticipacion.',
         );

@@ -17,6 +17,7 @@ import {
 import {
   combineArgentinaDateAndTime,
   formatArgentinaDateTime,
+  getArgentinaNow,
 } from 'src/common/utils/argentina-datetime.util';
 import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities';
 import { Repository } from 'typeorm';
@@ -80,7 +81,7 @@ export class ListPacientesProfesionalUseCase implements BaseUseCase {
     }
 
     const turnos = await queryBuilder.getMany();
-    const now = new Date();
+    const ahora = getArgentinaNow();
     const ultimoTurnoMap = new Map<number, Date>();
     const proximoTurnoMap = new Map<number, Date>();
 
@@ -109,7 +110,7 @@ export class ListPacientesProfesionalUseCase implements BaseUseCase {
         turno.horaTurno,
       );
 
-      if (turnoDateTime.getTime() <= now.getTime()) {
+      if (turnoDateTime.getTime() <= ahora.getTime()) {
         const ultimoTurno = ultimoTurnoMap.get(socioId);
         if (!ultimoTurno || turnoDateTime > ultimoTurno) {
           ultimoTurnoMap.set(socioId, turnoDateTime);

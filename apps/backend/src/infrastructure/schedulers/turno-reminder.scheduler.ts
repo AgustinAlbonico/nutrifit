@@ -9,7 +9,11 @@ import {
   TipoRecordatorio,
 } from '../persistence/typeorm/entities/recordatorio-enviado.entity';
 import { TurnoOrmEntity } from '../persistence/typeorm/entities/turno.entity';
-import { formatArgentinaDate } from 'src/common/utils/argentina-datetime.util';
+import {
+  combineArgentinaDateAndTime,
+  formatArgentinaDate,
+  getArgentinaNow,
+} from 'src/common/utils/argentina-datetime.util';
 
 @Injectable()
 export class TurnoReminderScheduler {
@@ -101,9 +105,11 @@ export class TurnoReminderScheduler {
   private definirTipoRecordatorio(
     turno: TurnoOrmEntity,
   ): TipoRecordatorio | null {
-    const ahora = new Date();
-    const fechaStr = formatArgentinaDate(turno.fechaTurno);
-    const turnoFecha = new Date(`${fechaStr}T${turno.horaTurno}:00`);
+    const ahora = getArgentinaNow();
+    const turnoFecha = combineArgentinaDateAndTime(
+      turno.fechaTurno,
+      turno.horaTurno,
+    );
     const diffHoras = (turnoFecha.getTime() - ahora.getTime()) / 36e5;
 
     if (diffHoras <= 24 && diffHoras >= 0) return TipoRecordatorio.REMINDER_24H;

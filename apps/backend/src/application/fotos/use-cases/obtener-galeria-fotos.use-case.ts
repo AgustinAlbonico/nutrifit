@@ -12,6 +12,7 @@ import {
 } from 'src/domain/services/object-storage.service';
 import { FotoProgresoRepository } from 'src/infrastructure/persistence/typeorm/repositories/foto-progreso.repository';
 import { FotoProgresoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/foto-progreso.entity';
+import { formatArgentinaDate } from 'src/common/utils/argentina-datetime.util';
 
 type FotoProgresoConSesionDto = FotoProgresoResponseDto & {
   fechaTurno: string | null;
@@ -112,7 +113,7 @@ export class ObtenerGaleriaFotosUseCase implements BaseUseCase {
     }
 
     if (fecha instanceof Date) {
-      return fecha.toISOString().slice(0, 10);
+      return formatArgentinaDate(fecha);
     }
 
     return fecha.slice(0, 10);

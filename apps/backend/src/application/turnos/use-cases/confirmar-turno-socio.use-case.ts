@@ -15,6 +15,7 @@ import {
 import {
   combineArgentinaDateAndTime,
   formatArgentinaDate,
+  getArgentinaNow,
   getArgentinaTodayDate,
   normalizeTimeToHHmm,
 } from 'src/common/utils/argentina-datetime.util';
@@ -173,16 +174,16 @@ export class ConfirmarTurnoSocioUseCase implements BaseUseCase {
     fechaTurno: Date,
     horaTurno: string,
   ): void {
-    const now = new Date();
+    const ahora = getArgentinaNow();
     const scheduledDate = combineArgentinaDateAndTime(fechaTurno, horaTurno);
 
-    if (getArgentinaTodayDate(now) !== formatArgentinaDate(scheduledDate)) {
+    if (getArgentinaTodayDate(ahora) !== formatArgentinaDate(scheduledDate)) {
       throw new BadRequestError(
         'Solo se puede confirmar asistencia el dia del turno.',
       );
     }
 
-    if (now.getTime() >= scheduledDate.getTime()) {
+    if (ahora.getTime() >= scheduledDate.getTime()) {
       throw new BadRequestError(
         'La confirmacion debe realizarse antes del horario del turno.',
       );

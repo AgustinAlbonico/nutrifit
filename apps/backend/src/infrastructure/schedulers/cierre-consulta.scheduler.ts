@@ -34,6 +34,7 @@ export class CierreConsultaScheduler {
     const turnos = await this.turnoRepository
       .createQueryBuilder('turno')
       .leftJoinAndSelect('turno.nutricionista', 'nutricionista')
+      .leftJoinAndSelect('nutricionista.usuario', 'nutriUsuario')
       .leftJoinAndSelect('turno.gimnasio', 'gimnasio')
       .where('turno.estadoTurno = :estado', { estado: EstadoTurno.EN_CURSO })
       .andWhere('turno.consultaIniciadaAt IS NOT NULL')
@@ -54,9 +55,9 @@ export class CierreConsultaScheduler {
           turno.preavisoCierreAutoEnviadoEn = ahora;
           await this.turnoRepository.save(turno);
 
-          if (turno.nutricionista?.idPersona) {
+          if (turno.nutricionista?.usuario?.idUsuario != null) {
             await this.notificacionesService.crear({
-              destinatarioId: turno.nutricionista.idPersona,
+              destinatarioId: turno.nutricionista.usuario.idUsuario,
               tipo: TipoNotificacion.CONSULTA_PREAVISO_CIERRE_AUTO,
               titulo: 'Cierre automático próximo',
               mensaje: `La consulta #${turno.idTurno} se cerrará automáticamente en ${preavisoMin} min. Finalizala para cargar los datos clínicos.`,

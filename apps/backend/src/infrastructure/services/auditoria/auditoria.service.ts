@@ -6,6 +6,7 @@ import {
   AccionAuditoria,
 } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
+import { getArgentinaMonthRange } from 'src/common/utils/argentina-datetime.util';
 
 export interface AuditoriaDto {
   usuarioId?: number | null;
@@ -159,13 +160,6 @@ export class AuditoriaService {
     inicioMes: Date;
     finMes: Date;
   } {
-    const inicio = new Date(referencia);
-    inicio.setHours(0, 0, 0, 0);
-    inicio.setDate(1);
-
-    const fin = new Date(inicio);
-    fin.setMonth(fin.getMonth() + 1);
-
-    return { inicioMes: inicio, finMes: fin };
+    return getArgentinaMonthRange(referencia);
   }
 }

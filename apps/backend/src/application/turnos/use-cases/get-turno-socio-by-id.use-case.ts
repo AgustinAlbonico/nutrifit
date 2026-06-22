@@ -18,6 +18,7 @@ import {
   UsuarioOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
+import { formatArgentinaDate } from 'src/common/utils/argentina-datetime.util';
 
 @Injectable()
 export class GetTurnoSocioByIdUseCase implements BaseUseCase {
@@ -87,7 +88,7 @@ export class GetTurnoSocioByIdUseCase implements BaseUseCase {
 
     const fechaTurno =
       turno.fechaTurno instanceof Date
-        ? turno.fechaTurno.toISOString().slice(0, 10)
+        ? formatArgentinaDate(turno.fechaTurno)
         : String(turno.fechaTurno);
 
     return {

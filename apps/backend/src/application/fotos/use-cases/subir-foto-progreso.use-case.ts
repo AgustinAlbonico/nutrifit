@@ -10,6 +10,7 @@ import {
 } from 'src/domain/services/object-storage.service';
 import { FotoProgresoRepository } from 'src/infrastructure/persistence/typeorm/repositories/foto-progreso.repository';
 import { FotoProgresoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/foto-progreso.entity';
+import { formatArgentinaDate } from 'src/common/utils/argentina-datetime.util';
 
 @Injectable()
 export class SubirFotoProgresoUseCase implements BaseUseCase {
@@ -56,8 +57,8 @@ export class SubirFotoProgresoUseCase implements BaseUseCase {
     tipoFoto: string,
     fecha: Date,
   ): string {
-    const fechaISO = fecha.toISOString().slice(0, 10);
-    return `progreso/${socioId}/${tipoFoto}/${fechaISO}_${fecha.getTime()}.jpg`;
+    const fechaArgentina = formatArgentinaDate(fecha);
+    return `progreso/${socioId}/${tipoFoto}/${fechaArgentina}_${fecha.getTime()}.jpg`;
   }
 
   private toResponseDto(

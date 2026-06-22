@@ -29,7 +29,7 @@ import {
 } from 'src/domain/services/logger.service';
 import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
-import { getArgentinaNow } from 'src/common/utils/argentina-datetime.util';
+import { formatArgentinaDate, getArgentinaNow } from 'src/common/utils/argentina-datetime.util';
 
 const VENTANA_MAXIMA_DIAS = 60;
 const MOTIVO_MAX_LENGTH = 255;
@@ -172,7 +172,7 @@ export class CrearExcepcionDisponibilidadUseCase implements BaseUseCase {
   private toTurnoResumen(turno: TurnoOrmEntity): TurnoAfectadoResumenDto {
     return {
       idTurno: turno.idTurno,
-      fechaTurno: turno.fechaTurno.toISOString(),
+      fechaTurno: formatArgentinaDate(turno.fechaTurno),
       horaTurno: turno.horaTurno,
       estadoTurno: turno.estadoTurno,
       socioId: turno.socio?.idPersona ?? null,

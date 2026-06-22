@@ -240,9 +240,9 @@ export class ReprogramarTurnoSocioUseCase implements BaseUseCase {
       turno.fechaTurno,
       turno.horaTurno,
     );
-    const now = new Date();
+    const ahora = getArgentinaNow();
     const hoursDiff =
-      (scheduledDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+      (scheduledDate.getTime() - ahora.getTime()) / (1000 * 60 * 60);
 
     if (hoursDiff < plazoHoras) {
       throw new BadRequestError(
@@ -352,13 +352,10 @@ export class ReprogramarTurnoSocioUseCase implements BaseUseCase {
 
     // Si es hoy, validar que falte al menos 1 hora
     if (fechaTurno.getTime() === today.getTime()) {
-      const [hours, minutes] = horaTurno.split(':').map((v) => Number(v));
-      const turnoDateTime = new Date(now);
-      turnoDateTime.setHours(hours, minutes, 0, 0);
-
+      const turnoDateTime = combineArgentinaDateAndTime(fechaTurno, horaTurno);
       const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
 
-      if (turnoDateTime < oneHourFromNow) {
+      if (turnoDateTime.getTime() < oneHourFromNow.getTime()) {
         throw new BadRequestError(
           'Los turnos deben reprogramarse con al menos 1 hora de anticipación.',
         );

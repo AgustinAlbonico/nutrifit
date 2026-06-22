@@ -22,6 +22,7 @@ import {
 import { ObservacionClinicaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/observacion-clinica.entity';
 import { Repository } from 'typeorm';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
+import { formatArgentinaDate } from 'src/common/utils/argentina-datetime.util';
 
 @Injectable()
 export class GetTurnoByIdUseCase implements BaseUseCase {
@@ -262,6 +263,6 @@ export class GetTurnoByIdUseCase implements BaseUseCase {
     if (typeof date === 'string') {
       return date.split('T')[0];
     }
-    return date.toISOString().split('T')[0];
+    return formatArgentinaDate(date);
   }
 }

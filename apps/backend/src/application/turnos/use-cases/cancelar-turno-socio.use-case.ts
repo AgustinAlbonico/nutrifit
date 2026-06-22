@@ -22,6 +22,7 @@ import {
 import {
   combineArgentinaDateAndTime,
   formatArgentinaDate,
+  getArgentinaNow,
   normalizeTimeToHHmm,
 } from 'src/common/utils/argentina-datetime.util';
 import {
@@ -198,9 +199,9 @@ export class CancelarTurnoSocioUseCase implements BaseUseCase {
       turno.fechaTurno,
       turno.horaTurno,
     );
-    const now = new Date();
+    const ahora = getArgentinaNow();
     const hoursDiff =
-      (scheduledDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+      (scheduledDate.getTime() - ahora.getTime()) / (1000 * 60 * 60);
 
     if (hoursDiff < plazoHoras) {
       throw new BadRequestError(

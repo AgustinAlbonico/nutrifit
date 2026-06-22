@@ -87,7 +87,7 @@ export function combineArgentinaDateAndTime(
 }
 
 export function getArgentinaTodayDate(
-  referenceDate: Date = new Date(),
+  referenceDate: Date | string = new Date(),
 ): string {
   return formatArgentinaDate(referenceDate);
 }
@@ -138,6 +138,49 @@ export function minutesToTime(minutes: number): string {
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
   return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+}
+
+/**
+ * Obtiene el rango de un mes natural en zona horaria Argentina.
+ * `inicio` es el 1° del mes a las 00:00 AR, `fin` es el 1° del mes
+ * siguiente a las 00:00 AR. Los Date devueltos son absolutos, comparables
+ * directamente con timestamps de la DB.
+ */
+export function getArgentinaMonthRange(
+  referenceDate: Date | string,
+): { inicioMes: Date; finMes: Date } {
+  const ref = resolveDateInput(referenceDate);
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: ARGENTINA_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  const parts = formatter.formatToParts(ref);
+  const year = getPart(parts, 'year');
+  const month = getPart(parts, 'month');
+
+  const inicioMes = new Date(
+    `${year}-${month}-01T00:00:00${ARGENTINA_UTC_OFFSET}`,
+  );
+
+  const nextYear = Number(month) === 12 ? Number(year) + 1 : Number(year);
+  const nextMonth = Number(month) === 12 ? 1 : Number(month) + 1;
+  const finMes = new Date(
+    `${String(nextYear).padStart(4, '0')}-${String(nextMonth).padStart(2, '0')}-01T00:00:00${ARGENTINA_UTC_OFFSET}`,
+  );
+
+  return { inicioMes, finMes };
+}
+
+/**
+ * Devuelve el inicio del día actual en zona horaria Argentina
+ * (medianoche AR como Date absoluto).
+ */
+export function getArgentinaStartOfDay(
+  referenceDate: Date | string = new Date(),
+): Date {
+  return parseArgentinaDateInput(getArgentinaTodayDate(referenceDate));
 }
 
 /**

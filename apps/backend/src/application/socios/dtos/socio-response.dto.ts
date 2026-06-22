@@ -1,4 +1,5 @@
 import { SocioEntity } from 'src/domain/entities/Persona/Socio/socio.entity';
+import { formatArgentinaDate } from 'src/common/utils/argentina-datetime.util';
 
 /**
  * Forma mínima necesaria para construir un `SocioResponseDto`.
@@ -30,7 +31,7 @@ function formatearFecha(
   }
 
   if (fecha instanceof Date) {
-    return fecha.toISOString().split('T')[0] ?? null;
+    return formatArgentinaDate(fecha);
   }
 
   return fecha;
