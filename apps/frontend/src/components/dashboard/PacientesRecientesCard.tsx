@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Users } from 'lucide-react';
+import { Users, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AvatarPaciente } from '@/components/ui/avatar-paciente';
 import { apiRequest } from '@/lib/api';
@@ -87,6 +87,15 @@ export function PacientesRecientesCard() {
                 )}
               </div>
             ))}
+            {pacientes.length > 5 && (
+              <a
+                href="/pacientes"
+                className="flex items-center justify-center gap-1 w-full text-sm text-primary hover:underline pt-2"
+              >
+                Ver todos los pacientes
+                <ArrowRight className="h-4 w-4" />
+              </a>
+            )}
           </div>
         )}
       </CardContent>

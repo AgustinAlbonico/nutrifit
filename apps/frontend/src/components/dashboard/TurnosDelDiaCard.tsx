@@ -1,7 +1,7 @@
 import type { EstadoTurno } from '@nutrifit/shared';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { Calendar, Clock, User, PlayCircle, Eye } from 'lucide-react';
+import { Calendar, Clock, User, PlayCircle, Eye, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -146,9 +146,13 @@ export function TurnosDelDiaCard() {
               </div>
             ))}
             {turnos.length > 5 && (
-              <p className="text-sm text-muted-foreground text-center">
-                +{turnos.length - 5} turnos mas
-              </p>
+              <a
+                href="/turnos"
+                className="flex items-center justify-center gap-1 w-full text-sm text-primary hover:underline pt-2"
+              >
+                Ver todos los turnos
+                <ArrowRight className="h-4 w-4" />
+              </a>
             )}
           </div>
         )}
