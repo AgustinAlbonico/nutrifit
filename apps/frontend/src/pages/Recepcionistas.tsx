@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, type FormEvent } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { AlertCircle, Search, UserCog, XIcon } from 'lucide-react';
 import { format as formatearFechaIso } from 'date-fns';
@@ -13,10 +14,10 @@ import {
   formatearFechaArgentinaParaInput,
 } from '@/lib/fechasArgentina';
 import { REGEX_DNI, REGEX_TELEFONO, REGEX_EMAIL } from '@/lib/validaciones';
-import { normalizarTexto } from '@/lib/text';
 import type { Recepcionista, CrearRecepcionistaDto, Genero } from '@/types/recepcionista';
 import { Button } from '@/components/ui/button';
 import { ControlesPaginacion } from '@/components/ui/ControlesPaginacion';
+import type { PaginatedData } from '@nutrifit/shared';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -93,10 +94,7 @@ const obtenerIniciales = (nombre: string, apellido: string): string => {
 
 export function Recepcionistas() {
   const { token } = useAuth();
-
-  const [recepcionistas, setRecepcionistas] = useState<Recepcionista[]>([]);
-  const [cargandoRecepcionistas, setCargandoRecepcionistas] = useState(false);
-  const [errorRecepcionistas, setErrorRecepcionistas] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const [busqueda, setBusqueda] = useState('');
   const [busquedaAplicada, setBusquedaAplicada] = useState('');
@@ -131,6 +129,55 @@ export function Recepcionistas() {
   const [mostrarFotoAmpliada, setMostrarFotoAmpliada] = useState(false);
   const [recepcionistaSeleccionado, setRecepcionistaSeleccionado] = useState<Recepcionista | null>(null);
 
+  const recargarRecepcionistas = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ['recepcionistas-filtros'] });
+    void queryClient.invalidateQueries({ queryKey: ['recepcionistas-pagina'] });
+  }, [queryClient]);
+
+  const { data: todosLosRecepcionistas = [] } = useQuery<Recepcionista[]>({
+    queryKey: ['recepcionistas-filtros', token],
+    queryFn: async () => {
+      if (!token) return [];
+      const response = await apiRequest<ApiResponse<PaginatedData<Recepcionista>>>(
+        '/recepcionistas?page=1&limit=100',
+        { token },
+      );
+      return response.data?.data ?? [];
+    },
+    enabled: !!token,
+    staleTime: 60_000,
+  });
+
+  const paramsPagina = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set('page', String(paginaActual));
+    params.set('limit', String(limitePorPagina));
+    if (busquedaAplicada) params.set('search', busquedaAplicada);
+    if (filtroEstado !== 'TODOS') params.set('estado', filtroEstado);
+    if (filtroProvincia !== 'TODAS') params.set('provincia', filtroProvincia);
+    if (filtroCiudad !== 'TODAS') params.set('ciudad', filtroCiudad);
+    params.set('ordenCampo', campoOrden);
+    params.set('ordenDireccion', direccionOrden);
+    return params.toString();
+  }, [paginaActual, limitePorPagina, busquedaAplicada, filtroEstado, filtroProvincia, filtroCiudad, campoOrden, direccionOrden]);
+
+  const { data: resultadoPagina, isLoading: cargandoRecepcionistas, error: queryError } = useQuery<PaginatedData<Recepcionista> | null>({
+    queryKey: ['recepcionistas-pagina', token, paramsPagina],
+    queryFn: async () => {
+      if (!token) return null;
+      const response = await apiRequest<ApiResponse<PaginatedData<Recepcionista>>>(
+        `/recepcionistas?${paramsPagina}`,
+        { token },
+      );
+      return response.data ?? null;
+    },
+    enabled: !!token,
+  });
+
+  const recepcionistas = resultadoPagina?.data ?? [];
+  const totalServidor = resultadoPagina?.pagination?.total ?? 0;
+  const errorRecepcionistas = queryError instanceof Error ? queryError.message : null;
+
   const abrirModalDetalles = (recepcionista: Recepcionista) => {
     setRecepcionistaSeleccionado(recepcionista);
     setMostrarModalDetalles(true);
@@ -138,17 +185,17 @@ export function Recepcionistas() {
 
   const provinciasDisponibles = useMemo(() => {
     return Array.from(
-      new Set(recepcionistas.map((r) => r.provincia.trim())),
+      new Set(todosLosRecepcionistas.map((r) => r.provincia.trim())),
     )
       .filter(Boolean)
       .sort((a, b) => a.localeCompare(b));
-  }, [recepcionistas]);
+  }, [todosLosRecepcionistas]);
 
   const ciudadesDisponibles = useMemo(() => {
     const recepcionistasPorProvincia =
       filtroProvincia === 'TODAS'
-        ? recepcionistas
-        : recepcionistas.filter((r) => r.provincia === filtroProvincia);
+        ? todosLosRecepcionistas
+        : todosLosRecepcionistas.filter((r) => r.provincia === filtroProvincia);
 
     return Array.from(
       new Set(recepcionistasPorProvincia.map((r) => r.ciudad.trim())),
@@ -157,71 +204,7 @@ export function Recepcionistas() {
       .sort((a, b) => a.localeCompare(b));
   }, [recepcionistas, filtroProvincia]);
 
-  const recepcionistasFiltradosOrdenados = useMemo(() => {
-    const textoBusqueda = normalizarTexto(busquedaAplicada);
-
-    return [...recepcionistas]
-      .filter((recepcionista) => {
-        const coincideBusqueda =
-          !textoBusqueda ||
-          normalizarTexto(
-            `${recepcionista.nombre} ${recepcionista.apellido} ${recepcionista.email} ${recepcionista.dni} ${recepcionista.ciudad} ${recepcionista.provincia}`,
-          ).includes(textoBusqueda);
-
-        const coincideEstado =
-          filtroEstado === 'TODOS' ||
-          (filtroEstado === 'ACTIVO' ? recepcionista.activo : !recepcionista.activo);
-
-        const coincideProvincia =
-          filtroProvincia === 'TODAS' || recepcionista.provincia === filtroProvincia;
-
-        const coincideCiudad = filtroCiudad === 'TODAS' || recepcionista.ciudad === filtroCiudad;
-
-        return (
-          coincideBusqueda &&
-          coincideEstado &&
-          coincideProvincia &&
-          coincideCiudad
-        );
-      })
-      .sort((a, b) => {
-        const multiplicador = direccionOrden === 'ASC' ? 1 : -1;
-
-        switch (campoOrden) {
-          case 'ESTADO': {
-            const estadoA = a.activo ? 'ACTIVO' : 'INACTIVO';
-            const estadoB = b.activo ? 'ACTIVO' : 'INACTIVO';
-            return estadoA.localeCompare(estadoB) * multiplicador;
-          }
-          case 'NOMBRE':
-          default: {
-            const nombreA = `${a.apellido} ${a.nombre}`;
-            const nombreB = `${b.apellido} ${b.nombre}`;
-            return nombreA.localeCompare(nombreB) * multiplicador;
-          }
-        }
-      });
-  }, [
-    busquedaAplicada,
-    campoOrden,
-    direccionOrden,
-    filtroCiudad,
-    filtroEstado,
-    filtroProvincia,
-    recepcionistas,
-  ]);
-
-  const totalPaginas = Math.max(
-    1,
-    Math.ceil(recepcionistasFiltradosOrdenados.length / limitePorPagina),
-  );
-
-  const indiceInicio = (paginaActual - 1) * limitePorPagina;
-  const indiceFin = indiceInicio + limitePorPagina;
-  const recepcionistasPaginados = recepcionistasFiltradosOrdenados.slice(
-    indiceInicio,
-    indiceFin,
-  );
+  const totalPaginas = Math.max(1, resultadoPagina?.pagination?.totalPages ?? 1);
 
   const limpiarFiltros = () => {
     setBusqueda('');
@@ -329,32 +312,6 @@ export function Recepcionistas() {
     setEnviandoCreacion(false);
   }, []);
 
-  const cargarRecepcionistas = useCallback(async () => {
-    if (!token) return;
-
-    try {
-      setCargandoRecepcionistas(true);
-      setErrorRecepcionistas(null);
-      const response = await apiRequest<ApiResponse<Recepcionista[]>>('/recepcionistas', { token });
-      setRecepcionistas(response.data ?? []);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'No se pudieron cargar los recepcionistas';
-      setErrorRecepcionistas(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setCargandoRecepcionistas(false);
-    }
-  }, [token]);
-
-  useEffect(() => {
-    if (!token) {
-      setCargandoRecepcionistas(false);
-      setRecepcionistas([]);
-      return;
-    }
-
-    void cargarRecepcionistas();
-  }, [cargarRecepcionistas, token]);
 
   const crearRecepcionista = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -399,7 +356,7 @@ export function Recepcionistas() {
       toast.success('Recepcionista creado exitosamente');
       setMostrarFormularioCreacion(false);
       limpiarEstadoCreacion();
-      await cargarRecepcionistas();
+      recargarRecepcionistas();
 
       if (respuesta?.contrasenaProvisional) {
         setContrasenaProvisional(respuesta.contrasenaProvisional);
@@ -484,7 +441,7 @@ export function Recepcionistas() {
       setIdRecepcionistaEditando(null);
       setErroresEdicion({});
       setFotoEdicion(null);
-      await cargarRecepcionistas();
+      recargarRecepcionistas();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'No se pudo editar el recepcionista';
       toast.error(errorMessage);
@@ -508,7 +465,7 @@ export function Recepcionistas() {
       toast.success('Recepcionista dado de baja exitosamente');
       setMostrarConfirmacionEliminar(false);
       setRecepcionistaAEliminar(null);
-      await cargarRecepcionistas();
+      recargarRecepcionistas();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'No se pudo dar de baja el recepcionista';
       toast.error(errorMessage);
@@ -525,7 +482,7 @@ export function Recepcionistas() {
       });
 
       toast.success('Recepcionista reactivado exitosamente');
-      await cargarRecepcionistas();
+      recargarRecepcionistas();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'No se pudo reactivar el recepcionista';
       toast.error(errorMessage);
@@ -552,7 +509,7 @@ export function Recepcionistas() {
           <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
-              onClick={() => void cargarRecepcionistas()}
+              onClick={() => recargarRecepcionistas()}
               type="button"
               disabled={cargandoRecepcionistas}
             >
@@ -658,7 +615,7 @@ export function Recepcionistas() {
 
           <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-4">
             <p className="text-sm text-muted-foreground">
-              Resultados: <span className="font-medium text-foreground">{recepcionistasFiltradosOrdenados.length}</span>
+              Resultados: <span className="font-medium text-foreground">{totalServidor}</span>
             </p>
 
             <Button variant="outline" size="sm" onClick={limpiarFiltros}>
@@ -690,7 +647,7 @@ export function Recepcionistas() {
             <div className="rounded-md border border-dashed p-10 text-center text-muted-foreground">
               No hay recepcionistas registrados.
             </div>
-          ) : recepcionistasFiltradosOrdenados.length === 0 ? (
+          ) : totalServidor === 0 ? (
             <div className="rounded-md border border-dashed p-10 text-center text-muted-foreground">
               No hay resultados para los filtros seleccionados.
             </div>
@@ -709,7 +666,7 @@ export function Recepcionistas() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {recepcionistasPaginados.map((recepcionista) => (
+                    {recepcionistas.map((recepcionista) => (
                       <TableRow key={recepcionista.idPersona} className={!recepcionista.activo ? 'opacity-60' : ''}>
                         <TableCell>
                           <div className="flex items-center gap-3">
@@ -816,7 +773,7 @@ export function Recepcionistas() {
                 <ControlesPaginacion
                   pagina={paginaActual}
                   totalPaginas={totalPaginas}
-                  total={recepcionistasFiltradosOrdenados.length}
+                  total={totalServidor}
                   limite={limitePorPagina}
                   opcionesLimite={[6, 9, 12, 18]}
                   cargando={cargandoRecepcionistas}

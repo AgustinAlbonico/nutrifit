@@ -13,12 +13,14 @@ import {
   Inject,
   UseGuards,
   Res,
+  Query,
   ParseIntPipe,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { CreateRecepcionistaDto } from 'src/application/recepcionistas/dtos/create-recepcionista.dto';
 import { UpdateRecepcionistaDto } from 'src/application/recepcionistas/dtos/update-recepcionista.dto';
 import { RecepcionistaResponseDto } from 'src/application/recepcionistas/dtos/recepcionista-response.dto';
+import { ListRecepcionistasQueryDto } from 'src/application/recepcionistas/dtos/list-recepcionistas-query.dto';
 import { CreateRecepcionistaUseCase } from 'src/application/recepcionistas/use-cases/create-recepcionista.use-case';
 import { ListRecepcionistasUseCase } from 'src/application/recepcionistas/use-cases/list-recepcionistas.use-case';
 import { GetRecepcionistaUseCase } from 'src/application/recepcionistas/use-cases/get-recepcionista.use-case';
@@ -89,8 +91,8 @@ export class RecepcionistasController {
   }
 
   @Get()
-  async findAll() {
-    return this.listRecepcionistasUseCase.execute();
+  async findAll(@Query() query: ListRecepcionistasQueryDto) {
+    return this.listRecepcionistasUseCase.execute(query);
   }
 
   @Get(':id')
