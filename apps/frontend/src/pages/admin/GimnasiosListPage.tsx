@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/table';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ControlesPaginacion } from '@/components/ui/ControlesPaginacion';
 import {
   Dialog,
   DialogContent,
@@ -59,6 +60,8 @@ export function GimnasiosListPage() {
   const queryClient = useQueryClient();
   const [mostrarModalEliminar, setMostrarModalEliminar] = useState(false);
   const [gimnasioAEliminar, setGimnasioAEliminar] = useState<Gimnasio | null>(null);
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [limitePorPagina, setLimitePorPagina] = useState(10);
 
   const {
     data: gimnasios,
@@ -102,6 +105,11 @@ export function GimnasiosListPage() {
   });
 
   const esSuperadmin = rol === 'SUPERADMIN';
+
+  const totalGimnasios = gimnasios?.length ?? 0;
+  const totalPaginas = Math.max(1, Math.ceil(totalGimnasios / limitePorPagina));
+  const inicio = (paginaActual - 1) * limitePorPagina;
+  const gimnasiosPaginados = gimnasios?.slice(inicio, inicio + limitePorPagina) ?? [];
 
   if (isLoading) {
     return (
@@ -212,7 +220,7 @@ export function GimnasiosListPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {gimnasios.map((gimnasio) => (
+              {gimnasiosPaginados.map((gimnasio) => (
                 <TableRow key={gimnasio.id}>
                   <TableCell className="font-mono text-xs text-muted-foreground">
                     #{gimnasio.id}
@@ -304,6 +312,21 @@ export function GimnasiosListPage() {
               ))}
             </TableBody>
           </Table>
+          {totalGimnasios > limitePorPagina && (
+            <div className="border-t p-3">
+              <ControlesPaginacion
+                pagina={paginaActual}
+                totalPaginas={totalPaginas}
+                total={totalGimnasios}
+                limite={limitePorPagina}
+                onCambiarPagina={setPaginaActual}
+                onCambiarLimite={(l) => {
+                  setLimitePorPagina(l);
+                  setPaginaActual(1);
+                }}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 
