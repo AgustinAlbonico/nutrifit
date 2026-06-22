@@ -1,4 +1,5 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import type { PaginatedData } from '@nutrifit/shared';
 import { Rol as RolEnum } from 'src/domain/entities/Usuario/Rol';
 import { AccionAuditoria } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
 import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
@@ -11,6 +12,8 @@ import {
 } from 'src/infrastructure/auth/decorators/current-user.decorator';
 
 interface FiltrosAuditoriaDto {
+  page?: number;
+  limit?: number;
   fechaDesde?: string;
   fechaHasta?: string;
   accion?: AccionAuditoria;
@@ -42,7 +45,7 @@ export class AdminAuditoriaController {
   async listarAuditoria(
     @Query() filtros: FiltrosAuditoriaDto,
     @CurrentUser() usuario: UsuarioAutenticadoPayload,
-  ): Promise<RegistroAuditoria[]> {
+  ): Promise<PaginatedData<RegistroAuditoria>> {
     const esSuperadmin = usuario.rol === RolEnum.SUPERADMIN;
 
     // Admin usa su propio gimnasioId si no se especificó otro
@@ -51,6 +54,8 @@ export class AdminAuditoriaController {
       filtros.gimnasioId ?? (!esSuperadmin ? usuario.gimnasioId : undefined);
 
     return this.auditoriaService.listarConFiltros({
+      page: filtros.page,
+      limit: filtros.limit,
       fechaDesde: filtros.fechaDesde ? new Date(filtros.fechaDesde) : undefined,
       fechaHasta: filtros.fechaHasta ? new Date(filtros.fechaHasta) : undefined,
       accion: filtros.accion,

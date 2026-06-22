@@ -1,10 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException } from '@nestjs/common';
 import { AdminAuditoriaController } from './admin-auditoria.controller';
 import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
 import { AccionAuditoria } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
 import { JwtAuthGuard } from 'src/infrastructure/auth/guards/auth.guard';
 import { RolesGuard } from 'src/infrastructure/auth/guards/roles.guard';
+import { Rol } from 'src/domain/entities/Usuario/Rol';
+import type { PaginatedData } from '@nutrifit/shared';
 
 describe('AdminAuditoriaController', () => {
   let controller: AdminAuditoriaController;
@@ -31,6 +32,15 @@ describe('AdminAuditoriaController', () => {
     service = module.get(AuditoriaService);
   });
 
+  const usuarioMock = {
+    id: 1,
+    email: 'admin@nutrifit.com',
+    rol: Rol.ADMIN,
+    gimnasioId: 5,
+    personaId: null,
+    jti: 'test-jti',
+  };
+
   afterEach(() => jest.clearAllMocks());
 
   describe('GET /admin/auditoria', () => {
@@ -46,29 +56,33 @@ describe('AdminAuditoriaController', () => {
       metadata: { detalle: 'Socio creado exitosamente' },
     };
 
-    it('debe throw BadRequestException cuando gimnasioId no esta presente', async () => {
-      await expect(
-        controller.listarAuditoria({
-          fechaDesde: '2025-01-01',
-          fechaHasta: '2025-12-31',
-        }),
-      ).rejects.toThrow(BadRequestException);
+    const paginatedResponseMock = (data: typeof registroMock[]): PaginatedData<typeof registroMock> => ({
+      data,
+      pagination: {
+        page: 1,
+        limit: 20,
+        total: data.length,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPreviousPage: false,
+      },
+    });
 
-      await expect(
-        controller.listarAuditoria({
-          fechaDesde: '2025-01-01',
-          fechaHasta: '2025-12-31',
-        }),
-      ).rejects.toThrow(
-        'Para listar auditoria como admin debes especificar el parametro gimnasioId',
-      );
+    it('debe usar gimnasioId del usuario autenticado cuando no se especifica', async () => {
+      mockAuditoriaService.listarConFiltros.mockResolvedValue(paginatedResponseMock([]));
 
-      // listarConFiltros must NEVER be called without gimnasioId
-      expect(mockAuditoriaService.listarConFiltros).not.toHaveBeenCalled();
+      await controller.listarAuditoria({
+        fechaDesde: '2025-01-01',
+        fechaHasta: '2025-12-31',
+      }, usuarioMock);
+
+      expect(mockAuditoriaService.listarConFiltros).toHaveBeenCalledWith(expect.objectContaining({
+        gimnasioId: 5,
+      }));
     });
 
     it('debe llamar a listarConFiltros con gimnasioId correctamente', async () => {
-      mockAuditoriaService.listarConFiltros.mockResolvedValue([registroMock]);
+      mockAuditoriaService.listarConFiltros.mockResolvedValue(paginatedResponseMock([registroMock]));
 
       const result = await controller.listarAuditoria({
         gimnasioId: 5,
@@ -77,62 +91,58 @@ describe('AdminAuditoriaController', () => {
         accion: 'PLAN_CREADO' as AccionAuditoria,
         entidad: 'Socio',
         usuarioId: 10,
-      });
+      }, usuarioMock);
 
       expect(mockAuditoriaService.listarConFiltros).toHaveBeenCalledWith({
+        page: undefined,
+        limit: undefined,
         fechaDesde: new Date('2025-01-01'),
         fechaHasta: new Date('2025-06-01'),
         accion: AccionAuditoria.PLAN_CREADO,
         entidad: 'Socio',
         usuarioId: 10,
-        gimnasioId: 5, // gimnasioId forwarded correctly
+        gimnasioId: 5,
       });
 
-      expect(result).toEqual([registroMock]);
+      expect(result).toEqual(paginatedResponseMock([registroMock]));
     });
 
-    it('debe rechazar null gimnasioId (diferente de undefined)', async () => {
-      // Controller only checks === undefined, not null
-      // null is a valid "no value" in some APIs but is NOT undefined here
-      // This test documents current behavior: null bypasses the guard
-      // and goes to service level — the service would return 0 results
-      // (Number(null) === 0, which is a valid gym ID)
-      mockAuditoriaService.listarConFiltros.mockResolvedValue([]);
+    it('debe ignorar null gimnasioId y usar el del usuario autenticado', async () => {
+      mockAuditoriaService.listarConFiltros.mockResolvedValue(paginatedResponseMock([]));
 
       const result = await controller.listarAuditoria({
         gimnasioId: null as any,
-      });
+      }, usuarioMock);
 
-      // null is forwarded to service (current behavior — NOT blocked by controller)
-      expect(mockAuditoriaService.listarConFiltros).toHaveBeenCalledWith({
-        gimnasioId: null,
-        fechaDesde: undefined,
-        fechaHasta: undefined,
-        accion: undefined,
-        entidad: undefined,
-        usuarioId: undefined,
-      });
-      expect(result).toEqual([]);
+      // null ?? usuario.gimnasioId = 5 para rol ADMIN
+      expect(mockAuditoriaService.listarConFiltros).toHaveBeenCalledWith(expect.objectContaining({
+        gimnasioId: 5,
+      }));
+      expect(result).toEqual(paginatedResponseMock([]));
     });
 
-    it('debe throw BadRequestException cuando gimnasioId es undefined explícito', async () => {
-      await expect(
-        controller.listarAuditoria({
-          gimnasioId: undefined,
-        }),
-      ).rejects.toThrow(BadRequestException);
+    it('debe usar gimnasioId del usuario cuando se pasa undefined explícito', async () => {
+      mockAuditoriaService.listarConFiltros.mockResolvedValue(paginatedResponseMock([]));
 
-      expect(mockAuditoriaService.listarConFiltros).not.toHaveBeenCalled();
+      await controller.listarAuditoria({
+        gimnasioId: undefined,
+      }, usuarioMock);
+
+      expect(mockAuditoriaService.listarConFiltros).toHaveBeenCalledWith(expect.objectContaining({
+        gimnasioId: 5,
+      }));
     });
 
     it('debe permitir la consulta solo con gimnasioId (sin otros filtros)', async () => {
-      mockAuditoriaService.listarConFiltros.mockResolvedValue([]);
+      mockAuditoriaService.listarConFiltros.mockResolvedValue(paginatedResponseMock([]));
 
       await controller.listarAuditoria({
         gimnasioId: 99,
-      });
+      }, usuarioMock);
 
       expect(mockAuditoriaService.listarConFiltros).toHaveBeenCalledWith({
+        page: undefined,
+        limit: undefined,
         gimnasioId: 99,
         fechaDesde: undefined,
         fechaHasta: undefined,
@@ -148,7 +158,7 @@ describe('AdminAuditoriaController', () => {
       );
 
       await expect(
-        controller.listarAuditoria({ gimnasioId: 5 }),
+        controller.listarAuditoria({ gimnasioId: 5 }, usuarioMock),
       ).rejects.toThrow('Database connection failed');
     });
   });

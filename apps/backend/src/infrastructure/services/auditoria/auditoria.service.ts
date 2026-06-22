@@ -1,11 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import type { PaginatedData, PaginationParams } from '@nutrifit/shared';
 import {
   AuditoriaOrmEntity,
   AccionAuditoria,
 } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
+import { paginarQuery } from 'src/common/helpers/paginacion.helper';
 import { getArgentinaMonthRange } from 'src/common/utils/argentina-datetime.util';
 
 export interface AuditoriaDto {
@@ -21,6 +23,8 @@ export interface AuditoriaDto {
 }
 
 export interface FiltrosAuditoria {
+  page?: number;
+  limit?: number;
   fechaDesde?: Date;
   fechaHasta?: Date;
   accion?: AccionAuditoria;
@@ -65,7 +69,7 @@ export class AuditoriaService {
 
   async listarConFiltros(
     filtros: FiltrosAuditoria,
-  ): Promise<AuditoriaOrmEntity[]> {
+  ): Promise<PaginatedData<AuditoriaOrmEntity>> {
     // Si se provee gimnasioId, usar ese (incluye null para admin)
     let gimnasioId = filtros.gimnasioId;
 
@@ -84,8 +88,7 @@ export class AuditoriaService {
 
     const queryBuilder = this.auditoriaRepository
       .createQueryBuilder('auditoria')
-      .orderBy('auditoria.timestamp', 'DESC')
-      .take(500);
+      .orderBy('auditoria.timestamp', 'DESC');
 
     if (gimnasioId !== undefined && gimnasioId !== null) {
       queryBuilder.andWhere('auditoria.gimnasioId = :gimnasioId', {
@@ -123,7 +126,12 @@ export class AuditoriaService {
       });
     }
 
-    return queryBuilder.getMany();
+    const paginationParams: PaginationParams = {
+      page: filtros.page ?? 1,
+      limit: filtros.limit ?? 20,
+    };
+
+    return paginarQuery(queryBuilder, paginationParams);
   }
 
   /**

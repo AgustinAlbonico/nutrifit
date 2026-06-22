@@ -12,6 +12,17 @@ import {
 } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
+function crearQbMock() {
+  return {
+    orderBy: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    getCount: jest.fn().mockResolvedValue(0),
+    skip: jest.fn().mockReturnThis(),
+    take: jest.fn().mockReturnThis(),
+    getMany: jest.fn().mockResolvedValue([]),
+  };
+}
+
 describe('AuditoriaService', () => {
   let service: AuditoriaService;
   let repository: jest.Mocked<Repository<AuditoriaOrmEntity>>;
@@ -21,23 +32,10 @@ describe('AuditoriaService', () => {
     create: jest.fn(),
     save: jest.fn(),
     find: jest.fn(),
-    createQueryBuilder: jest.fn(() => ({
-      orderBy: jest.fn().mockReturnThis(),
-      take: jest.fn().mockReturnThis(),
-      andWhere: jest.fn().mockReturnThis(),
-      getMany: jest.fn(),
-    })),
+    createQueryBuilder: jest.fn(() => crearQbMock()),
   });
 
-  const mockQueryBuilder = () => {
-    const qb = {
-      orderBy: jest.fn().mockReturnThis(),
-      take: jest.fn().mockReturnThis(),
-      andWhere: jest.fn().mockReturnThis(),
-      getMany: jest.fn().mockResolvedValue([]),
-    };
-    return qb;
-  };
+  const mockQueryBuilder = () => crearQbMock();
 
   beforeEach(async () => {
     mockTenantContext = { isInitialized: false, gimnasioId: 0 };

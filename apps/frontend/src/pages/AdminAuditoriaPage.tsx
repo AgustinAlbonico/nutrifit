@@ -1,6 +1,5 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { toast } from 'sonner';
 import {
   ArrowLeft,
   Filter,
@@ -14,12 +13,14 @@ import {
 
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRequest } from '@/lib/api';
+import { usePaginacion } from '@/hooks/usePaginacion';
+import { ControlesPaginacion } from '@/components/ui/ControlesPaginacion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import type { ApiResponse } from '@/types/api';
+import type { PaginatedData } from '@nutrifit/shared';
 
 
 
@@ -68,54 +69,49 @@ export function AdminAuditoriaPage() {
   const { token, rol } = useAuth();
   const navigate = useNavigate();
 
-  const [registros, setRegistros] = useState<RegistroAuditoria[]>([]);
-  const [cargando, setCargando] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   const [filtros, setFiltros] = useState<FiltrosAuditoria>({
     fechaDesde: '',
     fechaHasta: '',
     accion: '',
     entidad: '',
   });
+  const filtrosRef = useRef(filtros);
+  filtrosRef.current = filtros;
 
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
+  const [busquedaKey, setBusquedaKey] = useState(0);
 
   // Verificar que sea admin
   const esAdmin = rol === 'ADMIN' || rol === 'SUPERADMIN';
 
-  const cargarAuditoria = useCallback(async () => {
-    if (!token) return;
+  const fetcherAuditoria = useCallback(async ({ page, limit }: { page: number; limit: number }) => {
+    const params = new URLSearchParams();
+    const f = filtrosRef.current;
+    if (f.fechaDesde) params.append('fechaDesde', f.fechaDesde);
+    if (f.fechaHasta) params.append('fechaHasta', f.fechaHasta);
+    if (f.accion) params.append('accion', f.accion);
+    if (f.entidad) params.append('entidad', f.entidad);
+    params.set('page', String(page));
+    params.set('limit', String(limit));
 
-    try {
-      setCargando(true);
-      setError(null);
+    return apiRequest<PaginatedData<RegistroAuditoria>>(
+      `/admin/auditoria?${params.toString()}`,
+      { token },
+    );
+  }, [token, busquedaKey]);
 
-      const params = new URLSearchParams();
-      if (filtros.fechaDesde) params.append('fechaDesde', filtros.fechaDesde);
-      if (filtros.fechaHasta) params.append('fechaHasta', filtros.fechaHasta);
-      if (filtros.accion) params.append('accion', filtros.accion);
-      if (filtros.entidad) params.append('entidad', filtros.entidad);
+  const {
+    data: registros,
+    pagination,
+    setPagina,
+    setLimite,
+    error,
+  } = usePaginacion<RegistroAuditoria>(fetcherAuditoria, { defaultLimit: 20 });
 
-      const queryString = params.toString();
-      const url = `/admin/auditoria${queryString ? `?${queryString}` : ''}`;
-
-      const response = await apiRequest<ApiResponse<RegistroAuditoria[]>>(url, {
-        token,
-      });
-
-      setRegistros(response.data);
-    } catch (requestError) {
-      const mensaje =
-        requestError instanceof Error
-          ? requestError.message
-          : 'No se pudo cargar el historial de auditoría.';
-      setError(mensaje);
-      toast.error(mensaje);
-    } finally {
-      setCargando(false);
-    }
-  }, [token, filtros]);
+  const ejecutarBusqueda = () => {
+    setBusquedaKey((prev) => prev + 1);
+    setPagina(1);
+  };
 
   const handleFilterChange = (campo: keyof FiltrosAuditoria, valor: string) => {
     setFiltros((prev) => ({ ...prev, [campo]: valor }));
@@ -280,10 +276,10 @@ export function AdminAuditoriaPage() {
       {/* Botón de búsqueda */}
       <div className="flex justify-end">
         <Button
-          onClick={() => void cargarAuditoria()}
-          disabled={cargando}
+          onClick={ejecutarBusqueda}
+          disabled={pagination.isLoading}
         >
-          {cargando ? (
+          {pagination.isLoading ? (
             <>
               <Clock className="h-4 w-4 animate-spin" />
               Buscando...
@@ -305,7 +301,18 @@ export function AdminAuditoriaPage() {
         </div>
       )}
 
-      {registros.length === 0 && !cargando && (
+      {pagination.isLoading && registros.length === 0 && (
+        <Card>
+          <CardContent className="py-12">
+            <div className="flex items-center justify-center">
+              <Clock className="h-8 w-8 animate-spin text-muted-foreground" />
+              <span className="ml-3 text-muted-foreground">Cargando registros...</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!pagination.isLoading && registros.length === 0 && !error && (
         <Card>
           <CardContent className="py-12">
             <div className="flex flex-col items-center justify-center text-center">
@@ -323,7 +330,7 @@ export function AdminAuditoriaPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">
-              Registros encontrados: {registros.length}
+              Registros encontrados: {pagination.total}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -365,6 +372,18 @@ export function AdminAuditoriaPage() {
                 </div>
               ))}
             </div>
+
+            <ControlesPaginacion
+              pagina={pagination.page}
+              totalPaginas={pagination.totalPages}
+              total={pagination.total}
+              limite={pagination.limit}
+              cargando={pagination.isLoading}
+              onCambiarPagina={setPagina}
+              onCambiarLimite={(nuevoLimite) => {
+                setLimite(nuevoLimite);
+              }}
+            />
           </CardContent>
         </Card>
       )}
