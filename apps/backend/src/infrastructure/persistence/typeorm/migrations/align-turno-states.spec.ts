@@ -12,7 +12,7 @@ describe('AlignTurnoStates Migration Enum Alignment', () => {
 
     it('debe tener todos los valores esperados del enum', () => {
       const expectedValues = [
-        'PROGRAMADO',
+        'CONFIRMADO',
         'PRESENTE',
         'EN_CURSO',
         'REALIZADO',
@@ -31,8 +31,8 @@ describe('AlignTurnoStates Migration Enum Alignment', () => {
       EstadoTurno | undefined
     >;
 
-    it('no debe tener CONFIRMADO (eliminado)', () => {
-      expect(enumComoRegistro.CONFIRMADO).toBeUndefined();
+    it('no debe tener PROGRAMADO (eliminado)', () => {
+      expect(enumComoRegistro.PROGRAMADO).toBeUndefined();
     });
 
     it('no debe tener REPROGRAMADO (eliminado)', () => {

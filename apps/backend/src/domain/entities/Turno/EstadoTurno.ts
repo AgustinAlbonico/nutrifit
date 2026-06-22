@@ -1,5 +1,4 @@
 export enum EstadoTurno {
-  PROGRAMADO = 'PROGRAMADO',
   CONFIRMADO = 'CONFIRMADO',
   PRESENTE = 'PRESENTE',
   EN_CURSO = 'EN_CURSO',

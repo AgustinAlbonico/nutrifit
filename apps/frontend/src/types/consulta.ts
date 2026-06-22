@@ -46,7 +46,6 @@ export interface HistorialConsultaPaciente {
 }
 
 export type EstadoTurnoHistorial =
-  | 'PROGRAMADO'
   | 'CONFIRMADO'
   | 'PRESENTE'
   | 'EN_CURSO'

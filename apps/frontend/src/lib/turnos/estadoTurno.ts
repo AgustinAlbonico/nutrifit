@@ -17,7 +17,7 @@ export function obtenerEstadoVisualSlotAgenda(
     return slot.estado;
   }
 
-  if (slot.estado === 'PROGRAMADO' && !slot.socio) {
+  if (slot.estado === 'CONFIRMADO' && !slot.socio) {
     return 'BLOQUEADO';
   }
 
@@ -42,8 +42,6 @@ export function esEstadoTurnoVigente(estado: EstadoTurno): boolean {
 
 export function obtenerEtiquetaEstadoTurno(estado: EstadoSlotAgenda): string {
   switch (estado) {
-    case 'PROGRAMADO':
-      return 'Programado';
     case 'CONFIRMADO':
       return 'Confirmado';
     case 'PRESENTE':
@@ -69,8 +67,6 @@ export function obtenerEtiquetaEstadoTurno(estado: EstadoSlotAgenda): string {
 
 export function obtenerClasesEstadoTurno(estado: EstadoSlotAgenda): string {
   switch (estado) {
-    case 'PROGRAMADO':
-      return 'border-amber-200 bg-amber-100 text-amber-800';
     case 'CONFIRMADO':
       return 'border-sky-200 bg-sky-100 text-sky-800';
     case 'PRESENTE':
@@ -97,7 +93,6 @@ export function obtenerVarianteEstadoTurno(
   estado: EstadoTurno,
 ): 'default' | 'secondary' | 'destructive' | 'outline' {
   switch (estado) {
-    case 'PROGRAMADO':
     case 'CONFIRMADO':
       return 'secondary';
     case 'PRESENTE':

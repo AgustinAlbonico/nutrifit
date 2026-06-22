@@ -28,7 +28,7 @@ describe('Recepcionista operativos-only response validation', () => {
       dto.idTurno = 1;
       dto.fechaTurno = '2026-05-02';
       dto.horaTurno = '10:00';
-      dto.estadoTurno = EstadoTurno.PROGRAMADO;
+      dto.estadoTurno = EstadoTurno.CONFIRMADO;
       dto.nombreSocio = 'Juan Pérez';
       dto.nombreNutricionista = 'Dra. García';
       dto.dniSocio = '12345678';
@@ -114,8 +114,8 @@ describe('Recepcionista operativos-only response validation', () => {
   });
 
   describe('Task 5.4: Integration test for AlignTurnoStates migration enum', () => {
-    it('debe verificar que EstadoTurno enum tiene PROGRAMADO (reemplaza PENDIENTE)', () => {
-      expect(EstadoTurno.PROGRAMADO).toBe('PROGRAMADO');
+    it('debe verificar que EstadoTurno enum tiene CONFIRMADO (estado inicial de turno)', () => {
+      expect(EstadoTurno.CONFIRMADO).toBe('CONFIRMADO');
       expect((EstadoTurno as any).PENDIENTE).toBeUndefined();
     });
 
@@ -125,7 +125,7 @@ describe('Recepcionista operativos-only response validation', () => {
 
     it('debe tener todos los valores esperados del enum', () => {
       const expectedValues = [
-        'PROGRAMADO',
+        'CONFIRMADO',
         'PRESENTE',
         'EN_CURSO',
         'REALIZADO',
@@ -137,22 +137,9 @@ describe('Recepcionista operativos-only response validation', () => {
       expect(actualValues).toEqual(expectedValues);
     });
 
-    it('debe mapear valores del viejo enum a nuevos (simulacion de migracion)', () => {
-      // Simulates what the migration does: UPDATE turno SET estado = 'PROGRAMADO' WHERE estado = 'PENDIENTE'
-      const oldEstado1 = 'PENDIENTE';
-      const newEstado1 = oldEstado1 === 'PENDIENTE' ? 'PROGRAMADO' : oldEstado1;
-      expect(newEstado1).toBe('PROGRAMADO');
-
-      // ASISTIO fue renombrado a REALIZADO
-      const oldEstado2 = 'ASISTIO';
-      const newEstado2 = oldEstado2 === 'ASISTIO' ? 'REALIZADO' : oldEstado2;
-      expect(newEstado2).toBe('REALIZADO');
-    });
-
-    it('debe usar PROGRAMADO como valor inicial/default en turnos nuevos', () => {
-      // New turnos should be created with PROGRAMADO state, not PENDIENTE
-      const nuevoTurnoEstado = EstadoTurno.PROGRAMADO;
-      expect(nuevoTurnoEstado).toBe('PROGRAMADO');
+    it('debe usar CONFIRMADO como valor inicial/default en turnos nuevos', () => {
+      const nuevoTurnoEstado = EstadoTurno.CONFIRMADO;
+      expect(nuevoTurnoEstado).toBe('CONFIRMADO');
       expect(nuevoTurnoEstado).not.toBe('PENDIENTE');
     });
   });

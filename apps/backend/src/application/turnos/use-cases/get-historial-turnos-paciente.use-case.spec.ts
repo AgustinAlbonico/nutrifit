@@ -16,7 +16,7 @@ describe('GetHistorialTurnosPacienteUseCase (TDD)', () => {
       idTurno: 1,
       fechaTurno: new Date('2026-06-15T03:00:00.000Z'),
       horaTurno: '10:00',
-      estadoTurno: EstadoTurno.PROGRAMADO,
+      estadoTurno: EstadoTurno.CONFIRMADO,
       mediciones: [],
       observacionClinica: null,
       adjuntos: [],
@@ -66,7 +66,7 @@ describe('GetHistorialTurnosPacienteUseCase (TDD)', () => {
         idTurno: 180,
         fechaTurno: new Date('2026-06-22T03:00:00.000Z'),
         horaTurno: '09:00',
-        estadoTurno: EstadoTurno.PROGRAMADO,
+        estadoTurno: EstadoTurno.CONFIRMADO,
         mediciones: [],
         observacionClinica: null,
         adjuntos: [],
@@ -100,7 +100,7 @@ describe('GetHistorialTurnosPacienteUseCase (TDD)', () => {
     expect(result).toHaveLength(3);
     expect(result[0]).toMatchObject({
       idTurno: 180,
-      estadoTurno: 'PROGRAMADO',
+      estadoTurno: 'CONFIRMADO',
       tieneMedicion: false,
       tieneObservacion: false,
       cantidadAdjuntos: 0,
@@ -183,7 +183,7 @@ describe('GetHistorialTurnosPacienteUseCase (TDD)', () => {
     turnoRepository.find.mockResolvedValue([
       makeTurno({ idTurno: 1, estadoTurno: EstadoTurno.CANCELADO }),
       makeTurno({ idTurno: 2, estadoTurno: EstadoTurno.AUSENTE }),
-      makeTurno({ idTurno: 3, estadoTurno: EstadoTurno.PROGRAMADO }),
+      makeTurno({ idTurno: 3, estadoTurno: EstadoTurno.CONFIRMADO }),
     ]);
     fotoProgresoOrmRepository.find.mockResolvedValue([]);
 
@@ -192,7 +192,7 @@ describe('GetHistorialTurnosPacienteUseCase (TDD)', () => {
     expect(result.map((r) => r.estadoTurno)).toEqual([
       EstadoTurno.CANCELADO,
       EstadoTurno.AUSENTE,
-      EstadoTurno.PROGRAMADO,
+      EstadoTurno.CONFIRMADO,
     ]);
     expect(turnoRepository.find).toHaveBeenCalledTimes(1);
   });
