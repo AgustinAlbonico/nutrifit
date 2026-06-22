@@ -107,7 +107,7 @@ export class CrearTurnoEnNombreDeSocioUseCase {
         idPersona: payload.socioId,
         gimnasioId: actor.gimnasioId,
       },
-      relations: { fichaSalud: true },
+      relations: { fichaSalud: true, usuario: true },
     });
     if (!socio) {
       throw new NotFoundError('Socio', String(payload.socioId));
@@ -268,12 +268,12 @@ export class CrearTurnoEnNombreDeSocioUseCase {
     socio: SocioOrmEntity,
     creadoPor: CreadoPor,
   ): Promise<void> {
-    if (!socio.idPersona) {
+    if (!socio.idPersona || socio.usuario?.idUsuario == null) {
       return;
     }
     try {
       await this.notificacionesService.crear({
-        destinatarioId: socio.idPersona,
+        destinatarioId: socio.usuario.idUsuario,
         tipo: TipoNotificacion.TURNO_RESERVADO,
         titulo: this.tituloNotificacionParaSocio(creadoPor),
         mensaje: this.mensajeNotificacionParaSocio(turno, creadoPor),

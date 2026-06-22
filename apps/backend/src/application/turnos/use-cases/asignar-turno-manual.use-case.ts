@@ -69,7 +69,7 @@ export class AsignarTurnoManualUseCase implements BaseUseCase {
 
     const socio = await this.socioRepository.findOne({
       where: { idPersona: payload.socioId },
-      relations: { fichaSalud: true },
+      relations: { fichaSalud: true, usuario: true },
     });
 
     if (!socio) {
@@ -117,9 +117,9 @@ export class AsignarTurnoManualUseCase implements BaseUseCase {
 
     const turnoCreado = await this.turnoRepository.save(turno);
 
-    if (socio.idPersona) {
+    if (socio.usuario?.idUsuario != null) {
       await this.notificacionesService.crear({
-        destinatarioId: socio.idPersona,
+        destinatarioId: socio.usuario.idUsuario,
         tipo: TipoNotificacion.TURNO_RESERVADO,
         titulo: 'Nuevo turno asignado',
         mensaje: `Te asignaron un turno para el ${formatArgentinaDate(turnoCreado.fechaTurno)} a las ${normalizeTimeToHHmm(turnoCreado.horaTurno)}.`,

@@ -35,7 +35,11 @@ describe('CheckInTurnoUseCase (CU-15)', () => {
       checkInAt: null,
       llegadaTardeMin: null,
       socio: { idPersona: 20, nombre: 'Juan', apellido: 'Pérez' },
-      nutricionista: { idPersona: 10, nombre: 'Dr. Test' },
+      nutricionista: {
+        idPersona: 10,
+        nombre: 'Dr. Test',
+        usuario: { idUsuario: 10 },
+      },
       ...overrides,
     }) as unknown as TurnoOrmEntity;
 

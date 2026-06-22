@@ -49,7 +49,7 @@ export class CheckInTurnoUseCase {
         idTurno: turnoId,
         nutricionista: { gimnasioId: this.tenantContext.gimnasioId },
       },
-      relations: { socio: true, nutricionista: true },
+      relations: { socio: { usuario: true }, nutricionista: { usuario: true } },
     });
 
     if (!turno) {
@@ -117,9 +117,9 @@ export class CheckInTurnoUseCase {
       gimnasioId: this.tenantContext.gimnasioId,
     });
 
-    if (turnoActualizado.nutricionista?.idPersona) {
+    if (turnoActualizado.nutricionista?.usuario?.idUsuario != null) {
       await this.notificacionesService.crear({
-        destinatarioId: turnoActualizado.nutricionista.idPersona,
+        destinatarioId: turnoActualizado.nutricionista.usuario.idUsuario,
         tipo: TipoNotificacion.CHECK_IN,
         titulo: 'Socio realizó check-in',
         mensaje: `El socio hizo check-in para el turno #${turnoActualizado.idTurno}.`,

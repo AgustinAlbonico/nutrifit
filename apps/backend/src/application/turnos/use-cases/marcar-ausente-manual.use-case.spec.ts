@@ -31,7 +31,11 @@ describe('MarcarAusenteManualUseCase', () => {
       ausenteAt: null,
       ausenteMotivo: null,
       nutricionista: { idPersona: 30, gimnasioId: 1 } as never,
-      socio: { idPersona: 50, gimnasioId: 1 } as never,
+      socio: {
+        idPersona: 50,
+        gimnasioId: 1,
+        usuario: { idUsuario: 150 },
+      } as never,
       ...overrides,
     }) as TurnoOrmEntity;
 
@@ -95,7 +99,7 @@ describe('MarcarAusenteManualUseCase', () => {
       expect.objectContaining({ accion: 'MANUAL_ABSENT', entidad: 'Turno' }),
     );
     expect(notificacionesService.crear).toHaveBeenCalledWith(
-      expect.objectContaining({ tipo: 'TURNO_AUSENTE', destinatarioId: 50 }),
+      expect.objectContaining({ tipo: 'TURNO_AUSENTE', destinatarioId: 150 }),
     );
   });
 

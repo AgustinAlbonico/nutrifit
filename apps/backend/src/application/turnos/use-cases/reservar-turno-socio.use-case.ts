@@ -136,7 +136,7 @@ export class ReservarTurnoSocioUseCase implements BaseUseCase {
 
     if (socio.idPersona) {
       await this.notificacionesService.crear({
-        destinatarioId: socio.idPersona,
+        destinatarioId: userId,
         tipo: TipoNotificacion.TURNO_RESERVADO,
         titulo: 'Turno reservado',
         mensaje: `Reservaste un turno para el ${formatArgentinaDate(turnoCreado.fechaTurno)} a las ${normalizeTimeToHHmm(turnoCreado.horaTurno)}.`,

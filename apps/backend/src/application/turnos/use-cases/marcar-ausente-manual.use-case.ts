@@ -43,7 +43,7 @@ export class MarcarAusenteManualUseCase implements BaseUseCase {
         idTurno: turnoId,
         socio: { gimnasioId: this.tenantContext.gimnasioId },
       },
-      relations: { socio: true, nutricionista: true },
+      relations: { socio: { usuario: true }, nutricionista: { usuario: true } },
     });
 
     if (!turno) {
@@ -98,9 +98,9 @@ export class MarcarAusenteManualUseCase implements BaseUseCase {
       },
     });
 
-    if (turno.socio?.idPersona) {
+    if (turno.socio?.usuario?.idUsuario != null) {
       await this.notificacionesService.crear({
-        destinatarioId: turno.socio.idPersona,
+        destinatarioId: turno.socio.usuario.idUsuario,
         tipo: TipoNotificacion.TURNO_AUSENTE,
         titulo: 'Tu turno fue marcado como ausente',
         mensaje: `El profesional marcó tu turno del ${formatArgentinaDate(turno.fechaTurno)} a las ${normalizeTimeToHHmm(turno.horaTurno)} como ausente. Motivo: ${payload.motivo}`,

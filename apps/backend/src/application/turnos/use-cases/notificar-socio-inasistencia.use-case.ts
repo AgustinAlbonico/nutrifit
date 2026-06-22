@@ -23,7 +23,7 @@ export class NotificarSocioInasistenciaUseCase {
         idTurno: turnoId,
         nutricionista: { gimnasioId: this.tenantContext.gimnasioId },
       },
-      relations: { socio: true },
+      relations: { socio: { usuario: true } },
     });
 
     if (!turno) {
@@ -36,9 +36,9 @@ export class NotificarSocioInasistenciaUseCase {
       );
     }
 
-    if (turno.socio?.idPersona) {
+    if (turno.socio?.usuario?.idUsuario != null) {
       await this.notificacionesService.crear({
-        destinatarioId: turno.socio.idPersona,
+        destinatarioId: turno.socio.usuario.idUsuario,
         tipo: TipoNotificacion.TURNO_INASISTENCIA_AVISO,
         titulo: 'Inasistencia a turno',
         mensaje: `Hola ${turno.socio.nombre}, no te presentaste al turno de las ${turno.horaTurno}. Por favor, contactanos para reagendar.`,

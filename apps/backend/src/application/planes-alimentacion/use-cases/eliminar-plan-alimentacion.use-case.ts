@@ -48,7 +48,7 @@ export class EliminarPlanAlimentacionUseCase implements BaseUseCase {
         idPlanAlimentacion: payload.planId,
         socio: { gimnasioId: this.tenantContext.gimnasioId },
       },
-      relations: { nutricionista: true, socio: true },
+      relations: { nutricionista: { usuario: true }, socio: { usuario: true } },
     });
 
     if (!plan || !plan.activo) {
@@ -66,7 +66,7 @@ export class EliminarPlanAlimentacionUseCase implements BaseUseCase {
 
     // Solo el nutricionista dueño o ADMIN puede eliminar
     if (usuario.rol !== Rol.ADMIN) {
-      if (plan.nutricionista.idPersona !== nutricionistaUserId) {
+      if (plan.nutricionista.usuario?.idUsuario !== nutricionistaUserId) {
         throw new ForbiddenError(
           'Solo el nutricionista responsable del plan puede eliminarlo.',
         );
@@ -81,6 +81,7 @@ export class EliminarPlanAlimentacionUseCase implements BaseUseCase {
     await this.planRepo.save(plan);
 
     const socioId = plan.socio?.idPersona ?? null;
+    const socioUsuarioId = plan.socio?.usuario?.idUsuario ?? null;
 
     await this.auditoriaService.registrar({
       usuarioId: nutricionistaUserId,
@@ -93,9 +94,9 @@ export class EliminarPlanAlimentacionUseCase implements BaseUseCase {
       },
     });
 
-    if (socioId !== null) {
+    if (socioUsuarioId !== null) {
       await this.notificacionesService.crear({
-        destinatarioId: socioId,
+        destinatarioId: socioUsuarioId,
         tipo: TipoNotificacion.PLAN_ELIMINADO,
         titulo: 'Plan de alimentación eliminado',
         mensaje: 'Tu plan de alimentación activo fue eliminado.',

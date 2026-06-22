@@ -60,8 +60,8 @@ export class ConfirmarTurnoSocioUseCase implements BaseUseCase {
         socio: { gimnasioId: this.tenantContext.gimnasioId },
       },
       relations: {
-        socio: true,
-        nutricionista: true,
+        socio: { usuario: true },
+        nutricionista: { usuario: true },
       },
     });
 
@@ -90,9 +90,9 @@ export class ConfirmarTurnoSocioUseCase implements BaseUseCase {
     // PRESENTE lo dispara la recepción vía check-in.
     const updatedTurno = await this.turnoRepository.save(turno);
 
-    if (turno.socio.idPersona) {
+    if (turno.socio.usuario?.idUsuario != null) {
       await this.notificacionesService.crear({
-        destinatarioId: turno.socio.idPersona,
+        destinatarioId: turno.socio.usuario.idUsuario,
         tipo: TipoNotificacion.TURNO_CONFIRMADO,
         titulo: 'Turno confirmado',
         mensaje: `Tu turno del ${formatArgentinaDate(turno.fechaTurno)} a las ${normalizeTimeToHHmm(turno.horaTurno)} fue confirmado.`,
@@ -100,9 +100,9 @@ export class ConfirmarTurnoSocioUseCase implements BaseUseCase {
       });
     }
 
-    if (turno.nutricionista.idPersona) {
+    if (turno.nutricionista.usuario?.idUsuario != null) {
       await this.notificacionesService.crear({
-        destinatarioId: turno.nutricionista.idPersona,
+        destinatarioId: turno.nutricionista.usuario.idUsuario,
         tipo: TipoNotificacion.TURNO_CONFIRMADO,
         titulo: 'Turno confirmado por socio',
         mensaje: `El socio confirmó el turno #${turno.idTurno} del ${formatArgentinaDate(turno.fechaTurno)} a las ${normalizeTimeToHHmm(turno.horaTurno)}.`,

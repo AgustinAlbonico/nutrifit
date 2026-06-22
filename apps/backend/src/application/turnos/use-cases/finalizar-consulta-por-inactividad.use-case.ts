@@ -17,10 +17,12 @@ export class FinalizarConsultaPorInactividadUseCase {
     private readonly notificacionesService: NotificacionesService,
   ) {}
 
-  async execute(turnoId: number): Promise<{ success: boolean; estado: EstadoTurno }> {
+  async execute(
+    turnoId: number,
+  ): Promise<{ success: boolean; estado: EstadoTurno }> {
     const turno = await this.turnoRepository.findOne({
       where: { idTurno: turnoId },
-      relations: { socio: true, nutricionista: true },
+      relations: { socio: { usuario: true }, nutricionista: { usuario: true } },
     });
 
     if (!turno) {
@@ -41,9 +43,9 @@ export class FinalizarConsultaPorInactividadUseCase {
 
     await this.turnoRepository.save(turno);
 
-    if (turno.nutricionista?.idPersona) {
+    if (turno.nutricionista?.usuario?.idUsuario != null) {
       await this.notificacionesService.crear({
-        destinatarioId: turno.nutricionista.idPersona,
+        destinatarioId: turno.nutricionista.usuario.idUsuario,
         tipo: TipoNotificacion.CONSULTA_CERRADA_AUTO,
         titulo: 'Consulta cerrada automáticamente',
         mensaje: `La consulta #${turno.idTurno} fue cerrada automáticamente por inactividad. Si necesitás editarla, reabrirla desde la pantalla de consulta.`,

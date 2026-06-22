@@ -86,8 +86,8 @@ export class ReprogramarTurnoSocioUseCase implements BaseUseCase {
         socio: { gimnasioId: this.tenantContext.gimnasioId },
       },
       relations: {
-        socio: true,
-        nutricionista: true,
+        socio: { usuario: true },
+        nutricionista: { usuario: true },
       },
     });
 
@@ -170,9 +170,9 @@ export class ReprogramarTurnoSocioUseCase implements BaseUseCase {
       },
     });
 
-    if (turno.socio.idPersona) {
+    if (turno.socio.usuario?.idUsuario != null) {
       await this.notificacionesService.crear({
-        destinatarioId: turno.socio.idPersona,
+        destinatarioId: turno.socio.usuario.idUsuario,
         tipo: TipoNotificacion.TURNO_REPROGRAMADO,
         titulo: 'Turno reprogramado',
         mensaje: `Tu turno fue reprogramado para el ${formatArgentinaDate(updatedTurno.fechaTurno)} a las ${normalizeTimeToHHmm(updatedTurno.horaTurno)}.`,
@@ -180,7 +180,7 @@ export class ReprogramarTurnoSocioUseCase implements BaseUseCase {
       });
     }
 
-    if (turno.nutricionista.idPersona) {
+    if (turno.nutricionista.usuario?.idUsuario != null) {
       const tituloNotif = esStaff
         ? 'Turno reprogramado por el staff'
         : 'Turno reprogramado por socio';
@@ -189,7 +189,7 @@ export class ReprogramarTurnoSocioUseCase implements BaseUseCase {
         : `El socio reprogramó el turno #${turno.idTurno} para el ${formatArgentinaDate(updatedTurno.fechaTurno)} a las ${normalizeTimeToHHmm(updatedTurno.horaTurno)}.`;
 
       await this.notificacionesService.crear({
-        destinatarioId: turno.nutricionista.idPersona,
+        destinatarioId: turno.nutricionista.usuario.idUsuario,
         tipo: TipoNotificacion.TURNO_REPROGRAMADO,
         titulo: tituloNotif,
         mensaje: mensajeNotif,
@@ -317,7 +317,8 @@ export class ReprogramarTurnoSocioUseCase implements BaseUseCase {
       },
       select: ['idPersona', 'duracionTurnoMin'],
     });
-    const duracionTurno = nutricionista?.duracionTurnoMin ?? agendaDelDia[0].duracionTurno;
+    const duracionTurno =
+      nutricionista?.duracionTurnoMin ?? agendaDelDia[0].duracionTurno;
 
     const turnoInicio = this.timeToMinutes(horaTurno);
 

@@ -8,7 +8,9 @@ import { FinalizarConsultaPorInactividadUseCase } from './finalizar-consulta-por
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
 
-function buildMockTurno(overrides: Partial<TurnoOrmEntity> = {}): TurnoOrmEntity {
+function buildMockTurno(
+  overrides: Partial<TurnoOrmEntity> = {},
+): TurnoOrmEntity {
   return {
     idTurno: 1,
     estadoTurno: EstadoTurno.EN_CURSO,
@@ -19,7 +21,7 @@ function buildMockTurno(overrides: Partial<TurnoOrmEntity> = {}): TurnoOrmEntity
     preavisoCierreAutoEnviadoEn: null,
     reabiertaPorCierreAuto: false,
     socio: { idPersona: 10 } as any,
-    nutricionista: { idPersona: 20 } as any,
+    nutricionista: { idPersona: 20, usuario: { idUsuario: 120 } } as any,
     ...overrides,
   } as TurnoOrmEntity;
 }
@@ -60,7 +62,9 @@ describe('FinalizarConsultaPorInactividadUseCase', () => {
 
     expect(result.estado).toBe(EstadoTurno.REALIZADO);
     expect(turno.cierreAutomatico).toBe(true);
-    expect(turno.motivoCierreAutomatico).toBe(MotivoCierreAutomatico.INACTIVIDAD);
+    expect(turno.motivoCierreAutomatico).toBe(
+      MotivoCierreAutomatico.INACTIVIDAD,
+    );
     expect(turno.cierreAutomaticoEn).toBeInstanceOf(Date);
     expect(turno.estadoTurno).toBe(EstadoTurno.REALIZADO);
     expect(turnoRepo.save).toHaveBeenCalled();

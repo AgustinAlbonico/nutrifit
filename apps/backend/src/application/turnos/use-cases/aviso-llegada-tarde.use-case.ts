@@ -34,7 +34,7 @@ export class AvisoLlegadaTardeUseCase {
           gimnasioId: this.tenantContext.gimnasioId,
         },
       },
-      relations: { socio: true, nutricionista: true },
+      relations: { socio: { usuario: true }, nutricionista: { usuario: true } },
     });
 
     if (!turno) {
@@ -59,9 +59,9 @@ export class AvisoLlegadaTardeUseCase {
       );
     }
 
-    if (turno.nutricionista?.idPersona) {
+    if (turno.nutricionista?.usuario?.idUsuario != null) {
       await this.notificacionesService.crear({
-        destinatarioId: turno.nutricionista.idPersona,
+        destinatarioId: turno.nutricionista.usuario.idUsuario,
         tipo: TipoNotificacion.TURNO_AVISO_LLEGADA_TARDE,
         titulo: 'Aviso de llegada tarde',
         mensaje: `El socio ${turno.socio?.nombre} ${turno.socio?.apellido} avisó que llegará aprox. ${minutosTarde} min. tarde al turno de las ${turno.horaTurno}.`,

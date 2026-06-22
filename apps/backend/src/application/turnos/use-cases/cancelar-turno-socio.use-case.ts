@@ -72,8 +72,8 @@ export class CancelarTurnoSocioUseCase implements BaseUseCase {
         socio: { gimnasioId: this.tenantContext.gimnasioId },
       },
       relations: {
-        socio: true,
-        nutricionista: true,
+        socio: { usuario: true },
+        nutricionista: { usuario: true },
       },
     });
 
@@ -116,9 +116,9 @@ export class CancelarTurnoSocioUseCase implements BaseUseCase {
       },
     });
 
-    if (turno.socio.idPersona) {
+    if (turno.socio.usuario?.idUsuario != null) {
       await this.notificacionesService.crear({
-        destinatarioId: turno.socio.idPersona,
+        destinatarioId: turno.socio.usuario.idUsuario,
         tipo: TipoNotificacion.TURNO_CANCELADO,
         titulo: 'Turno cancelado',
         mensaje: `Tu turno del ${formatArgentinaDate(turno.fechaTurno)} a las ${normalizeTimeToHHmm(turno.horaTurno)} fue cancelado.`,
@@ -126,9 +126,9 @@ export class CancelarTurnoSocioUseCase implements BaseUseCase {
       });
     }
 
-    if (turno.nutricionista.idPersona) {
+    if (turno.nutricionista.usuario?.idUsuario != null) {
       await this.notificacionesService.crear({
-        destinatarioId: turno.nutricionista.idPersona,
+        destinatarioId: turno.nutricionista.usuario.idUsuario,
         tipo: TipoNotificacion.TURNO_CANCELADO,
         titulo: 'Turno cancelado por socio',
         mensaje: `El socio canceló el turno #${turno.idTurno}${turno.motivoCancelacion ? `. Motivo: ${turno.motivoCancelacion}` : ''}.`,

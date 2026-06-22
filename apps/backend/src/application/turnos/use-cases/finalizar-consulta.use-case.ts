@@ -35,7 +35,7 @@ export class FinalizarConsultaUseCase {
         idTurno: turnoId,
         socio: { gimnasioId: this.tenantContext.gimnasioId },
       },
-      relations: { socio: true, nutricionista: true },
+      relations: { socio: { usuario: true }, nutricionista: { usuario: true } },
     });
 
     if (!turno) {
@@ -87,9 +87,9 @@ export class FinalizarConsultaUseCase {
       },
     });
 
-    if (turno.socio?.idPersona) {
+    if (turno.socio?.usuario?.idUsuario != null) {
       await this.notificacionesService.crear({
-        destinatarioId: turno.socio.idPersona,
+        destinatarioId: turno.socio.usuario.idUsuario,
         tipo: TipoNotificacion.CONSULTA_FINALIZADA,
         titulo: 'Consulta finalizada',
         mensaje: `Se finalizó tu consulta del turno #${turno.idTurno}.`,

@@ -109,7 +109,7 @@ export class CrearPlanAlimentacionUseCase implements BaseUseCase {
         idPersona: payload.socioId,
         gimnasioId: this.tenantContext.gimnasioId,
       },
-      relations: { fichaSalud: true },
+      relations: { fichaSalud: true, usuario: true },
     });
     if (!socio) {
       throw new NotFoundError('Socio', String(payload.socioId));
@@ -250,9 +250,9 @@ export class CrearPlanAlimentacionUseCase implements BaseUseCase {
       },
     });
 
-    if (socio.idPersona) {
+    if (socio.usuario?.idUsuario != null) {
       await this.notificacionesService.crear({
-        destinatarioId: socio.idPersona,
+        destinatarioId: socio.usuario.idUsuario,
         tipo: TipoNotificacion.PLAN_CREADO,
         titulo: 'Plan de alimentación creado',
         mensaje: 'Tu nutricionista creó un nuevo plan de alimentación.',

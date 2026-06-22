@@ -72,7 +72,7 @@ export class EditarPlanAlimentacionUseCase implements BaseUseCase {
         },
         relations: {
           nutricionista: true,
-          socio: { fichaSalud: true },
+          socio: { fichaSalud: true, usuario: true },
           dias: { opcionesComida: { items: { alimento: true } } },
         },
       });
@@ -277,14 +277,22 @@ export class EditarPlanAlimentacionUseCase implements BaseUseCase {
 
         const socioActualizado = planActualizado.socio as unknown as {
           idPersona: number | null;
+          usuario: { idUsuario: number | null } | null;
         };
 
         if (socioActualizado.idPersona == null) {
           throw new NotFoundError('Socio', String(plan.idPlanAlimentacion));
         }
 
+        if (socioActualizado.usuario?.idUsuario == null) {
+          throw new NotFoundError(
+            'Usuario del socio',
+            String(socioActualizado.idPersona),
+          );
+        }
+
         await this.notificacionesService.crear({
-          destinatarioId: socioActualizado.idPersona,
+          destinatarioId: socioActualizado.usuario.idUsuario,
           tipo: TipoNotificacion.PLAN_EDITADO,
           titulo: 'Plan de alimentación editado',
           mensaje: 'Tu nutricionista actualizó tu plan de alimentación.',

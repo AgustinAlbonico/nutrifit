@@ -106,6 +106,7 @@ describe('CrearTurnoEnNombreDeSocioUseCase', () => {
     gimnasioId: GIMNASIO_ID,
     dni: '11111111',
     fichaSalud: { idFichaSalud: 1, completada: true },
+    usuario: { idUsuario: 120 },
   } as unknown as SocioOrmEntity;
 
   const socioSinFicha = {
@@ -115,6 +116,7 @@ describe('CrearTurnoEnNombreDeSocioUseCase', () => {
     gimnasioId: GIMNASIO_ID,
     dni: '22222222',
     fichaSalud: null,
+    usuario: { idUsuario: 121 },
   } as unknown as SocioOrmEntity;
 
   const socioFichaIncompleta = {
@@ -124,6 +126,7 @@ describe('CrearTurnoEnNombreDeSocioUseCase', () => {
     gimnasioId: GIMNASIO_ID,
     dni: '33333333',
     fichaSalud: { idFichaSalud: 2, completada: false },
+    usuario: { idUsuario: 122 },
   } as unknown as SocioOrmEntity;
 
   const turnoGuardado = (overrides?: Partial<TurnoOrmEntity>) =>
@@ -254,7 +257,7 @@ describe('CrearTurnoEnNombreDeSocioUseCase', () => {
       expect(notificacionesService.crear).toHaveBeenCalledTimes(1);
       expect(notificacionesService.crear).toHaveBeenCalledWith(
         expect.objectContaining({
-          destinatarioId: socioConFichaCompleta.idPersona,
+          destinatarioId: 120,
           tipo: TipoNotificacion.TURNO_RESERVADO,
           titulo: 'Turno agendado por recepción',
           metadata: expect.objectContaining({
