@@ -1,4 +1,5 @@
 import { Fragment, useState } from 'react';
+import { ControlesPaginacion } from '@/components/ui/ControlesPaginacion';
 
 export interface FilaTablaEvolucionPaciente {
   id: number;
@@ -17,6 +18,12 @@ interface PropiedadesTablaEvolucionPaciente {
 
 export function TablaEvolucionPaciente({ filas }: PropiedadesTablaEvolucionPaciente) {
   const [filaExpandida, setFilaExpandida] = useState<number | null>(null);
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [limitePorPagina, setLimitePorPagina] = useState(10);
+
+  const totalPaginas = Math.max(1, Math.ceil(filas.length / limitePorPagina));
+  const inicio = (paginaActual - 1) * limitePorPagina;
+  const filasPaginadas = filas.slice(inicio, inicio + limitePorPagina);
 
   if (filas.length === 0) {
     return (
@@ -50,7 +57,7 @@ export function TablaEvolucionPaciente({ filas }: PropiedadesTablaEvolucionPacie
             </tr>
           </thead>
           <tbody>
-            {filas.map((fila) => (
+            {filasPaginadas.map((fila) => (
               <Fragment key={fila.id}>
                 <tr className="border-b border-slate-100 align-top">
                   <td className="py-4 pr-4 font-medium text-slate-900">{fila.fecha}</td>
@@ -83,6 +90,21 @@ export function TablaEvolucionPaciente({ filas }: PropiedadesTablaEvolucionPacie
           </tbody>
         </table>
       </div>
+      {filas.length > limitePorPagina && (
+        <div className="mt-4">
+          <ControlesPaginacion
+            pagina={paginaActual}
+            totalPaginas={totalPaginas}
+            total={filas.length}
+            limite={limitePorPagina}
+            onCambiarPagina={setPaginaActual}
+            onCambiarLimite={(l) => {
+              setLimitePorPagina(l);
+              setPaginaActual(1);
+            }}
+          />
+        </div>
+      )}
     </section>
   );
 }

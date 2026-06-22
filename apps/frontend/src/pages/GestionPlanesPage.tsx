@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { ApiResponse } from '@/types/api';
 import { Link, useNavigate } from '@tanstack/react-router';
 import {
@@ -35,6 +35,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ControlesPaginacion } from '@/components/ui/ControlesPaginacion';
 import {
   Dialog,
   DialogContent,
@@ -88,6 +89,8 @@ export function GestionPlanesPage() {
   const [planAVaciar, setPlanAVaciar] = useState<number | null>(null);
   const [modalCrearPlanAbierto, setModalCrearPlanAbierto] = useState(false);
   const [busquedaPaciente, setBusquedaPaciente] = useState('');
+  const [paginaInactivos, setPaginaInactivos] = useState(1);
+  const [limiteInactivos, setLimiteInactivos] = useState(5);
 
   // Query para obtener planes del nutricionista
   const { data: planes, isLoading, isError } = useQuery<PlanAlimentacion[]>({
@@ -198,6 +201,13 @@ export function GestionPlanesPage() {
   // Agrupar por activo/inactivo
   const planesActivos = planesFiltrados?.filter((p) => p.activo) ?? [];
   const planesInactivos = planesFiltrados?.filter((p) => !p.activo) ?? [];
+
+  const totalPaginasInactivos = Math.max(1, Math.ceil(planesInactivos.length / limiteInactivos));
+  const inicioInactivos = (paginaInactivos - 1) * limiteInactivos;
+  const planesInactivosPaginados = useMemo(
+    () => planesInactivos.slice(inicioInactivos, inicioInactivos + limiteInactivos),
+    [planesInactivos, inicioInactivos, limiteInactivos],
+  );
 
   if (isError) {
     return (
@@ -341,7 +351,7 @@ export function GestionPlanesPage() {
             Historial de Planes ({planesInactivos.length})
           </h2>
           <div className="grid gap-4 opacity-75">
-            {planesInactivos.map((plan) => (
+            {planesInactivosPaginados.map((plan) => (
               <PlanCard
                 key={plan.idPlanAlimentacion}
                 plan={plan}
@@ -350,6 +360,21 @@ export function GestionPlanesPage() {
               />
             ))}
           </div>
+          {planesInactivos.length > limiteInactivos && (
+            <div className="mt-4">
+              <ControlesPaginacion
+                pagina={paginaInactivos}
+                totalPaginas={totalPaginasInactivos}
+                total={planesInactivos.length}
+                limite={limiteInactivos}
+                onCambiarPagina={setPaginaInactivos}
+                onCambiarLimite={(l) => {
+                  setLimiteInactivos(l);
+                  setPaginaInactivos(1);
+                }}
+              />
+            </div>
+          )}
         </div>
       )}
 

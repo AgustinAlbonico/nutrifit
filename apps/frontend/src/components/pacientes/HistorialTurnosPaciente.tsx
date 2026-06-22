@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Calendar, Camera, FileText, Stethoscope, History } from 'lucide-react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ControlesPaginacion } from '@/components/ui/ControlesPaginacion';
 import type {
   EstadoTurnoHistorial,
   HistorialTurnoPaciente,
@@ -49,6 +51,12 @@ export function HistorialTurnosPaciente({
   onRetomarTurno,
 }: PropiedadesHistorialTurnosPaciente) {
   const navigate = useNavigate();
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [limitePorPagina, setLimitePorPagina] = useState(5);
+
+  const totalPaginas = Math.max(1, Math.ceil(turnos.length / limitePorPagina));
+  const inicio = (paginaActual - 1) * limitePorPagina;
+  const turnosPaginados = turnos.slice(inicio, inicio + limitePorPagina);
 
   if (cargando) {
     return (
@@ -98,7 +106,7 @@ export function HistorialTurnosPaciente({
       </CardHeader>
       <CardContent className="p-0">
         <ul className="divide-y divide-border/60">
-          {turnos.map((turno) => {
+          {turnosPaginados.map((turno) => {
             const esEditable = estadosEditables.includes(turno.estadoTurno);
             const onClickRetomar = () => {
               if (onRetomarTurno) {
@@ -190,6 +198,21 @@ export function HistorialTurnosPaciente({
             );
           })}
         </ul>
+        {turnos.length > limitePorPagina && (
+          <div className="border-t p-3">
+            <ControlesPaginacion
+              pagina={paginaActual}
+              totalPaginas={totalPaginas}
+              total={turnos.length}
+              limite={limitePorPagina}
+              onCambiarPagina={setPaginaActual}
+              onCambiarLimite={(l) => {
+                setLimitePorPagina(l);
+                setPaginaActual(1);
+              }}
+            />
+          </div>
+        )}
       </CardContent>
     </Card>
   );
