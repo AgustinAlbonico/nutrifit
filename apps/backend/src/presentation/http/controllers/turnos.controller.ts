@@ -54,6 +54,7 @@ import {
   TurnoOperacionResponseDto,
   UpsertFichaSaludSocioDto,
 } from 'src/application/turnos/dtos';
+import type { PaginatedData } from '@nutrifit/shared';
 import {
   AbrirFichaDesdeTurnoUseCase,
   AsignarTurnoManualUseCase,
@@ -384,7 +385,7 @@ export class TurnosController {
   async listPacientesProfesional(
     @Param('nutricionistaId', ParseIntPipe) nutricionistaId: number,
     @Query() query: ListPacientesProfesionalQueryDto,
-  ): Promise<PacienteProfesionalResponseDto[]> {
+  ): Promise<PaginatedData<PacienteProfesionalResponseDto>> {
     this.logger.log(`Listando pacientes de profesional ${nutricionistaId}.`);
 
     return this.listPacientesProfesionalUseCase.execute(nutricionistaId, query);

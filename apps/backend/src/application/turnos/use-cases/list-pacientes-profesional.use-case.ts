@@ -1,5 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import type { PaginatedData } from '@nutrifit/shared';
+import { calcularMeta } from 'src/common/helpers/paginacion.helper';
 import { BaseUseCase } from 'src/application/shared/use-case.base';
 import {
   ListPacientesProfesionalQueryDto,
@@ -38,7 +40,7 @@ export class ListPacientesProfesionalUseCase implements BaseUseCase {
   async execute(
     nutricionistaId: number,
     query: ListPacientesProfesionalQueryDto,
-  ): Promise<PacienteProfesionalResponseDto[]> {
+  ): Promise<PaginatedData<PacienteProfesionalResponseDto>> {
     const nutricionista =
       await this.nutricionistaRepository.findById(nutricionistaId);
 
@@ -134,10 +136,19 @@ export class ListPacientesProfesionalUseCase implements BaseUseCase {
       a.nombreCompleto.localeCompare(b.nombreCompleto),
     );
 
+    const total = pacientes.length;
+    const pagina = query.page ?? 1;
+    const limite = query.limit ?? 20;
+    const inicio = (pagina - 1) * limite;
+    const pacientesPagina = pacientes.slice(inicio, inicio + limite);
+
     this.logger.log(
-      `Pacientes recuperados para profesional ${nutricionistaId}: ${pacientes.length}.`,
+      `Pacientes recuperados para profesional ${nutricionistaId}: ${total} total, devolviendo ${pacientesPagina.length}.`,
     );
 
-    return pacientes;
+    return {
+      data: pacientesPagina,
+      pagination: calcularMeta(total, pagina, limite),
+    };
   }
 }

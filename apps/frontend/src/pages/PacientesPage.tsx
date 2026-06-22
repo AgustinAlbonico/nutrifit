@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import {
   Search,
@@ -13,9 +13,6 @@ import {
 } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { apiRequest } from '@/lib/api';
-import { normalizarTexto } from '@/lib/text';
-import { useQuery } from '@tanstack/react-query';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,20 +24,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { ApiResponse } from '@/types/api';
-
-// ── Tipos ─────────────────────────────────────────────────────────────
-
-interface Paciente {
-  socioId: number;
-  nombreCompleto: string;
-  dni: string;
-  objetivo: string | null;
-  ultimoTurno: string | null;
-  proximoTurno: string | null;
-}
-
-
+import { usePaginacion } from '@/hooks/usePaginacion';
+import { ControlesPaginacion } from '@/components/ui/ControlesPaginacion';
+import { listarPacientesPaginado } from '@/lib/api/pacientes';
+import type { PacientePaginado } from '@/lib/api/pacientes';
 
 // ── Componente Principal ──────────────────────────────────────────────
 
@@ -48,32 +35,22 @@ export function PacientesPage() {
   const { token, personaId } = useAuth();
   const [busqueda, setBusqueda] = useState('');
 
-  // Query para obtener pacientes
-  const { data: pacientes, isLoading, isError } = useQuery<Paciente[]>({
-    queryKey: ['pacientes', personaId, token],
-    queryFn: async () => {
-      const response = await apiRequest<ApiResponse<Paciente[]>>(
-        `/turnos/profesional/${personaId}/pacientes`,
-        { token },
-      );
-      return response.data;
-    },
-    enabled: !!token && !!personaId,
-  });
+  const fetcher = useCallback(
+    (params: { page: number; limit: number }) =>
+      listarPacientesPaginado(token!, personaId!, {
+        page: params.page,
+        limit: params.limit,
+        search: busqueda || undefined,
+      }),
+    [token, personaId, busqueda],
+  );
 
-  // Filtrar pacientes por búsqueda
-  const pacientesFiltrados = pacientes?.filter((paciente) => {
-    const termino = normalizarTexto(busqueda);
-    if (!termino) return true;
-    const nombreCompleto = normalizarTexto(paciente.nombreCompleto || '');
-    const dni = paciente.dni || '';
-    return (
-      nombreCompleto.includes(termino) ||
-      dni.includes(termino)
-    );
-  });
+  const { data: pacientes, pagination, setPagina, error } = usePaginacion<PacientePaginado>(
+    fetcher,
+    { defaultLimit: 10, enabled: !!token && !!personaId },
+  );
 
-  if (isError) {
+  if (error) {
     return (
       <div className="space-y-6">
         <div>
@@ -104,7 +81,7 @@ export function PacientesPage() {
             <Input
               placeholder="Buscar por nombre o DNI..."
               value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
+              onChange={(e) => { setBusqueda(e.target.value); setPagina(1); }}
               className="pl-10 bg-white/50 border-orange-200 focus:border-orange-400"
             />
           </div>
@@ -122,7 +99,7 @@ export function PacientesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {isLoading ? <Skeleton className="h-8 w-12" /> : pacientes?.length ?? 0}
+              {pagination.isLoading ? <Skeleton className="h-8 w-12" /> : pagination.total}
             </div>
           </CardContent>
         </Card>
@@ -133,7 +110,7 @@ export function PacientesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {isLoading ? (
+              {pagination.isLoading ? (
                 <Skeleton className="h-8 w-12" />
               ) : (
                 pacientes?.filter((p) => p.proximoTurno).length ?? 0
@@ -150,7 +127,7 @@ export function PacientesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {isLoading ? (
+              {pagination.isLoading ? (
                 <Skeleton className="h-8 w-12" />
               ) : (
                 pacientes?.filter((p) => {
@@ -170,8 +147,7 @@ export function PacientesPage() {
 
       {/* Lista de pacientes */}
       <div className="grid gap-4">
-        {isLoading ? (
-          // Skeletons
+        {pagination.isLoading ? (
           Array.from({ length: 5 }).map((_, i) => (
             <Card key={i}>
               <CardContent className="p-4">
@@ -185,17 +161,15 @@ export function PacientesPage() {
               </CardContent>
             </Card>
           ))
-        ) : pacientesFiltrados && pacientesFiltrados.length > 0 ? (
-          pacientesFiltrados.map((paciente) => (
+        ) : pacientes && pacientes.length > 0 ? (
+          pacientes.map((paciente) => (
             <Card key={paciente.socioId} className="hover:shadow-md transition-shadow">
               <CardContent className="p-4">
                 <div className="flex items-center gap-4">
-                  {/* Avatar */}
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold">
                     {(paciente.nombreCompleto || 'S N').charAt(0)}
                     {(paciente.nombreCompleto || 'S N').split(' ')[1]?.charAt(0) || ''}
                   </div>
-                  {/* Info principal */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold truncate">
@@ -213,14 +187,11 @@ export function PacientesPage() {
                     {paciente.ultimoTurno && (
                       <p className="text-xs text-muted-foreground mt-1">
                         Última consulta:{' '}
-                        {new Date(paciente.ultimoTurno).toLocaleDateString(
-                          'es-AR',
-                        )}
+                        {new Date(paciente.ultimoTurno).toLocaleDateString('es-AR')}
                       </p>
                     )}
                   </div>
 
-                  {/* Acciones */}
                   <div className="flex items-center gap-2">
                     <Link
                       to="/profesional/paciente/$socioId/ficha"
@@ -233,11 +204,7 @@ export function PacientesPage() {
                     </Link>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label="Mas acciones"
-                        >
+                        <Button variant="ghost" size="icon" aria-label="Mas acciones">
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -245,9 +212,7 @@ export function PacientesPage() {
                         <DropdownMenuItem asChild>
                           <Link
                             to="/profesional/paciente/$socioId/ficha"
-                            params={{
-                              socioId: String(paciente.socioId ?? ''),
-                            }}
+                            params={{ socioId: String(paciente.socioId ?? '') }}
                             hash="historial-turnos"
                           >
                             <History className="mr-2 h-4 w-4" />
@@ -302,6 +267,22 @@ export function PacientesPage() {
           </Card>
         )}
       </div>
+
+      {pacientes && pacientes.length > 0 && (
+        <div className="flex justify-center">
+          <ControlesPaginacion
+            pagina={pagination.page}
+            totalPaginas={pagination.totalPages}
+            total={pagination.total}
+            limite={pagination.limit}
+            cargando={pagination.isLoading}
+            onCambiarPagina={setPagina}
+            onCambiarLimite={(_limit: number) => {
+              setPagina(1);
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }
