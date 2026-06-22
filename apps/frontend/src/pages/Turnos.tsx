@@ -15,6 +15,7 @@ import {
 } from '@/lib/turnos-disponibles';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ControlesPaginacion } from '@/components/ui/ControlesPaginacion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { DatePicker } from '@/components/ui/date-picker';
@@ -562,19 +563,6 @@ export function Turnos() {
                   />
                 </div>
 
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Por pagina</p>
-                  <select
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    value={limitePorPagina}
-                    onChange={(event) => setLimitePorPagina(Number(event.target.value))}
-                  >
-                    <option value={5}>5</option>
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                    <option value={50}>50</option>
-                  </select>
-                </div>
               </div>
 
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -690,49 +678,20 @@ export function Turnos() {
                     })}
                   </div>
 
-                  <div className="flex flex-col gap-2 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-sm text-muted-foreground">
-                      Mostrando{' '}
-                      <span className="font-medium text-foreground">
-                        {indiceInicio + 1}
-                      </span>
-                      {' - '}
-                      <span className="font-medium text-foreground">
-                        {Math.min(indiceFin, turnosFiltrados.length)}
-                      </span>
-                      {' de '}
-                      <span className="font-medium text-foreground">
-                        {turnosFiltrados.length}
-                      </span>
-                    </p>
-
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setPaginaActual((previa) => Math.max(1, previa - 1))}
-                        disabled={paginaActual === 1}
-                      >
-                        Anterior
-                      </Button>
-
-                      <span className="text-sm text-muted-foreground">
-                        Pagina {paginaActual} de {totalPaginas}
-                      </span>
-
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          setPaginaActual((previa) =>
-                            Math.min(totalPaginas, previa + 1),
-                          )
-                        }
-                        disabled={paginaActual === totalPaginas}
-                      >
-                        Siguiente
-                      </Button>
-                    </div>
+                  <div className="border-t pt-4">
+                    <ControlesPaginacion
+                      pagina={paginaActual}
+                      totalPaginas={totalPaginas}
+                      total={turnosFiltrados.length}
+                      limite={limitePorPagina}
+                      opcionesLimite={[5, 10, 20, 50]}
+                      cargando={cargando}
+                      onCambiarPagina={setPaginaActual}
+                      onCambiarLimite={(nuevo) => {
+                        setLimitePorPagina(nuevo);
+                        setPaginaActual(1);
+                      }}
+                    />
                   </div>
                 </>
               )}
