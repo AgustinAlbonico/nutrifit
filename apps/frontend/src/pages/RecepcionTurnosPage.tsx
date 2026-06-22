@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/dialog';
 import { RevertirAusenteModal } from '@/components/turnos/RevertirAusenteModal';
 import { RevertirCheckinModal } from '@/components/turnos/RevertirCheckinModal';
+import { ControlesPaginacion } from '@/components/ui/ControlesPaginacion';
 
 interface TurnoRecepcion {
   idTurno: number;
@@ -70,6 +71,8 @@ export function RecepcionTurnosPage() {
   const [turnos, setTurnos] = useState<TurnoRecepcion[]>([]);
   const [cargando, setCargando] = useState(false);
   const [terminoBusqueda, setTerminoBusqueda] = useState('');
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [limitePorPagina, setLimitePorPagina] = useState(10);
   const [turnoSeleccionado, setTurnoSeleccionado] =
     useState<TurnoRecepcion | null>(null);
   const [procesandoCheckIn, setProcesandoCheckIn] = useState(false);
@@ -112,10 +115,28 @@ export function RecepcionTurnosPage() {
     void cargarTurnosDelDia();
   }, [cargarTurnosDelDia]);
 
+  useEffect(() => {
+    setPaginaActual(1);
+  }, [terminoBusqueda, fecha]);
+
   const turnosFiltrados = useMemo(
     () => turnos.filter((t) => matchesBusqueda(t, terminoBusqueda)),
     [turnos, terminoBusqueda],
   );
+
+  const totalPaginas = Math.max(
+    1,
+    Math.ceil(turnosFiltrados.length / limitePorPagina),
+  );
+
+  useEffect(() => {
+    if (paginaActual > totalPaginas) {
+      setPaginaActual(totalPaginas);
+    }
+  }, [paginaActual, totalPaginas]);
+
+  const inicio = (paginaActual - 1) * limitePorPagina;
+  const turnosPaginados = turnosFiltrados.slice(inicio, inicio + limitePorPagina);
 
   const abrirModalCheckIn = (turno: TurnoRecepcion) => {
     setTurnoSeleccionado(turno);
@@ -266,7 +287,7 @@ export function RecepcionTurnosPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {turnosFiltrados.map((turno) => (
+                  {turnosPaginados.map((turno) => (
                     <tr
                       key={turno.idTurno}
                       className="border-b hover:bg-accent/50 transition-colors"
@@ -339,6 +360,21 @@ export function RecepcionTurnosPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+          {!cargando && turnosFiltrados.length > limitePorPagina && (
+            <div className="mt-3 border-t pt-3">
+              <ControlesPaginacion
+                pagina={paginaActual}
+                totalPaginas={totalPaginas}
+                total={turnosFiltrados.length}
+                limite={limitePorPagina}
+                onCambiarPagina={setPaginaActual}
+                onCambiarLimite={(l) => {
+                  setLimitePorPagina(l);
+                  setPaginaActual(1);
+                }}
+              />
             </div>
           )}
         </CardContent>
