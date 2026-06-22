@@ -1,3 +1,6 @@
+import { useState } from 'react';
+import { ControlesPaginacion } from '@/components/ui/ControlesPaginacion';
+
 export interface EventoTimelineEvolucion {
   id: string;
   fecha: string;
@@ -10,6 +13,13 @@ interface PropiedadesTimelineEvolucionClinica {
 }
 
 export function TimelineEvolucionClinica({ eventos }: PropiedadesTimelineEvolucionClinica) {
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [limitePorPagina, setLimitePorPagina] = useState(10);
+
+  const totalPaginas = Math.max(1, Math.ceil(eventos.length / limitePorPagina));
+  const inicio = (paginaActual - 1) * limitePorPagina;
+  const eventosPaginados = eventos.slice(inicio, inicio + limitePorPagina);
+
   if (eventos.length === 0) {
     return (
       <section className="rounded-[1.75rem] border bg-white p-5 shadow-sm">
@@ -29,7 +39,7 @@ export function TimelineEvolucionClinica({ eventos }: PropiedadesTimelineEvoluci
       </div>
 
       <div className="mt-6 space-y-4">
-        {eventos.map((evento) => (
+        {eventosPaginados.map((evento) => (
           <article
             key={evento.id}
             className="rounded-[1.5rem] border border-slate-200 bg-[linear-gradient(135deg,rgba(255,247,237,0.92),rgba(255,255,255,0.98))] p-4"
@@ -40,6 +50,19 @@ export function TimelineEvolucionClinica({ eventos }: PropiedadesTimelineEvoluci
           </article>
         ))}
       </div>
+      {eventos.length > limitePorPagina && (
+        <ControlesPaginacion
+          pagina={paginaActual}
+          totalPaginas={totalPaginas}
+          total={eventos.length}
+          limite={limitePorPagina}
+          onCambiarPagina={setPaginaActual}
+          onCambiarLimite={(l) => {
+            setLimitePorPagina(l);
+            setPaginaActual(1);
+          }}
+        />
+      )}
     </section>
   );
 }
