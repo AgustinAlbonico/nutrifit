@@ -6,7 +6,6 @@ import { ArrowLeft, Calendar, CheckCircle2, FileWarning, Search, User } from 'lu
 
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRequest } from '@/lib/api';
-import { normalizarTexto } from '@/lib/text';
 import {
   deduplicarTurnos,
   type TurnoDisponible,
@@ -15,20 +14,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
+import { ControlesPaginacion } from '@/components/ui/ControlesPaginacion';
 import type { ApiResponse } from '@/types/api';
-
-
-
-interface ProfesionalDisponible {
-  idPersona: number;
-  nombre: string;
-  apellido: string;
-  especialidad: string;
-  ciudad: string;
-  provincia: string;
-  tarifaSesion: number | string;
-  agendaConfigurada: boolean;
-}
+import {
+  listarProfesionalesDisponiblesPaginado,
+  type ProfesionalDisponible,
+} from '@/lib/api/profesionales';
 
 interface FichaSaludSocio {
   socioId: number;
@@ -52,6 +43,9 @@ export function AgendarTurno() {
     ProfesionalDisponible[]
   >([]);
   const [busquedaProfesional, setBusquedaProfesional] = useState('');
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
+  const [totalProfesionales, setTotalProfesionales] = useState(0);
 
   const [profesionalSeleccionado, setProfesionalSeleccionado] =
     useState<ProfesionalDisponible | null>(null);
@@ -89,19 +83,14 @@ export function AgendarTurno() {
   };
 
   const profesionalesFiltrados = useMemo(() => {
-    const termino = normalizarTexto(busquedaProfesional);
-
-    if (!termino) {
+    if (!busquedaProfesional.trim()) {
       return profesionalesDisponibles;
     }
 
     return profesionalesDisponibles.filter((profesional) => {
-      const nombreCompleto = normalizarTexto(obtenerNombreCompletoProfesional(profesional));
-
       return (
-        nombreCompleto.includes(termino) ||
-        normalizarTexto(profesional.ciudad).includes(termino) ||
-        normalizarTexto(profesional.provincia).includes(termino)
+        profesional.ciudad.toLowerCase().includes(busquedaProfesional.toLowerCase()) ||
+        profesional.provincia.toLowerCase().includes(busquedaProfesional.toLowerCase())
       );
     });
   }, [profesionalesDisponibles, busquedaProfesional]);
@@ -115,20 +104,22 @@ export function AgendarTurno() {
       setCargandoProfesionales(true);
       setErrorProfesionales(null);
 
-      const response = await apiRequest<ApiResponse<ProfesionalDisponible[]>>(
-        '/profesional/publico/disponibles',
-        { token },
-      );
+      const result = await listarProfesionalesDisponiblesPaginado(token, {
+        page: paginaActual,
+        limit: 12,
+        nombre: busquedaProfesional.trim() || undefined,
+      });
 
-      const profesionales = response.data ?? [];
-      setProfesionalesDisponibles(profesionales);
+      setProfesionalesDisponibles(result.data);
+      setTotalPaginas(result.pagination.totalPages);
+      setTotalProfesionales(result.pagination.total);
 
       // Auto-seleccionar nutricionista si viene por URL
       const params = new URLSearchParams(window.location.search);
       const nutricionistaIdParam = params.get('nutricionistaId');
       if (nutricionistaIdParam) {
         const id = Number(nutricionistaIdParam);
-        const profesionalUrl = profesionales.find((p) => p.idPersona === id);
+        const profesionalUrl = result.data.find((p) => p.idPersona === id);
         if (profesionalUrl?.agendaConfigurada) {
           setProfesionalSeleccionado((prev) => {
             if (!prev) return profesionalUrl;
@@ -149,7 +140,7 @@ export function AgendarTurno() {
     } finally {
       setCargandoProfesionales(false);
     }
-  }, [token]);
+  }, [token, paginaActual, busquedaProfesional]);
 
   const cargarEstadoFichaSalud = useCallback(async () => {
     if (!token) {
@@ -220,6 +211,7 @@ export function AgendarTurno() {
   const deseleccionarProfesional = () => {
     setProfesionalSeleccionado(null);
     setBusquedaProfesional('');
+    setPaginaActual(1);
     setFechaSeleccionada(undefined);
     setTurnosDisponibles([]);
     setErrorReserva(null);
@@ -539,7 +531,10 @@ export function AgendarTurno() {
                   className="pl-9"
                   placeholder="Buscar por nombre, ciudad o provincia"
                   value={busquedaProfesional}
-                  onChange={(event) => setBusquedaProfesional(event.target.value)}
+                  onChange={(event) => {
+                    setBusquedaProfesional(event.target.value);
+                    setPaginaActual(1);
+                  }}
                 />
               </div>
 
@@ -601,6 +596,19 @@ export function AgendarTurno() {
                       </div>
                     );
                   })}
+                </div>
+              )}
+              {profesionalesDisponibles.length > 0 && (
+                <div className="mt-4">
+                  <ControlesPaginacion
+                    pagina={paginaActual}
+                    totalPaginas={totalPaginas}
+                    total={totalProfesionales}
+                    limite={12}
+                    cargando={cargandoProfesionales}
+                    onCambiarPagina={(pag) => setPaginaActual(pag)}
+                    onCambiarLimite={() => {}}
+                  />
                 </div>
               )}
             </>
