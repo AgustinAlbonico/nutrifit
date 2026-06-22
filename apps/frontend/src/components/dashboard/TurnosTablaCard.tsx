@@ -44,7 +44,7 @@ interface TurnoRecepcion {
 
 const ESTADOS_TURNO: Array<{ valor: EstadoTurno | 'TODOS'; etiqueta: string }> = [
   { valor: 'TODOS', etiqueta: 'Todos' },
-  { valor: 'PROGRAMADO', etiqueta: 'Programado' },
+  { valor: 'CONFIRMADO', etiqueta: 'Confirmado' },
   { valor: 'PRESENTE', etiqueta: 'Presente' },
   { valor: 'EN_CURSO', etiqueta: 'En curso' },
 ];

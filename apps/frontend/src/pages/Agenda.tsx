@@ -395,8 +395,6 @@ export function Agenda() {
         return <Badge className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white border-0 shadow-sm hover:from-emerald-600 hover:to-emerald-700">Libre</Badge>;
       case 'BLOQUEADO':
         return <Badge className="bg-gradient-to-r from-rose-500 to-rose-600 text-white border-0 shadow-sm hover:from-rose-600 hover:to-rose-700">Bloqueado</Badge>;
-      case 'PROGRAMADO':
-        return <Badge className="bg-gradient-to-r from-amber-500 to-amber-600 text-white border-0 shadow-sm hover:from-amber-600 hover:to-amber-700">Programado</Badge>;
       case 'CONFIRMADO':
         return <Badge className="bg-gradient-to-r from-amber-500 to-amber-600 text-white border-0 shadow-sm hover:from-amber-600 hover:to-amber-700">Confirmado</Badge>;
       case 'PRESENTE':

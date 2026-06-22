@@ -30,6 +30,12 @@ export function NotificationCenter() {
         ) : (
           <DropdownMenuItem disabled>No hay notificaciones</DropdownMenuItem>
         )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <a href="/notificaciones" className="w-full text-center text-primary font-medium cursor-pointer">
+            Ver todas las notificaciones
+          </a>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

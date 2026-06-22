@@ -141,8 +141,6 @@ export function Turnos() {
     switch (estadoTurno) {
       case 'CONFIRMADO':
         return 'Tu turno está confirmado y podés gestionarlo según la política vigente.';
-      case 'PROGRAMADO':
-        return 'Tu turno esta programado y podes gestionarlo segun la politica vigente.';
       case 'PRESENTE':
         return 'Tu llegada ya fue registrada y el profesional puede iniciar la consulta.';
       case 'EN_CURSO':
