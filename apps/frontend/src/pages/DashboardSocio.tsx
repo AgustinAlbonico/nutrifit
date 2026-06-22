@@ -1,4 +1,4 @@
-import type { EstadoTurno } from '@nutrifit/shared';
+import type { EstadoTurno, PaginatedData } from '@nutrifit/shared';
 import { Heart, Calendar, Activity, Target } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,6 +10,7 @@ import { ObjetivosCard } from '@/components/dashboard/ObjetivosCard';
 import { AccionesRapidasSocioCard } from '@/components/dashboard/AccionesRapidasSocioCard';
 import { MensajeMotivacional } from '@/components/dashboard/MensajeMotivacional';
 import { esEstadoTurnoVigente } from '@/lib/turnos/estadoTurno';
+import type { ApiResponse } from '@/types/api';
 
 interface MiTurno {
   idTurno: number;
@@ -35,7 +36,11 @@ export function DashboardSocio() {
   // KPIs - Turnos
   const { data: turnosResponse, isLoading: cargandoTurnos } = useQuery({
     queryKey: ['mis-turnos', token],
-    queryFn: () => apiRequest<{ data: MiTurno[] }>('/turnos/socio/mis-turnos', { token }),
+    queryFn: () =>
+      apiRequest<ApiResponse<PaginatedData<MiTurno>>>(
+        '/turnos/socio/mis-turnos?page=1&limit=5',
+        { token },
+      ),
     enabled: !!token,
   });
 
@@ -46,8 +51,7 @@ export function DashboardSocio() {
     enabled: !!token,
   });
 
-  // Asegurar que turnos sea siempre un array
-  const turnos = Array.isArray(turnosResponse) ? turnosResponse : (turnosResponse?.data ?? []);
+  const turnos = turnosResponse?.data?.data ?? [];
 
   // Calcular proximo turno
   const ahora = new Date();

@@ -1,4 +1,4 @@
-import type { EstadoTurno } from '@nutrifit/shared';
+import type { EstadoTurno, PaginatedData } from '@nutrifit/shared';
 import { useQuery } from '@tanstack/react-query';
 import { Calendar, Clock, User } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +7,7 @@ import { apiRequest } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { ModalFichaRequeridaSocio } from '@/components/ficha-salud/ModalFichaRequeridaSocio';
 import { useEstadoFichaRequerida } from '@/hooks/useEstadoFichaRequerida';
+import type { ApiResponse } from '@/types/api';
 import {
   esEstadoTurnoVigente,
   obtenerClasesEstadoTurno,
@@ -31,11 +32,14 @@ export function ProximoTurnoCard() {
   const { data, isLoading } = useQuery({
     queryKey: ['mis-turnos', token],
     queryFn: () =>
-      apiRequest<MiTurno[]>('/turnos/socio/mis-turnos', { token }),
+      apiRequest<ApiResponse<PaginatedData<MiTurno>>>(
+        '/turnos/socio/mis-turnos?page=1&limit=5',
+        { token },
+      ),
     enabled: !!token && fichaCargada === true,
   });
 
-  const turnos = Array.isArray(data) ? data : [];
+  const turnos = data?.data?.data ?? [];
 
   const ahora = new Date();
   const proximoTurno = turnos
