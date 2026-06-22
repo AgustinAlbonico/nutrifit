@@ -27,7 +27,7 @@ export function usePaginacion<T>(
   const [limite, setLimite] = useState(options?.defaultLimit ?? 10);
   const [data, setData] = useState<T[]>([]);
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
-  const [cargando, setCargando] = useState(true);
+  const [cargando, setCargando] = useState(options?.enabled ?? true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
