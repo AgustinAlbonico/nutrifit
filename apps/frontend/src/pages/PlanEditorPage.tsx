@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { ArrowLeft, Save, Info, AlertCircle, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import type { PaginatedData } from '@nutrifit/shared';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRequest } from '@/lib/api';
@@ -262,12 +263,12 @@ export function PlanEditorPage() {
 
     const cargarPaciente = async () => {
       try {
-        const respuesta = await apiRequest<ApiRespuesta<PacienteResumen[]>>(
+        const respuesta = await apiRequest<ApiRespuesta<PaginatedData<PacienteResumen>>>(
           `/turnos/profesional/${personaId}/pacientes`,
           { token },
         );
 
-        const encontrado = (respuesta.data ?? []).find(
+        const encontrado = (respuesta.data?.data ?? []).find(
           (paciente) => String(paciente.socioId) === String(socioId),
         );
 

@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import type { ApiResponse } from '@/types/api';
+import type { PaginatedData } from '@nutrifit/shared';
 import { Link, useNavigate } from '@tanstack/react-router';
 import {
   Search,
@@ -150,11 +151,11 @@ export function GestionPlanesPage() {
   const { data: pacientes, isLoading: cargandoPacientes } = useQuery<Paciente[]>({
     queryKey: ['pacientes-nutricionista-modal', personaId, token],
     queryFn: async () => {
-      const response = await apiRequest<ApiResponse<Paciente[]>>(
+      const response = await apiRequest<ApiResponse<PaginatedData<Paciente>>>(
         `/turnos/profesional/${personaId}/pacientes`,
         { token },
       );
-      return response.data ?? [];
+      return response.data?.data ?? [];
     },
     enabled: !!token && !!personaId,
   });

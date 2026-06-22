@@ -5,9 +5,10 @@ import { AvatarPaciente } from '@/components/ui/avatar-paciente';
 import { apiRequest } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import type { ApiResponse } from '@/types/api';
+import type { PaginatedData } from '@nutrifit/shared';
 
 interface Paciente {
-  idSocio: number;
+  socioId: number;
   nombreCompleto: string;
   ultimaConsulta: string | null;
   objetivo: string | null;
@@ -22,11 +23,11 @@ export function PacientesRecientesCard() {
   const { data: pacientes = [], isLoading } = useQuery({
     queryKey: ['pacientes-recientes', personaId, token],
     queryFn: async () => {
-      const response = await apiRequest<ApiResponse<Paciente[]>>(
+      const response = await apiRequest<ApiResponse<PaginatedData<Paciente>>>(
         `/turnos/profesional/${personaId}/pacientes?limite=5`,
         { token },
       );
-      return response.data ?? [];
+      return response.data?.data ?? [];
     },
     enabled: !!token && !!personaId,
   });
@@ -62,9 +63,9 @@ export function PacientesRecientesCard() {
           </p>
         ) : (
           <div className="space-y-3">
-            {pacientes.filter((p) => p.idSocio !== undefined).slice(0, 5).map((paciente) => (
+            {pacientes.filter((p) => p.socioId !== undefined).slice(0, 5).map((paciente) => (
               <div
-                key={paciente.idSocio}
+                key={paciente.socioId}
                 className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
               >
                 <AvatarPaciente

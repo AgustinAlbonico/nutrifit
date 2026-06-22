@@ -21,9 +21,10 @@ import {
 import { apiRequest } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import type { ApiResponse } from '@/types/api';
+import type { PaginatedData } from '@nutrifit/shared';
 
 interface Paciente {
-  idSocio: number;
+  socioId: number;
   nombreCompleto: string;
 }
 
@@ -47,11 +48,11 @@ export function PacienteDestacadoCard() {
   const { data: pacientes = [], isLoading: cargandoPacientes } = useQuery({
     queryKey: ['pacientes-nutricionista', personaId, token],
     queryFn: async () => {
-      const response = await apiRequest<ApiResponse<Paciente[]>>(
+      const response = await apiRequest<ApiResponse<PaginatedData<Paciente>>>(
         `/turnos/profesional/${personaId}/pacientes`,
         { token },
       );
-      return response.data ?? [];
+      return response.data?.data ?? [];
     },
     enabled: !!token && !!personaId,
   });
@@ -97,8 +98,8 @@ export function PacienteDestacadoCard() {
             <SelectValue placeholder="Seleccionar paciente..." />
           </SelectTrigger>
           <SelectContent>
-            {pacientes.filter((p) => p.idSocio !== undefined).map((p) => (
-              <SelectItem key={p.idSocio} value={String(p.idSocio)}>
+            {pacientes.filter((p) => p.socioId !== undefined).map((p) => (
+              <SelectItem key={p.socioId} value={String(p.socioId)}>
                 {p.nombreCompleto}
               </SelectItem>
             ))}

@@ -8,11 +8,10 @@ import { PacienteDestacadoCard } from '@/components/dashboard/PacienteDestacadoC
 import { TurnosDelDiaCard } from '@/components/dashboard/TurnosDelDiaCard';
 import { PacientesRecientesCard } from '@/components/dashboard/PacientesRecientesCard';
 import type { ApiResponse } from '@/types/api';
-
-
+import type { PaginatedData } from '@nutrifit/shared';
 
 interface Paciente {
-  idSocio: number;
+  socioId: number;
   nombreCompleto: string;
 }
 
@@ -32,11 +31,11 @@ export function DashboardNutricionista() {
   const { data: pacientes, isLoading: cargandoPacientes } = useQuery({
     queryKey: ['pacientes-count', personaId, token],
     queryFn: async () => {
-      const response = await apiRequest<ApiResponse<Paciente[]>>(
+      const response = await apiRequest<ApiResponse<PaginatedData<Paciente>>>(
         `/turnos/profesional/${personaId}/pacientes`,
         { token },
       );
-      return response.data ?? [];
+      return response.data?.data ?? [];
     },
     enabled: !!token && !!personaId,
   });
