@@ -6,8 +6,6 @@ import {
   Search,
   Edit2,
   Lock,
-  ChevronLeft,
-  ChevronRight,
   Users as UsersIcon,
   Loader2,
   KeyRound,
@@ -21,6 +19,7 @@ import { normalizarTexto } from '@/lib/text';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
+import { ControlesPaginacion } from '@/components/ui/ControlesPaginacion';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
   Card,
@@ -69,7 +68,7 @@ export function Permisos() {
 
   // Estados de formulario (Asignación)
   const [page, setPage] = useState(1);
-  const [limit] = useState(15);
+  const [limit, setLimit] = useState(15);
   const [search, setSearch] = useState('');
   const [isActiveFilter, setIsActiveFilter] = useState<string>('');
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState<Usuario | null>(null);
@@ -696,70 +695,19 @@ export function Permisos() {
               {/* Paginación */}
               {pagination && pagination.totalPages > 1 && (
                 <div className="bg-muted/50 px-6 py-4 border-t">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-muted-foreground">
-                      Mostrando{' '}
-                      <span className="font-medium">
-                        {(pagination.page - 1) * pagination.limit + 1}
-                      </span>
-                      {' - '}
-                      <span className="font-medium">
-                        {Math.min(pagination.page * pagination.limit, pagination.total)}
-                      </span>
-                      {' de '}
-                      <span className="font-medium">{pagination.total}</span> usuarios
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                        disabled={!pagination.hasPreviousPage}
-                      >
-                        <ChevronLeft size={16} />
-                        Anterior
-                      </Button>
-
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
-                          .filter((pageNum) => {
-                            return (
-                              pageNum === 1 ||
-                              pageNum === pagination.totalPages ||
-                              Math.abs(pageNum - pagination.page) <= 1
-                            );
-                          })
-                          .map((pageNum, idx, arr) => {
-                            const prevPageNum = arr[idx - 1];
-                            const showEllipsis = prevPageNum && pageNum - prevPageNum > 1;
-
-                            return (
-                              <Button
-                                key={pageNum}
-                                size="sm"
-                                variant={pageNum === pagination.page ? 'default' : 'outline'}
-                                onClick={() => setPage(pageNum)}
-                                className="min-w-8"
-                              >
-                                {showEllipsis && <span>...</span>}
-                                {!showEllipsis && <span>{pageNum}</span>}
-                              </Button>
-                            );
-                          })}
-                      </div>
-
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setPage((prev) => prev + 1)}
-                        disabled={!pagination.hasNextPage}
-                      >
-                        Siguiente
-                        <ChevronRight size={16} />
-                      </Button>
-                    </div>
-                  </div>
+                  <ControlesPaginacion
+                    pagina={pagination.page}
+                    totalPaginas={pagination.totalPages}
+                    total={pagination.total}
+                    limite={limit}
+                    opcionesLimite={[15, 25, 50, 100]}
+                    cargando={isLoading}
+                    onCambiarPagina={setPage}
+                    onCambiarLimite={(nuevoLimite) => {
+                      setLimit(nuevoLimite);
+                      setPage(1);
+                    }}
+                  />
                 </div>
               )}
             </Card>
