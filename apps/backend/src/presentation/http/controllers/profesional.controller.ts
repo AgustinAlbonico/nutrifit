@@ -23,6 +23,7 @@ import {
   DiplomaDto,
   DesactivarNutricionistaDto,
   DesactivarNutricionistaResultDto,
+  ListNutricionistasQueryDto,
   ListProfesionalesPublicQueryDto,
   NutricionistaResponseDto,
   PerfilProfesionalPublicoResponseDto,
@@ -61,7 +62,7 @@ import {
   OBJECT_STORAGE_SERVICE,
 } from 'src/domain/services/object-storage.service';
 import { Actions } from 'src/infrastructure/auth/decorators/actions.decorator';
-import { ACCIONES } from '@nutrifit/shared';
+import { ACCIONES, PaginatedData } from '@nutrifit/shared';
 import { Public } from 'src/infrastructure/auth/decorators/public.decorator';
 import { Rol } from 'src/infrastructure/auth/decorators/role.decorator';
 import { CurrentUserId } from 'src/infrastructure/auth/decorators/current-user.decorator';
@@ -136,12 +137,15 @@ export class ProfesionalController {
   @Get()
   @Rol(RolEnum.ADMIN, RolEnum.RECEPCIONISTA)
   @Actions(ACCIONES.NUTRICIONISTAS_VER)
-  async findAll(): Promise<NutricionistaResponseDto[]> {
-    this.logger.log('Listando todos los profesionales');
-    const nutricionistas = await this.listNutricionistasUseCase.execute();
-    return nutricionistas.map((nutricionista) =>
-      this.mapToResponseDto(nutricionista),
-    );
+  async findAll(
+    @Query() query: ListNutricionistasQueryDto,
+  ): Promise<PaginatedData<NutricionistaResponseDto>> {
+    this.logger.log('Listando profesionales con paginacion');
+    const resultado = await this.listNutricionistasUseCase.execute(query);
+    return {
+      data: resultado.data.map((n) => this.mapToResponseDto(n)),
+      pagination: resultado.pagination,
+    };
   }
 
   @Get('publico/disponibles')

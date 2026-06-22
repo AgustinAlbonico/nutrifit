@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect, useCallback, useMemo, useRef, type FormEvent, type ReactNode } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { AlertCircle, ChevronDown, Search, Trash2, Upload, Users, XIcon } from 'lucide-react';
 import { format as formatearFechaIso } from 'date-fns';
@@ -13,8 +14,8 @@ import {
   formatearFechaArgentinaParaInput,
 } from '@/lib/fechasArgentina';
 import { REGEX_DNI, REGEX_TELEFONO, REGEX_EMAIL } from '@/lib/validaciones';
-import { normalizarTexto } from '@/lib/text';
 import { ControlesPaginacion } from '@/components/ui/ControlesPaginacion';
+import type { PaginatedData } from '@nutrifit/shared';
 import type { Nutricionista, CrearNutricionistaDto, Genero, DiplomaDto } from '@/types/nutricionista';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
@@ -152,9 +153,7 @@ const obtenerIniciales = (nombre: string, apellido: string): string => {
 export function GestionNutricionistas() {
   const { token } = useAuth();
   
-  const [nutricionistas, setNutricionistas] = useState<Nutricionista[]>([]);
-  const [cargandoNutricionistas, setCargandoNutricionistas] = useState(false);
-  const [errorNutricionistas, setErrorNutricionistas] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const [busqueda, setBusqueda] = useState('');
   const [busquedaAplicada, setBusquedaAplicada] = useState('');
@@ -217,27 +216,59 @@ export function GestionNutricionistas() {
     setSeccionesEdicionAbiertas((prev) => ({ ...prev, [clave]: !prev[clave] }));
   }, []);
 
+  const recargarNutricionistas = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ['nutricionistas-filtros'] });
+    void queryClient.invalidateQueries({ queryKey: ['nutricionistas-pagina'] });
+  }, [queryClient]);
+
+  const { data: todosLosNutricionistas = [] } = useQuery<Nutricionista[]>({
+    queryKey: ['nutricionistas-filtros', token],
+    queryFn: async () => {
+      if (!token) return [];
+      const response = await apiRequest<ApiResponse<PaginatedData<Nutricionista>>>(
+        '/profesional?page=1&limit=100',
+        { token },
+      );
+      return response.data?.data ?? [];
+    },
+    enabled: !!token,
+    staleTime: 60_000,
+  });
+
+  const paramsPagina = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set('page', String(paginaActual));
+    params.set('limit', String(limitePorPagina));
+    if (busquedaAplicada) params.set('search', busquedaAplicada);
+    if (filtroEstado !== 'TODOS') params.set('estado', filtroEstado);
+    if (filtroProvincia !== 'TODAS') params.set('provincia', filtroProvincia);
+    if (filtroCiudad !== 'TODAS') params.set('ciudad', filtroCiudad);
+    if (filtroAntiguedad !== 'TODAS') params.set('antiguedad', filtroAntiguedad);
+    params.set('ordenCampo', campoOrden);
+    params.set('ordenDireccion', direccionOrden);
+    return params.toString();
+  }, [paginaActual, limitePorPagina, busquedaAplicada, filtroEstado, filtroProvincia, filtroCiudad, filtroAntiguedad, campoOrden, direccionOrden]);
+
+  const { data: resultadoPagina, isLoading: cargandoNutricionistas, error: queryError } = useQuery<PaginatedData<Nutricionista> | null>({
+    queryKey: ['nutricionistas-pagina', token, paramsPagina],
+    queryFn: async () => {
+      if (!token) return null;
+      const response = await apiRequest<ApiResponse<PaginatedData<Nutricionista>>>(
+        `/profesional?${paramsPagina}`,
+        { token },
+      );
+      return response.data ?? null;
+    },
+    enabled: !!token,
+  });
+
+  const nutricionistas = resultadoPagina?.data ?? [];
+  const totalServidor = resultadoPagina?.pagination?.total ?? 0;
+  const errorNutricionistas = queryError instanceof Error ? queryError.message : null;
+
   const abrirModalDetalles = (nutricionista: Nutricionista) => {
     setNutricionistaSeleccionado(nutricionista);
     setMostrarModalDetalles(true);
-  };
-
-  const cumpleFiltroAntiguedad = (
-    aniosExperiencia: number,
-    filtro: 'TODAS' | '0-2' | '3-5' | '6-10' | '11+',
-  ) => {
-    switch (filtro) {
-      case '0-2':
-        return aniosExperiencia >= 0 && aniosExperiencia <= 2;
-      case '3-5':
-        return aniosExperiencia >= 3 && aniosExperiencia <= 5;
-      case '6-10':
-        return aniosExperiencia >= 6 && aniosExperiencia <= 10;
-      case '11+':
-        return aniosExperiencia >= 11;
-      default:
-        return true;
-    }
   };
 
   const validarFormularioCreacion = useCallback(
@@ -311,99 +342,26 @@ export function GestionNutricionistas() {
 
   const provinciasDisponibles = useMemo(() => {
     return Array.from(
-      new Set(nutricionistas.map((nutricionista) => nutricionista.provincia.trim())),
+      new Set(todosLosNutricionistas.map((n) => n.provincia.trim())),
     )
       .filter(Boolean)
       .sort((a, b) => a.localeCompare(b));
-  }, [nutricionistas]);
+  }, [todosLosNutricionistas]);
 
   const ciudadesDisponibles = useMemo(() => {
     const nutricionistasPorProvincia =
       filtroProvincia === 'TODAS'
-        ? nutricionistas
-        : nutricionistas.filter((nutricionista) => nutricionista.provincia === filtroProvincia);
+        ? todosLosNutricionistas
+        : todosLosNutricionistas.filter((n) => n.provincia === filtroProvincia);
 
     return Array.from(
-      new Set(nutricionistasPorProvincia.map((nutricionista) => nutricionista.ciudad.trim())),
+      new Set(nutricionistasPorProvincia.map((n) => n.ciudad.trim())),
     )
       .filter(Boolean)
       .sort((a, b) => a.localeCompare(b));
-  }, [nutricionistas, filtroProvincia]);
+  }, [todosLosNutricionistas, filtroProvincia]);
 
-  const nutricionistasFiltradosOrdenados = useMemo(() => {
-    const textoBusqueda = normalizarTexto(busquedaAplicada);
-
-    return [...nutricionistas]
-      .filter((nutricionista) => {
-        const coincideBusqueda =
-          !textoBusqueda ||
-          normalizarTexto(
-            `${nutricionista.nombre} ${nutricionista.apellido} ${nutricionista.email} ${nutricionista.matricula} ${nutricionista.dni} ${nutricionista.ciudad} ${nutricionista.provincia}`,
-          ).includes(textoBusqueda);
-
-        const coincideEstado =
-          filtroEstado === 'TODOS' ||
-          (filtroEstado === 'ACTIVO' ? nutricionista.activo : !nutricionista.activo);
-
-        const coincideProvincia =
-          filtroProvincia === 'TODAS' || nutricionista.provincia === filtroProvincia;
-
-        const coincideCiudad = filtroCiudad === 'TODAS' || nutricionista.ciudad === filtroCiudad;
-
-        const coincideAntiguedad = cumpleFiltroAntiguedad(
-          nutricionista.aniosExperiencia,
-          filtroAntiguedad,
-        );
-
-        return (
-          coincideBusqueda &&
-          coincideEstado &&
-          coincideProvincia &&
-          coincideCiudad &&
-          coincideAntiguedad
-        );
-      })
-      .sort((a, b) => {
-        const multiplicador = direccionOrden === 'ASC' ? 1 : -1;
-
-        switch (campoOrden) {
-          case 'ESTADO': {
-            const estadoA = a.activo ? 'ACTIVO' : 'INACTIVO';
-            const estadoB = b.activo ? 'ACTIVO' : 'INACTIVO';
-            return estadoA.localeCompare(estadoB) * multiplicador;
-          }
-          case 'EXPERIENCIA':
-            return (a.aniosExperiencia - b.aniosExperiencia) * multiplicador;
-          case 'NOMBRE':
-          default: {
-            const nombreA = `${a.apellido} ${a.nombre}`;
-            const nombreB = `${b.apellido} ${b.nombre}`;
-            return nombreA.localeCompare(nombreB) * multiplicador;
-          }
-        }
-      });
-  }, [
-    busquedaAplicada,
-    campoOrden,
-    direccionOrden,
-    filtroAntiguedad,
-    filtroCiudad,
-    filtroEstado,
-    filtroProvincia,
-    nutricionistas,
-  ]);
-
-  const totalPaginas = Math.max(
-    1,
-    Math.ceil(nutricionistasFiltradosOrdenados.length / limitePorPagina),
-  );
-
-  const indiceInicio = (paginaActual - 1) * limitePorPagina;
-  const indiceFin = indiceInicio + limitePorPagina;
-  const nutricionistasPaginados = nutricionistasFiltradosOrdenados.slice(
-    indiceInicio,
-    indiceFin,
-  );
+  const totalPaginas = Math.max(1, resultadoPagina?.pagination?.totalPages ?? 1);
 
   const limpiarFiltros = () => {
     setBusqueda('');
@@ -450,33 +408,6 @@ export function GestionNutricionistas() {
       setFiltroCiudad('TODAS');
     }
   }, [ciudadesDisponibles, filtroCiudad]);
-
-  const cargarNutricionistas = useCallback(async () => {
-    if (!token) return;
-
-    try {
-      setCargandoNutricionistas(true);
-      setErrorNutricionistas(null);
-      const response = await apiRequest<ApiResponse<Nutricionista[]>>('/profesional', { token });
-      setNutricionistas(response.data ?? []);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'No se pudieron cargar los nutricionistas';
-      setErrorNutricionistas(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setCargandoNutricionistas(false);
-    }
-  }, [token]);
-
-  useEffect(() => {
-    if (!token) {
-      setCargandoNutricionistas(false);
-      setNutricionistas([]);
-      return;
-    }
-
-    void cargarNutricionistas();
-  }, [cargarNutricionistas, token]);
 
   const crearNutricionista = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -548,7 +479,7 @@ export function GestionNutricionistas() {
       toast.success('Nutricionista creado exitosamente');
       setMostrarFormularioNutricionista(false);
       limpiarEstadoCreacion();
-      await cargarNutricionistas();
+      recargarNutricionistas();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'No se pudo crear el nutricionista';
       setErrorGeneralCreacion(errorMessage);
@@ -650,7 +581,7 @@ export function GestionNutricionistas() {
       setErroresEdicion({});
       setFotoEdicion(null);
       setDiplomasEditando([]);
-      await cargarNutricionistas();
+      recargarNutricionistas();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'No se pudo editar el nutricionista';
       toast.error(errorMessage);
@@ -730,7 +661,7 @@ export function GestionNutricionistas() {
         sociosAfectados: resultado.sociosAfectados,
       });
       toast.success(resultado.message);
-      await cargarNutricionistas();
+      recargarNutricionistas();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'No se pudo desactivar el nutricionista';
       toast.error(errorMessage);
@@ -749,7 +680,7 @@ export function GestionNutricionistas() {
       });
 
       toast.success('Nutricionista reactivado exitosamente');
-      await cargarNutricionistas();
+      recargarNutricionistas();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'No se pudo reactivar el nutricionista';
       toast.error(errorMessage);
@@ -776,7 +707,7 @@ export function GestionNutricionistas() {
           <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
-              onClick={() => void cargarNutricionistas()}
+              onClick={() => recargarNutricionistas()}
               type="button"
               disabled={cargandoNutricionistas}
             >
@@ -900,7 +831,7 @@ export function GestionNutricionistas() {
 
           <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-4">
             <p className="text-sm text-muted-foreground">
-              Resultados: <span className="font-medium text-foreground">{nutricionistasFiltradosOrdenados.length}</span>
+              Resultados: <span className="font-medium text-foreground">{totalServidor}</span>
             </p>
 
             <Button variant="outline" size="sm" onClick={limpiarFiltros}>
@@ -932,7 +863,7 @@ export function GestionNutricionistas() {
             <div className="rounded-md border border-dashed p-10 text-center text-muted-foreground">
               No hay nutricionistas registrados.
             </div>
-          ) : nutricionistasFiltradosOrdenados.length === 0 ? (
+          ) : totalServidor === 0 ? (
             <div className="rounded-md border border-dashed p-10 text-center text-muted-foreground">
               No hay resultados para los filtros seleccionados.
             </div>
@@ -952,7 +883,7 @@ export function GestionNutricionistas() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {nutricionistasPaginados.map((nutricionista) => (
+                    {nutricionistas.map((nutricionista) => (
                       <TableRow key={nutricionista.idPersona} className={!nutricionista.activo ? 'opacity-60' : ''}>
                         <TableCell>
                           <div className="flex items-center gap-3">
@@ -1055,7 +986,7 @@ export function GestionNutricionistas() {
                 <ControlesPaginacion
                   pagina={paginaActual}
                   totalPaginas={totalPaginas}
-                  total={nutricionistasFiltradosOrdenados.length}
+                  total={totalServidor}
                   limite={limitePorPagina}
                   opcionesLimite={[6, 9, 12, 18]}
                   cargando={cargandoNutricionistas}
