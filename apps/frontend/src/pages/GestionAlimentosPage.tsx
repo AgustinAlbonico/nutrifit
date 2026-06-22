@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import {
   Search,
@@ -11,7 +11,7 @@ import {
 
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  listarAlimentos,
+  listarAlimentosPaginado,
   crearAlimento,
   actualizarAlimento,
   eliminarAlimento,
@@ -21,8 +21,9 @@ import {
   type CrearAlimentoDto,
   type ActualizarAlimentoDto,
 } from '@/lib/api/alimentos';
-import { normalizarTexto } from '@/lib/text';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { usePaginacion } from '@/hooks/usePaginacion';
+import { ControlesPaginacion } from '@/components/ui/ControlesPaginacion';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -83,8 +84,9 @@ const UNIDADES_MEDIDA = [
 export function GestionAlimentosPage() {
   const { token, rol } = useAuth();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [busqueda, setBusqueda] = useState('');
+  const busquedaRef = useRef(busqueda);
+  busquedaRef.current = busqueda;
   const [dialogoAbierto, setDialogoAbierto] = useState(false);
   const [alimentoEditando, setAlimentoEditando] = useState<Alimento | null>(null);
   const [alimentoAEliminar, setAlimentoAEliminar] = useState<number | null>(null);
@@ -101,17 +103,43 @@ export function GestionAlimentosPage() {
 
   // Verificar permisos
   const tieneAcceso = rol === 'NUTRICIONISTA' || rol === 'ADMIN';
-  const { data: alimentos, isLoading, isError } = useQuery<Alimento[]>({
-    queryKey: ['alimentos', token],
-    queryFn: () => listarAlimentos(token!),
-    enabled: !!token,
-  });
+
+  const fetcherAlimentos = useCallback(
+    async ({ page, limit }: { page: number; limit: number }) => {
+      return listarAlimentosPaginado(token!, {
+        page,
+        limit,
+        search: busquedaRef.current || undefined,
+      });
+    },
+    [token],
+  );
+
+  const {
+    data: alimentos,
+    pagination,
+    setPagina,
+    setLimite,
+    recargar,
+    error: errorAlimentos,
+  } = usePaginacion<Alimento>(fetcherAlimentos, { defaultLimit: 20, enabled: !!token });
+
   // Query para obtener grupos alimenticios
   const { data: grupos } = useQuery<GrupoAlimenticio[]>({
     queryKey: ['grupos-alimenticios', token],
     queryFn: () => obtenerGruposAlimenticios(token!),
     enabled: !!token,
   });
+
+  // Debounce: cuando cambia el texto de búsqueda, recargar con página 1
+  useEffect(() => {
+    if (!token) return;
+    const timer = setTimeout(() => {
+      setPagina(1);
+    }, 350);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [busqueda, token]);
 
   // Función para cerrar diálogo (definida antes de las mutaciones)
   const cerrarDialogo = () => {
@@ -123,7 +151,7 @@ export function GestionAlimentosPage() {
     mutationFn: (data: CrearAlimentoDto) => crearAlimento(token!, data),
     onSuccess: () => {
       toast.success('Alimento creado correctamente');
-      queryClient.invalidateQueries({ queryKey: ['alimentos'] });
+      recargar();
       cerrarDialogo();
     },
     onError: (error) => {
@@ -136,7 +164,7 @@ export function GestionAlimentosPage() {
       actualizarAlimento(token!, id, data),
     onSuccess: () => {
       toast.success('Alimento actualizado correctamente');
-      queryClient.invalidateQueries({ queryKey: ['alimentos'] });
+      recargar();
       cerrarDialogo();
     },
     onError: (error) => {
@@ -148,7 +176,7 @@ export function GestionAlimentosPage() {
     mutationFn: (id: number) => eliminarAlimento(token!, id),
     onSuccess: () => {
       toast.success('Alimento eliminado correctamente');
-      queryClient.invalidateQueries({ queryKey: ['alimentos'] });
+      recargar();
       setAlimentoAEliminar(null);
     },
     onError: (error) => {
@@ -162,20 +190,9 @@ export function GestionAlimentosPage() {
       navigate({ to: '/dashboard' });
     }
   }, [tieneAcceso, navigate]);
-  // Retornar null si no tiene acceso (después de todos los hooks)
   if (!tieneAcceso) {
     return null;
   }
-
-  // Filtrar alimentos por búsqueda
-  const alimentosFiltrados = alimentos?.filter((alimento) => {
-    const termino = normalizarTexto(busqueda);
-    if (!termino) return true;
-    return (
-      normalizarTexto(alimento.nombre).includes(termino) ||
-      normalizarTexto(alimento.grupoAlimenticio?.descripcion ?? '').includes(termino)
-    );
-  });
 
   const abrirDialogoCrear = () => {
     setAlimentoEditando(null);
@@ -234,12 +251,12 @@ export function GestionAlimentosPage() {
     }
   };
 
-  if (isError) {
+  if (errorAlimentos && alimentos.length === 0) {
     return (
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold">Alimentos</h1>
-          <p className="text-muted-foreground">
+          <p className="text-destructive">
             Error al cargar los alimentos. Intenta nuevamente.
           </p>
         </div>
@@ -290,7 +307,7 @@ export function GestionAlimentosPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {isLoading ? <Skeleton className="h-8 w-12" /> : alimentos?.length ?? 0}
+              {pagination.isLoading ? <Skeleton className="h-8 w-12" /> : pagination.total}
             </div>
           </CardContent>
         </Card>
@@ -301,7 +318,7 @@ export function GestionAlimentosPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {isLoading ? <Skeleton className="h-8 w-12" /> : grupos?.length ?? 0}
+              {pagination.isLoading ? <Skeleton className="h-8 w-12" /> : grupos?.length ?? 0}
             </div>
           </CardContent>
         </Card>
@@ -322,7 +339,7 @@ export function GestionAlimentosPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
+              {pagination.isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
                     <TableCell><Skeleton className="h-4 w-32" /></TableCell>
@@ -333,8 +350,8 @@ export function GestionAlimentosPage() {
                     <TableCell><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
                   </TableRow>
                 ))
-              ) : alimentosFiltrados && alimentosFiltrados.length > 0 ? (
-                alimentosFiltrados.map((alimento) => (
+              ) : alimentos && alimentos.length > 0 ? (
+                alimentos.map((alimento) => (
                   <TableRow key={alimento.idAlimento}>
                     <TableCell className="font-medium">{alimento.nombre}</TableCell>
                     <TableCell>{alimento.cantidad}</TableCell>
@@ -384,6 +401,21 @@ export function GestionAlimentosPage() {
             </TableBody>
           </Table>
         </CardContent>
+        {alimentos.length > 0 && (
+          <div className="border-t px-6 py-4">
+            <ControlesPaginacion
+              pagina={pagination.page}
+              totalPaginas={pagination.totalPages}
+              total={pagination.total}
+              limite={pagination.limit}
+              cargando={pagination.isLoading}
+              onCambiarPagina={setPagina}
+              onCambiarLimite={(nuevo) => {
+                setLimite(nuevo);
+              }}
+            />
+          </div>
+        )}
       </Card>
 
       {/* Diálogo para crear/editar */}

@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import type { PaginatedData } from '@nutrifit/shared';
 import {
   AlimentosSyncService,
   EstadoSyncAlimentos,
@@ -29,6 +30,7 @@ import { ActualizarAlimentoDto } from 'src/application/alimentos/dtos/actualizar
 import { CrearAlimentoUseCase } from 'src/application/alimentos/use-cases/crear-alimento.use-case';
 import { ActualizarAlimentoUseCase } from 'src/application/alimentos/use-cases/actualizar-alimento.use-case';
 import { EliminarAlimentoUseCase } from 'src/application/alimentos/use-cases/eliminar-alimento.use-case';
+import { paginarQuery, crearParametrosPaginacion } from 'src/common/helpers/paginacion.helper';
 import { normalizarTexto } from 'src/common/utils/text.util';
 import { stripAccentsLowerSql } from 'src/common/utils/sql-text.util';
 
@@ -94,15 +96,15 @@ export class AlimentosController {
   @Get()
   async listarAlimentos(
     @Query('search') search?: string,
+    @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('grupoId') grupoId?: string,
-  ): Promise<AlimentoResponseDto[]> {
-    const take = limit ? Math.min(parseInt(limit, 10), 100) : 50;
+  ): Promise<PaginatedData<AlimentoResponseDto>> {
+    const params = crearParametrosPaginacion({ page, limit }, { maxLimit: 100 });
 
     const queryBuilder = this.alimentoRepo
       .createQueryBuilder('alimento')
       .orderBy('alimento.nombre', 'ASC')
-      .take(take)
       .leftJoinAndSelect(
         'alimento.grupoAlimenticio',
         'grupoAlimenticio',
@@ -118,9 +120,12 @@ export class AlimentosController {
       );
     }
 
-    const alimentos = await queryBuilder.getMany();
+    const result = await paginarQuery(queryBuilder, params);
 
-    return alimentos.map((a) => this.mapToResponse(a));
+    return {
+      data: result.data.map((a) => this.mapToResponse(a)),
+      pagination: result.pagination,
+    };
   }
 
   @Get(':id')

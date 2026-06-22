@@ -1,5 +1,6 @@
 import { apiRequest } from '@/lib/api';
 import type { ApiResponse } from '@/types/api';
+import type { PaginatedData } from '@nutrifit/shared';
 
 
 
@@ -63,6 +64,22 @@ export async function listarAlimentos(token: string, search?: string, limit = 10
     `/alimentos?${params.toString()}`,
     { token },
   );
+
+  return extraerDatos(respuesta);
+}
+
+export async function listarAlimentosPaginado(
+  token: string,
+  params: { page: number; limit: number; search?: string },
+): Promise<PaginatedData<Alimento>> {
+  const queryParams = new URLSearchParams();
+  queryParams.set('page', String(params.page));
+  queryParams.set('limit', String(params.limit));
+  if (params.search) queryParams.set('search', params.search);
+
+  const respuesta = await apiRequest<
+    PaginatedData<Alimento> | ApiResponse<PaginatedData<Alimento>>
+  >(`/alimentos?${queryParams.toString()}`, { token });
 
   return extraerDatos(respuesta);
 }
