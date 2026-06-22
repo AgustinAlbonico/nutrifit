@@ -535,7 +535,7 @@ export class TurnosController {
   async listMisTurnos(
     @CurrentUserId() userId: number,
     @Query() query: ListMisTurnosQueryDto,
-  ): Promise<MiTurnoResponseDto[]> {
+  ): Promise<PaginatedData<MiTurnoResponseDto>> {
     this.logger.log(`Consultando mis turnos para socio usuario=${userId}.`);
 
     return this.listMisTurnosUseCase.execute(userId, query);

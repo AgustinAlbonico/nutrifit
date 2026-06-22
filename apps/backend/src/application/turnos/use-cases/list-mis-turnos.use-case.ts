@@ -1,5 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import type { PaginatedData } from '@nutrifit/shared';
+import { calcularMeta, paginarQuery } from 'src/common/helpers/paginacion.helper';
 import { BaseUseCase } from 'src/application/shared/use-case.base';
 import {
   ListMisTurnosQueryDto,
@@ -23,7 +25,7 @@ import {
   TurnoOrmEntity,
   UsuarioOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
-import { Repository } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 @Injectable()
@@ -43,13 +45,13 @@ export class ListMisTurnosUseCase implements BaseUseCase {
   async execute(
     userId: number,
     query: ListMisTurnosQueryDto,
-  ): Promise<MiTurnoResponseDto[]> {
+  ): Promise<PaginatedData<MiTurnoResponseDto>> {
     const socio = await this.resolveSocioByUserId(userId);
 
     if (query.especialidad?.trim()) {
       const normalized = query.especialidad.trim().toLowerCase();
       if (!'nutricionista'.includes(normalized)) {
-        return [];
+        return { data: [], pagination: calcularMeta(0, query.page ?? 1, query.limit ?? 10) };
       }
     }
 
@@ -94,13 +96,19 @@ export class ListMisTurnosUseCase implements BaseUseCase {
       );
     }
 
-    const turnos = await queryBuilder.getMany();
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+
+    const [total, turnos] = await Promise.all([
+      queryBuilder.getCount(),
+      queryBuilder.skip((page - 1) * limit).take(limit).getMany(),
+    ]);
 
     this.logger.log(
-      `Mis turnos recuperados para socio ${socio.idPersona}: ${turnos.length}.`,
+      `Mis turnos recuperados para socio ${socio.idPersona}: ${turnos.length} de ${total} total.`,
     );
 
-    return turnos.map((turno) => {
+    const data = turnos.map((turno) => {
       const response = new MiTurnoResponseDto();
       response.idTurno = turno.idTurno;
       response.fechaTurno = formatArgentinaDate(turno.fechaTurno);
@@ -112,6 +120,11 @@ export class ListMisTurnosUseCase implements BaseUseCase {
       response.especialidad = 'Nutricionista';
       return response;
     });
+
+    return {
+      data,
+      pagination: calcularMeta(total, page, limit),
+    };
   }
 
   private async resolveSocioByUserId(userId: number): Promise<SocioOrmEntity> {

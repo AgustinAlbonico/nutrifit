@@ -35,6 +35,7 @@ import { ModalFichaRequeridaSocio } from '@/components/ficha-salud/ModalFichaReq
 import { AvisoLlegadaTardeModal } from '@/components/turnos/AvisoLlegadaTardeModal';
 import { useEstadoFichaRequerida } from '@/hooks/useEstadoFichaRequerida';
 import type { ApiResponse } from '@/types/api';
+import type { PaginatedData } from '@nutrifit/shared';
 
 interface MiTurno {
   idTurno: number;
@@ -66,21 +67,34 @@ export function Turnos() {
     useEstadoFichaRequerida({ token });
   const queryClient = useQueryClient();
 
-  const { data: turnosResponse, isLoading: cargando, error: queryError } = useQuery({
-    queryKey: ['mis-turnos', token],
-    queryFn: () => apiRequest<ApiResponse<MiTurno[]>>('/turnos/socio/mis-turnos', { token }),
-    enabled: !!token && rol === 'SOCIO' && fichaCargada !== false && !cargandoFicha,
-  });
-
-  const turnos = Array.isArray(turnosResponse) ? turnosResponse : (turnosResponse?.data ?? []);
-  const error = queryError instanceof Error ? queryError.message : null;
-
   const [textoBusqueda, setTextoBusqueda] = useState('');
   const [estadoSeleccionado, setEstadoSeleccionado] = useState('TODOS');
   const [fechaDesde, setFechaDesde] = useState<Date | undefined>(undefined);
   const [fechaHasta, setFechaHasta] = useState<Date | undefined>(undefined);
   const [limitePorPagina, setLimitePorPagina] = useState(10);
   const [paginaActual, setPaginaActual] = useState(1);
+
+  const { data: turnosResponse, isLoading: cargando, error: queryError } = useQuery({
+    queryKey: ['mis-turnos', token, paginaActual, limitePorPagina, estadoSeleccionado, fechaDesde, fechaHasta],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      params.set('page', String(paginaActual));
+      params.set('limit', String(limitePorPagina));
+      if (estadoSeleccionado !== 'TODOS') params.set('estado', estadoSeleccionado);
+      if (fechaDesde) params.set('desde', formatearFechaIso(fechaDesde, 'yyyy-MM-dd'));
+      if (fechaHasta) params.set('hasta', formatearFechaIso(fechaHasta, 'yyyy-MM-dd'));
+      return apiRequest<ApiResponse<PaginatedData<MiTurno>>>(
+        `/turnos/socio/mis-turnos?${params.toString()}`,
+        { token },
+      );
+    },
+    enabled: !!token && rol === 'SOCIO' && fichaCargada !== false && !cargandoFicha,
+  });
+
+  const turnos = turnosResponse?.data?.data ?? [];
+  const totalServidor = turnosResponse?.data?.pagination?.total ?? 0;
+  const totalPaginasServidor = turnosResponse?.data?.pagination?.totalPages ?? 1;
+  const error = queryError instanceof Error ? queryError.message : null;
 
   const [procesandoCancelacionId, setProcesandoCancelacionId] = useState<
     number | null
@@ -380,44 +394,36 @@ export function Turnos() {
     }
   };
 
-  const estadosDisponibles = useMemo(() => {
-    return Array.from(new Set(turnos.map((turno) => turno.estadoTurno))).sort();
-  }, [turnos]);
+  const estadosDisponibles: EstadoTurno[] = [
+    'CONFIRMADO',
+    'PRESENTE',
+    'EN_CURSO',
+    'REALIZADO',
+    'CANCELADO',
+    'AUSENTE',
+  ];
 
   const turnosFiltrados = useMemo(() => {
     const textoNormalizado = normalizarTexto(textoBusqueda);
-    const fechaDesdeFiltro = fechaDesde
-      ? formatearFechaIso(fechaDesde, 'yyyy-MM-dd')
-      : '';
-    const fechaHastaFiltro = fechaHasta
-      ? formatearFechaIso(fechaHasta, 'yyyy-MM-dd')
-      : '';
+
+    if (!textoNormalizado) {
+      return turnos;
+    }
 
     return turnos.filter((turno) => {
       const nombreProfesional = normalizarTexto(obtenerNombreProfesional(turno));
       const estadoTurno = normalizarTexto(turno.estadoTurno);
 
-      const coincideTexto =
-        !textoNormalizado ||
+      return (
         nombreProfesional.includes(textoNormalizado) ||
         normalizarTexto(turno.fechaTurno).includes(textoNormalizado) ||
         normalizarTexto(turno.horaTurno).includes(textoNormalizado) ||
-        estadoTurno.includes(textoNormalizado);
-
-      const coincideEstado =
-        estadoSeleccionado === 'TODOS' || turno.estadoTurno === estadoSeleccionado;
-
-      const coincideDesde = !fechaDesdeFiltro || turno.fechaTurno >= fechaDesdeFiltro;
-      const coincideHasta = !fechaHastaFiltro || turno.fechaTurno <= fechaHastaFiltro;
-
-      return coincideTexto && coincideEstado && coincideDesde && coincideHasta;
+        estadoTurno.includes(textoNormalizado)
+      );
     });
-  }, [turnos, textoBusqueda, estadoSeleccionado, fechaDesde, fechaHasta]);
+  }, [turnos, textoBusqueda]);
 
-  const totalPaginas = Math.max(
-    1,
-    Math.ceil(turnosFiltrados.length / limitePorPagina),
-  );
+  const totalPaginas = Math.max(1, totalPaginasServidor);
 
   useEffect(() => {
     setPaginaActual(1);
@@ -429,9 +435,7 @@ export function Turnos() {
     }
   }, [paginaActual, totalPaginas]);
 
-  const indiceInicio = (paginaActual - 1) * limitePorPagina;
-  const indiceFin = indiceInicio + limitePorPagina;
-  const turnosPaginados = turnosFiltrados.slice(indiceInicio, indiceFin);
+  const turnosPaginados = turnosFiltrados;
 
   const limpiarFiltros = () => {
     setTextoBusqueda('');
@@ -567,7 +571,7 @@ export function Turnos() {
                 <p className="text-sm text-muted-foreground">
                   Resultados:{' '}
                   <span className="font-medium text-foreground">
-                    {turnosFiltrados.length}
+                    {totalServidor}
                   </span>
                 </p>
                 <Button variant="outline" size="sm" onClick={limpiarFiltros}>
@@ -575,7 +579,7 @@ export function Turnos() {
                 </Button>
               </div>
 
-              {turnosFiltrados.length === 0 ? (
+              {turnos.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   No hay turnos que coincidan con los filtros seleccionados.
                 </p>
@@ -637,8 +641,7 @@ export function Turnos() {
                             {descripcionEstado}
                           </p>
 
-                          {(turno.estadoTurno === 'PROGRAMADO' ||
-                            turno.estadoTurno === 'CONFIRMADO') &&
+                          {turno.estadoTurno === 'CONFIRMADO' &&
                             !esFechaPasada(turno.fechaTurno, turno.horaTurno) && (
                             <div className="mt-4 flex flex-wrap gap-2 border-t pt-3">
                               <Button
@@ -680,7 +683,7 @@ export function Turnos() {
                     <ControlesPaginacion
                       pagina={paginaActual}
                       totalPaginas={totalPaginas}
-                      total={turnosFiltrados.length}
+                      total={totalServidor}
                       limite={limitePorPagina}
                       opcionesLimite={[5, 10, 20, 50]}
                       cargando={cargando}
