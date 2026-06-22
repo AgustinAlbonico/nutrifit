@@ -67,14 +67,18 @@ export function PlanSocioPage() {
           { token },
         );
 
-        establecerPlanActivo(response.data);
-        establecerEstado(() => 'ACTIVO');
+        if (response.data) {
+          establecerPlanActivo(response.data);
+          establecerEstado(() => 'ACTIVO');
+        } else {
+          establecerPlanActivo(null);
+          establecerEstado(() => 'SIN_PLAN');
+        }
       } catch (err) {
         const mensaje = err instanceof Error ? err.message : 'No se pudo cargar el plan';
         setError(mensaje);
 
-        // 404 = no hay plan activo, 403 = sin permisos pero debería mostrar crear
-        if (err instanceof Error && (err.message.includes('404') || err.message.includes('403'))) {
+        if (err instanceof Error && err.message.includes('403')) {
           establecerPlanActivo(null);
           establecerEstado(() => 'SIN_PLAN');
         } else {

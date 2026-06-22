@@ -51,16 +51,11 @@ describe('PlanAlimenticioCard', () => {
     server.use(
       http.get('*/planes-alimentacion/socio/8/activo', () => {
         cantidadLlamadas += 1;
-        return HttpResponse.json(
-          {
-            success: false,
-            message: 'No se encontró el recurso solicitado.',
-            error: {
-              message: 'No se encontró el recurso solicitado.',
-            },
-          },
-          { status: 404 },
-        );
+        return HttpResponse.json({
+          success: true,
+          data: null,
+          message: 'No hay plan activo para el socio.',
+        });
       }),
     );
 

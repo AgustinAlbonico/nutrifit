@@ -26,7 +26,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AvatarPaciente } from '@/components/ui/avatar-paciente';
-import { MarcarAusenteManualModal } from '@/components/turnos/MarcarAusenteManualModal';
 import { RevertirAusenteModal } from '@/components/turnos/RevertirAusenteModal';
 import { obtenerClasesEstadoTurno } from '@/lib/turnos/estadoTurno';
 import type { ApiResponse } from '@/types/api';
@@ -58,11 +57,6 @@ export function TurnosProfesional() {
   const [fechaReferencia] = useState<Date>(() => new Date());
   const [turnos, setTurnos] = useState<TurnoDelDia[]>([]);
   const [cargando, setCargando] = useState(false);
-  const [procesando, setProcesando] = useState<string | null>(null);
-
-  // Estado para el modal de marcar ausente manual
-  const [modalAusenteOpen, setModalAusenteOpen] = useState(false);
-  const [turnoIdAusente, setTurnoIdAusente] = useState<number | null>(null);
 
   // Estado para el modal de revertir ausente
   const [modalRevertirOpen, setModalRevertirOpen] = useState(false);
@@ -96,36 +90,6 @@ export function TurnosProfesional() {
   useEffect(() => {
     void cargarAgenda();
   }, [cargarAgenda]);
-
-  const marcarPresente = async (turnoId: number) => {
-    if (!token || !personaId || !esNutricionista) {
-      return;
-    }
-
-    try {
-      setProcesando(`presente-${turnoId}`);
-      await apiRequest(
-        `/turnos/profesional/${personaId}/${turnoId}/asistencia`,
-        {
-          method: 'PATCH',
-          token,
-          body: { estado: 'PRESENTE' },
-        },
-      );
-      toast.success('Asistencia registrada.');
-      await cargarAgenda();
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al registrar asistencia';
-      toast.error(msg);
-    } finally {
-      setProcesando(null);
-    }
-  };
-
-  const abrirModalAusente = (turnoId: number) => {
-    setTurnoIdAusente(turnoId);
-    setModalAusenteOpen(true);
-  };
 
   const getEstadoBadge = (estado: EstadoTurno) => {
     return (
@@ -234,7 +198,6 @@ export function TurnosProfesional() {
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {turnos.map((turno) => {
                 const estado = turno.estadoTurno;
-                const procesandoKey = `${estado}-${turno.idTurno}`;
 
                 return (
                   <div
@@ -306,31 +269,10 @@ export function TurnosProfesional() {
                     {/* Botones contextuales por estado (TASK-1.16). */}
                     <div className="mt-auto flex flex-col gap-2">
                       {estado === 'CONFIRMADO' && (
-                        <>
-                          <Button
-                            size="sm"
-                            className="w-full bg-gradient-to-r from-orange-500 to-rose-500 text-white shadow-sm hover:from-orange-600 hover:to-rose-600"
-                            onClick={() => void marcarPresente(turno.idTurno)}
-                            disabled={Boolean(procesando)}
-                          >
-                            {procesando === procesandoKey ? (
-                              <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                            ) : (
-                              <User className="mr-2 h-3 w-3" />
-                            )}
-                            Marcar presente
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                            onClick={() => abrirModalAusente(turno.idTurno)}
-                            disabled={Boolean(procesando)}
-                          >
-                            <Ban className="mr-2 h-3 w-3" />
-                            Marcar ausente
-                          </Button>
-                        </>
+                        <div className="flex items-center justify-center gap-2 rounded-md border border-sky-200 bg-sky-50 p-2 text-xs text-sky-700">
+                          <Clock className="h-3 w-3" />
+                          <span>Esperando check-in de recepción</span>
+                        </div>
                       )}
 
                       {estado === 'PRESENTE' && (
@@ -388,7 +330,6 @@ export function TurnosProfesional() {
                               setTurnoIdRevertir(turno.idTurno);
                               setModalRevertirOpen(true);
                             }}
-                            disabled={Boolean(procesando)}
                             className="w-full border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
                           >
                             <History className="mr-2 h-3 w-3" />
@@ -402,7 +343,6 @@ export function TurnosProfesional() {
                                 to: `/profesional/paciente/${turno.socio.idPersona}/ficha`,
                               })
                             }
-                            disabled={Boolean(procesando)}
                             className="w-full text-muted-foreground hover:text-foreground"
                           >
                             <FileText className="mr-2 h-3 w-3" />
@@ -425,24 +365,6 @@ export function TurnosProfesional() {
           )}
         </CardContent>
       </Card>
-
-      {/* Modal de marcar ausente manual (TASK-1.17). */}
-      {esNutricionista && personaId && token && turnoIdAusente !== null && (
-        <MarcarAusenteManualModal
-          isOpen={modalAusenteOpen}
-          onClose={() => {
-            setModalAusenteOpen(false);
-            setTurnoIdAusente(null);
-          }}
-          turnoId={turnoIdAusente}
-          token={token}
-          onConfirmado={async () => {
-            setModalAusenteOpen(false);
-            setTurnoIdAusente(null);
-            await cargarAgenda();
-          }}
-        />
-      )}
 
       {/* Modal de revertir ausente (incluye opción de check-in directo). */}
       {esNutricionista && token && turnoIdRevertir !== null && (

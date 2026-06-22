@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useParams, useNavigate, Link } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import {
@@ -669,6 +669,8 @@ export function ConsultaProfesionalPage() {
     }
   }, [cargarDatosTurno, token, turnoId]);
 
+  const inicioConsultaIniciadoRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (!datosTurno || consultaCerrada) {
       return;
@@ -678,8 +680,13 @@ export function ConsultaProfesionalPage() {
       return;
     }
 
+    if (inicioConsultaIniciadoRef.current === turnoId) {
+      return;
+    }
+
+    inicioConsultaIniciadoRef.current = turnoId;
     void iniciarConsulta(true);
-  }, [consultaCerrada, datosTurno, iniciarConsulta]);
+  }, [consultaCerrada, datosTurno, iniciarConsulta, turnoId]);
 
   const guardarMediciones = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -1421,7 +1428,7 @@ export function ConsultaProfesionalPage() {
                 <div className="grid gap-6 md:grid-cols-3">
                   <div className="space-y-2">
                     <Label htmlFor="peso" required className="text-muted-foreground">
-                      Peso (kg) <span className="text-destructive">*</span>
+                      Peso (kg)
                     </Label>
                     <Input
                       id="peso"

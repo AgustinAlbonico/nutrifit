@@ -21,7 +21,7 @@ export class ObtenerPlanActivoSocioUseCase implements BaseUseCase {
     private readonly tenantContext: TenantContextService,
   ) {}
 
-  async execute(socioId: number): Promise<PlanAlimentacionResponseDto> {
+  async execute(socioId: number): Promise<PlanAlimentacionResponseDto | null> {
     const socio = await this.socioRepo.findOne({
       where: { idPersona: socioId, gimnasioId: this.tenantContext.gimnasioId },
     });
@@ -45,10 +45,7 @@ export class ObtenerPlanActivoSocioUseCase implements BaseUseCase {
     });
 
     if (!plan) {
-      throw new NotFoundError(
-        'Plan de alimentación activo para el socio',
-        String(socioId),
-      );
+      return null;
     }
 
     return mapPlanToResponse(plan);

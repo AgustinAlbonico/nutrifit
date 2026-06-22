@@ -90,7 +90,7 @@ export class PlanAlimentacionController {
   @UseGuards(SocioResourceAccessGuard)
   async obtenerPlanActivoSocio(
     @Param('socioId', ParseIntPipe) socioId: number,
-  ): Promise<PlanAlimentacionResponseDto> {
+  ): Promise<PlanAlimentacionResponseDto | null> {
     this.logger.log(`Consultando plan activo del socio ${socioId}.`);
     return this.obtenerPlanActivoSocioUseCase.execute(socioId);
   }
