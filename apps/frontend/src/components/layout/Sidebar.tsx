@@ -96,13 +96,13 @@ export function Sidebar() {
     },
     {
       to: '/agenda',
-      label: 'Mi Agenda',
+      label: 'Configurar Agenda',
       icon: Calendar,
       roles: ['NUTRICIONISTA'],
     },
     {
       to: '/turnos-profesional',
-      label: 'Mi agenda del dia',
+      label: 'Agenda del día',
       icon: Users,
       roles: ['NUTRICIONISTA'],
     },

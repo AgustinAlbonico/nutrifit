@@ -11,7 +11,7 @@ interface AccionRapida {
 
 const ACCIONES_NUTRICIONISTA: AccionRapida[] = [
   { etiqueta: 'Crear Plan', icono: <FileText className="h-4 w-4" />, ruta: '/planes' },
-  { etiqueta: 'Mi Agenda', icono: <Calendar className="h-4 w-4" />, ruta: '/agenda' },
+  { etiqueta: 'Agenda del día', icono: <Calendar className="h-4 w-4" />, ruta: '/turnos-profesional' },
   { etiqueta: 'Ver Pacientes', icono: <Users className="h-4 w-4" />, ruta: '/pacientes' },
   { etiqueta: 'Mi Perfil', icono: <UserCircle className="h-4 w-4" />, ruta: '/profesional/mi-perfil' },
 ];
