@@ -311,9 +311,9 @@ export function Turnos() {
   };
 
   const esFechaPasada = (fecha: string, hora: string): boolean => {
+    const [anio, mes, dia] = fecha.split('-').map(Number);
     const [horas, minutos] = hora.split(':').map(Number);
-    const fechaHora = new Date(fecha);
-    fechaHora.setHours(horas, minutos, 0, 0);
+    const fechaHora = new Date(anio, mes - 1, dia, horas, minutos, 0, 0);
     return fechaHora < new Date();
   };
 

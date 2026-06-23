@@ -12,14 +12,19 @@ export interface ProfesionalDisponible {
   agendaConfigurada: boolean;
 }
 
-interface CatalogoProfesionalResponseDto {
-  items: ProfesionalDisponible[];
-  pagination: {
-    total: number;
-    page: number;
-    per_page: number;
-    total_pages: number;
-  };
+interface ApiResponseConMeta<T> {
+  success: boolean;
+  data: T;
+  error: string | null;
+  meta: {
+    timestamp: string;
+    pagination?: {
+      total: number;
+      page: number;
+      per_page: number;
+      total_pages: number;
+    };
+  } | null;
 }
 
 export async function listarProfesionalesDisponiblesPaginado(
@@ -31,20 +36,22 @@ export async function listarProfesionalesDisponiblesPaginado(
   queryParams.set('limit', String(params.limit));
   if (params.nombre) queryParams.set('nombre', params.nombre);
 
-  const response = await apiRequest<CatalogoProfesionalResponseDto>(
+  const response = await apiRequest<ApiResponseConMeta<ProfesionalDisponible[]>>(
     `/profesional/publico/disponibles?${queryParams.toString()}`,
     { token },
   );
 
+  const pag = response.meta?.pagination;
+
   return {
-    data: response.items,
+    data: response.data ?? [],
     pagination: {
-      page: response.pagination.page,
-      limit: response.pagination.per_page,
-      total: response.pagination.total,
-      totalPages: response.pagination.total_pages,
-      hasNextPage: response.pagination.page < response.pagination.total_pages,
-      hasPreviousPage: response.pagination.page > 1,
+      page: pag?.page ?? 1,
+      limit: pag?.per_page ?? 12,
+      total: pag?.total ?? 0,
+      totalPages: pag?.total_pages ?? 1,
+      hasNextPage: (pag?.page ?? 1) < (pag?.total_pages ?? 1),
+      hasPreviousPage: (pag?.page ?? 1) > 1,
     },
   };
 }
