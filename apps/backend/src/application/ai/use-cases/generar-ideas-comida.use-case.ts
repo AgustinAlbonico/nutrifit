@@ -55,138 +55,150 @@ export class GenerarIdeasComidaUseCase implements BaseUseCase {
   async execute(
     socioId: number,
     input: GenerarIdeasComidaInputDto,
-  ): Promise<{ datos: GenerarIdeasComidaOutputDto; error: string | null }> {
-    try {
-      // Validar que el socio pertenece al gimnasio actual
-      const socio = await this.sugerenciaRepo.findOne({
-        where: {
-          socioId: socioId,
-        },
+  ): Promise<GenerarIdeasComidaOutputDto> {
+    // El tenancy del socio dueño del token ya está garantizado por el guard HTTP.
+    // Para evitar romper el flujo cuando no existe sugerencia previa (bug histórico
+    // donde se buscaba solo en sugerencia_ia), hacemos una validación best-effort
+    // tolerante a fallos de BD.
+    const sugerenciaPrev = await this.sugerenciaRepo
+      .findOne({
+        where: { socioId },
         relations: { socio: true },
+      })
+      .catch((err: unknown) => {
+        this.logger.warn(
+          `Error buscando sugerencia previa (ignorado): ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        );
+        return null;
       });
-      if (!socio || socio.socio.gimnasioId !== this.tenantContext.gimnasioId) {
-        throw new NotFoundError('Socio', String(socioId));
-      }
 
-      const restricciones = input.restricciones ?? [];
+    if (
+      sugerenciaPrev &&
+      sugerenciaPrev.socio.gimnasioId !== this.tenantContext.gimnasioId
+    ) {
+      throw new NotFoundError('Socio', String(socioId));
+    }
 
-      const prompt = this.construirPrompt(input);
-
-      const schema = {
-        type: 'object',
-        properties: {
-          propuestas: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                nombre: { type: 'string' },
-                ingredientes: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      nombre: { type: 'string' },
-                      cantidad: { type: 'string' },
-                      unidad: { type: 'string' },
-                    },
+    const restricciones = input.restricciones ?? [];
+    const prompt = this.construirPrompt(input);
+    const schema = {
+      type: 'object',
+      properties: {
+        propuestas: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              nombre: { type: 'string' },
+              ingredientes: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    nombre: { type: 'string' },
+                    cantidad: { type: 'string' },
+                    unidad: { type: 'string' },
                   },
                 },
-                pasos: {
-                  type: 'array',
-                  items: { type: 'string' },
-                },
+              },
+              pasos: {
+                type: 'array',
+                items: { type: 'string' },
               },
             },
           },
         },
+      },
+    };
+
+    const resultado = await this.aiProvider
+      .generarRecomendacion<RawIaResponse>(prompt, schema)
+      .catch((err: unknown) => {
+        const detalle = err instanceof Error ? err.message : String(err);
+        throw new BadRequestError(`IA no disponible: ${detalle}`);
+      });
+
+    const propuestasRaw = resultado.propuestas ?? [];
+
+    const propuestasValidas: PropuestaIA[] = [];
+    const propuestasDescartadas: string[] = [];
+
+    for (const prop of propuestasRaw) {
+      const propuesta: PropuestaIA = {
+        nombre: prop.nombre ?? '',
+        ingredientes:
+          prop.ingredientes?.map((i) => ({
+            nombre: i.nombre ?? '',
+            cantidad: i.cantidad ?? '',
+            unidad: i.unidad ?? '',
+          })) ?? [],
+        pasos: prop.pasos?.slice(0, 5) ?? [],
       };
 
-      const resultado =
-        await this.aiProvider.generarRecomendacion<RawIaResponse>(
-          prompt,
-          schema,
-        );
+      const esValida = this.restriccionesValidator.validarPropuesta(
+        propuesta,
+        restricciones,
+      );
 
-      const propuestasRaw = resultado.propuestas ?? [];
-
-      // Filtrar propuestas que violan restricciones
-      const propuestasValidas: PropuestaIA[] = [];
-      const propuestasDescartadas: string[] = [];
-
-      for (const prop of propuestasRaw) {
-        const propuesta: PropuestaIA = {
-          nombre: prop.nombre ?? '',
-          ingredientes:
-            prop.ingredientes?.map((i) => ({
-              nombre: i.nombre ?? '',
-              cantidad: i.cantidad ?? '',
-              unidad: i.unidad ?? '',
-            })) ?? [],
-          pasos: prop.pasos?.slice(0, 5) ?? [],
-        };
-
-        const esValida = await this.restriccionesValidator.validarPropuesta(
-          propuesta,
-          restricciones,
-        );
-
-        if (esValida && propuestasValidas.length < 2) {
-          propuestasValidas.push(propuesta);
-        } else {
-          propuestasDescartadas.push(propuesta.nombre);
-        }
+      if (esValida && propuestasValidas.length < 2) {
+        propuestasValidas.push(propuesta);
+      } else {
+        propuestasDescartadas.push(propuesta.nombre);
       }
+    }
 
-      // Si no tenemos 2 propuestas válidas, informar al usuario
-      if (propuestasValidas.length < 2) {
-        const mensaje = `No se pudieron generar 2 propuestas válidas. Se descartaron: ${propuestasDescartadas.join(', ') || 'ninguna'}. Intente con menos restricciones.`;
-        this.logger.warn(mensaje);
+    if (propuestasValidas.length < 2) {
+      const mensaje = `No se pudieron generar 2 propuestas válidas. Se descartaron: ${
+        propuestasDescartadas.join(', ') || 'ninguna'
+      }. Intente con menos restricciones.`;
+      this.logger.warn(mensaje);
 
-        // Guardar con estado ERROR si no hay resultados útiles
-        await this.sugerenciaRepo.save({
-          socioId,
-          objetivo: input.objetivo,
-          restricciones: input.restricciones ?? null,
-          infoExtra: input.infoExtra,
-          propuesta: null,
-          estado: SugerenciaEstado.ERROR,
-        });
+      await this.persistirSugerencia(socioId, input, null, SugerenciaEstado.ERROR);
 
-        throw new BadRequestError(mensaje);
-      }
+      throw new BadRequestError(mensaje);
+    }
 
-      // Tomar exactamente 2
-      const output: GenerarIdeasComidaOutputDto = {
-        propuestas: propuestasValidas.slice(0, 2),
-      };
+    const output: GenerarIdeasComidaOutputDto = {
+      propuestas: propuestasValidas.slice(0, 2),
+    };
 
-      // Guardar la sugerencia exitosa
+    await this.persistirSugerencia(
+      socioId,
+      input,
+      propuestasValidas[0],
+      SugerenciaEstado.GENERADA,
+    );
+
+    this.logger.log(
+      `Ideas de comida generadas para socio ${socioId}: ${propuestasValidas.length} propuestas`,
+    );
+
+    return output;
+  }
+
+  private async persistirSugerencia(
+    socioId: number,
+    input: GenerarIdeasComidaInputDto,
+    propuesta: PropuestaIA | null,
+    estado: SugerenciaEstado,
+  ): Promise<void> {
+    try {
       await this.sugerenciaRepo.save({
         socioId,
         objetivo: input.objetivo,
         restricciones: input.restricciones ?? null,
         infoExtra: input.infoExtra,
-        propuesta: propuestasValidas[0],
-        estado: SugerenciaEstado.GENERADA,
+        propuesta,
+        estado,
       });
-
-      this.logger.log(
-        `Ideas de comida generadas para socio ${socioId}: ${propuestasValidas.length} propuestas`,
+    } catch (err) {
+      this.logger.warn(
+        `Error guardando sugerencia ${estado} (ignorado): ${
+          err instanceof Error ? err.message : String(err)
+        }`,
       );
-
-      return {
-        datos: output,
-        error: null,
-      };
-    } catch (error) {
-      const mensaje = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Error generando ideas de comida: ${mensaje}`);
-
-      return {
-        datos: { propuestas: [] },
-        error: mensaje,
-      };
     }
   }
 

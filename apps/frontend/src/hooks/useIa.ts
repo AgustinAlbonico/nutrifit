@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/api';
 import type { ApiResponse } from '@/types/api';
 import type {
@@ -85,29 +85,10 @@ export function useAnalizarPlan({ token }: UseIaOptions) {
   });
 }
 
-export function useVerificarConexionIa({ token }: UseIaOptions) {
-  return useQuery({
-    queryKey: ['ia', 'conexion'],
-    queryFn: async (): Promise<boolean> => {
-      try {
-        const response = await apiRequest<{ disponible: boolean }>('/ia/estado', {
-          method: 'GET',
-          token,
-        });
-        return response.disponible;
-      } catch {
-        return false;
-      }
-    },
-    enabled: Boolean(token),
-    staleTime: 5 * 60 * 1000,
-  });
-}
-
 export function useGenerarIdeasComida({ token }: UseIaOptions) {
   return useMutation({
     mutationFn: async (params: ParametrosIdeasComida): Promise<RespuestaIdeasComida> => {
-      const response = await apiRequest<{ success: boolean; data: RespuestaIdeasComida; error: string | null }>(
+      const response = await apiRequest<ApiResponse<RespuestaIdeasComida>>(
         '/ia/ideas-comida',
         {
           method: 'POST',
@@ -115,9 +96,6 @@ export function useGenerarIdeasComida({ token }: UseIaOptions) {
           body: params,
         },
       );
-      if (!response.success && response.error) {
-        throw new Error(response.error);
-      }
       return response.data;
     },
   });

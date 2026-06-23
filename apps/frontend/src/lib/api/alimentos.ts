@@ -12,6 +12,28 @@ function extraerDatos<T>(respuesta: T | ApiResponse<T>): T {
   return respuesta as T;
 }
 
+/**
+ * Cuando el backend devuelve `PaginatedData<T>` envuelto por el interceptor en
+ * `ApiResponse<PaginatedData<T>>`, `extraerDatos` deja el resultado como
+ * `{ data: T[], pagination }`. Este helper saca el último nivel y devuelve `T[]`,
+ * con fallback a array vacío si el shape no es el esperado (defensive).
+ */
+function extraerArrayPaginado<T>(respuesta: unknown): T[] {
+  const nivel1 = extraerDatos<T[] | PaginatedData<T>>(respuesta as never);
+  if (Array.isArray(nivel1)) {
+    return nivel1;
+  }
+  if (
+    nivel1 &&
+    typeof nivel1 === 'object' &&
+    'data' in nivel1 &&
+    Array.isArray((nivel1 as PaginatedData<T>).data)
+  ) {
+    return (nivel1 as PaginatedData<T>).data;
+  }
+  return [];
+}
+
 export interface GrupoAlimenticio {
   idGrupoAlimenticio: number;
   descripcion: string;
@@ -39,33 +61,33 @@ export async function obtenerGruposAlimenticios(token: string): Promise<GrupoAli
 }
 
 export async function buscarAlimentosPorGrupo(token: string, grupoId: number, limite = 50): Promise<Alimento[]> {
-  const respuesta = await apiRequest<Alimento[] | ApiResponse<Alimento[]>>(
+  const respuesta = await apiRequest<unknown>(
     `/alimentos?grupoId=${grupoId}&limit=${limite}`,
     { token },
   );
 
-  return extraerDatos(respuesta);
+  return extraerArrayPaginado<Alimento>(respuesta);
 }
 
 export async function buscarAlimentosPorTexto(token: string, texto: string, limite = 20): Promise<Alimento[]> {
-  const respuesta = await apiRequest<Alimento[] | ApiResponse<Alimento[]>>(
+  const respuesta = await apiRequest<unknown>(
     `/alimentos?search=${encodeURIComponent(texto)}&limit=${limite}`,
     { token },
   );
 
-  return extraerDatos(respuesta);
+  return extraerArrayPaginado<Alimento>(respuesta);
 }
 
 export async function listarAlimentos(token: string, search?: string, limit = 100): Promise<Alimento[]> {
   const params = new URLSearchParams();
   if (search) params.append('search', search);
   params.append('limit', String(limit));
-  const respuesta = await apiRequest<Alimento[] | ApiResponse<Alimento[]>>(
+  const respuesta = await apiRequest<unknown>(
     `/alimentos?${params.toString()}`,
     { token },
   );
 
-  return extraerDatos(respuesta);
+  return extraerArrayPaginado<Alimento>(respuesta);
 }
 
 export async function listarAlimentosPaginado(
