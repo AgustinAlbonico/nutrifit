@@ -23,11 +23,11 @@ export function AgendaProfesionalesCard() {
   const { data: profesionales = [], isLoading } = useQuery({
     queryKey: ['profesionales-lista', token],
     queryFn: async () => {
-      const response = await apiRequest<ApiResponse<Profesional[]>>(
+      const response = await apiRequest<ApiResponse<{ data: Profesional[] }>>(
         '/profesional',
         { token },
       );
-      return response.data ?? [];
+      return response.data?.data ?? [];
     },
     enabled: !!token,
   });
