@@ -44,10 +44,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { BaseUseCase } from 'src/application/shared/use-case.base';
 import {
+  BadGatewayError,
   BadRequestError,
   ConflictError,
   ForbiddenError,
   NotFoundError,
+  ServiceUnavailableError,
 } from 'src/domain/exceptions/custom-exceptions';
 import {
   APP_LOGGER_SERVICE,
@@ -151,7 +153,9 @@ export class RegenerarPlanSemanalUseCase implements BaseUseCase {
     private readonly logger: IAppLoggerService,
   ) {}
 
-  async execute(solicitud: SolicitudRegenerarPlan): Promise<RespuestaRegenerarPlan> {
+  async execute(
+    solicitud: SolicitudRegenerarPlan,
+  ): Promise<RespuestaRegenerarPlan> {
     const inicioMs = Date.now();
     // 0) Validar scope y campos scope-específicos ANTES de tocar la BD.
     //    Esto garantiza que un 400 se devuelve antes que un 404 si la
@@ -164,9 +168,7 @@ export class RegenerarPlanSemanalUseCase implements BaseUseCase {
     }
     if (solicitud.scope === 'ALTERNATIVA') {
       if (!solicitud.dia) {
-        throw new BadRequestError(
-          'scope=ALTERNATIVA requiere el campo `dia`',
-        );
+        throw new BadRequestError('scope=ALTERNATIVA requiere el campo `dia`');
       }
       if (!solicitud.comidaSlot) {
         throw new BadRequestError(
@@ -241,7 +243,11 @@ export class RegenerarPlanSemanalUseCase implements BaseUseCase {
     }
 
     // 7) Validar índice de alternativa contra la estructura actual
-    if (solicitud.scope === 'ALTERNATIVA' && solicitud.dia && solicitud.comidaSlot) {
+    if (
+      solicitud.scope === 'ALTERNATIVA' &&
+      solicitud.dia &&
+      solicitud.comidaSlot
+    ) {
       this.validarIndiceAlternativa(
         versionActual.datosJson,
         solicitud.dia,
@@ -330,7 +336,10 @@ export class RegenerarPlanSemanalUseCase implements BaseUseCase {
         planJsonGenerado =
           await this.aiProvider.generarRecomendacion<PlanAlimentacionDatosJson>(
             `${systemPrompt}\n\n---\n\n${userPrompt}`,
-            { temperature: TEMPERATURE_REGENERACION, max_tokens: MAX_TOKENS_REGENERACION },
+            {
+              temperature: TEMPERATURE_REGENERACION,
+              max_tokens: MAX_TOKENS_REGENERACION,
+            },
           );
         break;
       } catch (error) {
@@ -343,7 +352,8 @@ export class RegenerarPlanSemanalUseCase implements BaseUseCase {
             await this.sleep(TIMEOUT_BACKOFF_MS);
             continue;
           }
-          throw new BadRequestError(`GROQ_TIMEOUT: ${mensaje}`, {
+          // Hotfix Packet 8: GROQ_TIMEOUT debe mapear a HTTP 503 (no 400).
+          throw new ServiceUnavailableError(`GROQ_TIMEOUT: ${mensaje}`, {
             codigo: 'GROQ_TIMEOUT',
             versionId: solicitud.planAlimentacionVersionId,
           });
@@ -355,7 +365,8 @@ export class RegenerarPlanSemanalUseCase implements BaseUseCase {
           if (intentoGroq < MAX_REINTENTOS_GROQ) {
             continue;
           }
-          throw new BadRequestError(`GROQ_INVALID_JSON: ${mensaje}`, {
+          // Hotfix Packet 8: GROQ_INVALID_JSON debe mapear a HTTP 502 (no 400).
+          throw new BadGatewayError(`GROQ_INVALID_JSON: ${mensaje}`, {
             codigo: 'GROQ_INVALID_JSON',
             versionId: solicitud.planAlimentacionVersionId,
           });
@@ -387,10 +398,8 @@ export class RegenerarPlanSemanalUseCase implements BaseUseCase {
     );
 
     // 17) Re-validar restricciones sobre el plan mergeado
-    const validacionRestricciones = RestriccionesValidatorV2.validarPlanCompleto(
-      planMerged,
-      fichaClinica,
-    );
+    const validacionRestricciones =
+      RestriccionesValidatorV2.validarPlanCompleto(planMerged, fichaClinica);
 
     // 18) Re-validar macros sobre el plan mergeado
     const objetivoMacros: ObjetivoNutricional =
@@ -418,7 +427,9 @@ export class RegenerarPlanSemanalUseCase implements BaseUseCase {
     const numeroVersionNuevo = versionActual.numeroVersion + 1;
 
     const versionNueva = await this.dataSource.transaction(async (manager) => {
-      const versionRepo = manager.getRepository(PlanAlimentacionVersionOrmEntity);
+      const versionRepo = manager.getRepository(
+        PlanAlimentacionVersionOrmEntity,
+      );
       const orm = versionRepo.create({
         idPlanAlimentacion: plan.idPlanAlimentacion,
         numeroVersion: numeroVersionNuevo,
@@ -464,7 +475,8 @@ export class RegenerarPlanSemanalUseCase implements BaseUseCase {
           metadata: {
             planId: plan.idPlanAlimentacion,
             versionId: versionNueva.idPlanAlimentacionVersion,
-            violaciones: validacionRestricciones.restriccionesNoCumplidas.length,
+            violaciones:
+              validacionRestricciones.restriccionesNoCumplidas.length,
           },
         });
       }
@@ -647,8 +659,8 @@ export class RegenerarPlanSemanalUseCase implements BaseUseCase {
                 `alternativaIndex ${altIdx} fuera de rango (max ${nuevasAlternativas.length - 1})`,
               );
             }
-            const alternativaGenerada = planGenerado.estructura[0]?.comidas[0]
-              ?.alternativas[0];
+            const alternativaGenerada =
+              planGenerado.estructura[0]?.comidas[0]?.alternativas[0];
             if (alternativaGenerada) {
               nuevasAlternativas[altIdx] = alternativaGenerada;
             }

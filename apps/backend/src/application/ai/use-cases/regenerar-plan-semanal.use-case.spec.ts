@@ -22,6 +22,10 @@ import { PromptRegeneracionBuilder } from '../builders/prompt-regeneracion.build
 import { SeleccionarEjemplosMemoriaUseCase } from 'src/application/ia-memoria/use-cases/seleccionar-ejemplos-memoria.use-case';
 import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
+import {
+  BadGatewayError,
+  ServiceUnavailableError,
+} from 'src/domain/exceptions/custom-exceptions';
 import { FichaSaludOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/ficha-salud.entity';
 import {
   PlanAlimentacionOrmEntity,
@@ -198,28 +202,30 @@ describe('RegenerarPlanSemanalUseCase', () => {
     } as unknown as jest.Mocked<AuditoriaService>;
 
     dataSourceMock = {
-      transaction: jest.fn(async (cb: (manager: unknown) => Promise<unknown>) => {
-        const fakeManager = {
-          getRepository: () => ({
-            create: (data: unknown) => data,
-            save: (data: unknown) => {
-              const d = data as { idPlanAlimentacionVersion?: number };
-              d.idPlanAlimentacionVersion = 777;
-              return Promise.resolve(d);
-            },
-            createQueryBuilder: () => ({
-              update: () => ({
-                set: () => ({
-                  where: () => ({
-                    execute: () => Promise.resolve({ affected: 1 }),
+      transaction: jest.fn(
+        async (cb: (manager: unknown) => Promise<unknown>) => {
+          const fakeManager = {
+            getRepository: () => ({
+              create: (data: unknown) => data,
+              save: (data: unknown) => {
+                const d = data as { idPlanAlimentacionVersion?: number };
+                d.idPlanAlimentacionVersion = 777;
+                return Promise.resolve(d);
+              },
+              createQueryBuilder: () => ({
+                update: () => ({
+                  set: () => ({
+                    where: () => ({
+                      execute: () => Promise.resolve({ affected: 1 }),
+                    }),
                   }),
                 }),
               }),
             }),
-          }),
-        };
-        return cb(fakeManager);
-      }),
+          };
+          return cb(fakeManager);
+        },
+      ),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -264,11 +270,13 @@ describe('RegenerarPlanSemanalUseCase', () => {
     );
   });
 
-  function setupMocks(opts: {
-    motivoCambio?: string | null;
-    estadoPlan?: 'BORRADOR' | 'ACTIVO' | 'FINALIZADO';
-    planJsonGenerado?: PlanAlimentacionDatosJson;
-  } = {}) {
+  function setupMocks(
+    opts: {
+      motivoCambio?: string | null;
+      estadoPlan?: 'BORRADOR' | 'ACTIVO' | 'FINALIZADO';
+      planJsonGenerado?: PlanAlimentacionDatosJson;
+    } = {},
+  ) {
     const planJsonGen = opts.planJsonGenerado ?? {
       estructura: [
         {
@@ -468,13 +476,13 @@ describe('RegenerarPlanSemanalUseCase', () => {
       TipoComida.DESAYUNO,
     );
     // La alternativa #0 fue reemplazada
-    expect(
-      resultado.plan.estructura[0].comidas[0].alternativas[0].nombre,
-    ).toBe('Avena regenerada');
+    expect(resultado.plan.estructura[0].comidas[0].alternativas[0].nombre).toBe(
+      'Avena regenerada',
+    );
     // La alternativa #1 fue preservada
-    expect(
-      resultado.plan.estructura[0].comidas[0].alternativas[1].nombre,
-    ).toBe('Tostadas con huevo');
+    expect(resultado.plan.estructura[0].comidas[0].alternativas[1].nombre).toBe(
+      'Tostadas con huevo',
+    );
   });
 
   it('rechaza 400 si scope=DIA sin campo dia', async () => {
@@ -692,5 +700,79 @@ describe('RegenerarPlanSemanalUseCase', () => {
       (l) => l.tipo === 'PLAN_MACROS_FUERA_RANGO',
     );
     expect(hayNotifMacros).toBe(true);
+  });
+
+  // ==========================================================================
+  // Hotfix Packet 8: errores de Groq deben mapear a 502/503 (no 400)
+  // ==========================================================================
+
+  it('Groq timeout 2 veces → throw ServiceUnavailableError (503) con código GROQ_TIMEOUT', async () => {
+    setupMocks({ motivoCambio: 'creacion_inicial' });
+    aiProviderMock.generarRecomendacion.mockRejectedValue(
+      new Error('Request timeout - ETIMEDOUT'),
+    );
+
+    await expect(
+      useCase.execute({
+        planAlimentacionVersionId: 555,
+        nutricionistaUserId: 100,
+        gimnasioId: 10,
+        scope: 'PLAN',
+      }),
+    ).rejects.toBeInstanceOf(ServiceUnavailableError);
+
+    let errorCapturado: unknown;
+    try {
+      await useCase.execute({
+        planAlimentacionVersionId: 555,
+        nutricionistaUserId: 100,
+        gimnasioId: 10,
+        scope: 'PLAN',
+      });
+    } catch (e) {
+      errorCapturado = e;
+    }
+    expect(errorCapturado).toBeInstanceOf(ServiceUnavailableError);
+    const appErr = errorCapturado as ServiceUnavailableError;
+    expect(appErr.statusCode).toBe(503);
+    expect(appErr.message).toMatch(/GROQ_TIMEOUT/);
+    expect(appErr.context).toEqual(
+      expect.objectContaining({ codigo: 'GROQ_TIMEOUT' }),
+    );
+  }, 15000);
+
+  it('Groq JSON inválido 2 veces → throw BadGatewayError (502) con código GROQ_INVALID_JSON', async () => {
+    setupMocks({ motivoCambio: 'creacion_inicial' });
+    aiProviderMock.generarRecomendacion.mockRejectedValue(
+      new Error('Unexpected token in JSON'),
+    );
+
+    await expect(
+      useCase.execute({
+        planAlimentacionVersionId: 555,
+        nutricionistaUserId: 100,
+        gimnasioId: 10,
+        scope: 'PLAN',
+      }),
+    ).rejects.toBeInstanceOf(BadGatewayError);
+
+    let errorCapturado: unknown;
+    try {
+      await useCase.execute({
+        planAlimentacionVersionId: 555,
+        nutricionistaUserId: 100,
+        gimnasioId: 10,
+        scope: 'PLAN',
+      });
+    } catch (e) {
+      errorCapturado = e;
+    }
+    expect(errorCapturado).toBeInstanceOf(BadGatewayError);
+    const appErr = errorCapturado as BadGatewayError;
+    expect(appErr.statusCode).toBe(502);
+    expect(appErr.message).toMatch(/GROQ_INVALID_JSON/);
+    expect(appErr.context).toEqual(
+      expect.objectContaining({ codigo: 'GROQ_INVALID_JSON' }),
+    );
   });
 });

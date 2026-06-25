@@ -23,6 +23,10 @@ import { PromptPlanSemanalBuilder } from '../builders/prompt-plan-semanal.builde
 import { SeleccionarEjemplosMemoriaUseCase } from 'src/application/ia-memoria/use-cases/seleccionar-ejemplos-memoria.use-case';
 import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
+import {
+  BadGatewayError,
+  ServiceUnavailableError,
+} from 'src/domain/exceptions/custom-exceptions';
 import { FichaSaludOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/ficha-salud.entity';
 import { PlanAlimentacionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/plan-alimentacion.entity';
 import {
@@ -391,7 +395,80 @@ describe('GenerarPlanSemanalUseCase', () => {
     expect(hayNotifMacros).toBe(true);
   });
 
-  it('Groq timeout 2 veces → throw GROQ_TIMEOUT', async () => {
+  it('Groq timeout 2 veces → throw ServiceUnavailableError (503) con código GROQ_TIMEOUT', async () => {
+    setupHappyPathMocks();
+    aiProviderMock.generarRecomendacion.mockRejectedValue(
+      new Error('Request timeout - ETIMEDOUT'),
+    );
+
+    // Hotfix Packet 8: GROQ_TIMEOUT debe mapear a HTTP 503 vía ServiceUnavailableError.
+    await expect(
+      useCase.execute({
+        socioId: 50,
+        nutricionistaId: 100,
+        gimnasioId: 10,
+        diasAGenerar: 1,
+        comidasPorDia: 4,
+      }),
+    ).rejects.toBeInstanceOf(ServiceUnavailableError);
+
+    // Capturamos el error para verificar statusCode (503) y código interno.
+    let errorCapturado: unknown;
+    try {
+      await useCase.execute({
+        socioId: 50,
+        nutricionistaId: 100,
+        gimnasioId: 10,
+        diasAGenerar: 1,
+        comidasPorDia: 4,
+      });
+    } catch (e) {
+      errorCapturado = e;
+    }
+    expect(errorCapturado).toBeInstanceOf(ServiceUnavailableError);
+    const appErr = errorCapturado as ServiceUnavailableError;
+    expect(appErr.statusCode).toBe(503);
+    expect(appErr.message).toMatch(/GROQ_TIMEOUT/);
+    expect(appErr.context).toEqual(
+      expect.objectContaining({ codigo: 'GROQ_TIMEOUT' }),
+    );
+  }, 15000);
+
+  it('Groq JSON inválido 2 veces → throw BadGatewayError (502) con código GROQ_INVALID_JSON', async () => {
+    setupHappyPathMocks();
+    aiProviderMock.generarRecomendacion.mockRejectedValue(
+      new Error('Unexpected token in JSON'),
+    );
+
+    // Hotfix Packet 8: GROQ_INVALID_JSON debe mapear a HTTP 502 vía BadGatewayError.
+    await expect(
+      useCase.execute({
+        socioId: 50,
+        nutricionistaId: 100,
+        gimnasioId: 10,
+      }),
+    ).rejects.toBeInstanceOf(BadGatewayError);
+
+    let errorCapturado: unknown;
+    try {
+      await useCase.execute({
+        socioId: 50,
+        nutricionistaId: 100,
+        gimnasioId: 10,
+      });
+    } catch (e) {
+      errorCapturado = e;
+    }
+    expect(errorCapturado).toBeInstanceOf(BadGatewayError);
+    const appErr = errorCapturado as BadGatewayError;
+    expect(appErr.statusCode).toBe(502);
+    expect(appErr.message).toMatch(/GROQ_INVALID_JSON/);
+    expect(appErr.context).toEqual(
+      expect.objectContaining({ codigo: 'GROQ_INVALID_JSON' }),
+    );
+  });
+
+  it('Groq timeout 2 veces → NO persiste plan (AC11)', async () => {
     setupHappyPathMocks();
     aiProviderMock.generarRecomendacion.mockRejectedValue(
       new Error('Request timeout - ETIMEDOUT'),
@@ -405,10 +482,15 @@ describe('GenerarPlanSemanalUseCase', () => {
         diasAGenerar: 1,
         comidasPorDia: 4,
       }),
-    ).rejects.toThrow(/GROQ_TIMEOUT/);
+    ).rejects.toThrow();
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(planRepoMock.save).not.toHaveBeenCalled();
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(planVersionRepoMock.crear).not.toHaveBeenCalled();
   }, 15000);
 
-  it('Groq JSON inválido 2 veces → throw GROQ_INVALID_JSON', async () => {
+  it('Groq JSON inválido 2 veces → NO persiste plan (AC12)', async () => {
     setupHappyPathMocks();
     aiProviderMock.generarRecomendacion.mockRejectedValue(
       new Error('Unexpected token in JSON'),
@@ -420,7 +502,12 @@ describe('GenerarPlanSemanalUseCase', () => {
         nutricionistaId: 100,
         gimnasioId: 10,
       }),
-    ).rejects.toThrow(/GROQ_INVALID_JSON/);
+    ).rejects.toThrow();
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(planRepoMock.save).not.toHaveBeenCalled();
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(planVersionRepoMock.crear).not.toHaveBeenCalled();
   });
 
   it('Groq retorna JSON sin estructura → throw PLAN_ESTRUCTURA_INVALIDA', async () => {

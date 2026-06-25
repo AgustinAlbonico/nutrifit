@@ -33,4 +33,12 @@ export const ErrorMessages: Record<
     message: 'Solicitud incorrecta',
     statusCode: 400,
   },
+  [ErrorCode.BAD_GATEWAY]: {
+    message: 'Upstream inválido (Bad Gateway)',
+    statusCode: 502,
+  },
+  [ErrorCode.SERVICE_UNAVAILABLE]: {
+    message: 'Servicio no disponible',
+    statusCode: 503,
+  },
 };

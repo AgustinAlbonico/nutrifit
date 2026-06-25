@@ -36,8 +36,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BaseUseCase } from 'src/application/shared/use-case.base';
 import {
+  BadGatewayError,
   BadRequestError,
   NotFoundError,
+  ServiceUnavailableError,
 } from 'src/domain/exceptions/custom-exceptions';
 import {
   APP_LOGGER_SERVICE,
@@ -241,7 +243,8 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
             await this.sleep(TIMEOUT_BACKOFF_MS);
             continue;
           }
-          throw new BadRequestError(`GROQ_TIMEOUT: ${mensaje}`, {
+          // Hotfix Packet 8: GROQ_TIMEOUT debe mapear a HTTP 503 (no 400).
+          throw new ServiceUnavailableError(`GROQ_TIMEOUT: ${mensaje}`, {
             codigo: 'GROQ_TIMEOUT',
             socioId: solicitud.socioId,
           });
@@ -254,7 +257,8 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
           if (intentoGroq < MAX_REINTENTOS_GROQ) {
             continue;
           }
-          throw new BadRequestError(`GROQ_INVALID_JSON: ${mensaje}`, {
+          // Hotfix Packet 8: GROQ_INVALID_JSON debe mapear a HTTP 502 (no 400).
+          throw new BadGatewayError(`GROQ_INVALID_JSON: ${mensaje}`, {
             codigo: 'GROQ_INVALID_JSON',
             socioId: solicitud.socioId,
           });
@@ -452,7 +456,8 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
           metadata: {
             planId: planGuardado.idPlanAlimentacion,
             versionId: versionGuardada.idPlanAlimentacionVersion,
-            violaciones: validacionRestricciones.restriccionesNoCumplidas.length,
+            violaciones:
+              validacionRestricciones.restriccionesNoCumplidas.length,
           },
         });
       }

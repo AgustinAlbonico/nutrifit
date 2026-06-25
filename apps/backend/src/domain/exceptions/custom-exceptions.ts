@@ -71,3 +71,34 @@ export class ServerError extends AppError {
     super(ErrorCode.SERVER_ERROR, message, context);
   }
 }
+
+/**
+ * 502 Bad Gateway — el servicio upstream (ej: Groq) devolvió una
+ * respuesta inválida que no podemos procesar (JSON malformado, schema
+ * desconocido, etc.). Mapea a HTTP 502 vía `AppErrorFilter`.
+ *
+ * Hotfix Packet 8 (plan-alimentacion-ia-v2): usado por
+ * `GenerarPlanSemanalUseCase` y `RegenerarPlanSemanalUseCase` cuando
+ * Groq devuelve JSON inválido 2 veces seguidas (código
+ * `GROQ_INVALID_JSON`).
+ */
+export class BadGatewayError extends AppError {
+  constructor(message?: string, context?: Record<string, unknown>) {
+    super(ErrorCode.BAD_GATEWAY, message, context);
+  }
+}
+
+/**
+ * 503 Service Unavailable — el servicio upstream (ej: Groq) no está
+ * disponible temporalmente (timeout, red caída, etc.). Mapea a HTTP
+ * 503 vía `AppErrorFilter`.
+ *
+ * Hotfix Packet 8 (plan-alimentacion-ia-v2): usado por
+ * `GenerarPlanSemanalUseCase` y `RegenerarPlanSemanalUseCase` cuando
+ * Groq no responde tras 2 reintentos (código `GROQ_TIMEOUT`).
+ */
+export class ServiceUnavailableError extends AppError {
+  constructor(message?: string, context?: Record<string, unknown>) {
+    super(ErrorCode.SERVICE_UNAVAILABLE, message, context);
+  }
+}
