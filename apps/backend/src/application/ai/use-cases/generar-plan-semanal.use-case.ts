@@ -569,7 +569,9 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
     const plan = new PlanAlimentacionOrmEntity();
     plan.fechaCreacion = new Date();
     plan.objetivoNutricional = `Plan IA - ${planJson.estructura.length} días`;
-    plan.activo = true;
+    // Hotfix Packet 8: NO setear `activo` ni `estado` explícitamente.
+    // Los defaults de la entidad (activo=false, estado='BORRADOR')
+    // aplican. La activación la maneja `ActivarPlanAlimentacionUseCase`.
     plan.eliminadoEn = null;
     plan.motivoEliminacion = null;
     plan.motivoEdicion = null;

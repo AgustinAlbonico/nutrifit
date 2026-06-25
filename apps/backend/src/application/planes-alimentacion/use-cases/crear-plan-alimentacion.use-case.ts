@@ -207,7 +207,9 @@ export class CrearPlanAlimentacionUseCase implements BaseUseCase {
     plan.socio = socio as unknown as PlanAlimentacionOrmEntity['socio'];
     plan.nutricionista =
       nutricionista as unknown as PlanAlimentacionOrmEntity['nutricionista'];
-    plan.activo = true;
+    // Hotfix Packet 8: NO setear `activo` ni `estado` explícitamente.
+    // Los defaults de la entidad (activo=false, estado='BORRADOR')
+    // aplican. La activación la maneja `ActivarPlanAlimentacionUseCase`.
     plan.eliminadoEn = null;
     plan.motivoEliminacion = null;
     plan.motivoEdicion = null;

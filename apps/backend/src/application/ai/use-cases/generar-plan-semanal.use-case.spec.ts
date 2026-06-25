@@ -330,6 +330,36 @@ describe('GenerarPlanSemanalUseCase', () => {
     expect(hayNotifRevisar).toBe(true);
   });
 
+  it('primera generación persiste plan con activo=false y estado=BORRADOR (Hotfix Packet 8)', async () => {
+    setupHappyPathMocks();
+    aiProviderMock.generarRecomendacion.mockResolvedValue(planJsonValido);
+
+    await useCase.execute({
+      socioId: 50,
+      nutricionistaId: 100,
+      gimnasioId: 10,
+      diasAGenerar: 1,
+      comidasPorDia: 4,
+    });
+
+    // Hotfix Packet 8: la primera generación debe quedar BORRADOR.
+    // planRepo.save debe haber sido llamado con un entity donde
+    // activo=false y estado='BORRADOR'. Como no forzamos esos campos
+    // explícitamente, validamos que NO se haya seteado activo=true.
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(planRepoMock.save).toHaveBeenCalledTimes(1);
+    const planPersistido = planRepoMock.save.mock.calls[0][0] as Record<
+      string,
+      unknown
+    >;
+    // El entity NO debe tener activo=true explícito (queda el default
+    // false de la columna).
+    expect(planPersistido.activo).not.toBe(true);
+    // Tampoco debe setearse estado explícitamente (queda el default
+    // 'BORRADOR' de la columna).
+    expect(planPersistido.estado).toBeUndefined();
+  });
+
   it('restricción violada 1 vez → 1 reintento correctivo y segunda respuesta OK', async () => {
     setupHappyPathMocks();
 

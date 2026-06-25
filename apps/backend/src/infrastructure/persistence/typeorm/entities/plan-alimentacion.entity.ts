@@ -37,25 +37,29 @@ export class PlanAlimentacionOrmEntity {
   @JoinColumn({ name: 'id_nutricionista' })
   nutricionista: NutricionistaOrmEntity;
 
-  @Column({ name: 'activo', type: 'boolean', default: true })
+  @Column({ name: 'activo', type: 'boolean', default: false })
   activo: boolean;
 
   /**
    * Estado explícito del plan (máquina de estados introducida en Packet 4
    * del change plan-alimentacion-ia-v2). Valores posibles:
-   *   - 'BORRADOR'  → recién creado, en proceso de edición.
+   *   - 'BORRADOR'  → recién creado, en proceso de edición (default).
    *   - 'ACTIVO'    → tiene una versión activa visible para el socio.
    *   - 'FINALIZADO'→ el nutricionista lo cerró; no se pueden crear más versiones.
    *
-   * Default 'ACTIVO' mantiene compatibilidad con planes pre-existentes
-   * (que tenían activo=true). La migración `PlanAlimentacionEstado...`
-   * backfillea activo=false → 'BORRADOR'.
+   * Hotfix Packet 8: el default pasó de 'ACTIVO' (compatible legacy) a
+   * 'BORRADOR'. La primera generación de un plan nuevo debe quedar en
+   * BORRADOR hasta que el nutricionista lo active explícitamente vía
+   * `ActivarPlanAlimentacionUseCase`. La migración
+   * `PlanV2EstadoDefaultFix` actualiza los defaults sin tocar filas
+   * existentes (preserva backward compat para planes legacy con
+   * activo=true/estado='ACTIVO').
    */
   @Column({
     name: 'estado',
     type: 'varchar',
     length: 20,
-    default: 'ACTIVO',
+    default: 'BORRADOR',
   })
   estado: 'BORRADOR' | 'ACTIVO' | 'FINALIZADO';
 
