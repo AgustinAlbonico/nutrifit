@@ -11,3 +11,8 @@ export { ListProfesionalesPublicosUseCase } from './list-profesionales-publicos.
 export { ReactivarNutricionistaUseCase } from './reactivar-nutricionista.use-case';
 export { SubirDiplomaUseCase } from './subir-diploma.use-case';
 export { UpdateNutricionistaUseCase } from './update-nutricionista.use-case';
+export { ObtenerPreferenciasIaUseCase } from './obtener-preferencias-ia.use-case';
+export {
+  ActualizarPreferenciasIaUseCase,
+  MAX_CARACTERES_PREFERENCIAS_IA,
+} from './actualizar-preferencias-ia.use-case';

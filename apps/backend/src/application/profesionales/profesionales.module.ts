@@ -35,6 +35,8 @@ import {
   ReactivarNutricionistaUseCase,
   SubirDiplomaUseCase,
   UpdateNutricionistaUseCase,
+  ObtenerPreferenciasIaUseCase,
+  ActualizarPreferenciasIaUseCase,
 } from './use-cases';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import { NotificacionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/notificacion.entity';
@@ -72,6 +74,8 @@ import { NotificacionOrmEntity } from 'src/infrastructure/persistence/typeorm/en
     ListProfesionalesPublicosUseCase,
     ReactivarNutricionistaUseCase,
     SubirDiplomaUseCase,
+    ObtenerPreferenciasIaUseCase,
+    ActualizarPreferenciasIaUseCase,
     NotificacionesService,
     {
       provide: USUARIO_REPOSITORY,
@@ -100,6 +104,8 @@ import { NotificacionOrmEntity } from 'src/infrastructure/persistence/typeorm/en
     SubirDiplomaUseCase,
     EliminarDiplomaUseCase,
     ListarDiplomasUseCase,
+    ObtenerPreferenciasIaUseCase,
+    ActualizarPreferenciasIaUseCase,
   ],
 })
 export class ProfesionalesModule {}

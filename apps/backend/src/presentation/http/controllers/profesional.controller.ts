@@ -29,6 +29,7 @@ import {
   PerfilProfesionalPublicoResponseDto,
   CatalogoProfesionalResponseDto,
   UpdateNutricionistaDto,
+  ActualizarPreferenciasIaDto,
 } from 'src/application/profesionales/dtos';
 import {
   CreateNutricionistaUseCase,
@@ -44,6 +45,8 @@ import {
   ReactivarNutricionistaUseCase,
   SubirDiplomaUseCase,
   UpdateNutricionistaUseCase,
+  ObtenerPreferenciasIaUseCase,
+  ActualizarPreferenciasIaUseCase,
 } from 'src/application/profesionales/use-cases';
 import { DiplomaEntity } from 'src/domain/entities/Diploma/diploma.entity';
 import { NutricionistaEntity } from 'src/domain/entities/Persona/Nutricionista/nutricionista.entity';
@@ -87,6 +90,8 @@ export class ProfesionalController {
     private readonly listarDiplomasUseCase: ListarDiplomasUseCase,
     private readonly subirDiplomaUseCase: SubirDiplomaUseCase,
     private readonly eliminarDiplomaUseCase: EliminarDiplomaUseCase,
+    private readonly obtenerPreferenciasIaUseCase: ObtenerPreferenciasIaUseCase,
+    private readonly actualizarPreferenciasIaUseCase: ActualizarPreferenciasIaUseCase,
     @Inject(NUTRICIONISTA_REPOSITORY)
     private readonly nutricionistaRepository: NutricionistaRepository,
     @Inject(APP_LOGGER_SERVICE) private readonly logger: IAppLoggerService,
@@ -175,6 +180,50 @@ export class ProfesionalController {
     const nutricionista =
       await this.getMiPerfilNutricionistaUseCase.execute(usuarioId);
     return this.mapToResponseDto(nutricionista);
+  }
+
+  /**
+   * Preferencias IA persistentes del nutricionista (texto plano, max 2000).
+   * Notas privadas que se concatenan con las notas de generación al construir
+   * el prompt de generación de planes.
+   */
+  @Get('mi-perfil/preferencias-ia')
+  @Rol(RolEnum.NUTRICIONISTA)
+  async obtenerPreferenciasIa(
+    @CurrentUserId() usuarioId: number,
+  ): Promise<{ preferencias: string }> {
+    this.logger.log(
+      `Obteniendo preferencias IA para usuario ${usuarioId}`,
+    );
+    const nutricionista =
+      await this.getMiPerfilNutricionistaUseCase.execute(usuarioId);
+    return this.obtenerPreferenciasIaUseCase.execute({
+      nutricionistaId: nutricionista.idPersona ?? 0,
+    });
+  }
+
+  /**
+   * Actualiza las preferencias IA persistentes del nutricionista.
+   * Sanitiza el input (HTML/scripts + markdown) y registra auditoría.
+   * La acción `PLANES_IA_MEMORIA_EDITAR` se reusa para edición de IA.
+   */
+  @Put('mi-perfil/preferencias-ia')
+  @Rol(RolEnum.NUTRICIONISTA)
+  @Actions(ACCIONES.PLANES_IA_MEMORIA_EDITAR)
+  async actualizarPreferenciasIa(
+    @Body() dto: ActualizarPreferenciasIaDto,
+    @CurrentUserId() usuarioId: number,
+  ): Promise<{ preferencias: string }> {
+    this.logger.log(
+      `Actualizando preferencias IA para usuario ${usuarioId}`,
+    );
+    const nutricionista =
+      await this.getMiPerfilNutricionistaUseCase.execute(usuarioId);
+    return this.actualizarPreferenciasIaUseCase.execute({
+      nutricionistaId: nutricionista.idPersona ?? 0,
+      preferencias: dto.preferencias,
+      usuarioId,
+    });
   }
 
   @Get(':id')
