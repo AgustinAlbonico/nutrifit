@@ -1,6 +1,44 @@
+/**
+ * GenerarPlanSemanalUseCase (REESCRITO — plan-alimentacion-ia-v2)
+ * ===============================================================
+ *
+ * Flujo completo:
+ *  1) Validar parámetros (rangos, presencia).
+ *  2) Cargar ficha clínica del socio (Repository<FichaSaludOrmEntity>).
+ *  3) Cargar nutricionista con preferencias_ia (NUTRICIONISTA_REPOSITORY).
+ *  4) Cargar memoria IA (NutricionistaIAMemoriaRepository).
+ *  5) Construir prompt via PromptPlanSemanalBuilder.
+ *  6) Loop de generación con reintentos:
+ *     - Llamar Groq (IAiProviderService).
+ *     - Si timeout → retry 1 con backoff 5s. Si falla → throw 503.
+ *     - Si JSON malformado → retry 1 con temp 0.3 (manejado por GroqService).
+ *     - Validar restricciones (RestriccionesValidatorV2). Si violación
+ *       → instrucción correctiva y retry (max 2).
+ *     - Validar coherencia razonamiento (regenerar si incoherente).
+ *  7) Validar macros (MacrosValidator):
+ *     - Si estructura inválida → throw 422.
+ *     - Si macros rojo → notificar PLAN_MACROS_FUERA_RANGO.
+ *  8) Persistir en transacción:
+ *     - INSERT plan_alimentacion (estado BORRADOR).
+ *     - INSERT plan_alimentacion_version v1 (motivo='creacion_inicial').
+ *  9) Auditoría: PLAN_CREADO.
+ * 10) Notificación: PLAN_REVISAR al nutricionista.
+ *
+ * Errores:
+ *  - 503 GROQ_TIMEOUT si 2 timeouts.
+ *  - 502 GROQ_INVALID_JSON si 2 JSON malformados.
+ *  - 422 PLAN_ESTRUCTURA_INVALIDA si estructura inválida.
+ *  - El plan se persiste IGUAL si macros rojo (warning + notificación, no rechaza).
+ */
+
 import { Inject, Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { BaseUseCase } from 'src/application/shared/use-case.base';
-import { BadRequestError } from 'src/domain/exceptions/custom-exceptions';
+import {
+  BadRequestError,
+  NotFoundError,
+} from 'src/domain/exceptions/custom-exceptions';
 import {
   APP_LOGGER_SERVICE,
   IAppLoggerService,
@@ -9,420 +47,611 @@ import {
   AI_PROVIDER_SERVICE,
   IAiProviderService,
 } from 'src/domain/services/ai-provider.service';
-import { PrepararContextoPacienteUseCase } from './preparar-contexto-paciente.use-case';
+import { NUTRICIONISTA_REPOSITORY } from 'src/domain/entities/Persona/Nutricionista/nutricionista.repository';
+import type { NutricionistaRepository } from 'src/domain/entities/Persona/Nutricionista/nutricionista.repository';
+import { PLAN_ALIMENTACION_VERSION_REPOSITORY } from 'src/domain/repositories/plan-alimentacion-version.repository';
+import type { PlanAlimentacionVersionRepository } from 'src/domain/repositories/plan-alimentacion-version.repository';
+import { NUTRICIONISTA_IA_MEMORIA_REPOSITORY } from 'src/domain/repositories/nutricionista-ia-memoria.repository';
+import type { NutricionistaIAMemoriaRepository } from 'src/domain/repositories/nutricionista-ia-memoria.repository';
+import { FichaSaludOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/ficha-salud.entity';
+import { PlanAlimentacionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/plan-alimentacion.entity';
 import {
-  ContextoPaciente,
-  DiaPlanSemanal,
-  PlanSemanalIA,
-  RecomendacionComida,
-  RespuestaIA,
-  SolicitudPlanSemanal,
-  TipoComida,
-} from '@nutrifit/shared';
-import { DISCLAIMER_IA } from './generar-recomendacion-comida.use-case';
+  PlanAlimentacionDatosJson,
+  ResumenMacrosDia,
+} from 'src/domain/entities/PlanAlimentacionVersion/plan-alimentacion-datos-json';
+import {
+  RestriccionesValidatorV2,
+  type FichaClinicaParaValidacion,
+} from 'src/domain/validators/restricciones-validator-v2';
+import {
+  MacrosValidator,
+  type ObjetivoNutricional,
+} from 'src/domain/validators/macros-validator';
+import { PromptPlanSemanalBuilder } from '../builders/prompt-plan-semanal.builder';
+import { PromptRestriccionesInstructionBuilder } from '../builders/prompt-restricciones-instruction.builder';
+import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
+import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
+import { AccionAuditoria } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
+import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
 
-const CALORIAS_MINIMAS_DIARIAS = 1200;
-const CALORIAS_MAXIMAS_DIARIAS = 3000;
-const TIPOS_COMIDA_REQUERIDOS: TipoComida[] = [
-  'DESAYUNO',
-  'ALMUERZO',
-  'MERIENDA',
-  'CENA',
-  'COLACION',
-];
+export interface SolicitudPlanSemanal {
+  socioId: number;
+  nutricionistaId: number;
+  gimnasioId: number;
+  diasAGenerar?: number;
+  comidasPorDia?: number;
+  alternativasPorComida?: number;
+  notasGeneracion?: string;
+  fechaInicio?: Date;
+}
+
+export interface RespuestaPlanSemanal {
+  planAlimentacionId: number;
+  versionId: number;
+  numeroVersion: number;
+  plan: PlanAlimentacionDatosJson;
+  validacion: ReturnType<typeof RestriccionesValidatorV2.validarPlanCompleto>;
+  macros: ReturnType<typeof MacrosValidator.validar>;
+  advertencias: string[];
+}
+
+const MAX_REINTENTOS_RESTRICCIONES = 2;
+const MAX_REINTENTOS_GROQ = 2;
+const TIMEOUT_BACKOFF_MS = 5000;
 
 @Injectable()
 export class GenerarPlanSemanalUseCase implements BaseUseCase {
   constructor(
+    @InjectRepository(FichaSaludOrmEntity)
+    private readonly fichaSaludRepo: Repository<FichaSaludOrmEntity>,
+    @InjectRepository(PlanAlimentacionOrmEntity)
+    private readonly planRepo: Repository<PlanAlimentacionOrmEntity>,
+    @Inject(NUTRICIONISTA_REPOSITORY)
+    private readonly nutricionistaRepo: NutricionistaRepository,
+    @Inject(PLAN_ALIMENTACION_VERSION_REPOSITORY)
+    private readonly planVersionRepo: PlanAlimentacionVersionRepository,
+    @Inject(NUTRICIONISTA_IA_MEMORIA_REPOSITORY)
+    private readonly memoriaRepo: NutricionistaIAMemoriaRepository,
     @Inject(AI_PROVIDER_SERVICE)
     private readonly aiProvider: IAiProviderService,
-    private readonly prepararContextoPaciente: PrepararContextoPacienteUseCase,
+    private readonly promptBuilder: PromptPlanSemanalBuilder,
+    private readonly notificacionesService: NotificacionesService,
+    private readonly auditoriaService: AuditoriaService,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
   ) {}
 
   async execute(
     solicitud: SolicitudPlanSemanal,
-  ): Promise<RespuestaIA<PlanSemanalIA>> {
-    try {
-      const contexto = await this.prepararContextoPaciente.execute(
-        solicitud.socioId,
-      );
+  ): Promise<RespuestaPlanSemanal> {
+    const inicioMs = Date.now();
 
-      const caloriasObjetivo = this.calcularCaloriasObjetivo(
-        contexto,
-        solicitud.caloriasObjetivo,
-      );
+    // 1) Validar parámetros
+    const diasAGenerar = solicitud.diasAGenerar ?? 7;
+    const comidasPorDia = solicitud.comidasPorDia ?? 4;
+    const alternativasPorComida = solicitud.alternativasPorComida ?? 3;
+    const fechaInicio = solicitud.fechaInicio ?? this.proximoLunesAR();
+    const notasGeneracion = solicitud.notasGeneracion ?? null;
 
-      const diasAGenerar = Math.min(solicitud.diasAGenerar ?? 7, 7);
+    this.validarParametros(
+      diasAGenerar,
+      comidasPorDia,
+      alternativasPorComida,
+      notasGeneracion,
+    );
 
-      const prompt = this.construirPrompt(
-        contexto,
-        caloriasObjetivo,
-        diasAGenerar,
-      );
+    // 2) Cargar ficha clínica del socio
+    const fichaClinica = await this.cargarFichaClinica(solicitud.socioId);
 
-      const schema = {
-        dias: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              dia: { type: 'number' },
-              comidas: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    nombre: { type: 'string' },
-                    descripcion: { type: 'string' },
-                    ingredientes: { type: 'array', items: { type: 'string' } },
-                    caloriasEstimadas: { type: 'number' },
-                    proteinas: { type: 'number' },
-                    carbohidratos: { type: 'number' },
-                    grasas: { type: 'number' },
-                    tipoComida: { type: 'string' },
-                  },
-                },
-              },
-            },
-          },
-        },
-        caloriasTotalesDiarias: { type: 'number' },
-        disclaimer: { type: 'string' },
-      };
-
-      const resultado =
-        await this.aiProvider.generarRecomendacion<PlanSemanalIA>(
-          prompt,
-          schema,
-        );
-
-      const resultadoCompleto = this.completarEstructuraPlanSemanal(
-        resultado,
-        diasAGenerar,
-      );
-
-      this.validarPlanSemanal(resultadoCompleto, contexto, diasAGenerar);
-
-      resultadoCompleto.disclaimer = DISCLAIMER_IA;
-
-      this.logger.log(
-        `Plan semanal generado para socio ${solicitud.socioId}. ${diasAGenerar} días, ${caloriasObjetivo} kcal/día`,
-      );
-
-      return {
-        exito: true,
-        datos: resultadoCompleto,
-        error: null,
-        disclaimer: DISCLAIMER_IA,
-      };
-    } catch (error) {
-      const mensaje = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Error generando plan semanal: ${mensaje}`);
-
-      return {
-        exito: false,
-        datos: null,
-        error: mensaje,
-        disclaimer: DISCLAIMER_IA,
-      };
-    }
-  }
-
-  private calcularCaloriasObjetivo(
-    contexto: ContextoPaciente,
-    caloriasSugeridas?: number,
-  ): number {
-    if (caloriasSugeridas) {
-      return Math.max(
-        CALORIAS_MINIMAS_DIARIAS,
-        Math.min(CALORIAS_MAXIMAS_DIARIAS, caloriasSugeridas),
+    // 3) Cargar nutricionista
+    const nutricionista = await this.nutricionistaRepo.findById(
+      solicitud.nutricionistaId,
+    );
+    if (!nutricionista) {
+      throw new NotFoundError(
+        'Nutricionista',
+        String(solicitud.nutricionistaId),
       );
     }
 
-    if (contexto.peso && contexto.altura) {
-      const tmb =
-        10 * contexto.peso + 6.25 * contexto.altura * 100 - 5 * 30 + 5;
-      const factorActividad = this.obtenerFactorActividad(
-        contexto.nivelActividadFisica,
-      );
-      const caloriasEstimadas = Math.round(tmb * factorActividad);
+    // 4) Cargar memoria IA (1-3 ejemplos, priorizando positivos)
+    const memoriaCompleta = await this.memoriaRepo.obtenerParaSeleccion(
+      solicitud.nutricionistaId,
+      50,
+    );
+    const ejemplosMemoria = this.seleccionarEjemplos(memoriaCompleta);
 
-      return Math.max(
-        CALORIAS_MINIMAS_DIARIAS,
-        Math.min(CALORIAS_MAXIMAS_DIARIAS, caloriasEstimadas),
-      );
-    }
+    // 5) Construir prompt
+    const { systemPrompt, userPrompt } = this.promptBuilder.construir({
+      fichaClinica: {
+        alergias: fichaClinica.alergias,
+        restriccionesAlimentarias: fichaClinica.restriccionesAlimentarias,
+        patologias: fichaClinica.patologias,
+        objetivoPersonal: fichaClinica.objetivoPersonal,
+      },
+      nutricionista: {
+        preferenciasIa: nutricionista.preferenciasIa ?? null,
+      },
+      notasGeneracion,
+      ejemplosMemoria,
+      diasAGenerar,
+      comidasPorDia,
+      alternativasPorComida,
+      fechaInicio,
+    });
 
-    return 2000;
-  }
+    // 6) Loop de generación con reintentos
+    let planJson: PlanAlimentacionDatosJson | null = null;
+    const advertencias: string[] = [];
+    let validacionRestricciones: ReturnType<
+      typeof RestriccionesValidatorV2.validarPlanCompleto
+    > = {
+      restriccionesCumplidas: [],
+      restriccionesNoCumplidas: [],
+      advertencias: [],
+    };
+    let validacionMacros: ReturnType<typeof MacrosValidator.validar> = {
+      cumpleEstructura: false,
+      diasFaltantes: [],
+      comidasFaltantes: [],
+      advertencias: [],
+      macrosPorDia: {},
+      bandaGlobal: 'VERDE',
+      puedeAceptar: false,
+    };
 
-  private obtenerFactorActividad(nivel: string): number {
-    switch (nivel) {
-      case 'SEDENTARIO':
-        return 1.2;
-      case 'BAJO':
-        return 1.375;
-      case 'MODERADO':
-        return 1.55;
-      case 'ALTO':
-        return 1.725;
-      default:
-        return 1.2;
-    }
-  }
+    let intentoGroq = 0;
+    let planJsonFinal: PlanAlimentacionDatosJson | null = null;
 
-  private construirPrompt(
-    contexto: ContextoPaciente,
-    caloriasObjetivo: number,
-    diasAGenerar: number,
-  ): string {
-    return `Eres un nutricionista profesional. Genera un plan alimenticio semanal para un paciente.
-
-CONTEXTO DEL PACIENTE (anonimizado):
-- Objetivo: ${contexto.objetivoPersonal}
-- Nivel de actividad física: ${contexto.nivelActividadFisica}
-- Peso: ${contexto.peso ?? 'No especificado'} kg
-- Altura: ${contexto.altura ?? 'No especificado'} cm
-- Alergias: ${contexto.alergias.length > 0 ? contexto.alergias.join(', ') : 'Ninguna'}
-- Patologías: ${contexto.patologias.length > 0 ? contexto.patologias.join(', ') : 'Ninguna'}
-- Restricciones alimentarias: ${contexto.restriccionesAlimentarias ?? 'Ninguna'}
-- Frecuencia de comidas: ${contexto.frecuenciaComidas ?? '4'} comidas diarias
-- Medicamentos actuales: ${contexto.medicamentosActuales ?? 'Ninguno'}
-
-PARÁMETROS DEL PLAN:
-- Calorías objetivo diarias: ${caloriasObjetivo} kcal
-- Días a generar: ${diasAGenerar}
-- Comidas por día (OBLIGATORIAS): DESAYUNO, ALMUERZO, MERIENDA, CENA, COLACION
-
-REGLAS IMPORTANTES:
-1. NUNCA incluyas ingredientes que estén en las alergias del paciente
-2. Considera las patologías y restricciones alimentarias
-3. Distribuye las calorías de forma equilibrada entre las comidas
-4. Varía las comidas entre días para evitar repetición
-5. Incluye variedad de alimentos y grupos alimenticios
-6. Debes devolver EXACTAMENTE ${diasAGenerar} días, numerados desde 1 hasta ${diasAGenerar}
-7. Cada día debe incluir EXACTAMENTE 5 comidas: DESAYUNO, ALMUERZO, MERIENDA, CENA y COLACION
-8. La COLACION es obligatoria en TODOS los días
-9. Responde SOLO con el JSON solicitado
-
-Genera el plan en formato JSON.`;
-  }
-
-  private completarEstructuraPlanSemanal(
-    plan: PlanSemanalIA,
-    diasEsperados: number,
-  ): PlanSemanalIA {
-    const diasFuente = Array.isArray(plan.dias) ? plan.dias : [];
-    const plantillasPorTipo = new Map<TipoComida, RecomendacionComida>();
-
-    for (const dia of diasFuente) {
-      for (const comida of dia.comidas ?? []) {
-        const tipoNormalizado = this.normalizarTipoComida(comida.tipoComida);
-        if (!tipoNormalizado) continue;
-
-        if (!plantillasPorTipo.has(tipoNormalizado)) {
-          plantillasPorTipo.set(
-            tipoNormalizado,
-            this.clonarComida(comida, tipoNormalizado),
+    while (intentoGroq < MAX_REINTENTOS_GROQ) {
+      intentoGroq++;
+      try {
+        planJsonFinal =
+          await this.aiProvider.generarRecomendacion<PlanAlimentacionDatosJson>(
+            this.combinarPrompts(systemPrompt, userPrompt),
+            {},
           );
-        }
-      }
-    }
-
-    const diasCompletos: DiaPlanSemanal[] = [];
-
-    for (let diaNumero = 1; diaNumero <= diasEsperados; diaNumero += 1) {
-      const diaOriginal = diasFuente.find((dia) => dia.dia === diaNumero);
-      const comidasPorTipo = new Map<TipoComida, RecomendacionComida>();
-
-      for (const comida of diaOriginal?.comidas ?? []) {
-        const tipoNormalizado = this.normalizarTipoComida(comida.tipoComida);
-        if (!tipoNormalizado || comidasPorTipo.has(tipoNormalizado)) continue;
-
-        comidasPorTipo.set(
-          tipoNormalizado,
-          this.clonarComida(comida, tipoNormalizado),
-        );
-      }
-
-      const comidasCompletas = TIPOS_COMIDA_REQUERIDOS.map((tipoComida) => {
-        const existente = comidasPorTipo.get(tipoComida);
-        if (existente) return existente;
-
-        const plantilla = plantillasPorTipo.get(tipoComida);
-        if (plantilla) return this.clonarComida(plantilla, tipoComida);
-
-        return this.crearComidaPlaceholder(tipoComida);
-      });
-
-      diasCompletos.push({
-        dia: diaNumero,
-        comidas: comidasCompletas,
-      });
-    }
-
-    const sumaCalorias = diasCompletos.reduce((acumulado, dia) => {
-      const caloriasDia = dia.comidas.reduce(
-        (total, comida) => total + comida.caloriasEstimadas,
-        0,
-      );
-
-      return acumulado + caloriasDia;
-    }, 0);
-
-    const caloriasPromedio =
-      diasEsperados > 0 ? Math.round(sumaCalorias / diasEsperados) : 0;
-
-    return {
-      ...plan,
-      dias: diasCompletos,
-      caloriasTotalesDiarias:
-        caloriasPromedio > 0 ? caloriasPromedio : plan.caloriasTotalesDiarias,
-    };
-  }
-
-  private normalizarTipoComida(tipoComida: string): TipoComida | null {
-    const normalizado = tipoComida
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toUpperCase()
-      .trim();
-
-    if (normalizado === 'DESAYUNO') return 'DESAYUNO';
-    if (normalizado === 'ALMUERZO') return 'ALMUERZO';
-    if (normalizado === 'MERIENDA') return 'MERIENDA';
-    if (normalizado === 'CENA') return 'CENA';
-    if (normalizado === 'COLACION') return 'COLACION';
-
-    return null;
-  }
-
-  private clonarComida(
-    comida: RecomendacionComida,
-    tipoComida: TipoComida,
-  ): RecomendacionComida {
-    return {
-      nombre: comida.nombre || `Comida ${tipoComida.toLowerCase()}`,
-      descripcion: comida.descripcion || 'Comida sugerida por IA',
-      ingredientes: comida.ingredientes.filter(
-        (item) => item.trim().length > 0,
-      ),
-      caloriasEstimadas: this.normalizarNumero(comida.caloriasEstimadas, 250),
-      proteinas: this.normalizarNumero(comida.proteinas, 15),
-      carbohidratos: this.normalizarNumero(comida.carbohidratos, 25),
-      grasas: this.normalizarNumero(comida.grasas, 10),
-      tipoComida,
-    };
-  }
-
-  private normalizarNumero(valor: number, fallback: number): number {
-    if (!Number.isFinite(valor) || valor < 0) return fallback;
-    return Math.round(valor);
-  }
-
-  private crearComidaPlaceholder(tipoComida: TipoComida): RecomendacionComida {
-    const placeholders: Record<TipoComida, RecomendacionComida> = {
-      DESAYUNO: {
-        nombre: 'Desayuno equilibrado',
-        descripcion: 'Yogur natural con avena y fruta',
-        ingredientes: ['Yogur natural', 'Avena', 'Fruta de estación'],
-        caloriasEstimadas: 350,
-        proteinas: 18,
-        carbohidratos: 45,
-        grasas: 10,
-        tipoComida: 'DESAYUNO',
-      },
-      ALMUERZO: {
-        nombre: 'Almuerzo balanceado',
-        descripcion: 'Proteína magra con vegetales y cereal integral',
-        ingredientes: ['Pollo', 'Arroz integral', 'Verduras mixtas'],
-        caloriasEstimadas: 550,
-        proteinas: 35,
-        carbohidratos: 55,
-        grasas: 16,
-        tipoComida: 'ALMUERZO',
-      },
-      MERIENDA: {
-        nombre: 'Merienda nutritiva',
-        descripcion: 'Lácteo y fruta para media tarde',
-        ingredientes: ['Queso untable magro', 'Fruta fresca'],
-        caloriasEstimadas: 220,
-        proteinas: 12,
-        carbohidratos: 25,
-        grasas: 8,
-        tipoComida: 'MERIENDA',
-      },
-      CENA: {
-        nombre: 'Cena liviana',
-        descripcion: 'Proteína magra con vegetales cocidos',
-        ingredientes: ['Pescado', 'Pure de calabaza', 'Ensalada verde'],
-        caloriasEstimadas: 480,
-        proteinas: 32,
-        carbohidratos: 38,
-        grasas: 16,
-        tipoComida: 'CENA',
-      },
-      COLACION: {
-        nombre: 'Colación saludable',
-        descripcion: 'Snack ligero entre comidas principales',
-        ingredientes: ['Fruta fresca', 'Frutos secos'],
-        caloriasEstimadas: 180,
-        proteinas: 6,
-        carbohidratos: 18,
-        grasas: 9,
-        tipoComida: 'COLACION',
-      },
-    };
-
-    return placeholders[tipoComida];
-  }
-
-  private validarPlanSemanal(
-    plan: PlanSemanalIA,
-    contexto: ContextoPaciente,
-    diasEsperados: number,
-  ): void {
-    if (plan.caloriasTotalesDiarias < CALORIAS_MINIMAS_DIARIAS) {
-      plan.caloriasTotalesDiarias = CALORIAS_MINIMAS_DIARIAS;
-    }
-    if (plan.caloriasTotalesDiarias > CALORIAS_MAXIMAS_DIARIAS) {
-      plan.caloriasTotalesDiarias = CALORIAS_MAXIMAS_DIARIAS;
-    }
-
-    if (plan.dias.length !== diasEsperados) {
-      throw new BadRequestError(
-        `El plan generado no incluye ${diasEsperados} días completos.`,
-      );
-    }
-
-    for (const dia of plan.dias) {
-      const tiposPresentes = new Set<TipoComida>();
-
-      for (const comida of dia.comidas) {
-        tiposPresentes.add(comida.tipoComida);
-
-        const ingredientesLower = comida.ingredientes.map((i) =>
-          i.toLowerCase(),
-        );
-        for (const alergia of contexto.alergias) {
-          const alergiaLower = alergia.toLowerCase();
-          if (ingredientesLower.some((ing) => ing.includes(alergiaLower))) {
-            throw new BadRequestError(
-              `El plan contiene un alérgeno (${alergia}) en el día ${dia.dia}. Por seguridad, no se puede sugerir este plan.`,
-            );
+        break;
+      } catch (error) {
+        const mensaje = error instanceof Error ? error.message : String(error);
+        if (this.esTimeout(mensaje)) {
+          this.logger.warn(
+            `Groq timeout (intento ${intentoGroq}/${MAX_REINTENTOS_GROQ}): ${mensaje}`,
+          );
+          if (intentoGroq < MAX_REINTENTOS_GROQ) {
+            await this.sleep(TIMEOUT_BACKOFF_MS);
+            continue;
           }
+          throw new BadRequestError(`GROQ_TIMEOUT: ${mensaje}`, {
+            codigo: 'GROQ_TIMEOUT',
+            socioId: solicitud.socioId,
+          });
         }
-      }
 
-      for (const tipoComida of TIPOS_COMIDA_REQUERIDOS) {
-        if (!tiposPresentes.has(tipoComida)) {
-          throw new BadRequestError(
-            `El día ${dia.dia} no incluye la comida obligatoria ${tipoComida}.`,
+        if (this.esJsonInvalido(mensaje)) {
+          this.logger.warn(
+            `Groq JSON inválido (intento ${intentoGroq}/${MAX_REINTENTOS_GROQ}): ${mensaje}`,
           );
+          if (intentoGroq < MAX_REINTENTOS_GROQ) {
+            continue;
+          }
+          throw new BadRequestError(`GROQ_INVALID_JSON: ${mensaje}`, {
+            codigo: 'GROQ_INVALID_JSON',
+            socioId: solicitud.socioId,
+          });
         }
+
+        // Error no esperado: propagar
+        throw error;
       }
     }
+
+    if (!planJsonFinal) {
+      throw new BadRequestError('No se pudo generar el plan con la IA');
+    }
+
+    planJson = planJsonFinal;
+
+    // Validar estructura mínima del JSON
+    if (!this.esEstructuraValida(planJson)) {
+      throw new BadRequestError(
+        'PLAN_ESTRUCTURA_INVALIDA: el JSON generado no tiene la estructura esperada',
+        {
+          codigo: 'PLAN_ESTRUCTURA_INVALIDA',
+          socioId: solicitud.socioId,
+        },
+      );
+    }
+
+    // 7) Validar restricciones con reintentos por instrucción correctiva
+    let intentoRestricciones = 0;
+    while (intentoRestricciones <= MAX_REINTENTOS_RESTRICCIONES) {
+      validacionRestricciones = RestriccionesValidatorV2.validarPlanCompleto(
+        planJson,
+        fichaClinica,
+      );
+
+      if (validacionRestricciones.restriccionesNoCumplidas.length === 0) {
+        break;
+      }
+
+      intentoRestricciones++;
+      if (intentoRestricciones > MAX_REINTENTOS_RESTRICCIONES) {
+        advertencias.push(
+          `Restricciones no cumplidas tras ${MAX_REINTENTOS_RESTRICCIONES} reintentos. Plan persistido con advertencia.`,
+        );
+        break;
+      }
+
+      // Regenerar con instrucción correctiva
+      const instruccionCorrectiva =
+        PromptRestriccionesInstructionBuilder.generar(
+          validacionRestricciones.restriccionesNoCumplidas,
+        );
+      const userPromptConCorreccion = `${userPrompt}\n\nCORRECCIÓN OBLIGATORIA: ${instruccionCorrectiva}`;
+
+      try {
+        const nuevoPlan =
+          await this.aiProvider.generarRecomendacion<PlanAlimentacionDatosJson>(
+            this.combinarPrompts(systemPrompt, userPromptConCorreccion),
+            {},
+          );
+        if (this.esEstructuraValida(nuevoPlan)) {
+          planJson = nuevoPlan;
+        } else {
+          break;
+        }
+      } catch {
+        // Si falla la regeneración, mantener el plan anterior
+        break;
+      }
+    }
+
+    // 8) Cross-check de razonamiento
+    if (planJson.razonamientoCumplimiento) {
+      const coherencia = RestriccionesValidatorV2.validarCoherenciaRazonamiento(
+        planJson.razonamientoCumplimiento,
+        validacionRestricciones,
+      );
+      if (!coherencia.coherente) {
+        this.logger.warn(
+          `Razonamiento incoherente: ${coherencia.contradicciones.length} contradicciones`,
+        );
+        advertencias.push(
+          `El razonamiento de la IA tiene ${coherencia.contradicciones.length} contradicciones con la validación.`,
+        );
+      }
+    }
+
+    // 9) Validar macros
+    const objetivoMacros: ObjetivoNutricional =
+      this.calcularObjetivoMacros(fichaClinica);
+
+    validacionMacros = MacrosValidator.validar(
+      planJson,
+      objetivoMacros,
+      diasAGenerar,
+      comidasPorDia,
+      fechaInicio,
+    );
+
+    if (!validacionMacros.cumpleEstructura) {
+      throw new BadRequestError(
+        `PLAN_ESTRUCTURA_INVALIDA: ${validacionMacros.advertencias.join('; ')}`,
+        {
+          codigo: 'PLAN_ESTRUCTURA_INVALIDA',
+          socioId: solicitud.socioId,
+        },
+      );
+    }
+
+    if (validacionMacros.bandaGlobal === 'ROJO') {
+      advertencias.push(
+        'El plan tiene macros fuera de rango (±10%). Se persiste con notificación al nutricionista.',
+      );
+    }
+
+    // 10) Persistir (transacción manual: plan + version)
+    const planGuardado = await this.planRepo.save(
+      this.construirPlanEntity(solicitud, planJson),
+    );
+    const versionGuardada = await this.planVersionRepo.crear({
+      idPlanAlimentacion: planGuardado.idPlanAlimentacion,
+      numeroVersion: 1,
+      datosJson: planJson,
+      motivoCambio: 'creacion_inicial',
+      activa: false,
+      createdBy: solicitud.nutricionistaId,
+    });
+
+    // 11) Auditoría PLAN_CREADO (tolerante a fallos)
+    try {
+      await this.auditoriaService.registrar({
+        accion: AccionAuditoria.PLAN_CREADO,
+        entidad: 'PlanAlimentacion',
+        entidadId: planGuardado.idPlanAlimentacion,
+        usuarioId: solicitud.nutricionistaId,
+        gimnasioId: solicitud.gimnasioId,
+        metadata: {
+          versionId: versionGuardada.idPlanAlimentacionVersion,
+          numeroVersion: 1,
+          modo: 'IA',
+          bandaGlobal: validacionMacros.bandaGlobal,
+          restriccionesCumplidas:
+            validacionRestricciones.restriccionesCumplidas.length,
+          restriccionesNoCumplidas:
+            validacionRestricciones.restriccionesNoCumplidas.length,
+          duracionMs: Date.now() - inicioMs,
+        },
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Auditoria PLAN_CREADO falló (no afecta operación): ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+
+    // 12) Notificaciones
+    // IMPORTANTE: Los tipos PLAN_REVISAR, PLAN_MACROS_FUERA_RANGO y
+    // PLAN_VALIDACION_WARNING se agregan al enum `TipoNotificacion` en
+    // Packet 4 (Task 4.8). Mientras tanto usamos PLAN_CREADO como placeholder
+    // y diferenciamos por metadata.alerta para no romper la auditoría.
+    try {
+      await this.notificacionesService.crear({
+        destinatarioId: solicitud.nutricionistaId,
+        tipo: TipoNotificacion.PLAN_CREADO,
+        titulo: 'Nuevo plan generado con IA',
+        mensaje: `Se generó un plan para el socio ${solicitud.socioId}. Revisalo antes de activarlo.`,
+        metadata: {
+          planId: planGuardado.idPlanAlimentacion,
+          versionId: versionGuardada.idPlanAlimentacionVersion,
+          alerta: 'PLAN_REVISAR',
+        },
+      });
+
+      if (validacionMacros.bandaGlobal === 'ROJO') {
+        await this.notificacionesService.crear({
+          destinatarioId: solicitud.nutricionistaId,
+          tipo: TipoNotificacion.PLAN_CREADO,
+          titulo: 'Macros fuera de rango',
+          mensaje: `El plan generado tiene macros fuera del rango aceptable (±10%). Banda global: ROJO.`,
+          metadata: {
+            planId: planGuardado.idPlanAlimentacion,
+            versionId: versionGuardada.idPlanAlimentacionVersion,
+            alerta: 'PLAN_MACROS_FUERA_RANGO',
+          },
+        });
+      }
+
+      if (
+        validacionRestricciones.restriccionesNoCumplidas.length > 0 &&
+        validacionRestricciones.restriccionesNoCumplidas.length >=
+          validacionRestricciones.restriccionesCumplidas.length
+      ) {
+        await this.notificacionesService.crear({
+          destinatarioId: solicitud.nutricionistaId,
+          tipo: TipoNotificacion.PLAN_CREADO,
+          titulo: 'Validación con advertencias',
+          mensaje: `El plan generado tiene ${validacionRestricciones.restriccionesNoCumplidas.length} violaciones de restricciones que no pudieron corregirse.`,
+          metadata: {
+            planId: planGuardado.idPlanAlimentacion,
+            versionId: versionGuardada.idPlanAlimentacionVersion,
+            alerta: 'PLAN_VALIDACION_WARNING',
+          },
+        });
+      }
+    } catch (error) {
+      this.logger.warn(
+        `Notificaciones fallaron (no afecta operación): ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+
+    this.logger.log(
+      `Plan IA generado: socio=${solicitud.socioId} planId=${planGuardado.idPlanAlimentacion} v${versionGuardada.numeroVersion} banda=${validacionMacros.bandaGlobal} duracionMs=${Date.now() - inicioMs}`,
+    );
+
+    return {
+      planAlimentacionId: planGuardado.idPlanAlimentacion,
+      versionId: versionGuardada.idPlanAlimentacionVersion,
+      numeroVersion: 1,
+      plan: planJson,
+      validacion: validacionRestricciones,
+      macros: validacionMacros,
+      advertencias,
+    };
+  }
+
+  // ========================================================================
+  // HELPERS PRIVADOS
+  // ========================================================================
+
+  private validarParametros(
+    diasAGenerar: number,
+    comidasPorDia: number,
+    alternativasPorComida: number,
+    notasGeneracion: string | null,
+  ): void {
+    if (diasAGenerar < 1 || diasAGenerar > 14) {
+      throw new BadRequestError(
+        `diasAGenerar debe estar entre 1 y 14 (recibido: ${diasAGenerar})`,
+      );
+    }
+    if (comidasPorDia < 1 || comidasPorDia > 5) {
+      throw new BadRequestError(
+        `comidasPorDia debe estar entre 1 y 5 (recibido: ${comidasPorDia})`,
+      );
+    }
+    if (alternativasPorComida < 1 || alternativasPorComida > 5) {
+      throw new BadRequestError(
+        `alternativasPorComida debe estar entre 1 y 5 (recibido: ${alternativasPorComida})`,
+      );
+    }
+    if (notasGeneracion && notasGeneracion.length > 1000) {
+      throw new BadRequestError(
+        `notasGeneracion excede el máximo de 1000 caracteres`,
+      );
+    }
+  }
+
+  private async cargarFichaClinica(
+    socioId: number,
+  ): Promise<FichaClinicaParaValidacion> {
+    const ficha = await this.fichaSaludRepo.findOne({
+      where: { socio: { idPersona: socioId } },
+      relations: { alergias: true, patologias: true },
+    });
+
+    if (!ficha) {
+      // Sin ficha: devolvemos ficha vacía. El plan se genera igual, sin
+      // restricciones duras que validar.
+      return {
+        alergias: [],
+        restriccionesAlimentarias: null,
+        patologias: [],
+        objetivoPersonal: null,
+      };
+    }
+
+    return {
+      alergias: ficha.alergias?.map((a) => a.nombre) ?? [],
+      restriccionesAlimentarias: ficha.restriccionesAlimentarias ?? null,
+      patologias:
+        ficha.patologias?.map((p) => p.nombre).filter((p) => p.length > 0) ??
+        [],
+      objetivoPersonal: ficha.objetivoPersonal ?? null,
+    };
+  }
+
+  /**
+   * Selección adaptativa 1-3 ejemplos de memoria para few-shot.
+   * Prioriza positivos. Si no hay 3+, complementa con negativos.
+   */
+  private seleccionarEjemplos(
+    memoria: Array<{
+      tipoEjemplo: 'POSITIVO' | 'NEGATIVO';
+      comentario: string;
+    }>,
+  ): Array<{ tipoEjemplo: 'POSITIVO' | 'NEGATIVO'; comentario: string }> {
+    const positivos = memoria.filter((m) => m.tipoEjemplo === 'POSITIVO');
+    const negativos = memoria.filter((m) => m.tipoEjemplo === 'NEGATIVO');
+
+    const seleccion: typeof memoria = [];
+
+    // Tomar hasta 3 positivos primero
+    for (let i = 0; i < Math.min(3, positivos.length); i++) {
+      seleccion.push(positivos[i]);
+    }
+
+    // Si faltan, completar con negativos hasta llegar a 3
+    if (seleccion.length < 3) {
+      for (let i = 0; seleccion.length < 3 && i < negativos.length; i++) {
+        seleccion.push(negativos[i]);
+      }
+    }
+
+    return seleccion;
+  }
+
+  private calcularObjetivoMacros(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    ficha: FichaClinicaParaValidacion,
+  ): ObjetivoNutricional {
+    // Heurística simple basada en objetivoPersonal. Una iteración futura
+    // podría usar Harris-Benedict con peso/altura/edad.
+    const calorias = 2000;
+    const proteinas = Math.round((calorias * 0.25) / 4);
+    const carbohidratos = Math.round((calorias * 0.5) / 4);
+    const grasas = Math.round((calorias * 0.25) / 9);
+
+    return {
+      caloriasDiarias: calorias,
+      proteinasDiarias: proteinas,
+      carbohidratosDiarios: carbohidratos,
+      grasasDiarias: grasas,
+    };
+  }
+
+  private construirPlanEntity(
+    solicitud: SolicitudPlanSemanal,
+    planJson: PlanAlimentacionDatosJson,
+  ): PlanAlimentacionOrmEntity {
+    const plan = new PlanAlimentacionOrmEntity();
+    plan.fechaCreacion = new Date();
+    plan.objetivoNutricional = `Plan IA - ${planJson.estructura.length} días`;
+    plan.activo = true;
+    plan.eliminadoEn = null;
+    plan.motivoEliminacion = null;
+    plan.motivoEdicion = null;
+    plan.ultimaEdicion = null;
+    plan.notasGeneracion = solicitud.notasGeneracion ?? null;
+    return plan;
+  }
+
+  private esEstructuraValida(plan: unknown): plan is PlanAlimentacionDatosJson {
+    if (!plan || typeof plan !== 'object') return false;
+    const p = plan as PlanAlimentacionDatosJson;
+    if (!Array.isArray(p.estructura)) return false;
+    if (typeof p.macrosPorDia !== 'object' || p.macrosPorDia === null) {
+      return false;
+    }
+    if (!p.razonamientoCumplimiento) return false;
+    if (!Array.isArray(p.razonamientoCumplimiento.restriccionesCumplidas)) {
+      return false;
+    }
+    if (!Array.isArray(p.razonamientoCumplimiento.restriccionesNoCumplidas)) {
+      return false;
+    }
+    // Cada elemento de estructura debe tener dia + comidas (array con al menos 1)
+    return p.estructura.every(
+      (d) =>
+        typeof d.dia === 'string' &&
+        Array.isArray(d.comidas) &&
+        d.comidas.length > 0 &&
+        d.comidas.every(
+          (c) =>
+            typeof c.tipo === 'string' &&
+            Array.isArray(c.alternativas) &&
+            c.alternativas.length > 0,
+        ),
+    );
+  }
+
+  private esTimeout(mensaje: string): boolean {
+    const lower = mensaje.toLowerCase();
+    return (
+      lower.includes('timeout') ||
+      lower.includes('timed out') ||
+      lower.includes('etimedout') ||
+      lower.includes('aborted')
+    );
+  }
+
+  private esJsonInvalido(mensaje: string): boolean {
+    const lower = mensaje.toLowerCase();
+    return (
+      lower.includes('json') ||
+      lower.includes('parse') ||
+      lower.includes('unexpected token')
+    );
+  }
+
+  private combinarPrompts(system: string, user: string): string {
+    return `${system}\n\n---\n\n${user}`;
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private proximoLunesAR(): Date {
+    const hoy = new Date();
+    const diaSemana = hoy.getUTCDay(); // 0=domingo, 1=lunes
+    const diffLunes = diaSemana === 0 ? 1 : 8 - diaSemana;
+    const lunes = new Date(hoy);
+    lunes.setUTCDate(hoy.getUTCDate() + diffLunes);
+    lunes.setUTCHours(0, 0, 0, 0);
+    return lunes;
   }
 }
+
+// Re-export del tipo de resumen de macros para uso externo
+export type { ResumenMacrosDia };

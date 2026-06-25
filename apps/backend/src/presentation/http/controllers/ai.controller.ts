@@ -7,10 +7,10 @@ import {
 } from '@nestjs/swagger';
 import {
   GenerarRecomendacionDto,
-  GenerarPlanSemanalDto,
   SugerirSustitucionDto,
   AnalizarPlanDto,
 } from 'src/application/ai/dto';
+import { SolicitudPlanSemanalHttpDTO } from 'src/application/ai/dtos/solicitud-plan-semanal.dto';
 import { GenerarIdeasComidaInputDto } from 'src/application/ai/dto/generar-ideas-comida.dto';
 import {
   GenerarRecomendacionComidaUseCase,
@@ -19,15 +19,19 @@ import {
   AnalizarPlanNutricionalUseCase,
   GenerarIdeasComidaUseCase,
 } from 'src/application/ai/use-cases';
+import type { RespuestaPlanSemanal } from 'src/application/ai/use-cases/generar-plan-semanal.use-case';
 import { Rol } from 'src/infrastructure/auth/decorators/role.decorator';
+import { Actions } from 'src/infrastructure/auth/decorators/actions.decorator';
 import { JwtAuthGuard } from 'src/infrastructure/auth/guards/auth.guard';
 import { RolesGuard } from 'src/infrastructure/auth/guards/roles.guard';
+import { ActionsGuard } from 'src/infrastructure/auth/guards/actions.guard';
+import { CurrentUser } from 'src/infrastructure/auth/decorators/current-user.decorator';
 import { Rol as RolEnum } from 'src/domain/entities/Usuario/Rol';
 
 @ApiTags('IA - Recomendaciones Nutricionales')
 @ApiBearerAuth()
 @Controller('ia')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, ActionsGuard)
 export class AiController {
   constructor(
     private readonly generarRecomendacionUseCase: GenerarRecomendacionComidaUseCase,
@@ -58,22 +62,33 @@ export class AiController {
   }
 
   @Post('plan-semanal')
-  @Rol(RolEnum.NUTRICIONISTA)
-  @ApiOperation({ summary: 'Generar plan semanal con IA' })
+  @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN, RolEnum.SUPERADMIN)
+  @Actions('PLANES_IA_GENERAR')
+  @ApiOperation({ summary: 'Generar plan semanal con IA v2' })
   @ApiResponse({
     status: 201,
     description: 'Plan semanal generado exitosamente',
   })
   @ApiResponse({
     status: 400,
-    description: 'Datos inválidos o alérgenos detectados',
+    description:
+      'Datos inválidos, estructura inválida o violación de validación',
   })
   @ApiResponse({ status: 401, description: 'No autorizado' })
-  async generarPlanSemanal(@Body() dto: GenerarPlanSemanalDto) {
+  @ApiResponse({ status: 403, description: 'Sin permisos' })
+  async generarPlanSemanal(
+    @Body() dto: SolicitudPlanSemanalHttpDTO,
+    @CurrentUser() user: { personaId: number; gimnasioId: number },
+  ): Promise<RespuestaPlanSemanal> {
     return this.generarPlanSemanalUseCase.execute({
       socioId: dto.socioId,
-      caloriasObjetivo: dto.caloriasObjetivo,
+      nutricionistaId: user.personaId,
+      gimnasioId: user.gimnasioId,
       diasAGenerar: dto.diasAGenerar,
+      comidasPorDia: dto.comidasPorDia,
+      alternativasPorComida: dto.alternativasPorComida,
+      notasGeneracion: dto.notasGeneracion,
+      fechaInicio: dto.fechaInicio,
     });
   }
 

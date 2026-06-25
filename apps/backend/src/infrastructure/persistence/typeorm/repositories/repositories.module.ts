@@ -17,11 +17,13 @@ import {
   FormacionAcademicaOrmEntity,
   GrupoAlimenticioOrmEntity,
   NutricionistaOrmEntity,
+  NutricionistaIAMemoriaOrmEntity,
   ObservacionClinicaOrmEntity,
   OpcionComidaOrmEntity,
   PatologiaOrmEntity,
   PersonaOrmEntity,
   PlanAlimentacionOrmEntity,
+  PlanAlimentacionVersionOrmEntity,
   TurnoOrmEntity,
   UsuarioOrmEntity,
   GimnasioOrmEntity,
@@ -37,6 +39,10 @@ import { FICHA_SALUD_VERSION_REPOSITORY } from 'src/domain/entities/FichaSalud/f
 import { FichaSaludVersionRepositoryImpl } from './ficha-salud-version.repository.impl';
 import { EXCEPCION_DISPONIBILIDAD_REPOSITORY } from 'src/domain/entities/Agenda/excepcion-disponibilidad.repository';
 import { ExcepcionDisponibilidadRepositoryImpl } from './excepcion-disponibilidad.repository';
+import { PLAN_ALIMENTACION_VERSION_REPOSITORY } from 'src/domain/repositories/plan-alimentacion-version.repository';
+import { PlanAlimentacionVersionRepositoryImpl } from './plan-alimentacion-version.repository.impl';
+import { NUTRICIONISTA_IA_MEMORIA_REPOSITORY } from 'src/domain/repositories/nutricionista-ia-memoria.repository';
+import { NutricionistaIAMemoriaRepositoryImpl } from './nutricionista-ia-memoria.repository.impl';
 
 // This module is responsible for providing TypeORM repositories for the application.
 // It imports the TypeOrmConfigModule for database configuration and registers the necessary entities.
@@ -55,11 +61,13 @@ import { ExcepcionDisponibilidadRepositoryImpl } from './excepcion-disponibilida
       FormacionAcademicaOrmEntity,
       GrupoAlimenticioOrmEntity,
       NutricionistaOrmEntity,
+      NutricionistaIAMemoriaOrmEntity,
       ObservacionClinicaOrmEntity,
       OpcionComidaOrmEntity,
       PatologiaOrmEntity,
       PersonaOrmEntity,
       PlanAlimentacionOrmEntity,
+      PlanAlimentacionVersionOrmEntity,
       TurnoOrmEntity,
       UsuarioOrmEntity,
       GimnasioOrmEntity,
@@ -89,6 +97,14 @@ import { ExcepcionDisponibilidadRepositoryImpl } from './excepcion-disponibilida
       provide: EXCEPCION_DISPONIBILIDAD_REPOSITORY,
       useClass: ExcepcionDisponibilidadRepositoryImpl,
     },
+    {
+      provide: PLAN_ALIMENTACION_VERSION_REPOSITORY,
+      useClass: PlanAlimentacionVersionRepositoryImpl,
+    },
+    {
+      provide: NUTRICIONISTA_IA_MEMORIA_REPOSITORY,
+      useClass: NutricionistaIAMemoriaRepositoryImpl,
+    },
   ],
   exports: [
     USUARIO_REPOSITORY,
@@ -98,6 +114,8 @@ import { ExcepcionDisponibilidadRepositoryImpl } from './excepcion-disponibilida
     POLITICA_OPERATIVA_REPOSITORY,
     FICHA_SALUD_VERSION_REPOSITORY,
     EXCEPCION_DISPONIBILIDAD_REPOSITORY,
+    PLAN_ALIMENTACION_VERSION_REPOSITORY,
+    NUTRICIONISTA_IA_MEMORIA_REPOSITORY,
   ],
 })
 export class RepositoriesModule {}
