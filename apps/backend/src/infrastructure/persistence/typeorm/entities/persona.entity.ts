@@ -137,6 +137,15 @@ export class NutricionistaOrmEntity extends PersonaOrmEntity {
   })
   matriculaDocumentoKey: string | null;
 
+  /**
+   * Notas persistentes privadas del nutricionista para la IA (max 2000 chars).
+   * Se concatenan con `plan_alimentacion.notas_generacion` al construir el
+   * prompt de generación de planes. Son preferencias blandas (no restricciones
+   * duras del socio) y aplican a TODAS las futuras generaciones del NUT.
+   */
+  @Column({ name: 'preferencias_ia', type: 'text', nullable: true })
+  preferenciasIa: string | null;
+
   @OneToMany(() => DiplomaOrmEntity, (diploma) => diploma.nutricionista, {
     eager: true,
     nullable: true,

@@ -62,6 +62,19 @@ export class PlanAlimentacionOrmEntity {
   @Column({ name: 'ultima_edicion', type: 'datetime', nullable: true })
   ultimaEdicion: Date | null;
 
+  /**
+   * Notas puntuales del nutricionista para esta generación específica del plan.
+   * Se concatenan con `nutricionista_orm.preferencias_ia` al construir el
+   * prompt de IA. Max 1000 chars.
+   */
+  @Column({
+    name: 'notas_generacion',
+    type: 'varchar',
+    length: 1000,
+    nullable: true,
+  })
+  notasGeneracion: string | null;
+
   @OneToMany(() => DiaPlanOrmEntity, (diaPlan) => diaPlan.planAlimentacion, {
     eager: true,
     nullable: false,

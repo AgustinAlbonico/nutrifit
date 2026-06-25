@@ -20,6 +20,9 @@ import { UsuarioOrmEntity } from 'src/infrastructure/persistence/typeorm/entitie
 import { OpcionComidaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/opcion-comida.entity';
 import { GrupoAlimenticioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/grupo-alimenticio.entity';
 import { PlanAlimentacionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/plan-alimentacion.entity';
+import { PlanAlimentacionVersionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/plan-alimentacion-version.entity';
+import { PlanFeedbackOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/plan-feedback.entity';
+import { NutricionistaIAMemoriaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/nutricionista-ia-memoria.entity';
 import { FormacionAcademicaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/formacion-academica.entity';
 import { ObservacionClinicaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/observacion-clinica.entity';
 import { AccionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/accion.entity';
@@ -74,6 +77,9 @@ export const AppDataSource = (
     NutricionistaOrmEntity,
     GrupoAlimenticioOrmEntity,
     PlanAlimentacionOrmEntity,
+    PlanAlimentacionVersionOrmEntity,
+    PlanFeedbackOrmEntity,
+    NutricionistaIAMemoriaOrmEntity,
     FormacionAcademicaOrmEntity,
     CertificacionOrmEntity,
     ObservacionClinicaOrmEntity,

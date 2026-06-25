@@ -159,6 +159,7 @@ function crearNutri(overrides: {
     gimnasioId: 1,
     fechaBaja: overrides.fechaBaja ?? null,
     presentacion: 'Hola',
+    preferenciasIa: null,
     certificaciones: [],
     observaciones: null,
   };

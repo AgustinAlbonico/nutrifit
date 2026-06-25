@@ -108,6 +108,7 @@ export class NutricionistaRepositoryImplementation implements NutricionistaRepos
           matriculaDocumentoKey: entity.matriculaDocumentoKey,
           fechaBaja: entity.fechaBaja,
           presentacion: entity.presentacion,
+          preferenciasIa: entity.preferenciasIa,
         },
       );
 
@@ -289,6 +290,7 @@ export class NutricionistaRepositoryImplementation implements NutricionistaRepos
       fechaBaja: nutricionista.fechaBaja,
       gimnasioId,
       presentacion: nutricionista.presentacion,
+      preferenciasIa: nutricionista.preferenciasIa,
     };
   }
 
@@ -323,6 +325,7 @@ export class NutricionistaRepositoryImplementation implements NutricionistaRepos
       orm.presentacion ?? null,
       orm.duracionTurnoMin ?? 30,
       orm.matriculaDocumentoKey ?? null,
+      orm.preferenciasIa ?? null,
     );
 
     // Establecer gimnasioId del ORM (heredado de PersonaOrmEntity como columna directa)

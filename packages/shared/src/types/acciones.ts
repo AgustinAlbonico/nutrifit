@@ -147,6 +147,37 @@ export const ACCIONES_METADATA: Record<string, AccionDescripcion> = {
     descripcion: 'Permite al socio ver sus propios planes alimentarios',
     categoria: 'Planes',
   },
+  'planes-ia.generar': {
+    codigo: 'planes-ia.generar',
+    descripcion: 'Permite generar planes semanales con asistencia de IA',
+    categoria: 'Planes IA',
+  },
+  'planes-ia.regenerar': {
+    codigo: 'planes-ia.regenerar',
+    descripcion: 'Permite regenerar un plan o parte del mismo con IA',
+    categoria: 'Planes IA',
+  },
+  'planes-ia.feedback': {
+    codigo: 'planes-ia.feedback',
+    descripcion: 'Permite votar y comentar sobre versiones de planes IA',
+    categoria: 'Planes IA',
+  },
+  'planes-ia.memoria.editar': {
+    codigo: 'planes-ia.memoria.editar',
+    descripcion:
+      'Permite editar las preferencias persistentes y la memoria IA del nutricionista',
+    categoria: 'Planes IA',
+  },
+  'planes.activar': {
+    codigo: 'planes.activar',
+    descripcion: 'Permite activar una version de un plan alimentario',
+    categoria: 'Planes',
+  },
+  'planes.finalizar': {
+    codigo: 'planes.finalizar',
+    descripcion: 'Permite finalizar un plan alimentario activo',
+    categoria: 'Planes',
+  },
 
   // Pacientes
   'pacientes.ver': {
@@ -231,6 +262,12 @@ export const ACCIONES = {
   PLANES_EDITAR: 'planes.editar',
   PLANES_VER: 'planes.ver',
   MIS_PLANES_VER: 'mis-planes.ver',
+  PLANES_IA_GENERAR: 'planes-ia.generar',
+  PLANES_IA_REGENERAR: 'planes-ia.regenerar',
+  PLANES_IA_FEEDBACK: 'planes-ia.feedback',
+  PLANES_IA_MEMORIA_EDITAR: 'planes-ia.memoria.editar',
+  PLANES_ACTIVAR: 'planes.activar',
+  PLANES_FINALIZAR: 'planes.finalizar',
 
   // Pacientes
   PACIENTES_VER: 'pacientes.ver',
