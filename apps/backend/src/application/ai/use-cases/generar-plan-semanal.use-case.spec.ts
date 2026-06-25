@@ -20,6 +20,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { GenerarPlanSemanalUseCase } from './generar-plan-semanal.use-case';
 import { PromptPlanSemanalBuilder } from '../builders/prompt-plan-semanal.builder';
+import { SeleccionarEjemplosMemoriaUseCase } from 'src/application/ia-memoria/use-cases/seleccionar-ejemplos-memoria.use-case';
 import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import { FichaSaludOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/ficha-salud.entity';
@@ -201,6 +202,7 @@ describe('GenerarPlanSemanalUseCase', () => {
       providers: [
         GenerarPlanSemanalUseCase,
         PromptPlanSemanalBuilder,
+        SeleccionarEjemplosMemoriaUseCase,
         { provide: AI_PROVIDER_SERVICE, useValue: aiProviderMock },
         { provide: APP_LOGGER_SERVICE, useValue: loggerMock },
         {

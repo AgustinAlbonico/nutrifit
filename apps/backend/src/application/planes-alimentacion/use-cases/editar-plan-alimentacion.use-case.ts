@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BaseUseCase } from 'src/application/shared/use-case.base';
 import {
@@ -33,6 +33,12 @@ import {
   RestriccionesValidator,
 } from 'src/application/restricciones/restricciones-validator.service';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
+import {
+  PLAN_ALIMENTACION_VERSION_REPOSITORY,
+  PlanAlimentacionVersionRepository,
+} from 'src/domain/repositories/plan-alimentacion-version.repository';
+import { PlanAlimentacionDatosJson } from 'src/domain/entities/PlanAlimentacionVersion/plan-alimentacion-datos-json';
+import { DiaSemana } from 'src/domain/entities/DiaPlan/DiaSemana';
 
 @Injectable()
 export class EditarPlanAlimentacionUseCase implements BaseUseCase {
@@ -53,6 +59,8 @@ export class EditarPlanAlimentacionUseCase implements BaseUseCase {
     private readonly nutricionistaRepo: Repository<NutricionistaOrmEntity>,
     @InjectRepository(UsuarioOrmEntity)
     private readonly usuarioRepo: Repository<UsuarioOrmEntity>,
+    @Inject(PLAN_ALIMENTACION_VERSION_REPOSITORY)
+    private readonly planVersionRepo: PlanAlimentacionVersionRepository,
     private readonly auditoriaService: AuditoriaService,
     private readonly dataSource: DataSource,
     private readonly notificacionesService: NotificacionesService,
@@ -299,6 +307,13 @@ export class EditarPlanAlimentacionUseCase implements BaseUseCase {
           metadata: { planId: planActualizado.idPlanAlimentacion },
         });
 
+        // Crear nueva versión inmutable con motivo='edicion_manual'
+        await this.crearVersionEdicion(
+          planActualizado.idPlanAlimentacion,
+          nutricionistaUserId,
+          dias,
+        );
+
         return mapPlanToResponse(planActualizado);
       } catch (err) {
         this.logger.error(
@@ -314,5 +329,135 @@ export class EditarPlanAlimentacionUseCase implements BaseUseCase {
       );
       throw error;
     }
+  }
+
+  /**
+   * Crea una nueva versión inmutable del plan tras una edición manual.
+   *
+   * El número de versión se calcula como (cantidad de versiones existentes + 1).
+   * El snapshot persiste el estado actual de los días/items del plan después
+   * de la edición. La versión queda como candidata (activa=false).
+   */
+  private async crearVersionEdicion(
+    idPlanAlimentacion: number,
+    nutricionistaUserId: number,
+    dias: DiaPlanOrmEntity[],
+  ): Promise<void> {
+    const versionesExistentes =
+      await this.planVersionRepo.listarPorPlan(idPlanAlimentacion);
+    const siguienteNumero =
+      versionesExistentes.length === 0
+        ? 1
+        : Math.max(...versionesExistentes.map((v) => v.numeroVersion)) + 1;
+
+    const datosJson = this.construirSnapshotDesdeDias(dias);
+
+    await this.planVersionRepo.crear({
+      idPlanAlimentacion,
+      numeroVersion: siguienteNumero,
+      datosJson,
+      motivoCambio: 'edicion_manual',
+      activa: false,
+      createdBy: nutricionistaUserId,
+    });
+  }
+
+  /**
+   * Convierte la estructura relacional (DiaPlan → OpcionComida → ItemComida)
+   * en el JSON inmutable esperado por plan_alimentacion_version.
+   */
+  private construirSnapshotDesdeDias(
+    dias: DiaPlanOrmEntity[],
+  ): PlanAlimentacionDatosJson {
+    const estructura: PlanAlimentacionDatosJson['estructura'] = [];
+    const macrosPorDia: PlanAlimentacionDatosJson['macrosPorDia'] =
+      Object.values(DiaSemana).reduce<
+        Record<
+          DiaSemana,
+          {
+            calorias: number;
+            proteinas: number;
+            carbohidratos: number;
+            grasas: number;
+          }
+        >
+      >(
+        (acc, dia) => {
+          acc[dia as DiaSemana] = {
+            calorias: 0,
+            proteinas: 0,
+            carbohidratos: 0,
+            grasas: 0,
+          };
+          return acc;
+        },
+        {} as Record<
+          DiaSemana,
+          {
+            calorias: number;
+            proteinas: number;
+            carbohidratos: number;
+            grasas: number;
+          }
+        >,
+      );
+
+    for (const dia of dias ?? []) {
+      const diaSemana = dia.dia;
+      const resumen = {
+        calorias: 0,
+        proteinas: 0,
+        carbohidratos: 0,
+        grasas: 0,
+      };
+
+      const comidas = (dia.opcionesComida ?? []).map((opcion) => {
+        const alternativas = (opcion.items ?? []).map((item) => {
+          const calorias = Number(item.calorias ?? 0);
+          const proteinas = Number(item.proteinas ?? 0);
+          const carbohidratos = Number(item.carbohidratos ?? 0);
+          const grasas = Number(item.grasas ?? 0);
+
+          resumen.calorias += calorias;
+          resumen.proteinas += proteinas;
+          resumen.carbohidratos += carbohidratos;
+          resumen.grasas += grasas;
+
+          const alimento = item.alimento as unknown as { idAlimento: number };
+
+          return {
+            nombre: item.alimentoNombre ?? '',
+            alimentos: [
+              {
+                alimentoId: alimento?.idAlimento ?? item.alimentoId,
+                cantidad: Number(item.cantidad ?? 0),
+                unidad: item.unidad ?? '',
+              },
+            ],
+            calorias,
+            proteinas,
+            carbohidratos,
+            grasas,
+          };
+        });
+
+        return {
+          tipo: opcion.tipoComida as never,
+          alternativas,
+        };
+      });
+
+      estructura.push({ dia: diaSemana, comidas });
+      macrosPorDia[diaSemana] = resumen;
+    }
+
+    return {
+      estructura,
+      macrosPorDia,
+      razonamientoCumplimiento: {
+        restriccionesCumplidas: [],
+        restriccionesNoCumplidas: [],
+      },
+    };
   }
 }

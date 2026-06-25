@@ -25,6 +25,7 @@ import {
   GenerarIdeasComidaUseCase,
 } from './use-cases';
 import { PromptPlanSemanalBuilder } from './builders/prompt-plan-semanal.builder';
+import { IaMemoriaModule } from '../ia-memoria/ia-memoria.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { PromptPlanSemanalBuilder } from './builders/prompt-plan-semanal.builder
     RestriccionesModule,
     RepositoriesModule,
     AuditoriaModule,
+    IaMemoriaModule,
   ],
   providers: [
     PrepararContextoPacienteUseCase,

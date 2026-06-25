@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BaseUseCase } from 'src/application/shared/use-case.base';
 import {
@@ -28,6 +28,12 @@ import {
   RestriccionesValidator,
 } from 'src/application/restricciones/restricciones-validator.service';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
+import {
+  PLAN_ALIMENTACION_VERSION_REPOSITORY,
+  PlanAlimentacionVersionRepository,
+} from 'src/domain/repositories/plan-alimentacion-version.repository';
+import { PlanAlimentacionDatosJson } from 'src/domain/entities/PlanAlimentacionVersion/plan-alimentacion-datos-json';
+import { DiaSemana } from 'src/domain/entities/DiaPlan/DiaSemana';
 
 @Injectable()
 export class CrearPlanAlimentacionUseCase implements BaseUseCase {
@@ -46,6 +52,8 @@ export class CrearPlanAlimentacionUseCase implements BaseUseCase {
     private readonly nutricionistaRepo: Repository<NutricionistaOrmEntity>,
     @InjectRepository(UsuarioOrmEntity)
     private readonly usuarioRepo: Repository<UsuarioOrmEntity>,
+    @Inject(PLAN_ALIMENTACION_VERSION_REPOSITORY)
+    private readonly planVersionRepo: PlanAlimentacionVersionRepository,
     private readonly notificacionesService: NotificacionesService,
     private readonly restriccionesValidator: RestriccionesValidator,
     private readonly tenantContext: TenantContextService,
@@ -260,6 +268,70 @@ export class CrearPlanAlimentacionUseCase implements BaseUseCase {
       });
     }
 
+    // Crear snapshot inmutable v1 (auditoría clínica)
+    await this.crearVersionInicial(
+      planGuardado.idPlanAlimentacion,
+      nutricionistaUserId,
+    );
+
     return mapPlanToResponse(planCompleto!);
+  }
+
+  /**
+   * Crea la versión 1 (inicial) del plan con motivoCambio='creacion_inicial'.
+   * Esta versión es candidata (activa=false) — se activa cuando el nutricionista
+   * aprueba explícitamente la versión. Es inmutable: cualquier edición produce
+   * una nueva versión con numeroVersion+1.
+   */
+  private async crearVersionInicial(
+    idPlanAlimentacion: number,
+    nutricionistaUserId: number,
+  ): Promise<void> {
+    const datosJsonVacio: PlanAlimentacionDatosJson = {
+      estructura: [],
+      macrosPorDia: Object.values(DiaSemana).reduce<
+        Record<
+          DiaSemana,
+          {
+            calorias: number;
+            proteinas: number;
+            carbohidratos: number;
+            grasas: number;
+          }
+        >
+      >(
+        (acc, dia) => {
+          acc[dia as DiaSemana] = {
+            calorias: 0,
+            proteinas: 0,
+            carbohidratos: 0,
+            grasas: 0,
+          };
+          return acc;
+        },
+        {} as Record<
+          DiaSemana,
+          {
+            calorias: number;
+            proteinas: number;
+            carbohidratos: number;
+            grasas: number;
+          }
+        >,
+      ),
+      razonamientoCumplimiento: {
+        restriccionesCumplidas: [],
+        restriccionesNoCumplidas: [],
+      },
+    };
+
+    await this.planVersionRepo.crear({
+      idPlanAlimentacion,
+      numeroVersion: 1,
+      datosJson: datosJsonVacio,
+      motivoCambio: 'creacion_inicial',
+      activa: false,
+      createdBy: nutricionistaUserId,
+    });
   }
 }

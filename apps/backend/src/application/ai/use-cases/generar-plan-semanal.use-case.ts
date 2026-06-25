@@ -73,6 +73,7 @@ import { NotificacionesService } from 'src/application/notificaciones/notificaci
 import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
 import { AccionAuditoria } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
 import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
+import { SeleccionarEjemplosMemoriaUseCase } from 'src/application/ia-memoria/use-cases/seleccionar-ejemplos-memoria.use-case';
 
 export interface SolicitudPlanSemanal {
   socioId: number;
@@ -115,6 +116,7 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
     @Inject(AI_PROVIDER_SERVICE)
     private readonly aiProvider: IAiProviderService,
     private readonly promptBuilder: PromptPlanSemanalBuilder,
+    private readonly seleccionarEjemplosMemoriaUseCase: SeleccionarEjemplosMemoriaUseCase,
     private readonly notificacionesService: NotificacionesService,
     private readonly auditoriaService: AuditoriaService,
     @Inject(APP_LOGGER_SERVICE)
@@ -154,12 +156,29 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
       );
     }
 
-    // 4) Cargar memoria IA (1-3 ejemplos, priorizando positivos)
-    const memoriaCompleta = await this.memoriaRepo.obtenerParaSeleccion(
-      solicitud.nutricionistaId,
-      50,
-    );
-    const ejemplosMemoria = this.seleccionarEjemplos(memoriaCompleta);
+    // 4) Cargar memoria IA (1-3 ejemplos, scoring por keywords)
+    const objetivoTexto = fichaClinica.objetivoPersonal ?? '';
+    const restriccionesTexto = [
+      ...(fichaClinica.alergias ?? []),
+      ...(fichaClinica.restriccionesAlimentarias
+        ? [fichaClinica.restriccionesAlimentarias]
+        : []),
+      ...(fichaClinica.patologias ?? []),
+    ];
+    const ejemplosMemoriaScore =
+      await this.seleccionarEjemplosMemoriaUseCase.ejecutar({
+        nutricionistaId: solicitud.nutricionistaId,
+        contexto: {
+          objetivoTexto,
+          restricciones: restriccionesTexto,
+        },
+        cantidadMaxima: 3,
+        repo: this.memoriaRepo,
+      });
+    const ejemplosMemoria = ejemplosMemoriaScore.map((e) => ({
+      tipoEjemplo: e.tipoEjemplo,
+      comentario: e.comentario,
+    }));
 
     // 5) Construir prompt
     const { systemPrompt, userPrompt } = this.promptBuilder.construir({
@@ -519,36 +538,6 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
         [],
       objetivoPersonal: ficha.objetivoPersonal ?? null,
     };
-  }
-
-  /**
-   * Selección adaptativa 1-3 ejemplos de memoria para few-shot.
-   * Prioriza positivos. Si no hay 3+, complementa con negativos.
-   */
-  private seleccionarEjemplos(
-    memoria: Array<{
-      tipoEjemplo: 'POSITIVO' | 'NEGATIVO';
-      comentario: string;
-    }>,
-  ): Array<{ tipoEjemplo: 'POSITIVO' | 'NEGATIVO'; comentario: string }> {
-    const positivos = memoria.filter((m) => m.tipoEjemplo === 'POSITIVO');
-    const negativos = memoria.filter((m) => m.tipoEjemplo === 'NEGATIVO');
-
-    const seleccion: typeof memoria = [];
-
-    // Tomar hasta 3 positivos primero
-    for (let i = 0; i < Math.min(3, positivos.length); i++) {
-      seleccion.push(positivos[i]);
-    }
-
-    // Si faltan, completar con negativos hasta llegar a 3
-    if (seleccion.length < 3) {
-      for (let i = 0; seleccion.length < 3 && i < negativos.length; i++) {
-        seleccion.push(negativos[i]);
-      }
-    }
-
-    return seleccion;
   }
 
   private calcularObjetivoMacros(

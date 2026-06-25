@@ -44,4 +44,10 @@ export abstract class PlanFeedbackRepository {
   abstract obtenerPorVersion(
     versionId: number,
   ): Promise<PlanFeedbackEntity | null>;
+
+  /**
+   * Busca un feedback por su ID. Usado por `EditarFeedbackPlanUseCase`
+   * donde el controller ya validó el versionId.
+   */
+  abstract obtenerPorId(id: number): Promise<PlanFeedbackEntity | null>;
 }

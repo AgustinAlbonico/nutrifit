@@ -7,3 +7,7 @@ export * from './listar-planes-socio.use-case';
 export * from './listar-planes-nutricionista.use-case';
 export * from './vaciar-contenido-plan.use-case';
 export * from './plan-alimentacion.mapper';
+export * from './listar-versiones-plan.use-case';
+export * from './obtener-version-plan.use-case';
+export * from './crear-feedback-plan.use-case';
+export * from './editar-feedback-plan.use-case';

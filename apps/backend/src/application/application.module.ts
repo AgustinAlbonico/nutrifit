@@ -10,6 +10,7 @@ import { TurnosModule } from './turnos/turnos.module';
 import { PlanesAlimentacionModule } from './planes-alimentacion/planes-alimentacion.module';
 import { AiModule } from './ai/ai.module';
 import { ReportesModule } from './reportes/reportes.module';
+import { IaMemoriaModule } from './ia-memoria/ia-memoria.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ReportesModule } from './reportes/reportes.module';
     PlanesAlimentacionModule,
     AiModule,
     ReportesModule,
+    IaMemoriaModule,
   ],
   exports: [
     AuthModule,
@@ -36,6 +38,7 @@ import { ReportesModule } from './reportes/reportes.module';
     PlanesAlimentacionModule,
     AiModule,
     ReportesModule,
+    IaMemoriaModule,
   ],
 })
 export class ApplicationModule {}

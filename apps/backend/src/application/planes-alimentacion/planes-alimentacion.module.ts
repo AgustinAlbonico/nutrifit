@@ -20,10 +20,15 @@ import {
   ObtenerPlanActivoSocioUseCase,
   ObtenerPlanPorIdUseCase,
   VaciarContenidoPlanUseCase,
+  ListarVersionesPlanUseCase,
+  ObtenerVersionPlanUseCase,
+  CrearFeedbackPlanUseCase,
+  EditarFeedbackPlanUseCase,
 } from './use-cases';
 import { AuditoriaModule } from 'src/infrastructure/services/auditoria/auditoria.module';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import { RestriccionesModule } from 'src/application/restricciones/restricciones.module';
+import { RepositoriesModule } from 'src/infrastructure/persistence/typeorm/repositories/repositories.module';
 
 @Module({
   imports: [
@@ -40,6 +45,7 @@ import { RestriccionesModule } from 'src/application/restricciones/restricciones
     ]),
     AuditoriaModule,
     RestriccionesModule,
+    RepositoriesModule,
   ],
   providers: [
     CrearPlanAlimentacionUseCase,
@@ -50,6 +56,10 @@ import { RestriccionesModule } from 'src/application/restricciones/restricciones
     ListarPlanesSocioUseCase,
     ListarPlanesNutricionistaUseCase,
     VaciarContenidoPlanUseCase,
+    ListarVersionesPlanUseCase,
+    ObtenerVersionPlanUseCase,
+    CrearFeedbackPlanUseCase,
+    EditarFeedbackPlanUseCase,
     NotificacionesService,
   ],
   exports: [
@@ -61,6 +71,10 @@ import { RestriccionesModule } from 'src/application/restricciones/restricciones
     ListarPlanesSocioUseCase,
     ListarPlanesNutricionistaUseCase,
     VaciarContenidoPlanUseCase,
+    ListarVersionesPlanUseCase,
+    ObtenerVersionPlanUseCase,
+    CrearFeedbackPlanUseCase,
+    EditarFeedbackPlanUseCase,
   ],
 })
 export class PlanesAlimentacionModule {}

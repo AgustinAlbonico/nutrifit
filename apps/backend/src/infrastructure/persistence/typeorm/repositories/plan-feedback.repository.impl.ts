@@ -42,9 +42,7 @@ export class PlanFeedbackRepositoryImpl implements PlanFeedbackRepository {
       where: { idPlanFeedback: id },
     });
     if (!updated) {
-      throw new Error(
-        `PlanFeedback ${id} no encontrado después de actualizar`,
-      );
+      throw new Error(`PlanFeedback ${id} no encontrado después de actualizar`);
     }
     return this.toDomain(updated);
   }
@@ -54,6 +52,13 @@ export class PlanFeedbackRepositoryImpl implements PlanFeedbackRepository {
   ): Promise<PlanFeedbackEntity | null> {
     const orm = await this.repo.findOne({
       where: { idPlanAlimentacionVersion: versionId },
+    });
+    return orm ? this.toDomain(orm) : null;
+  }
+
+  async obtenerPorId(id: number): Promise<PlanFeedbackEntity | null> {
+    const orm = await this.repo.findOne({
+      where: { idPlanFeedback: id },
     });
     return orm ? this.toDomain(orm) : null;
   }
