@@ -1,74 +1,56 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+/**
+ * PlanEditorPage — Editor de plan con IA V2.
+ *
+ * Compone los nuevos componentes del change `plan-alimentacion-ia-v2`:
+ * - `<GeneradorPlanSemanal />` form V2 (RHF + Zod)
+ * - `<WeeklyPlanGrid />` vista V2 con MacrosBadge + botones regen por scope
+ * - `<RazonamientoCumplimiento />` panel colapsable con detalles de validación
+ * - `<VersionHistory />` sidebar con historial inmutable de versiones
+ * - `<FeedbackModal />` modal de feedback (botón flotante)
+ *
+ * Layout: grid responsive (1 columna mobile, 3 columnas desktop).
+ * En desktop: main (2/3) + sidebar versiones (1/3).
+ * Botón flotante "Dar feedback" abre el FeedbackModal cuando hay un plan activo.
+ *
+ * Accesibilidad:
+ * - Landmarks semánticos: <main>, <aside>, <header>, <section>
+ * - aria-live en mensajes de error
+ * - Focus management al abrir modal
+ * - Skip-links implícitos por jerarquía de headings
+ */
+
+import { useMemo, useState, useEffect } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
-import { ArrowLeft, Save, Info, AlertCircle, Sparkles } from 'lucide-react';
+import {
+  ArrowLeft,
+  Sparkles,
+  ThumbsUp,
+  ExternalLink,
+  Loader2,
+} from 'lucide-react';
 import { toast } from 'sonner';
-import type { PaginatedData } from '@nutrifit/shared';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { apiRequest } from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AvatarPaciente } from '@/components/ui/avatar-paciente';
 
-import { WeeklyPlanGrid, type ComidaEnPlan } from '@/components/plan/WeeklyPlanGrid';
-import { FoodSearchDialog } from '@/components/plan/FoodSearchDialog';
-import { ExportPlanPDFButton } from '@/components/plan/ExportPlanPDFButton';
-import { GeneradorPlanSemanal, GeneradorRecomendacion, IdeasComidaPanel } from '@/components/ia';
-import { buscarAlimentosPorTexto, type Alimento } from '@/lib/api/alimentos';
-import type { PlanSemanalIA, RecomendacionComida, PropuestaIA } from '@/types/ia';
+import { GeneradorPlanSemanal } from '@/components/ia/GeneradorPlanSemanal';
+import { FeedbackModal } from '@/components/ia/FeedbackModal';
+import {
+  WeeklyPlanGrid,
+  type ManejadoresRegeneracion,
+} from '@/components/plan/WeeklyPlanGrid';
+import { VersionHistory } from '@/components/plan/VersionHistory';
+import { RazonamientoCumplimiento } from '@/components/plan/RazonamientoCumplimiento';
 
-const DIAS_SEMANA = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'] as const;
-const TIPOS_COMIDA = ['DESAYUNO', 'ALMUERZO', 'MERIENDA', 'CENA', 'COLACION'] as const;
-
-type DiaSemana = typeof DIAS_SEMANA[number];
-type TipoComida = typeof TIPOS_COMIDA[number];
-
-interface AlimentoRespuesta {
-  idAlimento: number;
-  nombre: string;
-  cantidad: number;
-  calorias: number | null;
-  proteinas: number | null;
-  carbohidratos: number | null;
-  grasas: number | null;
-  unidadMedida: string;
-}
-
-interface ItemRespuesta {
-  idItemComida: number;
-  cantidad: number;
-  unidad: string;
-  notas: string | null;
-  alimento: AlimentoRespuesta;
-}
-
-interface DiaRespuesta {
-  dia: string;
-  orden: number;
-  opcionesComida: Array<{
-    tipoComida: string;
-    comentarios: string | null;
-    items: ItemRespuesta[];
-  }>;
-}
-
-interface PlanRespuesta {
-  idPlanAlimentacion: number;
-  objetivoNutricional: string;
-  dias: DiaRespuesta[];
-}
-
-interface ApiRespuesta<T> {
-  success: boolean;
-  data: T;
-}
-
-interface FichaSalud {
-  [clave: string]: unknown;
-}
+import { apiRequest } from '@/lib/api';
+import type { PaginatedData } from '@nutrifit/shared';
+import type {
+  RespuestaPlanSemanalV2FE,
+  RespuestaRegeneracionFE,
+  SolicitudRegeneracionFE,
+} from '@/types/ia';
 
 interface PacienteResumen {
   socioId: number;
@@ -77,845 +59,415 @@ interface PacienteResumen {
   fotoPerfilUrl: string | null;
 }
 
-function crearComidasVacias(): ComidaEnPlan[] {
-  const comidas: ComidaEnPlan[] = [];
-  DIAS_SEMANA.forEach(dia => {
-    TIPOS_COMIDA.forEach(tipoComida => {
-      comidas.push({
-        dia,
-        tipoComida,
-        alimentos: [],
-      });
-    });
-  });
-  return comidas;
-}
-
 export function PlanEditorPage() {
-  const { token } = useAuth();
-  const { personaId } = useAuth();
+  const { token, personaId } = useAuth();
   const params = useParams({ strict: false }) as { socioId?: string };
   const navigate = useNavigate();
-  const socioId = params.socioId;
+  const socioIdNumero = params.socioId ? Number(params.socioId) : undefined;
 
-  const [cargando, establecerCargando] = useState(false);
-  const [guardando, establecerGuardando] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [planId, establecerPlanId] = useState<number | null>(null);
-  const [objetivoNutricional, establecerObjetivoNutricional] = useState('');
-  const [comidas, establecerComidas] = useState<ComidaEnPlan[]>(crearComidasVacias);
-  const [fichaSalud, establecerFichaSalud] = useState<FichaSalud | null>(null);
-  const [pacienteSeleccionado, establecerPacienteSeleccionado] = useState<PacienteResumen | null>(null);
-  const [diaSeleccionadoIa, establecerDiaSeleccionadoIa] = useState<DiaSemana>('LUNES');
-  const [tipoComidaSeleccionadaIa, establecerTipoComidaSeleccionadaIa] =
-    useState<TipoComida>('ALMUERZO');
-  const [planIaPendiente, establecerPlanIaPendiente] = useState<PlanSemanalIA | null>(null);
-  const [aplicandoIa, establecerAplicandoIa] = useState(false);
-  const [dialogoBusquedaAbierto, establecerDialogoBusquedaAbierto] = useState(false);
-  const [slotSeleccionado, establecerSlotSeleccionado] = useState<{ dia: DiaSemana; tipoComida: TipoComida } | null>(null);
+  // Estado principal: respuesta del backend con el plan generado
+  const [respuesta, setRespuesta] = useState<RespuestaPlanSemanalV2FE | null>(
+    null,
+  );
+  // Versión seleccionada (click en sidebar → carga otra versión)
+  const [versionSeleccionadaId, setVersionSeleccionadaId] = useState<
+    number | null
+  >(null);
 
-  const [, establecerAlimentosCache] = useState<Map<number, Alimento>>(new Map());
+  // Modal de feedback
+  const [feedbackAbierto, setFeedbackAbierto] = useState(false);
 
-  const normalizarTexto = useCallback((texto: string): string => {
-    return texto
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .trim();
-  }, []);
+  // Slots editados manualmente (set conservador: el backend puede marcarlos,
+  // o el usuario marca antes de regenerar)
+  const [slotsEditadosManualmente, setSlotsEditadosManualmente] = useState<
+    Set<string>
+  >(new Set());
 
-  const mapearTipoComidaIA = useCallback((tipoComida: string): TipoComida | null => {
-    const tipo = normalizarTexto(tipoComida);
-    if (tipo === 'desayuno') return 'DESAYUNO';
-    if (tipo === 'almuerzo') return 'ALMUERZO';
-    if (tipo === 'merienda') return 'MERIENDA';
-    if (tipo === 'cena') return 'CENA';
-    if (tipo === 'colacion' || tipo === 'colacion') return 'COLACION';
-    return null;
-  }, [normalizarTexto]);
+  // Paciente (header avatar + nombre)
+  const [paciente, setPaciente] = useState<PacienteResumen | null>(null);
+  const [cargandoPaciente, setCargandoPaciente] = useState(false);
 
-  const obtenerAlergiasFicha = useMemo(() => {
-    if (!fichaSalud) return [] as string[];
-    const valor = fichaSalud['alergias'];
-
-    if (typeof valor === 'string') {
-      return valor
-        .split(',')
-        .map((item) => item.trim())
-        .filter(Boolean);
-    }
-
-    if (Array.isArray(valor)) {
-      const resultado: string[] = [];
-      valor.forEach((item) => {
-        if (typeof item === 'string') {
-          const limpio = item.trim();
-          if (limpio) resultado.push(limpio);
-          return;
-        }
-
-        if (typeof item === 'object' && item !== null && 'nombre' in item) {
-          const nombre = item.nombre;
-          if (typeof nombre === 'string' && nombre.trim()) {
-            resultado.push(nombre.trim());
-          }
-        }
-      });
-      return resultado;
-    }
-
-    return [] as string[];
-  }, [fichaSalud]);
-
+  // Carga paciente cuando cambia el socioId
   useEffect(() => {
-    if (!error) return;
-    const timer = setTimeout(() => setError(null), 5000);
-    return () => clearTimeout(timer);
-  }, [error]);
-
-  useEffect(() => {
-    if (!token || !socioId) return;
-
-    const cargarPlan = async () => {
-      try {
-        setError(null);
-        establecerCargando(true);
-        establecerPlanId(null);
-
-        const respuesta = await apiRequest<ApiRespuesta<PlanRespuesta>>(
-          `/planes-alimentacion/socio/${socioId}/activo`,
-          { token },
-        );
-
-        if (respuesta.data) {
-          establecerPlanId(respuesta.data.idPlanAlimentacion);
-          establecerObjetivoNutricional(respuesta.data.objetivoNutricional || '');
-
-          const nuevasComidas = crearComidasVacias();
-          const nuevoCache = new Map<number, Alimento>();
-
-          respuesta.data.dias.forEach(dia => {
-            dia.opcionesComida.forEach(opcion => {
-              const index = nuevasComidas.findIndex(
-                c => c.dia === dia.dia && c.tipoComida === opcion.tipoComida
-              );
-              if (index !== -1) {
-                nuevasComidas[index].alimentos = opcion.items.map(item => {
-                  const a = item.alimento;
-                  const alimento: Alimento = {
-                    idAlimento: a.idAlimento,
-                    nombre: a.nombre,
-                    cantidad: a.cantidad,
-                    unidadMedida: a.unidadMedida,
-                    calorias: a.calorias,
-                    proteinas: a.proteinas,
-                    carbohidratos: a.carbohidratos,
-                    grasas: a.grasas,
-                    grupoAlimenticio: null,
-                  };
-                  nuevoCache.set(a.idAlimento, alimento);
-                  return {
-                    alimento,
-                    cantidad: item.cantidad,
-                  };
-                });
-              }
-            });
-          });
-
-          establecerComidas(nuevasComidas);
-          establecerAlimentosCache(nuevoCache);
-        }
-
-        establecerCargando(false);
-      } catch (err) {
-        const mensaje = err instanceof Error ? err.message : 'No se pudo cargar el plan';
-        setError(mensaje);
-        establecerCargando(false);
-      }
-    };
-
-    void cargarPlan();
-  }, [token, socioId]);
-
-  useEffect(() => {
-    if (!token || !personaId || !socioId) return;
-
-    const cargarFichaSalud = async () => {
-      try {
-        const respuesta = await apiRequest<Record<string, unknown>>(
-          `/turnos/profesional/${personaId}/pacientes/${socioId}/ficha-salud`,
-          { token },
-        );
-        if (respuesta.data && typeof respuesta.data === 'object' && respuesta.data !== null) {
-          establecerFichaSalud(respuesta.data as FichaSalud);
-        }
-      } catch {
-        // Silencioso: es opcional
-      }
-    };
-
-    void cargarFichaSalud();
-  }, [token, personaId, socioId]);
-
-  useEffect(() => {
-    if (!token || !personaId || !socioId) return;
+    if (!token || !personaId || !socioIdNumero) return;
+    let cancelado = false;
 
     const cargarPaciente = async () => {
       try {
-        const respuesta = await apiRequest<ApiRespuesta<PaginatedData<PacienteResumen>>>(
-          `/turnos/profesional/${personaId}/pacientes`,
-          { token },
-        );
+        setCargandoPaciente(true);
+        const respuestaApi = await apiRequest<
+          PaginatedData<PacienteResumen>
+        >(`/turnos/profesional/${personaId}/pacientes`, { token });
 
-        const encontrado = (respuesta.data?.data ?? []).find(
-          (paciente) => String(paciente.socioId) === String(socioId),
-        );
+        if (cancelado) return;
 
-        establecerPacienteSeleccionado(encontrado ?? null);
+        const encontrado = (respuestaApi.data ?? []).find(
+          (p) => String(p.socioId) === String(socioIdNumero),
+        );
+        setPaciente(encontrado ?? null);
       } catch {
-        establecerPacienteSeleccionado(null);
+        if (!cancelado) setPaciente(null);
+      } finally {
+        if (!cancelado) setCargandoPaciente(false);
       }
     };
 
     void cargarPaciente();
-  }, [token, personaId, socioId]);
-
-  const alAgregarAlimento = useCallback((dia: DiaSemana, tipoComida: TipoComida) => {
-    establecerSlotSeleccionado({ dia, tipoComida });
-    establecerDialogoBusquedaAbierto(true);
-  }, []);
-
-  const alEditarCantidad = useCallback((dia: DiaSemana, tipoComida: TipoComida, indiceAlimento: number, cantidad: number) => {
-    establecerComidas(prev => {
-      const nuevas = [...prev];
-      const idx = nuevas.findIndex(c => c.dia === dia && c.tipoComida === tipoComida);
-      if (idx !== -1 && nuevas[idx].alimentos[indiceAlimento]) {
-        nuevas[idx] = {
-          ...nuevas[idx],
-          alimentos: [...nuevas[idx].alimentos],
-        };
-        nuevas[idx].alimentos[indiceAlimento] = {
-          ...nuevas[idx].alimentos[indiceAlimento],
-          cantidad,
-        };
-      }
-      return nuevas;
-    });
-  }, []);
-
-  const alEliminarAlimento = useCallback((dia: DiaSemana, tipoComida: TipoComida, indiceAlimento: number) => {
-    establecerComidas(prev => {
-      const nuevas = [...prev];
-      const idx = nuevas.findIndex(c => c.dia === dia && c.tipoComida === tipoComida);
-      if (idx !== -1) {
-        nuevas[idx] = {
-          ...nuevas[idx],
-          alimentos: nuevas[idx].alimentos.filter((_, i) => i !== indiceAlimento),
-        };
-      }
-      return nuevas;
-    });
-  }, []);
-
-  const alSeleccionarAlimento = useCallback((alimento: Alimento) => {
-    if (!slotSeleccionado) return;
-
-    establecerAlimentosCache(prev => {
-      const nuevo = new Map(prev);
-      nuevo.set(alimento.idAlimento, alimento);
-      return nuevo;
-    });
-
-    establecerComidas(prev => {
-      const nuevas = [...prev];
-      const idx = nuevas.findIndex(c => c.dia === slotSeleccionado.dia && c.tipoComida === slotSeleccionado.tipoComida);
-      if (idx !== -1) {
-        nuevas[idx] = {
-          ...nuevas[idx],
-          alimentos: [...nuevas[idx].alimentos, { alimento, cantidad: alimento.cantidad }],
-        };
-      }
-      return nuevas;
-    });
-
-    establecerDialogoBusquedaAbierto(false);
-    establecerSlotSeleccionado(null);
-  }, [slotSeleccionado]);
-
-  const buscarAlimentoParaTexto = useCallback(
-    async (texto: string): Promise<Alimento | null> => {
-      if (!token) return null;
-      const termino = texto.trim();
-      if (!termino) return null;
-
-      const resultados = await buscarAlimentosPorTexto(token, termino, 10);
-      if (resultados.length === 0) return null;
-
-      const terminoNormalizado = normalizarTexto(termino);
-      const exacto = resultados.find(
-        (alimento) => normalizarTexto(alimento.nombre) === terminoNormalizado,
-      );
-      if (exacto) return exacto;
-
-      const contenido = resultados.find((alimento) =>
-        normalizarTexto(alimento.nombre).includes(terminoNormalizado),
-      );
-      return contenido ?? resultados[0];
-    },
-    [token, normalizarTexto],
-  );
-
-  const mapearIngredientesAAlimentos = useCallback(
-    async (ingredientes: string[]): Promise<Alimento[]> => {
-      const unicos = Array.from(new Set(ingredientes.map((ing) => ing.trim()).filter(Boolean)));
-      const candidatos = await Promise.all(unicos.slice(0, 6).map((ing) => buscarAlimentoParaTexto(ing)));
-
-      const mapa = new Map<number, Alimento>();
-      candidatos.forEach((alimento) => {
-        if (!alimento) return;
-        mapa.set(alimento.idAlimento, alimento);
-      });
-
-      return Array.from(mapa.values());
-    },
-    [buscarAlimentoParaTexto],
-  );
-
-  const agregarPropuestaAlPlan = useCallback(
-    async (propuesta: PropuestaIA, dia: DiaSemana, tipoComida: TipoComida) => {
-      if (!token) {
-        toast.error('No hay sesión activa.');
-        return;
-      }
-
-      try {
-        establecerAplicandoIa(true);
-        const todosLosIngredientes = propuesta.ingredientes.map((ing) => ing.nombre.trim()).filter(Boolean);
-        const alimentos = await mapearIngredientesAAlimentos(todosLosIngredientes);
-
-        if (alimentos.length === 0) {
-          toast.error('No se encontraron alimentos del catálogo para la propuesta.');
-          return;
-        }
-
-        establecerComidas((prev) => {
-          const nuevas = [...prev];
-          const idx = nuevas.findIndex((c) => c.dia === dia && c.tipoComida === tipoComida);
-          if (idx === -1) return prev;
-
-          nuevas[idx] = {
-            ...nuevas[idx],
-            alimentos: alimentos.map((alimento) => ({
-              alimento,
-              cantidad: alimento.cantidad || 100,
-            })),
-          };
-          return nuevas;
-        });
-
-        toast.success(`Propuesta "${propuesta.nombre}" aplicada en ${dia} - ${tipoComida}.`);
-      } catch (err) {
-        const mensaje = err instanceof Error ? err.message : 'No se pudo aplicar la propuesta.';
-        toast.error(mensaje);
-      } finally {
-        establecerAplicandoIa(false);
-      }
-    },
-    [token, mapearIngredientesAAlimentos],
-  );
-
-  const aplicarRecomendacionesIa = useCallback(async (recomendaciones: RecomendacionComida[]) => {
-    if (recomendaciones.length === 0) {
-      toast.error('No hay recomendaciones para aplicar.');
-      return;
-    }
-
-    if (!token) {
-      toast.error('No hay sesión activa para aplicar sugerencias.');
-      return;
-    }
-
-    try {
-      establecerAplicandoIa(true);
-
-      // Recolectar todos los ingredientes únicos de todas las recomendaciones
-      const todosLosIngredientes = new Set<string>();
-      recomendaciones.forEach((rec) => {
-        rec.ingredientes.forEach((ing) => todosLosIngredientes.add(ing.trim()));
-      });
-
-      const alimentos = await mapearIngredientesAAlimentos(Array.from(todosLosIngredientes));
-
-      if (alimentos.length === 0) {
-        toast.error('No se encontraron alimentos del catálogo para las recomendaciones generadas.');
-        return;
-      }
-
-      establecerComidas((prev) => {
-        const nuevas = [...prev];
-        const idx = nuevas.findIndex(
-          (c) => c.dia === diaSeleccionadoIa && c.tipoComida === tipoComidaSeleccionadaIa,
-        );
-        if (idx === -1) return prev;
-
-        nuevas[idx] = {
-          ...nuevas[idx],
-          alimentos: alimentos.map((alimento) => ({
-            alimento,
-            cantidad: alimento.cantidad || 100,
-          })),
-        };
-
-        return nuevas;
-      });
-
-      toast.success(
-        `${recomendaciones.length} recomendacion${recomendaciones.length > 1 ? 'es' : ''} IA aplicada${recomendaciones.length > 1 ? 's' : ''} en ${diaSeleccionadoIa} - ${tipoComidaSeleccionadaIa}.`,
-      );
-    } catch (err) {
-      const mensaje = err instanceof Error ? err.message : 'No se pudo aplicar la recomendación IA';
-      toast.error(mensaje);
-    } finally {
-      establecerAplicandoIa(false);
-    }
-  }, [
-    token,
-    mapearIngredientesAAlimentos,
-    diaSeleccionadoIa,
-    tipoComidaSeleccionadaIa,
-  ]);
-
-  const aplicarPlanSemanalIa = useCallback(async (planObjetivo?: PlanSemanalIA) => {
-    const planAAplicar = planObjetivo ?? planIaPendiente;
-
-    if (!planAAplicar) {
-      toast.error('Primero generá un plan semanal con IA.');
-      return;
-    }
-
-    if (!token) {
-      toast.error('No hay sesión activa para aplicar sugerencias.');
-      return;
-    }
-
-    try {
-      establecerAplicandoIa(true);
-      const nuevasComidas = crearComidasVacias();
-
-      for (const diaIa of planAAplicar.dias) {
-        const dia = DIAS_SEMANA[diaIa.dia - 1];
-        if (!dia) continue;
-
-        for (const comidaIa of diaIa.comidas) {
-          const tipo = mapearTipoComidaIA(comidaIa.tipoComida);
-          if (!tipo) continue;
-
-          let alimentos = await mapearIngredientesAAlimentos(comidaIa.ingredientes);
-          if (alimentos.length === 0) {
-            const fallback = await buscarAlimentoParaTexto(comidaIa.nombre);
-            alimentos = fallback ? [fallback] : [];
-          }
-
-          if (alimentos.length === 0) continue;
-
-          const idx = nuevasComidas.findIndex((c) => c.dia === dia && c.tipoComida === tipo);
-          if (idx === -1) continue;
-
-          nuevasComidas[idx] = {
-            ...nuevasComidas[idx],
-            alimentos: alimentos.map((alimento) => ({
-              alimento,
-              cantidad: alimento.cantidad || 100,
-            })),
-          };
-        }
-      }
-
-      establecerComidas(nuevasComidas);
-      establecerPlanIaPendiente(null);
-      toast.success('Plan semanal IA aplicado en la grilla. Revisá y guardá los cambios.');
-    } catch (err) {
-      const mensaje = err instanceof Error ? err.message : 'No se pudo aplicar el plan semanal IA';
-      toast.error(mensaje);
-    } finally {
-      establecerAplicandoIa(false);
-    }
-  }, [
-    planIaPendiente,
-    token,
-    mapearTipoComidaIA,
-    mapearIngredientesAAlimentos,
-    buscarAlimentoParaTexto,
-  ]);
-
-  const guardarPlan = async () => {
-    if (!token || !socioId) {
-      setError('Faltan datos de autenticación');
-      return;
-    }
-
-    const objetivoNutricionalLimpio = objetivoNutricional.trim();
-    if (!objetivoNutricionalLimpio) {
-      const mensaje = 'El objetivo nutricional es obligatorio para guardar el plan.';
-      setError(mensaje);
-      toast.error(mensaje);
-      return;
-    }
-
-    if (!window.confirm('¿Estás seguro de que deseas guardar este plan de alimentación?')) {
-      return;
-    }
-
-    try {
-      setError(null);
-      establecerGuardando(true);
-
-      const diasPayload = DIAS_SEMANA.map((dia, index) => ({
-        dia,
-        orden: index + 1,
-        opcionesComida: TIPOS_COMIDA.map(tipoComida => {
-          const comida = comidas.find(c => c.dia === dia && c.tipoComida === tipoComida);
-          return {
-            tipoComida,
-            comentarios: '',
-            items: comida?.alimentos.map((item) => ({
-              alimentoId: item.alimento.idAlimento,
-              cantidad: item.cantidad,
-            })) ?? [],
-          };
-        }),
-      }));
-
-      if (planId) {
-        await apiRequest<ApiRespuesta<PlanRespuesta>>(
-          `/planes-alimentacion/${planId}`,
-          {
-            token,
-            method: 'PUT',
-              body: {
-                planId,
-                objetivoNutricional: objetivoNutricionalLimpio,
-                motivoEdicion: 'Edición desde grilla semanal',
-                dias: diasPayload,
-              },
-            },
-        );
-      } else {
-        await apiRequest<ApiRespuesta<PlanRespuesta>>(
-          '/planes-alimentacion',
-          {
-            token,
-            method: 'POST',
-              body: {
-                socioId: Number(socioId),
-                objetivoNutricional: objetivoNutricionalLimpio,
-                dias: diasPayload,
-              },
-            },
-        );
-      }
-
-      toast.success('Plan guardado correctamente');
-      establecerGuardando(false);
-
-      setTimeout(() => {
-        navigate({ to: `/profesional/plan/${socioId}` });
-      }, 1500);
-    } catch (err) {
-      const mensaje = err instanceof Error ? err.message : 'No se pudo guardar el plan';
-      setError(mensaje);
-      establecerGuardando(false);
-      toast.error(mensaje);
-    }
-  };
+    return () => {
+      cancelado = true;
+    };
+  }, [token, personaId, socioIdNumero]);
 
   const volverAlPlan = () => {
-    void navigate({ to: `/profesional/plan/${socioId}` });
+    if (socioIdNumero) {
+      void navigate({ to: `/profesional/plan/${socioIdNumero}` });
+    } else {
+      void navigate({ to: '/dashboard' });
+    }
   };
 
-  const tieneAlimentos = useMemo(() => {
-    return comidas.some(c => c.alimentos.length > 0);
-  }, [comidas]);
+  const irAMiPerfil = () => {
+    void navigate({ to: '/profesional/mi-perfil' });
+  };
 
-  if (cargando) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <div className="w-10 h-10 border-3 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
-        <p className="text-muted-foreground">Cargando editor de plan...</p>
-      </div>
-    );
-  }
+  // Handlers de regeneración
+  const alRegenerarPlan = () => {
+    if (!respuesta) return;
+    // La regeneración PLAN completa genera una nueva versión.
+    // Implementamos vía apiRequest directo (no usamos useIa para mantener
+    // el scope del componente acotado a esta página).
+    regenerar({
+      planAlimentacionVersionId: respuesta.versionId,
+      scope: 'PLAN',
+      confirmarPerdidaEdicionManual: true, // El usuario ya clickeó el botón
+    });
+  };
+
+  const alRegenerarDia: ManejadoresRegeneracion['alRegenerarDia'] = (dia) => {
+    if (!respuesta) return;
+    regenerar({
+      planAlimentacionVersionId: respuesta.versionId,
+      scope: 'DIA',
+      dia,
+    });
+  };
+
+  const alRegenerarAlternativa: ManejadoresRegeneracion['alRegenerarAlternativa'] =
+    ({ dia, comidaSlot, alternativaIndex }) => {
+      if (!respuesta) return;
+      regenerar({
+        planAlimentacionVersionId: respuesta.versionId,
+        scope: 'ALTERNATIVA',
+        dia,
+        comidaSlot,
+        alternativaIndex,
+      });
+    };
+
+  const regenerar = async (solicitud: SolicitudRegeneracionFE) => {
+    try {
+      const data = await apiRequest<RespuestaRegeneracionFE>(
+        '/ia/plan-semanal/regenerar',
+        {
+          method: 'POST',
+          body: solicitud,
+        },
+      );
+
+      // Actualizar respuesta con el nuevo plan y versionId
+      setRespuesta((prev) =>
+        prev
+          ? {
+              ...prev,
+              versionId: data.nuevaVersionId,
+              numeroVersion: data.numeroVersion,
+              plan: data.plan,
+              validacion: data.validacion,
+              macros: data.macros,
+              advertencias: prev.advertencias,
+            }
+          : null,
+      );
+      setVersionSeleccionadaId(data.nuevaVersionId);
+
+      toast.success(`Plan regenerado (v${data.numeroVersion})`, {
+        description: `Motivo: ${data.motivoCambio.replace(/_/g, ' ')}. Revisá y activá cuando esté listo.`,
+      });
+    } catch (err) {
+      const mensaje =
+        err instanceof Error ? err.message : 'No se pudo regenerar el plan.';
+      toast.error('Error al regenerar', { description: mensaje });
+    }
+  };
+
+  const marcarSlotEditado = (slotKey: string) => {
+    setSlotsEditadosManualmente((prev) => {
+      const nuevo = new Set(prev);
+      nuevo.add(slotKey);
+      return nuevo;
+    });
+  };
+
+  const regen: ManejadoresRegeneracion = useMemo(
+    () => ({
+      alRegenerarPlan,
+      alRegenerarDia,
+      alRegenerarAlternativa,
+      slotsEditadosManualmente,
+      estaRegenerando: false,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [respuesta?.versionId, slotsEditadosManualmente],
+  );
+
+  // ============================================================================
+  // Render
+  // ============================================================================
 
   return (
-    <div className="space-y-6 pb-10">
+    <div className="space-y-6 pb-24">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-3">
-          <Button 
-            type="button" 
-            variant="ghost" 
-            size="icon" 
-            onClick={volverAlPlan}
-            className="rounded-full hover:bg-muted"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          {pacienteSeleccionado && (
-            <AvatarPaciente
-              fotoUrl={pacienteSeleccionado.fotoPerfilUrl}
-              nombreCompleto={pacienteSeleccionado.nombreCompleto}
-              size="lg"
-            />
-          )}
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
-              {planId !== null ? 'Editar plan' : 'Crear plan'}
-            </h1>
-            {pacienteSeleccionado ? (
-              <div className="mt-1">
-                <p className="text-sm text-muted-foreground">
-                  {pacienteSeleccionado.nombreCompleto}
-                </p>
-                {pacienteSeleccionado.dni ? (
-                  <p className="text-xs text-muted-foreground/80">DNI: {pacienteSeleccionado.dni}</p>
-                ) : null}
-              </div>
-            ) : null}
-            <p className="text-sm text-muted-foreground mt-1">
-              {planId !== null
-                ? 'Modificá el plan de alimentación del socio'
-                : 'Configurá el plan de alimentación del socio'}
-            </p>
-          </div>
-        </div>
-        
-        <div className="sm:ml-auto flex items-center gap-2">
-          {tieneAlimentos && (
-            <ExportPlanPDFButton
-              objetivoNutricional={objetivoNutricional}
-              comidas={comidas}
-              planId={planId ?? undefined}
-            />
-          )}
           <Button
             type="button"
-            onClick={guardarPlan}
-            disabled={guardando}
-            className="bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 text-white min-w-[120px]"
+            variant="ghost"
+            size="icon"
+            onClick={volverAlPlan}
+            aria-label="Volver al plan del socio"
+            className="rounded-full hover:bg-muted"
           >
-            {guardando ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-                Guardando...
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                Guardar
-              </>
-            )}
+            <ArrowLeft className="h-5 w-5" aria-hidden="true" />
           </Button>
-        </div>
-      </div>
-
-      {/* Health Record Warning */}
-      {fichaSalud && (
-        <div className="rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-500/5 to-orange-500/5 dark:from-amber-500/10 dark:to-orange-500/10 p-4">
-          <div className="flex gap-3">
-            <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
-              <Info className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-            </div>
-            <p className="text-sm text-amber-800 dark:text-amber-200">
-              Ficha de salud del socio cargada. Verificá que el plan no incluya términos o alimentos que contraríen sus restricciones.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Error Alert */}
-      {error && (
-        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4">
-          <div className="flex gap-3">
-            <AlertCircle className="h-5 w-5 text-destructive shrink-0" />
-            <p className="text-sm text-destructive">{error}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Main Content */}
-      <div className="flex flex-col gap-6">
-        {/* Objective Card - Top Section */}
-        <Card className="rounded-2xl border-border/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-gradient-to-r from-orange-500 to-rose-500" />
-              Configuración
-            </CardTitle>
-            <CardDescription>
-              Definí el objetivo del plan
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Label htmlFor="objetivo" className="text-sm font-medium">
-                Objetivo nutricional
-              </Label>
-              <Input
-                id="objetivo"
-                value={objetivoNutricional}
-                onChange={(e) => establecerObjetivoNutricional(e.target.value)}
-                placeholder="Ej: Pérdida de peso, ganancia muscular..."
-                maxLength={255}
-                className="border-border/50 focus:border-orange-500/50"
+          {cargandoPaciente ? (
+            <Loader2
+              className="size-8 animate-spin text-muted-foreground"
+              aria-label="Cargando paciente"
+            />
+          ) : paciente ? (
+            <>
+              <AvatarPaciente
+                fotoUrl={paciente.fotoPerfilUrl}
+                nombreCompleto={paciente.nombreCompleto}
+                size="lg"
               />
-              <p className="text-xs text-muted-foreground text-right">
-                {objetivoNutricional.length}/255
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight">
+                  Editor de plan con IA
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  {paciente.nombreCompleto}
+                  {paciente.dni ? ` · DNI ${paciente.dni}` : ''}
+                </p>
+              </div>
+            </>
+          ) : (
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">
+                Editor de plan con IA
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Generá un plan para el socio #{(socioIdNumero ?? 0).toString()}
               </p>
             </div>
-          </CardContent>
-        </Card>
+          )}
+        </div>
 
-        <Card className="rounded-2xl border-border/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-fuchsia-500" />
-              Asistente IA
-            </CardTitle>
-            <CardDescription>
-              Generá recomendaciones y aplicalas al plan con un clic.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-3 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label>Día destino</Label>
-                <Select
-                  value={diaSeleccionadoIa}
-                  onValueChange={(valor) => establecerDiaSeleccionadoIa(valor as DiaSemana)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar día" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DIAS_SEMANA.map((dia) => (
-                      <SelectItem key={dia} value={dia}>
-                        {dia}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+        <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={irAMiPerfil}
+            aria-label="Editar mis preferencias IA en mi perfil"
+            data-testid="link-preferencias-ia"
+          >
+            <ExternalLink className="size-4" aria-hidden="true" />
+            Preferencias IA
+          </Button>
+        </div>
+      </header>
 
-              <div className="space-y-2">
-                <Label>Comida destino</Label>
-                <Select
-                  value={tipoComidaSeleccionadaIa}
-                  onValueChange={(valor) =>
-                    establecerTipoComidaSeleccionadaIa(valor as TipoComida)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar comida" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TIPOS_COMIDA.map((tipo) => (
-                      <SelectItem key={tipo} value={tipo}>
-                        {tipo}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-            </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              disabled={!planIaPendiente || aplicandoIa}
-              onClick={() => {
-                void aplicarPlanSemanalIa();
-              }}
-            >
-              Aplicar plan semanal IA completo
-            </Button>
-
-            <div className="grid gap-4 lg:grid-cols-2">
-              <GeneradorRecomendacion
-                socioId={Number(socioId ?? 0)}
-                token={token}
-                alergias={obtenerAlergiasFicha}
-                onRecomendacionesSeleccionadas={(recomendaciones) => {
-                  void aplicarRecomendacionesIa(recomendaciones);
-                }}
-              />
+      {/* Layout principal: grid responsive */}
+      <div
+        className="grid gap-6 lg:grid-cols-[1fr_320px]"
+        data-testid="plan-editor-layout"
+      >
+        {/* Main: Generador + Plan + Razonamiento */}
+        <main className="flex flex-col gap-6">
+          {/* Card: Generador de plan */}
+          <Card className="rounded-2xl border-border/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Sparkles
+                  className="size-4 text-fuchsia-500"
+                  aria-hidden="true"
+                />
+                Generar plan con IA
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               <GeneradorPlanSemanal
-                socioId={Number(socioId ?? 0)}
-                token={token}
-                alergias={obtenerAlergiasFicha}
-                onPlanGenerado={(plan) => {
-                  establecerPlanIaPendiente(plan);
-                  void aplicarPlanSemanalIa(plan);
+                planAlimentacionId={respuesta?.planAlimentacionId}
+                socioIdPreseleccionado={socioIdNumero}
+                onSuccess={(data) => {
+                  setRespuesta(data);
+                  setVersionSeleccionadaId(data.versionId);
+                  // Limpiar slots editados al generar plan nuevo
+                  setSlotsEditadosManualmente(new Set());
                 }}
               />
-            </div>
+            </CardContent>
+          </Card>
 
-            {/* Ideas de comida individuales (RF36-RF38) */}
-            <IdeasComidaPanel
-              token={token}
-              socioId={Number(socioId ?? 0)}
-              alergias={obtenerAlergiasFicha}
-              restricciones={obtenerAlergiasFicha}
-              diaSeleccionado={diaSeleccionadoIa}
-              tipoComidaSeleccionada={tipoComidaSeleccionadaIa}
-              onPropuestaSeleccionada={(propuesta, dia, tipoComida) => {
-                void agregarPropuestaAlPlan(propuesta, dia as DiaSemana, tipoComida as TipoComida);
-              }}
-            />
-          </CardContent>
-        </Card>
-
-        {/* Weekly Plan Grid */}
-        <Card className="w-full rounded-2xl border-border/50 overflow-hidden">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500" />
-                  Plan semanal
-                </CardTitle>
-                <CardDescription>
-                  Agregá alimentos a cada comida
-                </CardDescription>
-              </div>
-              {tieneAlimentos && (
-                <div className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full">
-                  {comidas.reduce((acc, c) => acc + c.alimentos.length, 0)} alimentos
+          {/* Card: Plan generado (solo si hay respuesta) */}
+          {respuesta && (
+            <Card
+              className="rounded-2xl border-border/50"
+              data-testid="plan-generado-card"
+            >
+              <CardHeader className="pb-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <div
+                        className="size-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500"
+                        aria-hidden="true"
+                      />
+                      Plan semanal generado
+                    </CardTitle>
+                    <p className="mt-0.5 text-sm text-muted-foreground">
+                      Versión {respuesta.numeroVersion} ·{' '}
+                      {Object.keys(respuesta.macros.macrosPorDia ?? {}).length}{' '}
+                      días con macros validadas
+                    </p>
+                  </div>
                 </div>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <WeeklyPlanGrid
-              comidas={comidas}
-              alAgregarAlimento={alAgregarAlimento}
-              alEditarCantidad={alEditarCantidad}
-              alEliminarAlimento={alEliminarAlimento}
-            />
-          </CardContent>
-        </Card>
+              </CardHeader>
+              <CardContent className="p-0">
+                <WeeklyPlanGrid
+                  planV2={respuesta.plan}
+                  regen={regen}
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Card: Razonamiento de cumplimiento (solo si hay plan) */}
+          {respuesta && (
+            <Card className="rounded-2xl border-border/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">
+                  Validación de cumplimiento
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <RazonamientoCumplimiento
+                  razonamiento={respuesta.plan.razonamientoCumplimiento}
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Advertencias del backend */}
+          {respuesta && respuesta.advertencias.length > 0 && (
+            <section
+              role="alert"
+              aria-label="Advertencias de generación"
+              className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4"
+            >
+              <h3 className="mb-2 text-sm font-semibold text-amber-900 dark:text-amber-200">
+                Advertencias ({respuesta.advertencias.length})
+              </h3>
+              <ul className="space-y-1 text-sm text-amber-800 dark:text-amber-300">
+                {respuesta.advertencias.map((adv, idx) => (
+                  <li key={idx}>• {adv}</li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </main>
+
+        {/* Sidebar: Versiones (solo si hay plan) */}
+        <aside aria-label="Historial de versiones" className="space-y-4">
+          {respuesta && (
+            <Card className="rounded-2xl border-border/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Versiones</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <VersionHistory
+                  planId={respuesta.planAlimentacionId}
+                  versionSeleccionadaId={versionSeleccionadaId}
+                  onSelect={(vid) => {
+                    setVersionSeleccionadaId(vid);
+                    toast.info(`Versión ${vid} seleccionada`, {
+                      description: 'Cargando datos de la versión…',
+                    });
+                  }}
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Help: Cómo editar manualmente */}
+          <Card className="rounded-2xl border-border/50 bg-muted/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Edición manual</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground">
+                Si editás un alimento manualmente y luego regenerás, el sistema
+                te va a pedir confirmación para no perder los cambios.
+              </p>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (respuesta) {
+                    const slot = 'LUNES-DESAYUNO';
+                    marcarSlotEditado(slot);
+                    toast.info(`Slot ${slot} marcado como editado`);
+                  }
+                }}
+                disabled={!respuesta}
+                className="mt-2 h-7 text-xs"
+                data-testid="marcar-editado-demo"
+              >
+                Marcar desayuno lunes como editado (demo)
+              </Button>
+            </CardContent>
+          </Card>
+        </aside>
       </div>
 
-      {/* Food Search Dialog */}
-      <FoodSearchDialog
-        abierto={dialogoBusquedaAbierto}
-        alCerrar={() => {
-          establecerDialogoBusquedaAbierto(false);
-          establecerSlotSeleccionado(null);
-        }}
-        alSeleccionar={alSeleccionarAlimento}
-      />
+      {/* Botón flotante: Dar feedback (solo si hay plan) */}
+      {respuesta && (
+        <Button
+          type="button"
+          onClick={() => setFeedbackAbierto(true)}
+          aria-label="Dar feedback sobre este plan"
+          data-testid="feedback-floating-button"
+          className="fixed bottom-6 right-6 z-40 size-14 rounded-full bg-gradient-to-br from-orange-500 to-rose-500 text-white shadow-lg hover:from-orange-600 hover:to-rose-600"
+          size="icon"
+        >
+          <ThumbsUp className="size-6" aria-hidden="true" />
+          <span className="sr-only">Dar feedback</span>
+        </Button>
+      )}
+
+      {/* Modal de feedback */}
+      {respuesta && (
+        <FeedbackModal
+          open={feedbackAbierto}
+          onOpenChange={setFeedbackAbierto}
+          versionId={respuesta.versionId}
+          onSuccess={() => {
+            toast.success('Feedback registrado. La IA aprende para próximos planes.');
+          }}
+        />
+      )}
     </div>
   );
 }
