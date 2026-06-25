@@ -24,6 +24,7 @@ import {
   PersonaOrmEntity,
   PlanAlimentacionOrmEntity,
   PlanAlimentacionVersionOrmEntity,
+  PlanFeedbackOrmEntity,
   TurnoOrmEntity,
   UsuarioOrmEntity,
   GimnasioOrmEntity,
@@ -41,6 +42,8 @@ import { EXCEPCION_DISPONIBILIDAD_REPOSITORY } from 'src/domain/entities/Agenda/
 import { ExcepcionDisponibilidadRepositoryImpl } from './excepcion-disponibilidad.repository';
 import { PLAN_ALIMENTACION_VERSION_REPOSITORY } from 'src/domain/repositories/plan-alimentacion-version.repository';
 import { PlanAlimentacionVersionRepositoryImpl } from './plan-alimentacion-version.repository.impl';
+import { PLAN_FEEDBACK_REPOSITORY } from 'src/domain/repositories/plan-feedback.repository';
+import { PlanFeedbackRepositoryImpl } from './plan-feedback.repository.impl';
 import { NUTRICIONISTA_IA_MEMORIA_REPOSITORY } from 'src/domain/repositories/nutricionista-ia-memoria.repository';
 import { NutricionistaIAMemoriaRepositoryImpl } from './nutricionista-ia-memoria.repository.impl';
 
@@ -68,6 +71,7 @@ import { NutricionistaIAMemoriaRepositoryImpl } from './nutricionista-ia-memoria
       PersonaOrmEntity,
       PlanAlimentacionOrmEntity,
       PlanAlimentacionVersionOrmEntity,
+      PlanFeedbackOrmEntity,
       TurnoOrmEntity,
       UsuarioOrmEntity,
       GimnasioOrmEntity,
@@ -102,6 +106,10 @@ import { NutricionistaIAMemoriaRepositoryImpl } from './nutricionista-ia-memoria
       useClass: PlanAlimentacionVersionRepositoryImpl,
     },
     {
+      provide: PLAN_FEEDBACK_REPOSITORY,
+      useClass: PlanFeedbackRepositoryImpl,
+    },
+    {
       provide: NUTRICIONISTA_IA_MEMORIA_REPOSITORY,
       useClass: NutricionistaIAMemoriaRepositoryImpl,
     },
@@ -115,6 +123,7 @@ import { NutricionistaIAMemoriaRepositoryImpl } from './nutricionista-ia-memoria
     FICHA_SALUD_VERSION_REPOSITORY,
     EXCEPCION_DISPONIBILIDAD_REPOSITORY,
     PLAN_ALIMENTACION_VERSION_REPOSITORY,
+    PLAN_FEEDBACK_REPOSITORY,
     NUTRICIONISTA_IA_MEMORIA_REPOSITORY,
   ],
 })

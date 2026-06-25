@@ -81,6 +81,35 @@ export class NutricionistaIAMemoriaRepositoryImpl implements NutricionistaIAMemo
     );
   }
 
+  async rotarSiExcede100(nutricionistaId: number): Promise<void> {
+    const activas = await this.repo.count({
+      where: {
+        idNutricionista: nutricionistaId,
+        archivada: false,
+      },
+    });
+
+    if (activas <= 100) {
+      return;
+    }
+
+    // Obtener la entrada activa más vieja (FIFO)
+    const oldest = await this.repo.findOne({
+      where: {
+        idNutricionista: nutricionistaId,
+        archivada: false,
+      },
+      order: { createdAt: 'ASC' },
+    });
+
+    if (oldest) {
+      await this.repo.update(
+        { idNutricionistaIaMemoria: oldest.idNutricionistaIaMemoria },
+        { archivada: true },
+      );
+    }
+  }
+
   private toDomain(
     orm: NutricionistaIAMemoriaOrmEntity,
   ): NutricionistaIAMemoriaEntity {

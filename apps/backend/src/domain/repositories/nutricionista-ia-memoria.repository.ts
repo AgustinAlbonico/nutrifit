@@ -63,4 +63,11 @@ export abstract class NutricionistaIAMemoriaRepository {
    * Soft-archive (no delete físico).
    */
   abstract marcarArchivada(id: number): Promise<void>;
+
+  /**
+   * Si el nutricionista tiene más de 100 entradas activas, archiva la más
+   * vieja (FIFO). Llamado desde `CrearFeedbackPlanUseCase` después de
+   * crear una entrada. NO error si ya estaba en 100 → no archiva nada.
+   */
+  abstract rotarSiExcede100(nutricionistaId: number): Promise<void>;
 }
