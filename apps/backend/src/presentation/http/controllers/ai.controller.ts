@@ -11,15 +11,18 @@ import {
   AnalizarPlanDto,
 } from 'src/application/ai/dto';
 import { SolicitudPlanSemanalHttpDTO } from 'src/application/ai/dtos/solicitud-plan-semanal.dto';
+import { SolicitudRegeneracionHttpDTO } from 'src/application/ai/dtos/solicitud-regeneracion.dto';
 import { GenerarIdeasComidaInputDto } from 'src/application/ai/dto/generar-ideas-comida.dto';
 import {
   GenerarRecomendacionComidaUseCase,
   GenerarPlanSemanalUseCase,
+  RegenerarPlanSemanalUseCase,
   SugerirSustitucionUseCase,
   AnalizarPlanNutricionalUseCase,
   GenerarIdeasComidaUseCase,
 } from 'src/application/ai/use-cases';
 import type { RespuestaPlanSemanal } from 'src/application/ai/use-cases/generar-plan-semanal.use-case';
+import type { RespuestaRegenerarPlan } from 'src/application/ai/use-cases/regenerar-plan-semanal.use-case';
 import { Rol } from 'src/infrastructure/auth/decorators/role.decorator';
 import { Actions } from 'src/infrastructure/auth/decorators/actions.decorator';
 import { JwtAuthGuard } from 'src/infrastructure/auth/guards/auth.guard';
@@ -36,6 +39,7 @@ export class AiController {
   constructor(
     private readonly generarRecomendacionUseCase: GenerarRecomendacionComidaUseCase,
     private readonly generarPlanSemanalUseCase: GenerarPlanSemanalUseCase,
+    private readonly regenerarPlanSemanalUseCase: RegenerarPlanSemanalUseCase,
     private readonly sugerirSustitucionUseCase: SugerirSustitucionUseCase,
     private readonly analizarPlanNutricionalUseCase: AnalizarPlanNutricionalUseCase,
     private readonly generarIdeasComidaUseCase: GenerarIdeasComidaUseCase,
@@ -89,6 +93,43 @@ export class AiController {
       alternativasPorComida: dto.alternativasPorComida,
       notasGeneracion: dto.notasGeneracion,
       fechaInicio: dto.fechaInicio,
+    });
+  }
+
+  @Post('plan-semanal/regenerar')
+  @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN, RolEnum.SUPERADMIN)
+  @Actions('PLANES_IA_REGENERAR')
+  @ApiOperation({
+    summary:
+      'Regenerar parte de un plan semanal con IA (PLAN/DIA/ALTERNATIVA)',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Nueva versión del plan creada con merge quirúrgico',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Datos inválidos o scope incorrecto',
+  })
+  @ApiResponse({ status: 403, description: 'No es dueño del plan' })
+  @ApiResponse({ status: 404, description: 'Plan o versión no encontrada' })
+  @ApiResponse({
+    status: 409,
+    description: 'Plan finalizado, edición manual sin confirmar, o mismatch',
+  })
+  async regenerarPlanSemanal(
+    @Body() dto: SolicitudRegeneracionHttpDTO,
+    @CurrentUser() user: { id: number; personaId: number; gimnasioId: number },
+  ): Promise<RespuestaRegenerarPlan> {
+    return this.regenerarPlanSemanalUseCase.execute({
+      planAlimentacionVersionId: dto.planAlimentacionVersionId,
+      nutricionistaUserId: user.personaId,
+      gimnasioId: user.gimnasioId,
+      scope: dto.scope,
+      dia: dto.dia,
+      comidaSlot: dto.comidaSlot,
+      alternativaIndex: dto.alternativaIndex,
+      confirmarPerdidaEdicionManual: dto.confirmarPerdidaEdicionManual,
     });
   }
 

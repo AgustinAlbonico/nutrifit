@@ -10,6 +10,7 @@ import {
   Put,
   UseGuards,
 } from '@nestjs/common';
+import { IsInt, Min } from 'class-validator';
 import {
   CrearFeedbackPlanDto,
   CrearPlanAlimentacionDto,
@@ -32,6 +33,8 @@ import {
   ObtenerVersionPlanUseCase,
   CrearFeedbackPlanUseCase,
   EditarFeedbackPlanUseCase,
+  ActivarPlanAlimentacionUseCase,
+  FinalizarPlanAlimentacionUseCase,
 } from 'src/application/planes-alimentacion/use-cases';
 import { Rol as RolEnum } from 'src/domain/entities/Usuario/Rol';
 import {
@@ -55,6 +58,12 @@ import {
   PlanFeedbackRepository,
 } from 'src/domain/repositories/plan-feedback.repository';
 
+export class ActivarPlanHttpDTO {
+  @IsInt()
+  @Min(1)
+  versionId!: number;
+}
+
 @Controller('planes-alimentacion')
 @UseGuards(JwtAuthGuard, RolesGuard, ActionsGuard)
 export class PlanAlimentacionController {
@@ -71,6 +80,8 @@ export class PlanAlimentacionController {
     private readonly obtenerVersionPlanUseCase: ObtenerVersionPlanUseCase,
     private readonly crearFeedbackPlanUseCase: CrearFeedbackPlanUseCase,
     private readonly editarFeedbackPlanUseCase: EditarFeedbackPlanUseCase,
+    private readonly activarPlanAlimentacionUseCase: ActivarPlanAlimentacionUseCase,
+    private readonly finalizarPlanAlimentacionUseCase: FinalizarPlanAlimentacionUseCase,
     @Inject(PLAN_FEEDBACK_REPOSITORY)
     private readonly feedbackRepo: PlanFeedbackRepository,
     @Inject(APP_LOGGER_SERVICE)
@@ -303,6 +314,66 @@ export class PlanAlimentacionController {
         personaId: user.personaId,
         gimnasioId: user.gimnasioId,
       },
+    });
+  }
+
+  // ========================================================================
+  // ENDPOINTS DE ACTIVAR / FINALIZAR (Packet 4, plan-alimentacion-ia-v2)
+  // Máquina de estados del plan: BORRADOR → ACTIVO → FINALIZADO.
+  // ========================================================================
+
+  @Post(':id/activar')
+  @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN, RolEnum.SUPERADMIN)
+  @Actions('PLANES_ACTIVAR')
+  @UseGuards(SocioResourceAccessGuard)
+  async activarPlan(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() payload: ActivarPlanHttpDTO,
+    @CurrentUser()
+    user: {
+      id: number;
+      rol: RolEnum;
+      personaId: number | null;
+      gimnasioId: number | null;
+    },
+  ): Promise<{ planAlimentacionId: number; versionActivaId: number; estado: 'ACTIVO' }> {
+    this.logger.log(
+      `Activando versión ${payload.versionId} del plan ${id} por nutricionista ${user.personaId}.`,
+    );
+    const result = await this.activarPlanAlimentacionUseCase.execute({
+      planAlimentacionId: id,
+      versionId: payload.versionId,
+      nutricionistaUserId: user.personaId ?? 0,
+      gimnasioId: user.gimnasioId ?? 0,
+    });
+    return result;
+  }
+
+  @Post(':id/finalizar')
+  @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN, RolEnum.SUPERADMIN)
+  @Actions('PLANES_FINALIZAR')
+  @UseGuards(SocioResourceAccessGuard)
+  async finalizarPlan(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser()
+    user: {
+      id: number;
+      rol: RolEnum;
+      personaId: number | null;
+      gimnasioId: number | null;
+    },
+  ): Promise<{
+    planAlimentacionId: number;
+    estado: 'FINALIZADO';
+    finalizadoAt: Date;
+  }> {
+    this.logger.log(
+      `Finalizando plan ${id} por nutricionista ${user.personaId}.`,
+    );
+    return this.finalizarPlanAlimentacionUseCase.execute({
+      planAlimentacionId: id,
+      nutricionistaUserId: user.personaId ?? 0,
+      gimnasioId: user.gimnasioId ?? 0,
     });
   }
 }
