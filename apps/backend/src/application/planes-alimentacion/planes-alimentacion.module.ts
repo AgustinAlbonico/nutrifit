@@ -24,6 +24,8 @@ import {
   ObtenerVersionPlanUseCase,
   CrearFeedbackPlanUseCase,
   EditarFeedbackPlanUseCase,
+  ActivarPlanAlimentacionUseCase,
+  FinalizarPlanAlimentacionUseCase,
 } from './use-cases';
 import { AuditoriaModule } from 'src/infrastructure/services/auditoria/auditoria.module';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
@@ -60,6 +62,8 @@ import { RepositoriesModule } from 'src/infrastructure/persistence/typeorm/repos
     ObtenerVersionPlanUseCase,
     CrearFeedbackPlanUseCase,
     EditarFeedbackPlanUseCase,
+    ActivarPlanAlimentacionUseCase,
+    FinalizarPlanAlimentacionUseCase,
     NotificacionesService,
   ],
   exports: [
@@ -75,6 +79,8 @@ import { RepositoriesModule } from 'src/infrastructure/persistence/typeorm/repos
     ObtenerVersionPlanUseCase,
     CrearFeedbackPlanUseCase,
     EditarFeedbackPlanUseCase,
+    ActivarPlanAlimentacionUseCase,
+    FinalizarPlanAlimentacionUseCase,
   ],
 })
 export class PlanesAlimentacionModule {}

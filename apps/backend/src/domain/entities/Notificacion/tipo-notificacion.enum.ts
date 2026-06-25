@@ -11,6 +11,18 @@ export enum TipoNotificacion {
   PLAN_CREADO = 'PLAN_CREADO',
   PLAN_EDITADO = 'PLAN_EDITADO',
   PLAN_ELIMINADO = 'PLAN_ELIMINADO',
+  // === Plan IA v2 — máquina de estados (Packet 4) ===
+  // PLAN_REVISAR: el nutricionista debe revisar el plan generado por IA.
+  // PLAN_ACTIVO: el nutricionista activó una versión del plan.
+  // PLAN_FINALIZADO: el plan fue finalizado.
+  // PLAN_VALIDACION_WARNING: el plan tiene restricciones no cumplidas tras
+  //   agotar los reintentos correctivos.
+  // PLAN_MACROS_FUERA_RANGO: el plan tiene macros en banda ROJO (>±10%).
+  PLAN_REVISAR = 'PLAN_REVISAR',
+  PLAN_ACTIVO = 'PLAN_ACTIVO',
+  PLAN_FINALIZADO = 'PLAN_FINALIZADO',
+  PLAN_VALIDACION_WARNING = 'PLAN_VALIDACION_WARNING',
+  PLAN_MACROS_FUERA_RANGO = 'PLAN_MACROS_FUERA_RANGO',
   CONSULTA_FINALIZADA = 'CONSULTA_FINALIZADA',
   CONSULTA_PREAVISO_CIERRE_AUTO = 'CONSULTA_PREAVISO_CIERRE_AUTO',
   CONSULTA_CERRADA_AUTO = 'CONSULTA_CERRADA_AUTO',

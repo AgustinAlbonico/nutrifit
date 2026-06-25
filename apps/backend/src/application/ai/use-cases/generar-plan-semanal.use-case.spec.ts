@@ -317,6 +317,13 @@ describe('GenerarPlanSemanalUseCase', () => {
     );
     // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(notificacionesMock.crear).toHaveBeenCalled();
+
+    // Packet 4: ahora debe usar el tipo PLAN_REVISAR (no PLAN_CREADO)
+    const llamadasNotif = notificacionesMock.crear.mock.calls.map((c) => c[0]);
+    const hayNotifRevisar = llamadasNotif.some(
+      (l) => l.tipo === 'PLAN_REVISAR',
+    );
+    expect(hayNotifRevisar).toBe(true);
   });
 
   it('restricción violada 1 vez → 1 reintento correctivo y segunda respuesta OK', async () => {
@@ -376,12 +383,12 @@ describe('GenerarPlanSemanalUseCase', () => {
       comidasPorDia: 4,
     });
 
-    // Verificar que se llamó notificación con alerta PLAN_MACROS_FUERA_RANGO
+    // Verificar que se llamó notificación con tipo PLAN_MACROS_FUERA_RANGO
     const llamadasNotif = notificacionesMock.crear.mock.calls.map((c) => c[0]);
-    const hayAlertaMacros = llamadasNotif.some(
-      (l) => l.metadata?.alerta === 'PLAN_MACROS_FUERA_RANGO',
+    const hayNotifMacros = llamadasNotif.some(
+      (l) => l.tipo === 'PLAN_MACROS_FUERA_RANGO',
     );
-    expect(hayAlertaMacros).toBe(true);
+    expect(hayNotifMacros).toBe(true);
   });
 
   it('Groq timeout 2 veces → throw GROQ_TIMEOUT', async () => {

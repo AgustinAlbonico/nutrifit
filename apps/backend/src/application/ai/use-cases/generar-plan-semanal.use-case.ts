@@ -409,38 +409,36 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
       );
     }
 
-    // 12) Notificaciones
-    // IMPORTANTE: Los tipos PLAN_REVISAR, PLAN_MACROS_FUERA_RANGO y
-    // PLAN_VALIDACION_WARNING se agregan al enum `TipoNotificacion` en
-    // Packet 4 (Task 4.8). Mientras tanto usamos PLAN_CREADO como placeholder
-    // y diferenciamos por metadata.alerta para no romper la auditoría.
+    // 12) Notificaciones (Packet 4: usar tipos correctos del enum)
     try {
+      // 12a) Siempre: PLAN_REVISAR al NUT dueño
       await this.notificacionesService.crear({
         destinatarioId: solicitud.nutricionistaId,
-        tipo: TipoNotificacion.PLAN_CREADO,
+        tipo: TipoNotificacion.PLAN_REVISAR,
         titulo: 'Nuevo plan generado con IA',
         mensaje: `Se generó un plan para el socio ${solicitud.socioId}. Revisalo antes de activarlo.`,
         metadata: {
           planId: planGuardado.idPlanAlimentacion,
           versionId: versionGuardada.idPlanAlimentacionVersion,
-          alerta: 'PLAN_REVISAR',
         },
       });
 
+      // 12b) PLAN_MACROS_FUERA_RANGO si banda ROJO
       if (validacionMacros.bandaGlobal === 'ROJO') {
         await this.notificacionesService.crear({
           destinatarioId: solicitud.nutricionistaId,
-          tipo: TipoNotificacion.PLAN_CREADO,
+          tipo: TipoNotificacion.PLAN_MACROS_FUERA_RANGO,
           titulo: 'Macros fuera de rango',
           mensaje: `El plan generado tiene macros fuera del rango aceptable (±10%). Banda global: ROJO.`,
           metadata: {
             planId: planGuardado.idPlanAlimentacion,
             versionId: versionGuardada.idPlanAlimentacionVersion,
-            alerta: 'PLAN_MACROS_FUERA_RANGO',
+            bandaGlobal: validacionMacros.bandaGlobal,
           },
         });
       }
 
+      // 12c) PLAN_VALIDACION_WARNING si restricciones no cumplidas >= cumplidas
       if (
         validacionRestricciones.restriccionesNoCumplidas.length > 0 &&
         validacionRestricciones.restriccionesNoCumplidas.length >=
@@ -448,13 +446,13 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
       ) {
         await this.notificacionesService.crear({
           destinatarioId: solicitud.nutricionistaId,
-          tipo: TipoNotificacion.PLAN_CREADO,
+          tipo: TipoNotificacion.PLAN_VALIDACION_WARNING,
           titulo: 'Validación con advertencias',
           mensaje: `El plan generado tiene ${validacionRestricciones.restriccionesNoCumplidas.length} violaciones de restricciones que no pudieron corregirse.`,
           metadata: {
             planId: planGuardado.idPlanAlimentacion,
             versionId: versionGuardada.idPlanAlimentacionVersion,
-            alerta: 'PLAN_VALIDACION_WARNING',
+            violaciones: validacionRestricciones.restriccionesNoCumplidas.length,
           },
         });
       }

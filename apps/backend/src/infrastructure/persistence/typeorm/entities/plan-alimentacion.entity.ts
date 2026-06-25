@@ -40,6 +40,36 @@ export class PlanAlimentacionOrmEntity {
   @Column({ name: 'activo', type: 'boolean', default: true })
   activo: boolean;
 
+  /**
+   * Estado explícito del plan (máquina de estados introducida en Packet 4
+   * del change plan-alimentacion-ia-v2). Valores posibles:
+   *   - 'BORRADOR'  → recién creado, en proceso de edición.
+   *   - 'ACTIVO'    → tiene una versión activa visible para el socio.
+   *   - 'FINALIZADO'→ el nutricionista lo cerró; no se pueden crear más versiones.
+   *
+   * Default 'ACTIVO' mantiene compatibilidad con planes pre-existentes
+   * (que tenían activo=true). La migración `PlanAlimentacionEstado...`
+   * backfillea activo=false → 'BORRADOR'.
+   */
+  @Column({
+    name: 'estado',
+    type: 'varchar',
+    length: 20,
+    default: 'ACTIVO',
+  })
+  estado: 'BORRADOR' | 'ACTIVO' | 'FINALIZADO';
+
+  /**
+   * Timestamp de la transición a estado FINALIZADO. NULL mientras el plan
+   * no esté finalizado. Se setea en `FinalizarPlanAlimentacionUseCase`.
+   */
+  @Column({
+    name: 'finalizado_at',
+    type: 'datetime',
+    nullable: true,
+  })
+  finalizadoAt: Date | null;
+
   @Column({ name: 'eliminado_en', type: 'datetime', nullable: true })
   eliminadoEn: Date | null;
 

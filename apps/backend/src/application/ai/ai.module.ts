@@ -20,12 +20,15 @@ import {
   PrepararContextoPacienteUseCase,
   GenerarRecomendacionComidaUseCase,
   GenerarPlanSemanalUseCase,
+  RegenerarPlanSemanalUseCase,
   SugerirSustitucionUseCase,
   AnalizarPlanNutricionalUseCase,
   GenerarIdeasComidaUseCase,
 } from './use-cases';
 import { PromptPlanSemanalBuilder } from './builders/prompt-plan-semanal.builder';
+import { PromptRegeneracionBuilder } from './builders/prompt-regeneracion.builder';
 import { IaMemoriaModule } from '../ia-memoria/ia-memoria.module';
+import { TenantContextModule } from 'src/infrastructure/auth/tenant-context.module';
 
 @Module({
   imports: [
@@ -43,15 +46,18 @@ import { IaMemoriaModule } from '../ia-memoria/ia-memoria.module';
     RepositoriesModule,
     AuditoriaModule,
     IaMemoriaModule,
+    TenantContextModule,
   ],
   providers: [
     PrepararContextoPacienteUseCase,
     GenerarRecomendacionComidaUseCase,
     GenerarPlanSemanalUseCase,
+    RegenerarPlanSemanalUseCase,
     SugerirSustitucionUseCase,
     AnalizarPlanNutricionalUseCase,
     GenerarIdeasComidaUseCase,
     PromptPlanSemanalBuilder,
+    PromptRegeneracionBuilder,
     NotificacionesService,
     {
       provide: NUTRICIONISTA_REPOSITORY,
@@ -62,10 +68,12 @@ import { IaMemoriaModule } from '../ia-memoria/ia-memoria.module';
     PrepararContextoPacienteUseCase,
     GenerarRecomendacionComidaUseCase,
     GenerarPlanSemanalUseCase,
+    RegenerarPlanSemanalUseCase,
     SugerirSustitucionUseCase,
     AnalizarPlanNutricionalUseCase,
     GenerarIdeasComidaUseCase,
     PromptPlanSemanalBuilder,
+    PromptRegeneracionBuilder,
     NotificacionesService,
   ],
 })
