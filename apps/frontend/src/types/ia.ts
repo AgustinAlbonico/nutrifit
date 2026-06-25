@@ -296,3 +296,45 @@ export interface RespuestaMemoriaFE {
   totalActivas: number;
   archivadas: number;
 }
+
+/**
+ * Plan activo de un socio asociado a un nutricionista concreto.
+ *
+ * Un socio puede tener planes activos de varios nutricionistas (RF-010),
+ * por lo que `MiPlanPage` renderiza N cards, una por cada `PlanSocioActivo`.
+ *
+ * La forma refleja el shape que devolverá el backend cuando el endpoint
+ * `GET /planes-alimentacion/socio/:id/activo` evolucione de "1 plan" a "N
+ * planes activos (uno por nutricionista)". Mientras tanto, la query del FE
+ * normaliza respuestas heterogéneas (`null`, objeto único, array) a array.
+ */
+export interface PlanSocioActivo {
+  /** Identificador del plan (`plan_alimentacion.id_plan_alimentacion`). */
+  idPlanAlimentacion: number;
+  /** Identificador de la versión activa mostrada al socio. */
+  versionId: number;
+  /** Nutricionista dueño del plan. */
+  nutricionistaId: number;
+  /** Nombre legible del nutricionista para mostrar en la card. */
+  nutricionistaNombre: string;
+  /** Fecha de inicio / activación del plan (ISO 8601). */
+  fechaInicio: string;
+  /** Snapshot del plan (estructura V2 + macros + razonamiento). */
+  plan: PlanAlimentacionDatosJsonFE;
+  /** Objetivo nutricional textual (opcional). */
+  objetivoNutricional?: string;
+}
+
+/**
+ * Respuesta cruda que devuelve hoy el endpoint
+ * `GET /planes-alimentacion/socio/:id/activo`.
+ *
+ * El backend aún retorna `null` o un objeto único. Esta unión permite que
+ * el frontend sea defensivo: aceptamos cualquiera de las 3 formas y la
+ * normalizamos a `PlanSocioActivo[]`.
+ */
+export type RespuestaPlanesSocioRaw =
+  | PlanSocioActivo
+  | PlanSocioActivo[]
+  | null
+  | { data: PlanSocioActivo | PlanSocioActivo[] | null };
