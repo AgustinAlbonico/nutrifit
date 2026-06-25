@@ -17,6 +17,7 @@ import {
   AdminReportesController,
   ConfiguracionController,
   RecepcionistasController,
+  NutricionistaIaMemoriaController,
 } from './controllers';
 import { ProgresoModule } from 'src/application/progreso/progreso.module';
 import { ApplicationModule } from 'src/application/application.module';
@@ -108,6 +109,7 @@ import { GimnasiosModule } from './gimnasios.module';
     AdminReportesController,
     ConfiguracionController,
     RecepcionistasController,
+    NutricionistaIaMemoriaController,
   ],
 })
 export class ControllersModule {}
