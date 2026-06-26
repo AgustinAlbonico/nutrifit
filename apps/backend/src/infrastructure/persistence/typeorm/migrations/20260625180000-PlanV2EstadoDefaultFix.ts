@@ -25,10 +25,10 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  *
  * Rollback (`down`): revierte los defaults a los valores legacy.
  */
-export class PlanV2EstadoDefaultFix1719331300000
+export class PlanV2EstadoDefaultFix20260625180000
   implements MigrationInterface
 {
-  name = 'PlanV2EstadoDefaultFix1719331300000';
+  name = 'PlanV2EstadoDefaultFix20260625180000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // 1) Cambiar default de `activo` a `false`
