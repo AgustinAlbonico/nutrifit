@@ -231,7 +231,16 @@ export function GeneradorPlanSemanal({
                     errors.socioId ? 'socioId-error' : 'socioId-help'
                   }
                 >
-                  <SelectValue placeholder={socioBloqueado ? etiquetaSocio : 'Seleccionar paciente'} />
+                  {/* Cuando el socio está bloqueado, mostramos el texto
+                      manualmente porque Radix Select no renderiza SelectValue
+                      si no hay SelectContent con SelectItem que matchee. */}
+                  {socioBloqueado ? (
+                    <span className="text-sm font-medium">
+                      {etiquetaSocio}
+                    </span>
+                  ) : (
+                    <SelectValue placeholder="Seleccionar paciente" />
+                  )}
                 </SelectTrigger>
                 {!socioBloqueado && (
                   <SelectContent>
