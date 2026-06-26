@@ -30,6 +30,7 @@ import { RolesGuard } from 'src/infrastructure/auth/guards/roles.guard';
 import { ActionsGuard } from 'src/infrastructure/auth/guards/actions.guard';
 import { CurrentUser } from 'src/infrastructure/auth/decorators/current-user.decorator';
 import { Rol as RolEnum } from 'src/domain/entities/Usuario/Rol';
+import { ACCIONES } from '@nutrifit/shared';
 
 @ApiTags('IA - Recomendaciones Nutricionales')
 @ApiBearerAuth()
@@ -67,7 +68,7 @@ export class AiController {
 
   @Post('plan-semanal')
   @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN, RolEnum.SUPERADMIN)
-  @Actions('PLANES_IA_GENERAR')
+  @Actions(ACCIONES.PLANES_IA_GENERAR)
   @ApiOperation({ summary: 'Generar plan semanal con IA v2' })
   @ApiResponse({
     status: 201,
@@ -98,7 +99,7 @@ export class AiController {
 
   @Post('plan-semanal/regenerar')
   @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN, RolEnum.SUPERADMIN)
-  @Actions('PLANES_IA_REGENERAR')
+  @Actions(ACCIONES.PLANES_IA_REGENERAR)
   @ApiOperation({
     summary:
       'Regenerar parte de un plan semanal con IA (PLAN/DIA/ALTERNATIVA)',
