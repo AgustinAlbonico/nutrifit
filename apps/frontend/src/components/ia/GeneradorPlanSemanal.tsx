@@ -119,20 +119,25 @@ export function GeneradorPlanSemanal({
     const cargar = async () => {
       try {
         setCargandoPacientes(true);
-        // El endpoint devuelve PaginatedData<{ socioId, nombreCompleto, dni }>
-        // (estructura { data: [...], pagination: {...} }) — ver PlanEditorPage
-        // y apps/frontend/src/lib/api/pacientes.ts para el patrón.
-        const respuesta = await apiRequest<
-          PaginatedData<{
+        // El endpoint devuelve {success, data: {data: [...], pagination: {...}}}
+        // — el ApiResponseInterceptor global envuelve la respuesta con
+        // {success, data, message, errors, meta}. La función apiRequest NO
+        // desenvuelve este wrapper, por eso hay que acceder respuesta.data.data.
+        // Verificado con curl: GET /turnos/profesional/:id/pacientes
+        // retorna ese shape exacto.
+        type RespuestaApi = {
+          data: PaginatedData<{
             socioId: number;
             nombreCompleto: string;
             dni: string;
-          }>
-        >(`/turnos/profesional/${personaId}/pacientes?page=1&limit=100`, {
-          token,
-        });
+          }>;
+        };
+        const respuesta = await apiRequest<RespuestaApi>(
+          `/turnos/profesional/${personaId}/pacientes?page=1&limit=100`,
+          { token },
+        );
         if (cancelado) return;
-        const lista = respuesta.data ?? [];
+        const lista = respuesta?.data?.data ?? [];
         setPacientes(lista);
       } catch {
         if (!cancelado) setPacientes([]);
