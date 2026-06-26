@@ -25,7 +25,7 @@
  *  - role="region" + aria-labelledby en el card.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   AlertCircle,
   Check,
@@ -156,23 +156,22 @@ export function RestriccionesEditablesCard({
   errorGuardar,
   className,
 }: PropiedadesRestriccionesEditablesCard) {
-  const [modoEdicion, setModoEdicion] = useState(false);
-  const [formulario, setFormulario] = useState<FormularioFicha>(FORMULARIO_VACIO);
+const [modoEdicion, setModoEdicion] = useState(false);
+  const [formulario, setFormulario] = useState<FormularioFicha>(() =>
+    ficha ? mapearFichaAFormulario(ficha) : FORMULARIO_VACIO,
+  );
   const [errores, setErrores] = useState<Record<string, string>>({});
 
-  // Cuando llega la ficha desde el backend, populamos el formulario.
-  useEffect(() => {
-    if (ficha && !modoEdicion) {
-      setFormulario(mapearFichaAFormulario(ficha));
-    }
-  }, [ficha, modoEdicion]);
-
-  // Si se está guardando, salimos del modo edición al éxito.
-  useEffect(() => {
-    if (!isSaving && !errorGuardar && modoEdicion) {
-      // No salimos automáticamente: lo hace `manejarGuardar` tras éxito.
-    }
-  }, [isSaving, errorGuardar, modoEdicion]);
+  // Estado derivado: cuando NO estamos editando, el formulario siempre
+  // refleja la ficha del backend (sin usar useEffect). Cuando SÍ estamos
+  // editando, el estado local `formulario` manda y se inicializa al
+  // entrar a modo edición.
+  const formularioEfectivo = useMemo<FormularioFicha>(() => {
+    if (modoEdicion) return formulario;
+    return ficha ? mapearFichaAFormulario(ficha) : FORMULARIO_VACIO;
+    // `formulario` se incluye para que TS no se queje (también cubre el
+    // caso de re-renders por cambios internos durante la edición).
+  }, [modoEdicion, formulario, ficha]);
 
   const etiquetaTitulo = useMemo(() => {
     if (modoEdicion) return 'Editar ficha del paciente';
@@ -180,25 +179,23 @@ export function RestriccionesEditablesCard({
   }, [modoEdicion]);
 
   const manejarClickEditar = () => {
-    if (ficha) {
-      setFormulario(mapearFichaAFormulario(ficha));
-      setErrores({});
-    }
+    setFormulario(
+      ficha ? mapearFichaAFormulario(ficha) : FORMULARIO_VACIO,
+    );
+    setErrores({});
     setModoEdicion(true);
   };
 
   const manejarCancelar = () => {
-    if (ficha) {
-      setFormulario(mapearFichaAFormulario(ficha));
-    } else {
-      setFormulario(FORMULARIO_VACIO);
-    }
+    setFormulario(
+      ficha ? mapearFichaAFormulario(ficha) : FORMULARIO_VACIO,
+    );
     setErrores({});
     setModoEdicion(false);
   };
 
   const manejarGuardar = async () => {
-    const nuevosErrores = validarFormulario(formulario);
+    const nuevosErrores = validarFormulario(formularioEfectivo);
     setErrores(nuevosErrores);
     if (Object.keys(nuevosErrores).length > 0) {
       // Enfocar el primer error
@@ -212,7 +209,7 @@ export function RestriccionesEditablesCard({
     }
 
     try {
-      await onSave(serializarFormulario(formulario));
+      await onSave(serializarFormulario(formularioEfectivo));
       // Salir de modo edición al éxito (la prop onSave propaga errores
       // a través de `errorGuardar` y rechaza la Promise).
       setModoEdicion(false);
@@ -415,10 +412,10 @@ export function RestriccionesEditablesCard({
         {/* === Cuerpo: lectura o edición === */}
         {!isLoading && !isError && (ficha || sinFicha) && !sinPermisos && (
           <>
-            {modoEdicion ? (
-              <FormularioEdicion
-                formulario={formulario}
-                setFormulario={setFormulario}
+{modoEdicion ? (
+                <FormularioEdicion
+                  formulario={formularioEfectivo}
+                  setFormulario={setFormulario}
                 errores={errores}
                 nuevoItem={nuevoItem}
                 setNuevoItem={setNuevoItem}

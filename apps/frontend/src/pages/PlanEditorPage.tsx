@@ -43,16 +43,18 @@ import {
 } from '@/components/plan/WeeklyPlanGrid';
 import { VersionHistory } from '@/components/plan/VersionHistory';
 import { RazonamientoCumplimiento } from '@/components/plan/RazonamientoCumplimiento';
-import { RestriccionesPacienteCard } from '@/components/plan/RestriccionesPacienteCard';
+import { RestriccionesEditablesCard } from '@/components/plan/RestriccionesEditablesCard';
 
 import { apiRequest } from '@/lib/api';
 import { useObtenerFichaNutricionista } from '@/hooks/useObtenerFichaNutricionista';
+import { useEditarFichaPaciente } from '@/hooks/useEditarFichaPaciente';
 import type { PaginatedData } from '@nutrifit/shared';
 import type {
   RespuestaPlanSemanalV2FE,
   RespuestaRegeneracionFE,
   SolicitudRegeneracionFE,
 } from '@/types/ia';
+import type { FichaSaludSocio } from '@/types/ficha-salud';
 
 interface PacienteResumen {
   socioId: number;
@@ -101,6 +103,28 @@ export function PlanEditorPage() {
     nutricionistaId: personaId,
     socioId: socioIdNumero ?? null,
   });
+
+  // Mutación para que el NUT edite la ficha del paciente
+  // (PUT /turnos/profesional/:nutricionistaId/pacientes/:socioId/ficha-salud).
+  const {
+    editarFichaAsync,
+    isPending: guardandoFicha,
+    error: errorGuardarFicha,
+  } = useEditarFichaPaciente({
+    token,
+    nutricionistaId: personaId ?? 0,
+    socioId: socioIdNumero ?? 0,
+  });
+
+  const manejarGuardarFicha = async (
+    datosEditados: Partial<FichaSaludSocio>,
+  ): Promise<void> => {
+    if (!socioIdNumero || !personaId) return;
+    await editarFichaAsync({ payload: datosEditados });
+    toast.success('Ficha del paciente actualizada', {
+      description: `Versión guardada. La IA usará los datos actualizados.`,
+    });
+  };
 
   // Carga paciente cuando cambia el socioId
   useEffect(() => {
@@ -317,14 +341,25 @@ export function PlanEditorPage() {
       >
         {/* Main: Generador + Plan + Razonamiento */}
         <main className="flex flex-col gap-6">
-          {/* Card: Restricciones del paciente (ficha de salud) */}
+          {/* Card: Ficha de salud del paciente (editable por el NUT) */}
           {socioIdNumero && (
-            <RestriccionesPacienteCard
+            <RestriccionesEditablesCard
               ficha={ficha}
+              socio={
+                paciente
+                  ? {
+                      nombreCompleto: paciente.nombreCompleto,
+                      dni: paciente.dni,
+                    }
+                  : null
+              }
               isLoading={cargandoFicha}
               isError={errorFicha}
               sinFicha={sinFicha}
               sinPermisos={sinPermisos}
+              onSave={manejarGuardarFicha}
+              isSaving={guardandoFicha}
+              errorGuardar={errorGuardarFicha?.message ?? null}
             />
           )}
 
