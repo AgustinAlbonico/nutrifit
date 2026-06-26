@@ -47,6 +47,7 @@ import { cn } from '@/lib/utils';
 import {
   solicitudPlanSemanalSchema,
 } from '@/schemas/ia-plan-semanal.schema';
+import type { PaginatedData } from '@nutrifit/shared';
 import type {
   PlanSemanalIA,
   RespuestaPlanSemanalV2FE,
@@ -118,15 +119,20 @@ export function GeneradorPlanSemanal({
     const cargar = async () => {
       try {
         setCargandoPacientes(true);
+        // El endpoint devuelve PaginatedData<{ socioId, nombreCompleto, dni }>
+        // (estructura { data: [...], pagination: {...} }) — ver PlanEditorPage
+        // y apps/frontend/src/lib/api/pacientes.ts para el patrón.
         const respuesta = await apiRequest<
-          { data: Array<{ socioId: number; nombreCompleto: string; dni: string }> } | Array<{ socioId: number; nombreCompleto: string; dni: string }>
+          PaginatedData<{
+            socioId: number;
+            nombreCompleto: string;
+            dni: string;
+          }>
         >(`/turnos/profesional/${personaId}/pacientes?page=1&limit=100`, {
           token,
         });
         if (cancelado) return;
-        const lista = Array.isArray(respuesta)
-          ? respuesta
-          : (respuesta?.data ?? []);
+        const lista = respuesta.data ?? [];
         setPacientes(lista);
       } catch {
         if (!cancelado) setPacientes([]);
