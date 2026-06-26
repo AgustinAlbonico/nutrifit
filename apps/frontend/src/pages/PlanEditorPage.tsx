@@ -110,13 +110,20 @@ export function PlanEditorPage() {
     const cargarPaciente = async () => {
       try {
         setCargandoPaciente(true);
-        const respuestaApi = await apiRequest<
-          PaginatedData<PacienteResumen>
-        >(`/turnos/profesional/${personaId}/pacientes`, { token });
+        // El endpoint devuelve {success, data: {data: [...], pagination: {...}}}
+        // — apiRequest no desenvuelve el wrapper. Acceso: respuesta.data.data.
+        type RespuestaApi = {
+          data: PaginatedData<PacienteResumen>;
+        };
+        const respuestaApi = await apiRequest<RespuestaApi>(
+          `/turnos/profesional/${personaId}/pacientes`,
+          { token },
+        );
 
         if (cancelado) return;
 
-        const encontrado = (respuestaApi.data ?? []).find(
+        const lista = respuestaApi?.data?.data ?? [];
+        const encontrado = lista.find(
           (p) => String(p.socioId) === String(socioIdNumero),
         );
         setPaciente(encontrado ?? null);
