@@ -343,8 +343,6 @@ export function PlanEditorPage() {
               <GeneradorPlanSemanal
                 planAlimentacionId={respuesta?.planAlimentacionId}
                 socioIdPreseleccionado={socioIdNumero}
-                socioNombre={paciente?.nombreCompleto}
-                socioDni={paciente?.dni}
                 onSuccess={(data) => {
                   setRespuesta(data);
                   setVersionSeleccionadaId(data.versionId);

@@ -26,7 +26,7 @@ import { useState } from 'react';
 import { useForm, Controller, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
-import { Calendar, Loader2, Sparkles, AlertCircle, Lock } from 'lucide-react';
+import { Calendar, Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -64,10 +64,6 @@ const OPCIONES_COMIDAS_POR_DIA = [
 interface PropiedadesGeneradorPlanSemanal {
   planAlimentacionId?: number;
   socioIdPreseleccionado?: number;
-  /** Nombre del socio para mostrar en el Select (lo pasa PlanEditorPage desde el header). */
-  socioNombre?: string;
-  /** DNI del socio para mostrar en el Select. */
-  socioDni?: string;
   onSuccess?: (respuesta: RespuestaPlanSemanalV2FE) => void;
 
   // ─── DEPRECATED props (legacy V1 API, conservados para no romper
@@ -91,8 +87,6 @@ type FormOutput = z.output<typeof solicitudPlanSemanalSchema>;
 export function GeneradorPlanSemanal({
   planAlimentacionId,
   socioIdPreseleccionado,
-  socioNombre,
-  socioDni,
   onSuccess,
   // Deprecated props — ignorados en V2 (no rompen typecheck de PlanEditorPage)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -168,17 +162,6 @@ export function GeneradorPlanSemanal({
   const submitDeshabilitado =
     enviando || generarPlanSemanalV2.isPending || !isValid;
 
-  // El socio está bloqueado (viene de la URL, no se puede cambiar)
-  const socioBloqueado = (socioIdPreseleccionado ?? 0) > 0;
-
-  // Etiqueta del socio para el Select: si tenemos nombre+DNI lo usamos,
-  // sino fallback a "Socio #ID". Si no hay socio, mensaje vacío.
-  const etiquetaSocio = socioBloqueado
-    ? socioNombre
-      ? `${socioNombre}${socioDni ? ` · DNI ${socioDni}` : ''}`
-      : `Socio #${socioIdPreseleccionado}`
-    : '';
-
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
@@ -208,66 +191,8 @@ export function GeneradorPlanSemanal({
       </header>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {/* Paciente — DISABLED cuando viene de la URL */}
-        <div className="flex flex-col gap-1.5 sm:col-span-2">
-          <Label htmlFor="socioId" className="flex items-center gap-1.5">
-            <Lock className="size-3 text-muted-foreground" aria-hidden="true" />
-            Paciente
-          </Label>
-          <Controller
-            control={control}
-            name="socioId"
-            render={({ field }) => (
-              <Select
-                value={field.value > 0 ? String(field.value) : ''}
-                onValueChange={(valor) => field.onChange(Number(valor))}
-                disabled={socioBloqueado}
-              >
-                <SelectTrigger
-                  id="socioId"
-                  data-testid="socio-id-select"
-                  aria-invalid={errors.socioId ? 'true' : 'false'}
-                  aria-describedby={
-                    errors.socioId ? 'socioId-error' : 'socioId-help'
-                  }
-                >
-                  {/* Cuando el socio está bloqueado, mostramos el texto
-                      manualmente porque Radix Select no renderiza SelectValue
-                      si no hay SelectContent con SelectItem que matchee. */}
-                  {socioBloqueado ? (
-                    <span className="text-sm font-medium">
-                      {etiquetaSocio}
-                    </span>
-                  ) : (
-                    <SelectValue placeholder="Seleccionar paciente" />
-                  )}
-                </SelectTrigger>
-                {!socioBloqueado && (
-                  <SelectContent>
-                    <SelectItem value="__empty__" disabled>
-                      Seleccioná un paciente
-                    </SelectItem>
-                  </SelectContent>
-                )}
-              </Select>
-            )}
-          />
-          {errors.socioId ? (
-            <p
-              id="socioId-error"
-              role="alert"
-              className="text-xs text-destructive"
-            >
-              {errors.socioId.message}
-            </p>
-          ) : (
-            <p id="socioId-help" className="text-xs text-muted-foreground">
-              {socioBloqueado
-                ? 'El paciente ya fue seleccionado. No se puede cambiar.'
-                : 'Seleccioná un paciente para generar el plan.'}
-            </p>
-          )}
-        </div>
+        {/* socioId — campo oculto, el socio ya está en el header de la página */}
+        <input type="hidden" {...register('socioId', { valueAsNumber: true })} />
 
         {/* diasAGenerar */}
         <div className="flex flex-col gap-1.5">
