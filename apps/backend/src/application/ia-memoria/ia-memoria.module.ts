@@ -3,6 +3,8 @@ import { SeleccionarEjemplosMemoriaUseCase } from './use-cases/seleccionar-ejemp
 import { ListarMemoriaUseCase } from './use-cases/listar-memoria.use-case';
 import { EliminarMemoriaUseCase } from './use-cases/eliminar-memoria.use-case';
 import { RepositoriesModule } from 'src/infrastructure/persistence/typeorm/repositories/repositories.module';
+import { AuditoriaModule } from 'src/infrastructure/services/auditoria/auditoria.module';
+import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 
 /**
  * IaMemoriaModule
@@ -16,13 +18,16 @@ import { RepositoriesModule } from 'src/infrastructure/persistence/typeorm/repos
  * - ListarMemoriaUseCase y EliminarMemoriaUseCase sí usan el repo por DI.
  *   El token `NUTRICIONISTA_IA_MEMORIA_REPOSITORY` se importa desde
  *   RepositoriesModule.
+ * - EliminarMemoriaUseCase también usa AuditoriaService (de AuditoriaModule)
+ *   y NotificacionesService (provisto localmente, patrón del proyecto).
  */
 @Module({
-  imports: [RepositoriesModule],
+  imports: [RepositoriesModule, AuditoriaModule],
   providers: [
     SeleccionarEjemplosMemoriaUseCase,
     ListarMemoriaUseCase,
     EliminarMemoriaUseCase,
+    NotificacionesService,
   ],
   exports: [
     SeleccionarEjemplosMemoriaUseCase,
