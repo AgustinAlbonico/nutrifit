@@ -343,6 +343,7 @@ export function PlanEditorPage() {
               <GeneradorPlanSemanal
                 planAlimentacionId={respuesta?.planAlimentacionId}
                 socioIdPreseleccionado={socioIdNumero}
+                fichaDisponible={!!ficha && !cargandoFicha && !sinPermisos && !sinFicha && !errorFicha}
                 onSuccess={(data) => {
                   setRespuesta(data);
                   setVersionSeleccionadaId(data.versionId);

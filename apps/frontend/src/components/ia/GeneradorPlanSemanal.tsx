@@ -64,6 +64,8 @@ const OPCIONES_COMIDAS_POR_DIA = [
 interface PropiedadesGeneradorPlanSemanal {
   planAlimentacionId?: number;
   socioIdPreseleccionado?: number;
+  /** Si false, deshabilita el botón de generar (ej: socio sin ficha de salud). */
+  fichaDisponible?: boolean;
   onSuccess?: (respuesta: RespuestaPlanSemanalV2FE) => void;
 
   // ─── DEPRECATED props (legacy V1 API, conservados para no romper
@@ -87,6 +89,7 @@ type FormOutput = z.output<typeof solicitudPlanSemanalSchema>;
 export function GeneradorPlanSemanal({
   planAlimentacionId,
   socioIdPreseleccionado,
+  fichaDisponible = true,
   onSuccess,
   // Deprecated props — ignorados en V2 (no rompen typecheck de PlanEditorPage)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -160,7 +163,10 @@ export function GeneradorPlanSemanal({
   };
 
   const submitDeshabilitado =
-    enviando || generarPlanSemanalV2.isPending || !isValid;
+    enviando ||
+    generarPlanSemanalV2.isPending ||
+    !isValid ||
+    !fichaDisponible;
 
   return (
     <form
@@ -374,6 +380,20 @@ export function GeneradorPlanSemanal({
           </p>
         )}
       </div>
+
+      {/* Aviso: no se puede generar sin ficha de salud */}
+      {!fichaDisponible && (
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+        >
+          <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          <p>
+            No se puede generar el plan porque el socio no tiene ficha de
+            salud cargada. El socio debe completarla primero.
+          </p>
+        </div>
+      )}
 
       {/* Error global del mutation (si existe y no fue capturado) */}
       {generarPlanSemanalV2.isError && (
