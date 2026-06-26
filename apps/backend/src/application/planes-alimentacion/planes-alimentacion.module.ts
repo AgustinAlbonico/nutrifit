@@ -31,6 +31,7 @@ import { AuditoriaModule } from 'src/infrastructure/services/auditoria/auditoria
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import { RestriccionesModule } from 'src/application/restricciones/restricciones.module';
 import { RepositoriesModule } from 'src/infrastructure/persistence/typeorm/repositories/repositories.module';
+import { AppLoggerModule } from 'src/infrastructure/common/logger/app-logger.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { RepositoriesModule } from 'src/infrastructure/persistence/typeorm/repos
     AuditoriaModule,
     RestriccionesModule,
     RepositoriesModule,
+    AppLoggerModule,
   ],
   providers: [
     CrearPlanAlimentacionUseCase,
