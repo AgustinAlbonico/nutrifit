@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { SeleccionarEjemplosMemoriaUseCase } from './use-cases/seleccionar-ejemplos-memoria.use-case';
 import { ListarMemoriaUseCase } from './use-cases/listar-memoria.use-case';
 import { EliminarMemoriaUseCase } from './use-cases/eliminar-memoria.use-case';
 import { RepositoriesModule } from 'src/infrastructure/persistence/typeorm/repositories/repositories.module';
 import { AuditoriaModule } from 'src/infrastructure/services/auditoria/auditoria.module';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
+import { NotificacionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/notificacion.entity';
 
 /**
  * IaMemoriaModule
@@ -20,9 +22,15 @@ import { NotificacionesService } from 'src/application/notificaciones/notificaci
  *   RepositoriesModule.
  * - EliminarMemoriaUseCase también usa AuditoriaService (de AuditoriaModule)
  *   y NotificacionesService (provisto localmente, patrón del proyecto).
+ *   NotificacionesService requiere NotificacionOrmEntityRepository, por
+ *   lo que se importa TypeOrmModule.forFeature para esa entidad.
  */
 @Module({
-  imports: [RepositoriesModule, AuditoriaModule],
+  imports: [
+    TypeOrmModule.forFeature([NotificacionOrmEntity]),
+    RepositoriesModule,
+    AuditoriaModule,
+  ],
   providers: [
     SeleccionarEjemplosMemoriaUseCase,
     ListarMemoriaUseCase,
