@@ -25,6 +25,7 @@ import {
   BloquearTurnoDto,
   CancelarTurnoSocioDto,
   CrearTurnoEnNombreDeSocioDto,
+  EditarFichaPacienteNutricionistaDto,
   CrearTurnoEnNombreDeSocioResponseDto,
   DatosTurnoResponseDto,
   DatosTurnoSocioResponseDto,
@@ -65,6 +66,7 @@ import {
   ConfirmarTurnoSocioUseCase,
   CrearTurnoEnNombreDeSocioUseCase,
   DesbloquearTurnoUseCase,
+  EditarFichaPacienteNutricionistaUseCase,
   FinalizarConsultaUseCase,
   GetAgendaDiariaUseCase,
   GetFichaSaludPacienteUseCase,
@@ -137,6 +139,7 @@ export class TurnosController {
     private readonly checkInTurnoUseCase: CheckInTurnoUseCase,
     private readonly confirmarTurnoSocioUseCase: ConfirmarTurnoSocioUseCase,
     private readonly crearTurnoEnNombreDeSocioUseCase: CrearTurnoEnNombreDeSocioUseCase,
+    private readonly editarFichaPacienteNutricionistaUseCase: EditarFichaPacienteNutricionistaUseCase,
     private readonly finalizarConsultaUseCase: FinalizarConsultaUseCase,
     private readonly getFichaSaludPacienteUseCase: GetFichaSaludPacienteUseCase,
     private readonly getFichaSaludSocioUseCase: GetFichaSaludSocioUseCase,
@@ -343,6 +346,44 @@ export class TurnosController {
     );
 
     return this.getFichaSaludPacienteUseCase.execute(nutricionistaId, socioId);
+  }
+
+  /**
+   * Edición de la ficha de salud del paciente por parte del NUT.
+   *
+   * Permite al nutricionista completar/corregir campos que el socio
+   * no haya llenado (restricciones, objetivo, medicación, suplementos,
+   * medidas antropométricas, etc.) sin necesidad de pedirle al socio
+   * que edite la ficha por su cuenta.
+   *
+   * Reglas:
+   *  - Solo el NUT dueño del recurso (validado por `NutricionistaOwnershipGuard`).
+   *  - El NUT debe tener al menos un turno con el socio (validado en el use case).
+   *  - No se exige `consentimiento` (RGPD ya fue aceptado por el socio).
+   *  - Audita con `FICHA_REVISADA_POR_NUTRICIONISTA` (RB33) y crea nueva
+   *    versión inmutable (RB50).
+   *
+   * Devuelve la ficha actualizada completa (mismo DTO que el socio).
+   */
+  @Put('profesional/:nutricionistaId/pacientes/:socioId/ficha-salud')
+  @Rol(RolEnum.NUTRICIONISTA)
+  @UseGuards(NutricionistaOwnershipGuard)
+  async editarFichaPacienteNutricionista(
+    @CurrentUserId() usuarioId: number,
+    @Param('nutricionistaId', ParseIntPipe) nutricionistaId: number,
+    @Param('socioId', ParseIntPipe) socioId: number,
+    @Body() payload: EditarFichaPacienteNutricionistaDto,
+  ): Promise<FichaSaludSocioResponseDto> {
+    this.logger.log(
+      `Editando ficha de salud. Profesional=${nutricionistaId} (usuario=${usuarioId}), socio=${socioId}.`,
+    );
+
+    return this.editarFichaPacienteNutricionistaUseCase.execute(
+      usuarioId,
+      nutricionistaId,
+      socioId,
+      payload,
+    );
   }
 
   @Get('profesional/:nutricionistaId/pacientes/:socioId/historial-consultas')
@@ -721,7 +762,10 @@ export class TurnosController {
       `Reabriendo consulta cerrada automaticamente para turno ${turnoId}.`,
     );
 
-    return this.reabrirConsultaCerradaAutoUseCase.execute(turnoId, nutricionistaId);
+    return this.reabrirConsultaCerradaAutoUseCase.execute(
+      turnoId,
+      nutricionistaId,
+    );
   }
 
   // PR #1 — spec 17: marcar ausente manual (nutricionista dueno o RECEPCIONISTA/ADMIN del mismo gym)

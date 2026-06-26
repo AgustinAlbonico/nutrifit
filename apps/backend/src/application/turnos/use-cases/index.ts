@@ -9,6 +9,7 @@ export * from './check-in-turno.use-case';
 export * from './confirmar-turno-socio.use-case';
 export * from './crear-turno-en-nombre-de-socio.use-case';
 export * from './desbloquear-turno.use-case';
+export * from './editar-ficha-paciente-nutricionista.use-case';
 export * from './finalizar-consulta.use-case';
 export * from './get-agenda-diaria.use-case';
 export * from './get-ficha-salud-paciente.use-case';

@@ -11,6 +11,7 @@ export * from './crear-turno-en-nombre-de-socio-response.dto';
 export * from './datos-turno-response.dto';
 export * from './datos-turno-socio-response.dto';
 export * from './datos-version-ficha-salud.dto';
+export * from './editar-ficha-paciente-nutricionista.dto';
 export * from './ficha-salud-paciente-response.dto';
 export * from './ficha-salud-socio-response.dto';
 export * from './get-agenda-diaria-query.dto';

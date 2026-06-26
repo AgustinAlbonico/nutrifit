@@ -24,6 +24,11 @@ export enum AccionAuditoria {
   TURNO_ESTADO_CAMBIO = 'TURNO_ESTADO_CAMBIO',
   FICHA_COMPLETADA = 'FICHA_COMPLETADA',
   FICHA_ACTUALIZADA = 'FICHA_ACTUALIZADA',
+  /**
+   * Editada/revisada por un nutricionista en nombre del socio.
+   * Acompaña al campo `revisadaPorNutricionistaAt` de FichaSaludOrmEntity.
+   */
+  FICHA_REVISADA_POR_NUTRICIONISTA = 'FICHA_REVISADA_POR_NUTRICIONISTA',
   MANUAL_ABSENT = 'MANUAL_ABSENT',
   REVERT_ABSENT = 'REVERT_ABSENT',
   CHECKIN = 'CHECKIN',
