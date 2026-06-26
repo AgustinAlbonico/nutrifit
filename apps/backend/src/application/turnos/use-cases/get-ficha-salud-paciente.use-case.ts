@@ -40,7 +40,7 @@ export class GetFichaSaludPacienteUseCase implements BaseUseCase {
   async execute(
     nutricionistaId: number,
     socioId: number,
-  ): Promise<FichaSaludPacienteResponseDto> {
+  ): Promise<FichaSaludPacienteResponseDto | null> {
     const nutricionista =
       await this.nutricionistaRepository.findById(nutricionistaId);
 
@@ -71,7 +71,10 @@ export class GetFichaSaludPacienteUseCase implements BaseUseCase {
     }
 
     if (!socio.fichaSalud) {
-      throw new NotFoundError('Ficha de salud', String(socioId));
+      this.logger.log(
+        `Socio ${socioId} no tiene ficha de salud cargada.`,
+      );
+      return null;
     }
 
     // RB45: delegar en AbrirFichaDesdeTurnoUseCase (single source of truth).

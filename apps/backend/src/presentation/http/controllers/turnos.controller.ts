@@ -340,7 +340,7 @@ export class TurnosController {
   async getFichaSaludPaciente(
     @Param('nutricionistaId', ParseIntPipe) nutricionistaId: number,
     @Param('socioId', ParseIntPipe) socioId: number,
-  ): Promise<FichaSaludPacienteResponseDto> {
+  ): Promise<FichaSaludPacienteResponseDto | null> {
     this.logger.log(
       `Consultando ficha de salud. Profesional=${nutricionistaId}, socio=${socioId}.`,
     );

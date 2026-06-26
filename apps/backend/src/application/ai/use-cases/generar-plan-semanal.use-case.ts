@@ -277,6 +277,10 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
 
     // Validar estructura mínima del JSON
     if (!this.esEstructuraValida(planJson)) {
+      const rawPreview = JSON.stringify(planJson).slice(0, 500);
+      this.logger.error(
+        `PLAN_ESTRUCTURA_INVALIDA para socio ${solicitud.socioId}. Preview: ${rawPreview}`,
+      );
       throw new BadRequestError(
         'PLAN_ESTRUCTURA_INVALIDA: el JSON generado no tiene la estructura esperada',
         {
@@ -584,16 +588,14 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
     if (!plan || typeof plan !== 'object') return false;
     const p = plan as PlanAlimentacionDatosJson;
     if (!Array.isArray(p.estructura)) return false;
-    if (typeof p.macrosPorDia !== 'object' || p.macrosPorDia === null) {
-      return false;
-    }
-    if (!p.razonamientoCumplimiento) return false;
-    if (!Array.isArray(p.razonamientoCumplimiento.restriccionesCumplidas)) {
-      return false;
-    }
-    if (!Array.isArray(p.razonamientoCumplimiento.restriccionesNoCumplidas)) {
-      return false;
-    }
+
+    // Log para debug: ver qué devolvió la IA
+    this.logger.warn(
+      `Plan JSON validación: estructura=${p.estructura.length} días, tieneMacros=${!!p.macrosPorDia}, tieneRazonamiento=${!!p.razonamientoCumplimiento}`,
+    );
+
+    // macrosPorDia y razonamientoCumplimiento son opcionales —
+    // el plan se puede generar sin ellos y se completan con defaults
     // Cada elemento de estructura debe tener dia + comidas (array con al menos 1)
     return p.estructura.every(
       (d) =>

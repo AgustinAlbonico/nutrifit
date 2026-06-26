@@ -165,8 +165,20 @@ export function GestionPlanesPage() {
     planes?.filter((p) => p.activo).map((p) => p.socioId) ?? []
   );
 
+  // Agrupar pacientes por socioId para eliminar duplicados
+  const pacientesUnicos = useMemo(() => {
+    if (!pacientes) return [];
+    const mapa = new Map<number, Paciente>();
+    for (const p of pacientes) {
+      if (!mapa.has(p.socioId)) {
+        mapa.set(p.socioId, p);
+      }
+    }
+    return Array.from(mapa.values());
+  }, [pacientes]);
+
   // Filtrar pacientes por búsqueda y excluir los que ya tienen plan activo
-  const pacientesFiltrados = pacientes?.filter((paciente) => {
+  const pacientesFiltrados = pacientesUnicos.filter((paciente) => {
     // Excluir pacientes que ya tienen plan activo
     if (sociosConPlanActivo.has(paciente.socioId)) {
       return false;

@@ -1,6 +1,12 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { CheckCircle, Plus, Trash2, Utensils } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRequest } from '@/lib/api';
@@ -78,7 +84,9 @@ export function PlanSocioPage() {
         const mensaje = err instanceof Error ? err.message : 'No se pudo cargar el plan';
         setError(mensaje);
 
-        if (err instanceof Error && err.message.includes('403')) {
+        const status = err instanceof Error && 'status' in err ? (err as Error & { status?: number }).status : undefined;
+        // 4xx = el socio no tiene plan activo o no existe → mostrar "sin plan"
+        if (status && status >= 400 && status < 500) {
           establecerPlanActivo(null);
           establecerEstado(() => 'SIN_PLAN');
         } else {
@@ -101,6 +109,7 @@ export function PlanSocioPage() {
   };
 
   return (
+    <TooltipProvider>
     <div className="space-y-6">
       <div className="relative overflow-hidden rounded-2xl border border-orange-500/20 bg-gradient-to-r from-orange-500/10 via-rose-500/10 to-transparent p-8 mb-8">
         <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
@@ -211,15 +220,28 @@ export function PlanSocioPage() {
                 >
                   Editar plan
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="border-destructive text-destructive hover:bg-destructive/10"
-                  disabled
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Finalizar plan
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      className="inline-flex"
+                    >
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="border-destructive text-destructive hover:bg-destructive/10 pointer-events-none"
+                        disabled
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Finalizar plan
+                      </Button>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Funcionalidad próximamente disponible</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
             </div>
           </CardContent>
@@ -233,5 +255,6 @@ export function PlanSocioPage() {
         </Alert>
       )}
     </div>
+    </TooltipProvider>
   );
 }

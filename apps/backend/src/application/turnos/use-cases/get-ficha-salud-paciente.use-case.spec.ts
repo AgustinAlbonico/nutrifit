@@ -106,7 +106,7 @@ describe('GetFichaSaludPacienteUseCase', () => {
     ).rejects.toBeInstanceOf(ForbiddenError);
   });
 
-  it('lanza NotFoundError si el socio no tiene ficha de salud', async () => {
+  it('retorna null si el socio no tiene ficha de salud', async () => {
     nutricionistaRepository.findById.mockResolvedValue({
       idPersona: nutricionistaId,
     });
@@ -119,9 +119,8 @@ describe('GetFichaSaludPacienteUseCase', () => {
     });
     turnoRepository.count.mockResolvedValue(1);
 
-    await expect(
-      useCase.execute(nutricionistaId, socioId),
-    ).rejects.toBeInstanceOf(NotFoundError);
+    const result = await useCase.execute(nutricionistaId, socioId);
+    expect(result).toBeNull();
   });
 
   it('delega en AbrirFichaDesdeTurnoUseCase al leer la ficha (RB45 single source of truth)', async () => {
@@ -183,7 +182,8 @@ describe('GetFichaSaludPacienteUseCase', () => {
     const result = await useCase.execute(nutricionistaId, socioId);
 
     expect(abrirFichaDesdeTurnoUseCase.execute).not.toHaveBeenCalled();
-    expect(result.socioId).toBe(socioId);
+    expect(result).not.toBeNull();
+    expect(result!.socioId).toBe(socioId);
   });
 
   it('retorna la ficha del socio cuando todo es válido', async () => {
@@ -211,10 +211,11 @@ describe('GetFichaSaludPacienteUseCase', () => {
 
     const result = await useCase.execute(nutricionistaId, socioId);
 
-    expect(result.socioId).toBe(socioId);
-    expect(result.nombreCompleto).toBe('Juan Pérez');
-    expect(result.altura).toBe(1.7);
-    expect(result.peso).toBe(70);
-    expect(result.alergias).toEqual(['Maní']);
+    expect(result).not.toBeNull();
+    expect(result!.socioId).toBe(socioId);
+    expect(result!.nombreCompleto).toBe('Juan Pérez');
+    expect(result!.altura).toBe(1.7);
+    expect(result!.peso).toBe(70);
+    expect(result!.alergias).toEqual(['Maní']);
   });
 });
