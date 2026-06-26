@@ -102,6 +102,7 @@ import { EmailModule } from 'src/application/email/email.module';
     ConfirmarTurnoSocioUseCase,
     CrearTurnoEnNombreDeSocioUseCase,
     DesbloquearTurnoUseCase,
+    EditarFichaPacienteNutricionistaUseCase,
     FinalizarConsultaPorInactividadUseCase,
     FinalizarConsultaUseCase,
     ReabrirConsultaCerradaAutoUseCase,
