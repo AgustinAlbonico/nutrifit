@@ -25,7 +25,8 @@ import {
   EliminarPlanAlimentacionResponseDto,
   ListarPlanesSocioUseCase,
   ListarPlanesNutricionistaUseCase,
-  ObtenerPlanActivoSocioUseCase,
+  ListarPlanesActivosSocioUseCase,
+  type PlanSocioActivoDTO,
   ObtenerPlanPorIdUseCase,
   VaciarContenidoPlanUseCase,
   VaciarContenidoPlanResponseDto,
@@ -71,7 +72,10 @@ export class PlanAlimentacionController {
     private readonly crearPlanAlimentacionUseCase: CrearPlanAlimentacionUseCase,
     private readonly editarPlanAlimentacionUseCase: EditarPlanAlimentacionUseCase,
     private readonly eliminarPlanAlimentacionUseCase: EliminarPlanAlimentacionUseCase,
-    private readonly obtenerPlanActivoSocioUseCase: ObtenerPlanActivoSocioUseCase,
+    // Hotfix Packet 8: el endpoint /socio/:id/activo ahora devuelve
+    // N planes activos (uno por nutricionista), no 1. La respuesta es
+    // SIEMPRE un array (vacío si no hay planes activos).
+    private readonly listarPlanesActivosSocioUseCase: ListarPlanesActivosSocioUseCase,
     private readonly obtenerPlanPorIdUseCase: ObtenerPlanPorIdUseCase,
     private readonly listarPlanesSocioUseCase: ListarPlanesSocioUseCase,
     private readonly listarPlanesNutricionistaUseCase: ListarPlanesNutricionistaUseCase,
@@ -119,11 +123,13 @@ export class PlanAlimentacionController {
   @Get('socio/:socioId/activo')
   @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN, RolEnum.SOCIO)
   @UseGuards(SocioResourceAccessGuard)
-  async obtenerPlanActivoSocio(
+  async listarPlanesActivosSocio(
     @Param('socioId', ParseIntPipe) socioId: number,
-  ): Promise<PlanAlimentacionResponseDto | null> {
-    this.logger.log(`Consultando plan activo del socio ${socioId}.`);
-    return this.obtenerPlanActivoSocioUseCase.execute(socioId);
+  ): Promise<PlanSocioActivoDTO[]> {
+    this.logger.log(`Consultando planes activos del socio ${socioId}.`);
+    // Hotfix Packet 8: la respuesta ahora es SIEMPRE un array
+    // (PlanSocioActivoDTO[]), uno por nutricionista con plan ACTIVO.
+    return this.listarPlanesActivosSocioUseCase.execute(socioId);
   }
 
   @Get('socio/:socioId')
@@ -299,10 +305,7 @@ export class PlanAlimentacionController {
     // PUT por versionId: resolver feedbackId via repo, luego delegar.
     const feedback = await this.feedbackRepo.obtenerPorVersion(versionId);
     if (!feedback) {
-      throw new NotFoundError(
-        'Feedback de plan',
-        `para versión ${versionId}`,
-      );
+      throw new NotFoundError('Feedback de plan', `para versión ${versionId}`);
     }
     return this.editarFeedbackPlanUseCase.execute({
       feedbackId: feedback.idPlanFeedback,
@@ -336,7 +339,11 @@ export class PlanAlimentacionController {
       personaId: number | null;
       gimnasioId: number | null;
     },
-  ): Promise<{ planAlimentacionId: number; versionActivaId: number; estado: 'ACTIVO' }> {
+  ): Promise<{
+    planAlimentacionId: number;
+    versionActivaId: number;
+    estado: 'ACTIVO';
+  }> {
     this.logger.log(
       `Activando versión ${payload.versionId} del plan ${id} por nutricionista ${user.personaId}.`,
     );

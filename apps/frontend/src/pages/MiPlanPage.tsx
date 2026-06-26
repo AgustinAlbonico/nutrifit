@@ -10,11 +10,10 @@
  *
  * Endpoint: `GET /planes-alimentacion/socio/:id/activo`.
  *
- * NOTA sobre RF-010: El backend actual retorna UN solo plan activo (vía
- * `ObtenerPlanActivoSocioUseCase`). La query del frontend normaliza la
- * respuesta (null, objeto único o array) a `PlanSocioActivo[]` para ser
- * defensivo: cuando el backend evolucione a "N planes por nutricionista",
- * el frontend ya soporta N cards sin cambios.
+ * RF-010: el backend (Hotfix Packet 8) ahora retorna N planes activos
+ * del socio (uno por nutricionista) vía `ListarPlanesActivosSocioUseCase`.
+ * La query del frontend normaliza la respuesta (`PlanSocioActivo[]`) por
+ * defensa contra respuestas heterogéneas heredadas.
  */
 
 import { useEffect } from 'react';

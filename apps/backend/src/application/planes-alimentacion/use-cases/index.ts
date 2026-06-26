@@ -1,7 +1,12 @@
 export * from './crear-plan-alimentacion.use-case';
 export * from './editar-plan-alimentacion.use-case';
 export * from './eliminar-plan-alimentacion.use-case';
-export * from './obtener-plan-activo-socio.use-case';
+// Hotfix Packet 8: el endpoint /socio/:id/activo ahora devuelve
+// `PlanSocioActivoDTO[]` (uno por nutricionista). El use-case legacy
+// `ObtenerPlanActivoSocioUseCase` ya no se usa en el controller;
+// queda como referencia para iteraciones futuras pero NO se exporta
+// desde el barrel ni se registra como provider.
+export * from './listar-planes-activos-socio.use-case';
 export * from './obtener-plan-por-id.use-case';
 export * from './listar-planes-socio.use-case';
 export * from './listar-planes-nutricionista.use-case';
