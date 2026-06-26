@@ -280,6 +280,7 @@ export class EditarFichaPacienteNutricionistaUseCase implements BaseUseCase {
     return this.toResponseDto(
       fichaResultado.ficha,
       fichaResultado.nuevaVersion,
+      socioId,
     );
   }
 
@@ -327,11 +328,9 @@ export class EditarFichaPacienteNutricionistaUseCase implements BaseUseCase {
   private toResponseDto(
     ficha: FichaSaludOrmEntity,
     versionActual: number,
+    socioId: number,
   ): FichaSaludSocioResponseDto {
     const response = new FichaSaludSocioResponseDto();
-    const socioId =
-      (ficha as unknown as { socio?: { idPersona?: number } }).socio
-        ?.idPersona ?? 0;
     response.socioId = socioId;
     response.fichaSaludId = ficha.idFichaSalud;
     response.altura = ficha.altura;
