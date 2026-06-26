@@ -443,6 +443,15 @@ interface PropiedadesVistaLectura {
 }
 
 function VistaLectura({ ficha }: PropiedadesVistaLectura) {
+  // Defensive defaults: el backend puede devolver campos opcionales como null
+  // o undefined. Normalizamos para que los .length y .map no exploten.
+  const alergias = ficha.alergias ?? [];
+  const patologias = ficha.patologias ?? [];
+  const restriccionesAlimentarias = ficha.restriccionesAlimentarias ?? '';
+  const objetivoPersonal = ficha.objetivoPersonal ?? '';
+  const medicacionActual = ficha.medicacionActual ?? '';
+  const suplementosActuales = ficha.suplementosActuales ?? '';
+
   return (
     <dl
       className="grid gap-4 sm:grid-cols-2"
@@ -465,9 +474,9 @@ function VistaLectura({ ficha }: PropiedadesVistaLectura) {
 
       {/* Alergias */}
       <SeccionLectura titulo="Alergias">
-        {ficha.alergias.length > 0 ? (
+        {alergias.length > 0 ? (
           <ul className="flex flex-wrap gap-1.5" aria-label="Alergias">
-            {ficha.alergias.map((a) => (
+            {alergias.map((a) => (
               <li
                 key={a}
                 className="inline-flex items-center rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-900 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-200"
@@ -484,9 +493,9 @@ function VistaLectura({ ficha }: PropiedadesVistaLectura) {
 
       {/* Patologías */}
       <SeccionLectura titulo="Patologías">
-        {ficha.patologias.length > 0 ? (
+        {patologias.length > 0 ? (
           <ul className="flex flex-wrap gap-1.5" aria-label="Patologías">
-            {ficha.patologias.map((p) => (
+            {patologias.map((p) => (
               <li
                 key={p}
                 className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
@@ -502,8 +511,8 @@ function VistaLectura({ ficha }: PropiedadesVistaLectura) {
 
       {/* Restricciones alimentarias */}
       <SeccionLectura titulo="Restricciones alimentarias">
-        {ficha.restriccionesAlimentarias ? (
-          <p className="text-sm">{ficha.restriccionesAlimentarias}</p>
+        {restriccionesAlimentarias ? (
+          <p className="text-sm">{restriccionesAlimentarias}</p>
         ) : (
           <span className="text-sm text-muted-foreground">Sin restricciones</span>
         )}
@@ -511,8 +520,8 @@ function VistaLectura({ ficha }: PropiedadesVistaLectura) {
 
       {/* Objetivo personal */}
       <SeccionLectura titulo="Objetivo personal" fullWidth>
-        {ficha.objetivoPersonal ? (
-          <p className="text-sm">{ficha.objetivoPersonal}</p>
+        {objetivoPersonal ? (
+          <p className="text-sm">{objetivoPersonal}</p>
         ) : (
           <span className="text-sm text-muted-foreground">Sin objetivo declarado</span>
         )}
@@ -520,8 +529,8 @@ function VistaLectura({ ficha }: PropiedadesVistaLectura) {
 
       {/* Medicación */}
       <SeccionLectura titulo="Medicación actual">
-        {ficha.medicacionActual ? (
-          <p className="text-sm">{ficha.medicacionActual}</p>
+        {medicacionActual ? (
+          <p className="text-sm">{medicacionActual}</p>
         ) : (
           <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
             <Lock className="size-3" aria-hidden="true" />
@@ -532,8 +541,8 @@ function VistaLectura({ ficha }: PropiedadesVistaLectura) {
 
       {/* Suplementos */}
       <SeccionLectura titulo="Suplementos actuales">
-        {ficha.suplementosActuales ? (
-          <p className="text-sm">{ficha.suplementosActuales}</p>
+        {suplementosActuales ? (
+          <p className="text-sm">{suplementosActuales}</p>
         ) : (
           <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
             <Lock className="size-3" aria-hidden="true" />
