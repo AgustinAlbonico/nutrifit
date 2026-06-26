@@ -36,6 +36,7 @@ interface PropiedadesRestriccionesPacienteCard {
   isLoading: boolean;
   isError: boolean;
   sinFicha: boolean;
+  sinPermisos: boolean;
   className?: string;
 }
 
@@ -44,6 +45,7 @@ export function RestriccionesPacienteCard({
   isLoading,
   isError,
   sinFicha,
+  sinPermisos,
   className,
 }: PropiedadesRestriccionesPacienteCard) {
   return (
@@ -83,7 +85,7 @@ export function RestriccionesPacienteCard({
           </div>
         )}
 
-        {!isLoading && sinFicha && (
+        {!isLoading && sinPermisos && (
           <div
             className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm text-amber-900 dark:text-amber-200"
             role="alert"
@@ -93,14 +95,30 @@ export function RestriccionesPacienteCard({
               aria-hidden="true"
             />
             <p>
-              El paciente aún no completó su ficha de salud, o no tenés
-              turno previo con él. La IA no tendrá restricciones para
+              No tenés turno previo con este socio, por lo que no podés
+              acceder a su ficha. La IA no tendrá restricciones para
               validar en este plan.
             </p>
           </div>
         )}
 
-        {!isLoading && isError && !sinFicha && (
+        {!isLoading && !sinPermisos && sinFicha && (
+          <div
+            className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm text-amber-900 dark:text-amber-200"
+            role="alert"
+          >
+            <AlertCircle
+              className="mt-0.5 size-4 shrink-0"
+              aria-hidden="true"
+            />
+            <p>
+              El paciente aún no completó su ficha de salud. La IA no
+              tendrá restricciones para validar en este plan.
+            </p>
+          </div>
+        )}
+
+        {!isLoading && isError && !sinFicha && !sinPermisos && (
           <div
             className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
             role="alert"

@@ -199,16 +199,12 @@ export async function apiRequest<T>(
     }
 
     if (response.status === 403 && !isAuthEndpoint) {
-      // Error de tenant - redirigir a dashboard con mensaje
-      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-        const { mensaje } = obtenerMensajeLegible(
-          response,
-          errorBody,
-          isAuthEndpoint,
-        );
-        const mensajeCodificado = encodeURIComponent(mensaje);
-        window.location.assign(`/login?error=${mensajeCodificado}`);
-      }
+      // REMOVED: redirect a /login en 403 de endpoints de dominio
+      // Razón: rompía el flujo de páginas como PlanEditorPage donde el NUT
+      // navega a un socio sin turno previo: el 403 redirigía al login con
+      // ?error=... y el NUT perdía toda la selección/contexto.
+      // El componente debe manejar el 403 localmente (mostrar mensaje en la
+      // página) en vez de hacer un redirect global.
     }
 
     const { mensaje, detalles } = obtenerMensajeLegible(

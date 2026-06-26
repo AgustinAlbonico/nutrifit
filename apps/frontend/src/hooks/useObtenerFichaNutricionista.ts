@@ -31,6 +31,7 @@ export interface ResultadoObtenerFichaNutricionista {
   isError: boolean;
   error: Error | null;
   sinFicha: boolean;
+  sinPermisos: boolean;
 }
 
 export function useObtenerFichaNutricionista({
@@ -64,8 +65,6 @@ export function useObtenerFichaNutricionista({
         }
         return (respuesta as FichaSaludSocio | null) ?? null;
       } catch (err) {
-        // 404 = sin ficha o sin turno previo. Re-lanzamos para que el
-        // componente pueda mostrar el mensaje correcto.
         throw err instanceof Error
           ? err
           : new Error('No se pudo obtener la ficha del paciente');
@@ -75,11 +74,21 @@ export function useObtenerFichaNutricionista({
     retry: false,
   });
 
-  // Detectar 404 = "sin ficha" (diferente de error de red u otro)
+  // Clasificar el error para que el componente muestre el mensaje correcto:
+  // - 403: NUT sin turno previo con el socio (sin permisos para acceder)
+  // - 404: socio existe pero no tiene ficha completada (caso válido)
+  // - otros: error de red u otro
+  const errorStatus = (query.error as Error & { status?: number })?.status;
   const errorMensaje = query.error?.message ?? '';
+  const sinPermisos =
+    query.isError &&
+    (errorStatus === 403 ||
+      errorMensaje.toLowerCase().includes('solo puede acceder'));
   const sinFicha =
     query.isError &&
-    (errorMensaje.includes('404') ||
+    !sinPermisos &&
+    (errorStatus === 404 ||
+      errorMensaje.includes('404') ||
       errorMensaje.includes('no existe') ||
       errorMensaje.includes('No se encontró'));
 
@@ -89,5 +98,6 @@ export function useObtenerFichaNutricionista({
     isError: query.isError,
     error: query.error,
     sinFicha,
+    sinPermisos,
   };
 }

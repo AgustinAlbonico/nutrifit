@@ -95,6 +95,7 @@ export function PlanEditorPage() {
     isLoading: cargandoFicha,
     isError: errorFicha,
     sinFicha,
+    sinPermisos,
   } = useObtenerFichaNutricionista({
     token,
     nutricionistaId: personaId,
@@ -316,6 +317,7 @@ export function PlanEditorPage() {
               isLoading={cargandoFicha}
               isError={errorFicha}
               sinFicha={sinFicha}
+              sinPermisos={sinPermisos}
             />
           )}
 
