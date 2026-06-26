@@ -22,11 +22,11 @@
  * - role="alert" en errores de submit
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, Controller, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
-import { Calendar, Loader2, Sparkles, AlertCircle } from 'lucide-react';
+import { Calendar, Loader2, Sparkles, AlertCircle, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -41,6 +41,8 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useIa } from '@/hooks/useIa';
+import { useAuth } from '@/contexts/AuthContext';
+import { apiRequest } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import {
   solicitudPlanSemanalSchema,
@@ -89,14 +91,54 @@ export function GeneradorPlanSemanal({
   socioIdPreseleccionado,
   onSuccess,
   // Deprecated props — ignorados en V2 (no rompen typecheck de PlanEditorPage)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   socioId: _socioIdLegacy,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   token: _tokenLegacy,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   alergias: _alergiasLegacy,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onPlanGenerado: _onPlanGeneradoLegacy,
 }: PropiedadesGeneradorPlanSemanal) {
   const [enviando, setEnviando] = useState(false);
 
   const { generarPlanSemanalV2 } = useIa();
+  const { token, personaId } = useAuth();
+
+  // Lista de pacientes del nutricionista (para el Select)
+  const [pacientes, setPacientes] = useState<
+    Array<{ socioId: number; nombreCompleto: string; dni: string }>
+  >([]);
+  const [cargandoPacientes, setCargandoPacientes] = useState(false);
+
+  // Cargar pacientes del nutricionista al montar
+  useEffect(() => {
+    let cancelado = false;
+    if (!token || !personaId) return;
+    const cargar = async () => {
+      try {
+        setCargandoPacientes(true);
+        const respuesta = await apiRequest<
+          { data: Array<{ socioId: number; nombreCompleto: string; dni: string }> } | Array<{ socioId: number; nombreCompleto: string; dni: string }>
+        >(`/turnos/profesional/${personaId}/pacientes?page=1&limit=100`, {
+          token,
+        });
+        if (cancelado) return;
+        const lista = Array.isArray(respuesta)
+          ? respuesta
+          : (respuesta?.data ?? []);
+        setPacientes(lista);
+      } catch {
+        if (!cancelado) setPacientes([]);
+      } finally {
+        if (!cancelado) setCargandoPacientes(false);
+      }
+    };
+    void cargar();
+    return () => {
+      cancelado = true;
+    };
+  }, [token, personaId]);
 
   const {
     register,
@@ -187,21 +229,59 @@ export function GeneradorPlanSemanal({
       </header>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {/* socioId */}
+        {/* Selector de paciente (reemplaza al input numérico de socioId) */}
         <div className="flex flex-col gap-1.5 sm:col-span-2">
-          <Label htmlFor="socioId">ID del socio</Label>
-          <Input
-            id="socioId"
-            type="number"
-            min={1}
-            inputMode="numeric"
-            disabled={enviando || generarPlanSemanalV2.isPending}
-            aria-invalid={errors.socioId ? 'true' : 'false'}
-            aria-describedby={
-              errors.socioId ? 'socioId-error' : 'socioId-help'
-            }
-            data-testid="socio-id-input"
-            {...register('socioId', { valueAsNumber: true })}
+          <Label htmlFor="socioId" className="flex items-center gap-1.5">
+            <Users className="size-3.5" aria-hidden="true" />
+            Paciente
+          </Label>
+          <Controller
+            control={control}
+            name="socioId"
+            render={({ field }) => (
+              <Select
+                value={field.value > 0 ? String(field.value) : ''}
+                onValueChange={(valor) => field.onChange(Number(valor))}
+                disabled={
+                  enviando ||
+                  generarPlanSemanalV2.isPending ||
+                  cargandoPacientes
+                }
+              >
+                <SelectTrigger
+                  id="socioId"
+                  data-testid="socio-id-select"
+                  aria-invalid={errors.socioId ? 'true' : 'false'}
+                  aria-describedby={
+                    errors.socioId ? 'socioId-error' : 'socioId-help'
+                  }
+                >
+                  <SelectValue
+                    placeholder={
+                      cargandoPacientes
+                        ? 'Cargando pacientes…'
+                        : 'Seleccionar paciente'
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {pacientes.length === 0 && !cargandoPacientes && (
+                    <SelectItem value="__empty__" disabled>
+                      No tenés pacientes con turno previo
+                    </SelectItem>
+                  )}
+                  {pacientes.map((paciente) => (
+                    <SelectItem
+                      key={paciente.socioId}
+                      value={String(paciente.socioId)}
+                    >
+                      {paciente.nombreCompleto}
+                      {paciente.dni ? ` · DNI ${paciente.dni}` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           />
           {errors.socioId ? (
             <p
@@ -213,7 +293,8 @@ export function GeneradorPlanSemanal({
             </p>
           ) : (
             <p id="socioId-help" className="text-xs text-muted-foreground">
-              ID numérico del socio titular del plan.
+              Lista de pacientes con turno previo. Seleccioná uno para
+              generar el plan.
             </p>
           )}
         </div>

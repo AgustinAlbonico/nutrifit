@@ -43,8 +43,10 @@ import {
 } from '@/components/plan/WeeklyPlanGrid';
 import { VersionHistory } from '@/components/plan/VersionHistory';
 import { RazonamientoCumplimiento } from '@/components/plan/RazonamientoCumplimiento';
+import { RestriccionesPacienteCard } from '@/components/plan/RestriccionesPacienteCard';
 
 import { apiRequest } from '@/lib/api';
+import { useObtenerFichaNutricionista } from '@/hooks/useObtenerFichaNutricionista';
 import type { PaginatedData } from '@nutrifit/shared';
 import type {
   RespuestaPlanSemanalV2FE,
@@ -86,6 +88,18 @@ export function PlanEditorPage() {
   // Paciente (header avatar + nombre)
   const [paciente, setPaciente] = useState<PacienteResumen | null>(null);
   const [cargandoPaciente, setCargandoPaciente] = useState(false);
+
+  // Ficha de salud del paciente (para mostrar restricciones)
+  const {
+    data: ficha,
+    isLoading: cargandoFicha,
+    isError: errorFicha,
+    sinFicha,
+  } = useObtenerFichaNutricionista({
+    token,
+    nutricionistaId: personaId,
+    socioId: socioIdNumero ?? null,
+  });
 
   // Carga paciente cuando cambia el socioId
   useEffect(() => {
@@ -295,6 +309,16 @@ export function PlanEditorPage() {
       >
         {/* Main: Generador + Plan + Razonamiento */}
         <main className="flex flex-col gap-6">
+          {/* Card: Restricciones del paciente (ficha de salud) */}
+          {socioIdNumero && (
+            <RestriccionesPacienteCard
+              ficha={ficha}
+              isLoading={cargandoFicha}
+              isError={errorFicha}
+              sinFicha={sinFicha}
+            />
+          )}
+
           {/* Card: Generador de plan */}
           <Card className="rounded-2xl border-border/50">
             <CardHeader className="pb-3">

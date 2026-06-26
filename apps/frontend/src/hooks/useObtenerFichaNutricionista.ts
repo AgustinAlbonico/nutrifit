@@ -1,0 +1,93 @@
+/**
+ * Hook de React Query para obtener la ficha de salud de un paciente
+ * desde la perspectiva del nutricionista.
+ *
+ * Endpoint: `GET /turnos/profesional/:nutricionistaId/pacientes/:socioId/ficha-salud`
+ * Cache key: `['ficha-paciente', nutricionistaId, socioId]`
+ *
+ * Solo fetchea cuando nutricionistaId y socioId son válidos y el nutricionista
+ * autenticado tiene turno previo con el paciente (el backend valida esto).
+ * Si el socio no tiene ficha o el NUT no tiene turno previo, el backend
+ * devuelve 404 y este hook expone `error` con la información necesaria
+ * para que el componente muestre un mensaje de "sin ficha completada".
+ */
+
+import { useQuery } from '@tanstack/react-query';
+
+import { apiRequest } from '@/lib/api';
+import type { FichaSaludSocio } from '@/types/ficha-salud';
+import type { ApiResponse } from '@/types/api';
+
+interface ParametrosObtenerFichaNutricionista {
+  token: string | null;
+  nutricionistaId: number | null;
+  socioId: number | null;
+  habilitado?: boolean;
+}
+
+export interface ResultadoObtenerFichaNutricionista {
+  data: FichaSaludSocio | null;
+  isLoading: boolean;
+  isError: boolean;
+  error: Error | null;
+  sinFicha: boolean;
+}
+
+export function useObtenerFichaNutricionista({
+  token,
+  nutricionistaId,
+  socioId,
+  habilitado = true,
+}: ParametrosObtenerFichaNutricionista): ResultadoObtenerFichaNutricionista {
+  const query = useQuery<FichaSaludSocio | null, Error>({
+    queryKey: ['ficha-paciente', nutricionistaId, socioId],
+    enabled:
+      habilitado &&
+      !!token &&
+      !!nutricionistaId &&
+      !!socioId,
+    queryFn: async () => {
+      try {
+        const respuesta = await apiRequest<
+          FichaSaludSocio | ApiResponse<FichaSaludSocio>
+        >(
+          `/turnos/profesional/${nutricionistaId}/pacientes/${socioId}/ficha-salud`,
+          { token },
+        );
+
+        if (
+          typeof respuesta === 'object' &&
+          respuesta !== null &&
+          'data' in respuesta
+        ) {
+          return (respuesta as ApiResponse<FichaSaludSocio>).data ?? null;
+        }
+        return (respuesta as FichaSaludSocio | null) ?? null;
+      } catch (err) {
+        // 404 = sin ficha o sin turno previo. Re-lanzamos para que el
+        // componente pueda mostrar el mensaje correcto.
+        throw err instanceof Error
+          ? err
+          : new Error('No se pudo obtener la ficha del paciente');
+      }
+    },
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+
+  // Detectar 404 = "sin ficha" (diferente de error de red u otro)
+  const errorMensaje = query.error?.message ?? '';
+  const sinFicha =
+    query.isError &&
+    (errorMensaje.includes('404') ||
+      errorMensaje.includes('no existe') ||
+      errorMensaje.includes('No se encontró'));
+
+  return {
+    data: query.data ?? null,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    sinFicha,
+  };
+}
