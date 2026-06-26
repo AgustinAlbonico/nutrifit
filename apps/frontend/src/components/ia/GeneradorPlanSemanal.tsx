@@ -10,10 +10,10 @@
  * - Botón se deshabilita tras el primer click para evitar dobles submits.
  * - Toasts (sonner) para feedback de éxito/error.
  *
- * Props:
- * - planAlimentacionId?: id del plan si estamos editando uno existente
- * - onSuccess?: callback al recibir la respuesta del backend
- * - socioIdPreseleccionado?: precarga el campo socioId si lo conoce el padre
+ * UX del socio:
+ * - El socio SIEMPRE viene de la URL (/profesional/plan/:socioId/editar).
+ * - El Select está DISABLED: no se puede cambiar el socio desde acá.
+ * - El nombre lo pasa el PlanEditorPage (que ya lo carga para el header).
  *
  * Accesibilidad:
  * - Labels asociados por htmlFor / id
@@ -22,11 +22,11 @@
  * - role="alert" en errores de submit
  */
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useForm, Controller, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
-import { Calendar, Loader2, Sparkles, AlertCircle, Users } from 'lucide-react';
+import { Calendar, Loader2, Sparkles, AlertCircle, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -41,13 +41,10 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useIa } from '@/hooks/useIa';
-import { useAuth } from '@/contexts/AuthContext';
-import { apiRequest } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import {
   solicitudPlanSemanalSchema,
 } from '@/schemas/ia-plan-semanal.schema';
-import type { PaginatedData } from '@nutrifit/shared';
 import type {
   PlanSemanalIA,
   RespuestaPlanSemanalV2FE,
@@ -67,6 +64,10 @@ const OPCIONES_COMIDAS_POR_DIA = [
 interface PropiedadesGeneradorPlanSemanal {
   planAlimentacionId?: number;
   socioIdPreseleccionado?: number;
+  /** Nombre del socio para mostrar en el Select (lo pasa PlanEditorPage desde el header). */
+  socioNombre?: string;
+  /** DNI del socio para mostrar en el Select. */
+  socioDni?: string;
   onSuccess?: (respuesta: RespuestaPlanSemanalV2FE) => void;
 
   // ─── DEPRECATED props (legacy V1 API, conservados para no romper
@@ -90,6 +91,8 @@ type FormOutput = z.output<typeof solicitudPlanSemanalSchema>;
 export function GeneradorPlanSemanal({
   planAlimentacionId,
   socioIdPreseleccionado,
+  socioNombre,
+  socioDni,
   onSuccess,
   // Deprecated props — ignorados en V2 (no rompen typecheck de PlanEditorPage)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -104,52 +107,6 @@ export function GeneradorPlanSemanal({
   const [enviando, setEnviando] = useState(false);
 
   const { generarPlanSemanalV2 } = useIa();
-  const { token, personaId } = useAuth();
-
-  // Lista de pacientes del nutricionista (para el Select)
-  const [pacientes, setPacientes] = useState<
-    Array<{ socioId: number; nombreCompleto: string; dni: string }>
-  >([]);
-  const [cargandoPacientes, setCargandoPacientes] = useState(false);
-
-  // Cargar pacientes del nutricionista al montar
-  useEffect(() => {
-    let cancelado = false;
-    if (!token || !personaId) return;
-    const cargar = async () => {
-      try {
-        setCargandoPacientes(true);
-        // El endpoint devuelve {success, data: {data: [...], pagination: {...}}}
-        // — el ApiResponseInterceptor global envuelve la respuesta con
-        // {success, data, message, errors, meta}. La función apiRequest NO
-        // desenvuelve este wrapper, por eso hay que acceder respuesta.data.data.
-        // Verificado con curl: GET /turnos/profesional/:id/pacientes
-        // retorna ese shape exacto.
-        type RespuestaApi = {
-          data: PaginatedData<{
-            socioId: number;
-            nombreCompleto: string;
-            dni: string;
-          }>;
-        };
-        const respuesta = await apiRequest<RespuestaApi>(
-          `/turnos/profesional/${personaId}/pacientes?page=1&limit=100`,
-          { token },
-        );
-        if (cancelado) return;
-        const lista = respuesta?.data?.data ?? [];
-        setPacientes(lista);
-      } catch {
-        if (!cancelado) setPacientes([]);
-      } finally {
-        if (!cancelado) setCargandoPacientes(false);
-      }
-    };
-    void cargar();
-    return () => {
-      cancelado = true;
-    };
-  }, [token, personaId]);
 
   const {
     register,
@@ -211,6 +168,17 @@ export function GeneradorPlanSemanal({
   const submitDeshabilitado =
     enviando || generarPlanSemanalV2.isPending || !isValid;
 
+  // El socio está bloqueado (viene de la URL, no se puede cambiar)
+  const socioBloqueado = (socioIdPreseleccionado ?? 0) > 0;
+
+  // Etiqueta del socio para el Select: si tenemos nombre+DNI lo usamos,
+  // sino fallback a "Socio #ID". Si no hay socio, mensaje vacío.
+  const etiquetaSocio = socioBloqueado
+    ? socioNombre
+      ? `${socioNombre}${socioDni ? ` · DNI ${socioDni}` : ''}`
+      : `Socio #${socioIdPreseleccionado}`
+    : '';
+
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
@@ -240,10 +208,10 @@ export function GeneradorPlanSemanal({
       </header>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {/* Selector de paciente (reemplaza al input numérico de socioId) */}
+        {/* Paciente — DISABLED cuando viene de la URL */}
         <div className="flex flex-col gap-1.5 sm:col-span-2">
           <Label htmlFor="socioId" className="flex items-center gap-1.5">
-            <Users className="size-3.5" aria-hidden="true" />
+            <Lock className="size-3 text-muted-foreground" aria-hidden="true" />
             Paciente
           </Label>
           <Controller
@@ -253,11 +221,7 @@ export function GeneradorPlanSemanal({
               <Select
                 value={field.value > 0 ? String(field.value) : ''}
                 onValueChange={(valor) => field.onChange(Number(valor))}
-                disabled={
-                  enviando ||
-                  generarPlanSemanalV2.isPending ||
-                  cargandoPacientes
-                }
+                disabled={socioBloqueado}
               >
                 <SelectTrigger
                   id="socioId"
@@ -267,30 +231,15 @@ export function GeneradorPlanSemanal({
                     errors.socioId ? 'socioId-error' : 'socioId-help'
                   }
                 >
-                  <SelectValue
-                    placeholder={
-                      cargandoPacientes
-                        ? 'Cargando pacientes…'
-                        : 'Seleccionar paciente'
-                    }
-                  />
+                  <SelectValue placeholder={socioBloqueado ? etiquetaSocio : 'Seleccionar paciente'} />
                 </SelectTrigger>
-                <SelectContent>
-                  {pacientes.length === 0 && !cargandoPacientes && (
+                {!socioBloqueado && (
+                  <SelectContent>
                     <SelectItem value="__empty__" disabled>
-                      No tenés pacientes con turno previo
+                      Seleccioná un paciente
                     </SelectItem>
-                  )}
-                  {pacientes.map((paciente) => (
-                    <SelectItem
-                      key={paciente.socioId}
-                      value={String(paciente.socioId)}
-                    >
-                      {paciente.nombreCompleto}
-                      {paciente.dni ? ` · DNI ${paciente.dni}` : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
+                  </SelectContent>
+                )}
               </Select>
             )}
           />
@@ -304,8 +253,9 @@ export function GeneradorPlanSemanal({
             </p>
           ) : (
             <p id="socioId-help" className="text-xs text-muted-foreground">
-              Lista de pacientes con turno previo. Seleccioná uno para
-              generar el plan.
+              {socioBloqueado
+                ? 'El paciente ya fue seleccionado. No se puede cambiar.'
+                : 'Seleccioná un paciente para generar el plan.'}
             </p>
           )}
         </div>
