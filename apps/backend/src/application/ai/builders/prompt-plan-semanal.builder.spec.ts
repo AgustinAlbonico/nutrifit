@@ -151,6 +151,17 @@ describe('PromptPlanSemanalBuilder', () => {
       expect(resultado.systemPrompt).not.toContain('SABADO');
     });
 
+    it('incluye control de completitud para evitar respuestas truncadas', () => {
+      const resultado = builder.construir(contextoMinimo);
+
+      expect(resultado.systemPrompt).toContain('CONTROL DE COMPLETITUD');
+      expect(resultado.systemPrompt).toContain(
+        '7 objetos dentro de estructura',
+      );
+      expect(resultado.systemPrompt).toContain('84 alternativas en total');
+      expect(resultado.systemPrompt).toContain('No resumas');
+    });
+
     it('user prompt incluye datos del socio: alergias, restricciones, patologías', () => {
       const contexto = {
         ...contextoMinimo,

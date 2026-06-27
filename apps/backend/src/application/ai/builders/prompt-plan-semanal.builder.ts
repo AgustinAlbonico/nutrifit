@@ -46,6 +46,7 @@ export interface ContextoPromptPlanSemanal {
   notasGeneracion: string | null;
   ejemplosMemoria: EjemploMemoria[];
   diasAGenerar: number;
+  diasEspecificos?: DiaSemana[];
   comidasPorDia: number;
   alternativasPorComida: number;
   fechaInicio: Date;
@@ -66,6 +67,8 @@ export class PromptPlanSemanalBuilder {
 
   private construirSystemPrompt(ctx: ContextoPromptPlanSemanal): string {
     const lineas: string[] = [];
+    const diasSolicitados = this.obtenerDiasSolicitados(ctx);
+    const cantidadDias = diasSolicitados.length;
 
     lineas.push(
       'Eres un nutricionista profesional argentino. Tu tarea es generar un plan de alimentación semanal detallado para un socio.',
@@ -73,7 +76,7 @@ export class PromptPlanSemanalBuilder {
     lineas.push('');
 
     lineas.push('REGLAS DURAS (no negociables):');
-    lineas.push(`1. El plan debe tener EXACTAMENTE ${ctx.diasAGenerar} días.`);
+    lineas.push(`1. El plan debe tener EXACTAMENTE ${cantidadDias} días.`);
     lineas.push(
       `2. Cada día debe tener EXACTAMENTE ${ctx.comidasPorDia} comidas.`,
     );
@@ -103,6 +106,21 @@ export class PromptPlanSemanalBuilder {
     lineas.push(this.construirEsquemaJson(ctx));
     lineas.push('');
 
+    lineas.push('CONTROL DE COMPLETITUD OBLIGATORIO:');
+    lineas.push(
+      `- Debe haber ${cantidadDias} objetos dentro de estructura, uno por cada día solicitado.`,
+    );
+    lineas.push(
+      `- Cada día debe tener ${ctx.comidasPorDia} comidas y cada comida ${ctx.alternativasPorComida} alternativas.`,
+    );
+    lineas.push(
+      `- Debe haber ${cantidadDias * ctx.comidasPorDia * ctx.alternativasPorComida} alternativas en total.`,
+    );
+    lineas.push(
+      '- No resumas, no uses puntos suspensivos y no omitas días aunque el JSON sea largo.',
+    );
+    lineas.push('');
+
     // Concatenar preferencias IA + notas de generación
     const notasConsolidadas = this.consolidarNotas(
       ctx.nutricionista.preferenciasIa,
@@ -129,6 +147,7 @@ export class PromptPlanSemanalBuilder {
 
   private construirUserPrompt(ctx: ContextoPromptPlanSemanal): string {
     const lineas: string[] = [];
+    const diasSolicitados = this.obtenerDiasSolicitados(ctx);
 
     lineas.push('CONTEXTO DEL SOCIO:');
     lineas.push(
@@ -145,7 +164,8 @@ export class PromptPlanSemanalBuilder {
     );
     lineas.push('');
     lineas.push('PARÁMETROS DEL PLAN:');
-    lineas.push(`- Días a generar: ${ctx.diasAGenerar}`);
+    lineas.push(`- Días a generar: ${diasSolicitados.length}`);
+    lineas.push(`- Días exactos: ${diasSolicitados.join(', ')}`);
     lineas.push(`- Comidas por día: ${ctx.comidasPorDia}`);
     lineas.push(`- Alternativas por comida: ${ctx.alternativasPorComida}`);
     lineas.push(
@@ -161,7 +181,7 @@ export class PromptPlanSemanalBuilder {
 
   private construirEsquemaJson(ctx: ContextoPromptPlanSemanal): string {
     // Lista de días esperados
-    const diasEsperados = TODOS_LOS_DIAS.slice(0, ctx.diasAGenerar);
+    const diasEsperados = this.obtenerDiasSolicitados(ctx);
     const tiposEsperados = TODOS_TIPOS_COMIDA.slice(0, ctx.comidasPorDia);
 
     const ejemploDia = diasEsperados[0];
@@ -220,6 +240,13 @@ export class PromptPlanSemanalBuilder {
 
 Los días deben ser exactamente: ${diasEsperados.join(', ')}.
 Las comidas deben ser exactamente: ${tiposEsperados.join(', ')}.`;
+  }
+
+  private obtenerDiasSolicitados(ctx: ContextoPromptPlanSemanal): DiaSemana[] {
+    if (ctx.diasEspecificos && ctx.diasEspecificos.length > 0) {
+      return ctx.diasEspecificos;
+    }
+    return TODOS_LOS_DIAS.slice(0, ctx.diasAGenerar);
   }
 
   private consolidarNotas(

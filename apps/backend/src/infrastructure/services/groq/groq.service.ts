@@ -1,7 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
-import type { IAiProviderService } from '../../../domain/services/ai-provider.service';
+import type {
+  ConfiguracionGeneracionIA,
+  IAiProviderService,
+} from '../../../domain/services/ai-provider.service';
 import { EnvironmentConfigService } from '../../../infrastructure/config/environment-config/environment-config.service';
 import OpenAI from 'openai';
+
+const TEMPERATURA_DEFAULT = 0.7;
+const MAX_TOKENS_DEFAULT = 2048;
+const TIMEOUT_DEFAULT_MS = 120000;
 
 /**
  * Servicio para interactuar con la API de Groq.
@@ -23,29 +30,37 @@ export class GroqService implements IAiProviderService {
     });
   }
 
-  async generarRecomendacion<T>(prompt: string, schema: object): Promise<T> {
+  async generarRecomendacion<T>(
+    prompt: string,
+    configuracion: object | ConfiguracionGeneracionIA = {},
+  ): Promise<T> {
     try {
       this.logger.log('Iniciando llamada a Groq API');
 
+      const { schema, temperature, maxTokens, timeoutMs } =
+        this.normalizarConfiguracion(configuracion);
       const schemaDescription = JSON.stringify(schema, null, 2);
 
-      const response = await this.client.chat.completions.create({
-        messages: [
-          {
-            role: 'system',
-            content:
-              'Eres un asistente de nutrición profesional. DEBES responder ÚNICAMENTE con un JSON válido que coincida exactamente con el esquema proporcionado. No incluyas texto adicional, markdown ni explicaciones fuera del JSON.',
-          },
-          {
-            role: 'user',
-            content: `${prompt}\n\nEsquema JSON requerido:\n${schemaDescription}\n\nResponde SOLO con el JSON, sin texto adicional.`,
-          },
-        ],
-        model: this.model,
-        temperature: 0.7,
-        max_tokens: 2048,
-        response_format: { type: 'json_object' },
-      });
+      const response = await this.client.chat.completions.create(
+        {
+          messages: [
+            {
+              role: 'system',
+              content:
+                'Eres un asistente de nutrición profesional. DEBES responder ÚNICAMENTE con un JSON válido que coincida exactamente con el esquema proporcionado. No incluyas texto adicional, markdown ni explicaciones fuera del JSON.',
+            },
+            {
+              role: 'user',
+              content: `${prompt}\n\nEsquema JSON requerido:\n${schemaDescription}\n\nResponde SOLO con el JSON, sin texto adicional.`,
+            },
+          ],
+          model: this.model,
+          temperature,
+          max_tokens: maxTokens,
+          response_format: { type: 'json_object' },
+        },
+        { timeout: timeoutMs },
+      );
 
       const content = response.choices[0].message?.content;
 
@@ -63,6 +78,59 @@ export class GroqService implements IAiProviderService {
 
       throw new Error(`No se pudo generar la recomendación: ${detalle}`);
     }
+  }
+
+  private normalizarConfiguracion(
+    configuracion: object | ConfiguracionGeneracionIA,
+  ): {
+    schema: object;
+    temperature: number;
+    maxTokens: number;
+    timeoutMs: number;
+  } {
+    const registro = configuracion as Record<string, unknown>;
+    const esConfiguracionProveedor =
+      'schema' in registro ||
+      'temperature' in registro ||
+      'max_tokens' in registro ||
+      'maxTokens' in registro ||
+      'timeoutMs' in registro;
+
+    const schema = esConfiguracionProveedor
+      ? this.obtenerSchemaDesdeConfiguracion(registro)
+      : configuracion;
+
+    return {
+      schema,
+      temperature: this.obtenerNumero(
+        registro.temperature,
+        TEMPERATURA_DEFAULT,
+      ),
+      maxTokens: this.obtenerNumero(
+        registro.max_tokens ?? registro.maxTokens,
+        MAX_TOKENS_DEFAULT,
+      ),
+      timeoutMs: this.obtenerNumero(registro.timeoutMs, TIMEOUT_DEFAULT_MS),
+    };
+  }
+
+  private obtenerSchemaDesdeConfiguracion(
+    registro: Record<string, unknown>,
+  ): object {
+    if (
+      registro.schema &&
+      typeof registro.schema === 'object' &&
+      !Array.isArray(registro.schema)
+    ) {
+      return registro.schema;
+    }
+    return {};
+  }
+
+  private obtenerNumero(valor: unknown, valorDefault: number): number {
+    return typeof valor === 'number' && Number.isFinite(valor)
+      ? valor
+      : valorDefault;
   }
 
   verificarConexion(): Promise<boolean> {

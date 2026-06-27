@@ -186,39 +186,50 @@ export class MacrosValidator {
       let sumaProteinas = 0;
       let sumaCarbohidratos = 0;
       let sumaGrasas = 0;
-      let totalAlternativas = 0;
+      let comidasConAlternativas = 0;
 
       for (const comidaSlot of diaEstructura.comidas) {
-        for (const alternativa of comidaSlot.alternativas) {
-          sumaCalorias += alternativa.calorias;
-          sumaProteinas += alternativa.proteinas;
-          sumaCarbohidratos += alternativa.carbohidratos;
-          sumaGrasas += alternativa.grasas;
-          totalAlternativas++;
+        if (comidaSlot.alternativas.length === 0) {
+          advertencias.push(
+            `Día ${dia} comida ${comidaSlot.tipo} sin alternativas.`,
+          );
+          continue;
         }
+
+        const totalAlternativasComida = comidaSlot.alternativas.length;
+        const sumaComida = comidaSlot.alternativas.reduce(
+          (acc, alternativa) => ({
+            calorias: acc.calorias + alternativa.calorias,
+            proteinas: acc.proteinas + alternativa.proteinas,
+            carbohidratos: acc.carbohidratos + alternativa.carbohidratos,
+            grasas: acc.grasas + alternativa.grasas,
+          }),
+          { calorias: 0, proteinas: 0, carbohidratos: 0, grasas: 0 },
+        );
+
+        sumaCalorias += sumaComida.calorias / totalAlternativasComida;
+        sumaProteinas += sumaComida.proteinas / totalAlternativasComida;
+        sumaCarbohidratos += sumaComida.carbohidratos / totalAlternativasComida;
+        sumaGrasas += sumaComida.grasas / totalAlternativasComida;
+        comidasConAlternativas++;
       }
 
-      // Si no hay alternativas, saltar (día inválido)
-      if (totalAlternativas === 0) {
+      // Si no hay comidas con alternativas, saltar (día inválido)
+      if (comidasConAlternativas === 0) {
         advertencias.push(`Día ${dia} sin alternativas de comida.`);
         continue;
       }
 
-      const promedioCalorias = sumaCalorias / totalAlternativas;
-      const promedioProteinas = sumaProteinas / totalAlternativas;
-      const promedioCarbohidratos = sumaCarbohidratos / totalAlternativas;
-      const promedioGrasas = sumaGrasas / totalAlternativas;
-
       // Calcular detalle por macro
       const detalleCalorias: DetalleMacro = {
-        real: Math.round(promedioCalorias),
+        real: Math.round(sumaCalorias),
         objetivo: objetivo.caloriasDiarias,
         desvio: 0,
         banda: 'VERDE',
       };
       detalleCalorias.desvio =
         objetivo.caloriasDiarias > 0
-          ? ((promedioCalorias - objetivo.caloriasDiarias) /
+          ? ((sumaCalorias - objetivo.caloriasDiarias) /
               objetivo.caloriasDiarias) *
             100
           : 0;
@@ -227,14 +238,14 @@ export class MacrosValidator {
       );
 
       const detalleProteinas: DetalleMacro = {
-        real: Math.round(promedioProteinas),
+        real: Math.round(sumaProteinas),
         objetivo: objetivo.proteinasDiarias,
         desvio: 0,
         banda: 'VERDE',
       };
       detalleProteinas.desvio =
         objetivo.proteinasDiarias > 0
-          ? ((promedioProteinas - objetivo.proteinasDiarias) /
+          ? ((sumaProteinas - objetivo.proteinasDiarias) /
               objetivo.proteinasDiarias) *
             100
           : 0;
@@ -243,14 +254,14 @@ export class MacrosValidator {
       );
 
       const detalleCarbohidratos: DetalleMacro = {
-        real: Math.round(promedioCarbohidratos),
+        real: Math.round(sumaCarbohidratos),
         objetivo: objetivo.carbohidratosDiarios,
         desvio: 0,
         banda: 'VERDE',
       };
       detalleCarbohidratos.desvio =
         objetivo.carbohidratosDiarios > 0
-          ? ((promedioCarbohidratos - objetivo.carbohidratosDiarios) /
+          ? ((sumaCarbohidratos - objetivo.carbohidratosDiarios) /
               objetivo.carbohidratosDiarios) *
             100
           : 0;
@@ -259,15 +270,14 @@ export class MacrosValidator {
       );
 
       const detalleGrasas: DetalleMacro = {
-        real: Math.round(promedioGrasas),
+        real: Math.round(sumaGrasas),
         objetivo: objetivo.grasasDiarias,
         desvio: 0,
         banda: 'VERDE',
       };
       detalleGrasas.desvio =
         objetivo.grasasDiarias > 0
-          ? ((promedioGrasas - objetivo.grasasDiarias) /
-              objetivo.grasasDiarias) *
+          ? ((sumaGrasas - objetivo.grasasDiarias) / objetivo.grasasDiarias) *
             100
           : 0;
       detalleGrasas.banda = MacrosValidator.calcularBanda(detalleGrasas.desvio);

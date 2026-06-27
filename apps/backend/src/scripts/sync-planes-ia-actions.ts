@@ -23,12 +23,28 @@
  */
 
 import 'reflect-metadata';
-import { DataSource } from 'typeorm';
-import { appDataSourceConfig } from 'src/infrastructure/config/typeorm/typeorm.config';
+import { ConfigService } from '@nestjs/config';
+import { config as cargarVariablesEntorno } from 'dotenv';
+import { DataSource, type DataSourceOptions } from 'typeorm';
+import { EnvironmentConfigService } from 'src/infrastructure/config/environment-config/environment-config.service';
+import { AppDataSource } from 'src/infrastructure/config/typeorm/typeorm.config';
 
 interface AccionSync {
   clave: string;
   nombre: string;
+}
+
+interface ResultadoMysqlInsert {
+  affectedRows?: number;
+}
+
+async function ejecutarInsert(
+  ds: DataSource,
+  sql: string,
+  params: unknown[],
+): Promise<ResultadoMysqlInsert> {
+  const result: unknown = await ds.query(sql, params);
+  return result as ResultadoMysqlInsert;
 }
 
 const ACCIONES_PLANES_IA: AccionSync[] = [
@@ -41,13 +57,16 @@ const ACCIONES_PLANES_IA: AccionSync[] = [
 ];
 
 async function main(): Promise<void> {
-  const ds = new DataSource(appDataSourceConfig);
+  cargarVariablesEntorno();
+  const configService = new EnvironmentConfigService(new ConfigService());
+  const ds = new DataSource(AppDataSource(configService) as DataSourceOptions);
   await ds.initialize();
   console.log('DataSource inicializado. Sincronizando acciones…\n');
 
   // 1. Insertar cada acción (idempotente)
   for (const a of ACCIONES_PLANES_IA) {
-    const result = await ds.query(
+    const result = await ejecutarInsert(
+      ds,
       `INSERT INTO accion (clave, nombre)
        VALUES (?, ?)
        ON DUPLICATE KEY UPDATE nombre = VALUES(nombre)`,
@@ -58,16 +77,20 @@ async function main(): Promise<void> {
 
   // 2. Vincular al grupo NUTRICIONISTA (idempotente)
   console.log('\nVinculando al grupo NUTRICIONISTA…');
-  const grupos: Array<{ id_grupo_permiso: number; clave: string }> = await ds.query(
-    "SELECT id_grupo_permiso, clave FROM grupo_permiso WHERE clave = 'NUTRICIONISTA'",
-  );
+  const grupos: Array<{ id_grupo_permiso: number; clave: string }> =
+    await ds.query(
+      "SELECT id_grupo_permiso, clave FROM grupo_permiso WHERE clave = 'NUTRICIONISTA'",
+    );
 
   if (grupos.length === 0) {
-    console.warn('⚠ No se encontró el grupo NUTRICIONISTA. Skipeando vinculación.');
+    console.warn(
+      '⚠ No se encontró el grupo NUTRICIONISTA. Skipeando vinculación.',
+    );
   } else {
     const grupoId = grupos[0].id_grupo_permiso;
     for (const a of ACCIONES_PLANES_IA) {
-      const result = await ds.query(
+      const result = await ejecutarInsert(
+        ds,
         `INSERT IGNORE INTO grupo_permiso_accion (id_grupo_permiso, id_accion)
          SELECT ?, id_accion FROM accion WHERE clave = ?`,
         [grupoId, a.clave],
@@ -91,7 +114,9 @@ async function main(): Promise<void> {
   console.table(acciones);
 
   await ds.destroy();
-  console.log('\nListo. Las acciones de plan-alimentacion-ia-v2 están sincronizadas.');
+  console.log(
+    '\nListo. Las acciones de plan-alimentacion-ia-v2 están sincronizadas.',
+  );
 }
 
 main().catch((e) => {

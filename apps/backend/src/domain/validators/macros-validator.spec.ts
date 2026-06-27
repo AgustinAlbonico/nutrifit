@@ -336,6 +336,42 @@ describe('MacrosValidator', () => {
       expect(resultado.bandaGlobal).toBe('VERDE');
     });
 
+    it('plan con 4 comidas de 500 kcal → calcula 2000 kcal diarias', () => {
+      const plan: PlanAlimentacionDatosJson = {
+        estructura: [
+          {
+            dia: DiaSemana.LUNES,
+            comidas: [
+              TipoComida.DESAYUNO,
+              TipoComida.ALMUERZO,
+              TipoComida.MERIENDA,
+              TipoComida.CENA,
+            ].map((tipo) => ({
+              tipo,
+              alternativas: [
+                crearItemComida(500, 25, 62.5, 17.5),
+                crearItemComida(500, 25, 62.5, 17.5),
+              ],
+            })),
+          },
+        ],
+        macrosPorDia: {} as never,
+        razonamientoCumplimiento: {
+          restriccionesCumplidas: [],
+          restriccionesNoCumplidas: [],
+        },
+      };
+
+      const resultado = MacrosValidator.validar(plan, OBJETIVO_BASE, 1, 4);
+
+      expect(resultado.macrosPorDia[DiaSemana.LUNES]?.calorias).toBe(2000);
+      expect(resultado.macrosPorDia[DiaSemana.LUNES]?.proteinas).toBe(100);
+      expect(resultado.macrosPorDia[DiaSemana.LUNES]?.carbohidratos).toBe(250);
+      expect(resultado.macrosPorDia[DiaSemana.LUNES]?.grasas).toBe(70);
+      expect(resultado.bandaGlobal).toBe('VERDE');
+      expect(resultado.puedeAceptar).toBe(true);
+    });
+
     it('estructura vacía → cumpleEstructura false, bandaGlobal VERDE (sin días)', () => {
       const plan: PlanAlimentacionDatosJson = {
         estructura: [],

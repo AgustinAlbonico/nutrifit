@@ -55,6 +55,7 @@ import { PlanAlimentacionVersionEntity } from 'src/domain/entities/PlanAlimentac
 import { PlanAlimentacionDatosJson } from 'src/domain/entities/PlanAlimentacionVersion/plan-alimentacion-datos-json';
 import { DiaSemana } from 'src/domain/entities/DiaPlan/DiaSemana';
 import { TipoComida } from 'src/domain/entities/OpcionComida/TipoComida';
+import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
 
 const loggerMock: IAppLoggerService = {
   log: jest.fn(),
@@ -64,10 +65,22 @@ const loggerMock: IAppLoggerService = {
   verbose: jest.fn(),
 };
 
+function crearAlternativasComida(nombreBase: string, alimentoIdBase: number) {
+  return Array.from({ length: 3 }, (_, idx) => ({
+    nombre: `${nombreBase} ${idx + 1}`,
+    alimentos: [
+      { alimentoId: alimentoIdBase + idx, cantidad: 100, unidad: 'g' },
+    ],
+    calorias: 500,
+    proteinas: 31,
+    carbohidratos: 63,
+    grasas: 14,
+  }));
+}
+
 // Plan de ejemplo con macros aproximadamente correctos (2000 kcal/día)
-// El use-case hace SUM de todas las alternativas para calcular el total
-// diario, por lo que cada alternativa debe ser target / 4 = 500 kcal, 31g
-// de proteínas, 63g de carbohidratos, 14g de grasas.
+// Cada comida promedia sus alternativas y el día suma las 4 comidas.
+// Por eso cada alternativa ronda target / 4 = 500 kcal.
 const planJsonValido: PlanAlimentacionDatosJson = {
   estructura: [
     {
@@ -75,55 +88,19 @@ const planJsonValido: PlanAlimentacionDatosJson = {
       comidas: [
         {
           tipo: TipoComida.DESAYUNO,
-          alternativas: [
-            {
-              nombre: 'Avena con frutas',
-              alimentos: [{ alimentoId: 1, cantidad: 100, unidad: 'g' }],
-              calorias: 500,
-              proteinas: 31,
-              carbohidratos: 63,
-              grasas: 14,
-            },
-          ],
+          alternativas: crearAlternativasComida('Avena con frutas', 1),
         },
         {
           tipo: TipoComida.ALMUERZO,
-          alternativas: [
-            {
-              nombre: 'Quinoa con legumbres',
-              alimentos: [{ alimentoId: 2, cantidad: 200, unidad: 'g' }],
-              calorias: 500,
-              proteinas: 31,
-              carbohidratos: 63,
-              grasas: 14,
-            },
-          ],
+          alternativas: crearAlternativasComida('Quinoa con legumbres', 10),
         },
         {
           tipo: TipoComida.MERIENDA,
-          alternativas: [
-            {
-              nombre: 'Frutas',
-              alimentos: [{ alimentoId: 3, cantidad: 100, unidad: 'g' }],
-              calorias: 500,
-              proteinas: 31,
-              carbohidratos: 63,
-              grasas: 14,
-            },
-          ],
+          alternativas: crearAlternativasComida('Frutas', 20),
         },
         {
           tipo: TipoComida.CENA,
-          alternativas: [
-            {
-              nombre: 'Sopa de verduras',
-              alimentos: [{ alimentoId: 4, cantidad: 150, unidad: 'g' }],
-              calorias: 500,
-              proteinas: 31,
-              carbohidratos: 63,
-              grasas: 14,
-            },
-          ],
+          alternativas: crearAlternativasComida('Sopa de verduras', 30),
         },
       ],
     },
@@ -156,6 +133,57 @@ const planJsonRojo: PlanAlimentacionDatosJson = {
     })),
   })),
 };
+
+const DIAS_GENERACION_COMPLETA: DiaSemana[] = [
+  DiaSemana.LUNES,
+  DiaSemana.MARTES,
+  DiaSemana.MIERCOLES,
+  DiaSemana.JUEVES,
+  DiaSemana.VIERNES,
+  DiaSemana.SABADO,
+  DiaSemana.DOMINGO,
+];
+
+const TIPOS_COMIDA_PLAN: TipoComida[] = [
+  TipoComida.DESAYUNO,
+  TipoComida.ALMUERZO,
+  TipoComida.MERIENDA,
+  TipoComida.CENA,
+];
+
+function crearPlanConDias(
+  dias: DiaSemana[],
+  comidasPorDia = 4,
+  alternativasPorComida = 3,
+): PlanAlimentacionDatosJson {
+  const tipos = TIPOS_COMIDA_PLAN.slice(0, comidasPorDia);
+  return {
+    estructura: dias.map((dia) => ({
+      dia,
+      comidas: tipos.map((tipo) => ({
+        tipo,
+        alternativas: Array.from(
+          { length: alternativasPorComida },
+          (_, alternativaIdx) => ({
+            nombre: `${tipo.toLowerCase()} opción ${alternativaIdx + 1}`,
+            alimentos: [
+              { alimentoId: alternativaIdx + 1, cantidad: 100, unidad: 'g' },
+            ],
+            calorias: 500,
+            proteinas: 31.25,
+            carbohidratos: 62.5,
+            grasas: 14,
+          }),
+        ),
+      })),
+    })),
+    macrosPorDia: {} as never,
+    razonamientoCumplimiento: {
+      restriccionesCumplidas: [],
+      restriccionesNoCumplidas: [],
+    },
+  };
+}
 
 describe('GenerarPlanSemanalUseCase', () => {
   let useCase: GenerarPlanSemanalUseCase;
@@ -325,7 +353,7 @@ describe('GenerarPlanSemanalUseCase', () => {
     // Packet 4: ahora debe usar el tipo PLAN_REVISAR (no PLAN_CREADO)
     const llamadasNotif = notificacionesMock.crear.mock.calls.map((c) => c[0]);
     const hayNotifRevisar = llamadasNotif.some(
-      (l) => l.tipo === 'PLAN_REVISAR',
+      (l) => l.tipo === TipoNotificacion.PLAN_REVISAR,
     );
     expect(hayNotifRevisar).toBe(true);
   });
@@ -358,6 +386,105 @@ describe('GenerarPlanSemanalUseCase', () => {
     // Tampoco debe setearse estado explícitamente (queda el default
     // 'BORRADOR' de la columna).
     expect(planPersistido.estado).toBeUndefined();
+  });
+
+  function mockGeneracionCompletaPorDia(): void {
+    for (const dia of DIAS_GENERACION_COMPLETA) {
+      aiProviderMock.generarRecomendacion.mockResolvedValueOnce(
+        crearPlanConDias([dia]),
+      );
+    }
+  }
+
+  it('generación completa divide el plan en una llamada por día para evitar truncamiento', async () => {
+    setupHappyPathMocks();
+    mockGeneracionCompletaPorDia();
+
+    const resultado = await useCase.execute({
+      socioId: 50,
+      nutricionistaId: 100,
+      gimnasioId: 10,
+      diasAGenerar: 7,
+      comidasPorDia: 4,
+      alternativasPorComida: 3,
+    });
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(aiProviderMock.generarRecomendacion).toHaveBeenCalledTimes(7);
+    expect(resultado.plan.estructura.map((d) => d.dia)).toEqual(
+      DIAS_GENERACION_COMPLETA,
+    );
+    expect(Object.keys(resultado.plan.macrosPorDia)).toHaveLength(7);
+    expect(resultado.plan.macrosPorDia[DiaSemana.LUNES]).toEqual(
+      expect.objectContaining({ calorias: 2000 }),
+    );
+    expect(resultado.macros.bandaGlobal).toBe('VERDE');
+    const versionCreada = planVersionRepoMock.crear.mock.calls[0][0];
+    expect(Object.keys(versionCreada.datosJson.macrosPorDia)).toHaveLength(7);
+    const primeraConfig = aiProviderMock.generarRecomendacion.mock.calls[0][1];
+    expect(primeraConfig).toEqual(
+      expect.objectContaining({ max_tokens: 2048, temperature: 0.4 }),
+    );
+  });
+
+  it('si una llamada diaria devuelve menos alternativas, reintenta solo ese día', async () => {
+    setupHappyPathMocks();
+    const intentosPorDia = new Map<DiaSemana, number>();
+    aiProviderMock.generarRecomendacion.mockImplementation((prompt) => {
+      const diaSolicitado =
+        DIAS_GENERACION_COMPLETA.find((dia) =>
+          prompt.includes(`Días exactos: ${dia}`),
+        ) ?? DiaSemana.LUNES;
+      const intento = (intentosPorDia.get(diaSolicitado) ?? 0) + 1;
+      intentosPorDia.set(diaSolicitado, intento);
+
+      if (diaSolicitado === DiaSemana.LUNES && intento === 1) {
+        return Promise.resolve(crearPlanConDias([DiaSemana.LUNES], 4, 1));
+      }
+
+      return Promise.resolve(crearPlanConDias([diaSolicitado], 4, 3));
+    });
+
+    const resultado = await useCase.execute({
+      socioId: 50,
+      nutricionistaId: 100,
+      gimnasioId: 10,
+      diasAGenerar: 7,
+      comidasPorDia: 4,
+      alternativasPorComida: 3,
+    });
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(aiProviderMock.generarRecomendacion).toHaveBeenCalledTimes(8);
+    const promptCorreccion = aiProviderMock.generarRecomendacion.mock.calls
+      .map((call) => call[0])
+      .find((prompt) => prompt.includes('CORRECCIÓN OBLIGATORIA'));
+    expect(promptCorreccion).toContain('alternativas faltantes');
+    expect(resultado.plan.estructura).toHaveLength(7);
+    expect(resultado.macros.bandaGlobal).toBe('VERDE');
+  });
+
+  it('si la IA devuelve un día distinto al solicitado, reintenta y rechaza la estructura', async () => {
+    setupHappyPathMocks();
+    aiProviderMock.generarRecomendacion.mockResolvedValue(
+      crearPlanConDias([DiaSemana.MARTES]),
+    );
+
+    await expect(
+      useCase.execute({
+        socioId: 50,
+        nutricionistaId: 100,
+        gimnasioId: 10,
+        diasAGenerar: 1,
+        comidasPorDia: 4,
+        alternativasPorComida: 3,
+      }),
+    ).rejects.toThrow(/PLAN_ESTRUCTURA_INVALIDA/);
+
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(aiProviderMock.generarRecomendacion).toHaveBeenCalledTimes(3);
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(planRepoMock.save).not.toHaveBeenCalled();
   });
 
   it('restricción violada 1 vez → 1 reintento correctivo y segunda respuesta OK', async () => {
@@ -420,7 +547,7 @@ describe('GenerarPlanSemanalUseCase', () => {
     // Verificar que se llamó notificación con tipo PLAN_MACROS_FUERA_RANGO
     const llamadasNotif = notificacionesMock.crear.mock.calls.map((c) => c[0]);
     const hayNotifMacros = llamadasNotif.some(
-      (l) => l.tipo === 'PLAN_MACROS_FUERA_RANGO',
+      (l) => l.tipo === TipoNotificacion.PLAN_MACROS_FUERA_RANGO,
     );
     expect(hayNotifMacros).toBe(true);
   });

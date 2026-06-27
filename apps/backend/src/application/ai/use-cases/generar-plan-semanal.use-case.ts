@@ -61,6 +61,8 @@ import {
   PlanAlimentacionDatosJson,
   ResumenMacrosDia,
 } from 'src/domain/entities/PlanAlimentacionVersion/plan-alimentacion-datos-json';
+import { DiaSemana } from 'src/domain/entities/DiaPlan/DiaSemana';
+import { TipoComida } from 'src/domain/entities/OpcionComida/TipoComida';
 import {
   RestriccionesValidatorV2,
   type FichaClinicaParaValidacion,
@@ -69,7 +71,10 @@ import {
   MacrosValidator,
   type ObjetivoNutricional,
 } from 'src/domain/validators/macros-validator';
-import { PromptPlanSemanalBuilder } from '../builders/prompt-plan-semanal.builder';
+import {
+  PromptPlanSemanalBuilder,
+  type ContextoPromptPlanSemanal,
+} from '../builders/prompt-plan-semanal.builder';
 import { PromptRestriccionesInstructionBuilder } from '../builders/prompt-restricciones-instruction.builder';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
@@ -100,7 +105,37 @@ export interface RespuestaPlanSemanal {
 
 const MAX_REINTENTOS_RESTRICCIONES = 2;
 const MAX_REINTENTOS_GROQ = 2;
+const MAX_REINTENTOS_ESTRUCTURA = 2;
 const TIMEOUT_BACKOFF_MS = 5000;
+const TEMPERATURA_PLAN_COMPLETO = 0.4;
+const MAX_TOKENS_PLAN_COMPLETO = 2048;
+const TIMEOUT_PLAN_COMPLETO_MS = 45000;
+const CONCURRENCIA_GENERACION_DIAS = 2;
+
+const DIAS_GENERACION: DiaSemana[] = [
+  DiaSemana.LUNES,
+  DiaSemana.MARTES,
+  DiaSemana.MIERCOLES,
+  DiaSemana.JUEVES,
+  DiaSemana.VIERNES,
+  DiaSemana.SABADO,
+  DiaSemana.DOMINGO,
+];
+
+const TIPOS_COMIDA_GENERACION: TipoComida[] = [
+  TipoComida.DESAYUNO,
+  TipoComida.ALMUERZO,
+  TipoComida.MERIENDA,
+  TipoComida.CENA,
+  TipoComida.COLACION,
+];
+
+type ValidacionMacrosPlan = ReturnType<typeof MacrosValidator.validar>;
+
+interface ResultadoGeneracionCompleta {
+  planJson: PlanAlimentacionDatosJson;
+  validacionMacros: ValidacionMacrosPlan;
+}
 
 @Injectable()
 export class GenerarPlanSemanalUseCase implements BaseUseCase {
@@ -182,8 +217,8 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
       comentario: e.comentario,
     }));
 
-    // 5) Construir prompt
-    const { systemPrompt, userPrompt } = this.promptBuilder.construir({
+    // 5) Contexto base para prompts diarios
+    const contextoPromptBase = {
       fichaClinica: {
         alergias: fichaClinica.alergias,
         restriccionesAlimentarias: fichaClinica.restriccionesAlimentarias,
@@ -195,11 +230,13 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
       },
       notasGeneracion,
       ejemplosMemoria,
-      diasAGenerar,
       comidasPorDia,
       alternativasPorComida,
       fechaInicio,
-    });
+    };
+
+    const objetivoMacros: ObjetivoNutricional =
+      this.calcularObjetivoMacros(fichaClinica);
 
     // 6) Loop de generación con reintentos
     let planJson: PlanAlimentacionDatosJson | null = null;
@@ -221,74 +258,24 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
       puedeAceptar: false,
     };
 
-    let intentoGroq = 0;
-    let planJsonFinal: PlanAlimentacionDatosJson | null = null;
+    const diasEsperados = this.obtenerDiasEsperados(diasAGenerar);
+    const generacionCompleta = await this.generarPlanPorDiasConReintentos({
+      contextoPromptBase,
+      socioId: solicitud.socioId,
+      diasEsperados,
+      comidasPorDia,
+      alternativasPorComida,
+      fechaInicio,
+      objetivoMacros,
+    });
+    planJson = generacionCompleta.planJson;
+    validacionMacros = generacionCompleta.validacionMacros;
 
-    while (intentoGroq < MAX_REINTENTOS_GROQ) {
-      intentoGroq++;
-      try {
-        planJsonFinal =
-          await this.aiProvider.generarRecomendacion<PlanAlimentacionDatosJson>(
-            this.combinarPrompts(systemPrompt, userPrompt),
-            {},
-          );
-        break;
-      } catch (error) {
-        const mensaje = error instanceof Error ? error.message : String(error);
-        if (this.esTimeout(mensaje)) {
-          this.logger.warn(
-            `Groq timeout (intento ${intentoGroq}/${MAX_REINTENTOS_GROQ}): ${mensaje}`,
-          );
-          if (intentoGroq < MAX_REINTENTOS_GROQ) {
-            await this.sleep(TIMEOUT_BACKOFF_MS);
-            continue;
-          }
-          // Hotfix Packet 8: GROQ_TIMEOUT debe mapear a HTTP 503 (no 400).
-          throw new ServiceUnavailableError(`GROQ_TIMEOUT: ${mensaje}`, {
-            codigo: 'GROQ_TIMEOUT',
-            socioId: solicitud.socioId,
-          });
-        }
-
-        if (this.esJsonInvalido(mensaje)) {
-          this.logger.warn(
-            `Groq JSON inválido (intento ${intentoGroq}/${MAX_REINTENTOS_GROQ}): ${mensaje}`,
-          );
-          if (intentoGroq < MAX_REINTENTOS_GROQ) {
-            continue;
-          }
-          // Hotfix Packet 8: GROQ_INVALID_JSON debe mapear a HTTP 502 (no 400).
-          throw new BadGatewayError(`GROQ_INVALID_JSON: ${mensaje}`, {
-            codigo: 'GROQ_INVALID_JSON',
-            socioId: solicitud.socioId,
-          });
-        }
-
-        // Error no esperado: propagar
-        throw error;
-      }
-    }
-
-    if (!planJsonFinal) {
-      throw new BadRequestError('No se pudo generar el plan con la IA');
-    }
-
-    planJson = planJsonFinal;
-
-    // Validar estructura mínima del JSON
-    if (!this.esEstructuraValida(planJson)) {
-      const rawPreview = JSON.stringify(planJson).slice(0, 500);
-      this.logger.error(
-        `PLAN_ESTRUCTURA_INVALIDA para socio ${solicitud.socioId}. Preview: ${rawPreview}`,
-      );
-      throw new BadRequestError(
-        'PLAN_ESTRUCTURA_INVALIDA: el JSON generado no tiene la estructura esperada',
-        {
-          codigo: 'PLAN_ESTRUCTURA_INVALIDA',
-          socioId: solicitud.socioId,
-        },
-      );
-    }
+    const { systemPrompt, userPrompt } = this.promptBuilder.construir({
+      ...contextoPromptBase,
+      diasAGenerar: diasEsperados.length,
+      diasEspecificos: diasEsperados,
+    });
 
     // 7) Validar restricciones con reintentos por instrucción correctiva
     let intentoRestricciones = 0;
@@ -318,13 +305,33 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
       const userPromptConCorreccion = `${userPrompt}\n\nCORRECCIÓN OBLIGATORIA: ${instruccionCorrectiva}`;
 
       try {
-        const nuevoPlan =
-          await this.aiProvider.generarRecomendacion<PlanAlimentacionDatosJson>(
-            this.combinarPrompts(systemPrompt, userPromptConCorreccion),
-            {},
-          );
+        const nuevoPlan = await this.generarPlanConReintentosGroq(
+          this.combinarPrompts(systemPrompt, userPromptConCorreccion),
+          solicitud.socioId,
+        );
         if (this.esEstructuraValida(nuevoPlan)) {
-          planJson = nuevoPlan;
+          const macrosNuevoPlan = MacrosValidator.validar(
+            nuevoPlan,
+            objetivoMacros,
+            diasEsperados.length,
+            comidasPorDia,
+            fechaInicio,
+          );
+          const advertenciasEstructura = this.obtenerAdvertenciasEstructura(
+            nuevoPlan,
+            diasEsperados,
+            comidasPorDia,
+            alternativasPorComida,
+          );
+          if (advertenciasEstructura.length === 0) {
+            planJson = nuevoPlan;
+            validacionMacros = macrosNuevoPlan;
+          } else {
+            this.logger.warn(
+              `Corrección por restricciones devolvió estructura incompleta: ${advertenciasEstructura.join('; ')}`,
+            );
+            break;
+          }
         } else {
           break;
         }
@@ -351,20 +358,29 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
     }
 
     // 9) Validar macros
-    const objetivoMacros: ObjetivoNutricional =
-      this.calcularObjetivoMacros(fichaClinica);
-
     validacionMacros = MacrosValidator.validar(
       planJson,
       objetivoMacros,
-      diasAGenerar,
+      diasEsperados.length,
       comidasPorDia,
       fechaInicio,
     );
 
-    if (!validacionMacros.cumpleEstructura) {
+    planJson = {
+      ...planJson,
+      macrosPorDia: this.construirMacrosPorDia(validacionMacros.macrosPorDia),
+    };
+
+    const advertenciasEstructuraFinal = this.obtenerAdvertenciasEstructura(
+      planJson,
+      diasEsperados,
+      comidasPorDia,
+      alternativasPorComida,
+    );
+
+    if (advertenciasEstructuraFinal.length > 0) {
       throw new BadRequestError(
-        `PLAN_ESTRUCTURA_INVALIDA: ${validacionMacros.advertencias.join('; ')}`,
+        `PLAN_ESTRUCTURA_INVALIDA: ${advertenciasEstructuraFinal.join('; ')}`,
         {
           codigo: 'PLAN_ESTRUCTURA_INVALIDA',
           socioId: solicitud.socioId,
@@ -518,6 +534,10 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
     }
   }
 
+  private obtenerDiasEsperados(diasAGenerar: number): DiaSemana[] {
+    return DIAS_GENERACION.slice(0, diasAGenerar);
+  }
+
   private async cargarFichaClinica(
     socioId: number,
   ): Promise<FichaClinicaParaValidacion> {
@@ -545,6 +565,405 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
         [],
       objetivoPersonal: ficha.objetivoPersonal ?? null,
     };
+  }
+
+  private async generarPlanPorDiasConReintentos(params: {
+    contextoPromptBase: Omit<
+      ContextoPromptPlanSemanal,
+      'diasAGenerar' | 'diasEspecificos'
+    >;
+    socioId: number;
+    diasEsperados: DiaSemana[];
+    comidasPorDia: number;
+    alternativasPorComida: number;
+    fechaInicio: Date;
+    objetivoMacros: ObjetivoNutricional;
+  }): Promise<ResultadoGeneracionCompleta> {
+    const restriccionesCumplidas: PlanAlimentacionDatosJson['razonamientoCumplimiento']['restriccionesCumplidas'] =
+      [];
+    const restriccionesNoCumplidas: PlanAlimentacionDatosJson['razonamientoCumplimiento']['restriccionesNoCumplidas'] =
+      [];
+
+    const resultadosPorDia: Array<{
+      diaGenerado: PlanAlimentacionDatosJson['estructura'][number];
+      planJson: PlanAlimentacionDatosJson;
+    }> = [];
+
+    for (
+      let i = 0;
+      i < params.diasEsperados.length;
+      i += CONCURRENCIA_GENERACION_DIAS
+    ) {
+      const loteDias = params.diasEsperados.slice(
+        i,
+        i + CONCURRENCIA_GENERACION_DIAS,
+      );
+      const resultadosLote = await Promise.all(
+        loteDias.map(async (dia) => {
+          const { systemPrompt, userPrompt } = this.promptBuilder.construir({
+            ...params.contextoPromptBase,
+            diasAGenerar: 1,
+            diasEspecificos: [dia],
+          });
+
+          const generacionDia = await this.generarPlanCompletoConReintentos({
+            systemPrompt,
+            userPrompt,
+            socioId: params.socioId,
+            diasEsperados: [dia],
+            comidasPorDia: params.comidasPorDia,
+            alternativasPorComida: params.alternativasPorComida,
+            fechaInicio: params.fechaInicio,
+            objetivoMacros: params.objetivoMacros,
+          });
+
+          const diaGenerado = generacionDia.planJson.estructura.find(
+            (d) => d.dia === dia,
+          );
+          if (!diaGenerado) {
+            throw new BadRequestError(
+              `PLAN_ESTRUCTURA_INVALIDA: la IA no devolvió el día ${dia}`,
+              { codigo: 'PLAN_ESTRUCTURA_INVALIDA', socioId: params.socioId },
+            );
+          }
+
+          return { diaGenerado, planJson: generacionDia.planJson };
+        }),
+      );
+      resultadosPorDia.push(...resultadosLote);
+    }
+
+    for (const resultadoDia of resultadosPorDia) {
+      restriccionesCumplidas.push(
+        ...(resultadoDia.planJson.razonamientoCumplimiento
+          ?.restriccionesCumplidas ?? []),
+      );
+      restriccionesNoCumplidas.push(
+        ...(resultadoDia.planJson.razonamientoCumplimiento
+          ?.restriccionesNoCumplidas ?? []),
+      );
+    }
+
+    const estructura = resultadosPorDia.map(
+      (resultado) => resultado.diaGenerado,
+    );
+
+    const planJson: PlanAlimentacionDatosJson = {
+      estructura,
+      macrosPorDia: {} as PlanAlimentacionDatosJson['macrosPorDia'],
+      razonamientoCumplimiento: {
+        restriccionesCumplidas,
+        restriccionesNoCumplidas,
+      },
+    };
+
+    const validacionMacros = MacrosValidator.validar(
+      planJson,
+      params.objetivoMacros,
+      params.diasEsperados.length,
+      params.comidasPorDia,
+      params.fechaInicio,
+    );
+    const advertenciasEstructura = this.obtenerAdvertenciasEstructura(
+      planJson,
+      params.diasEsperados,
+      params.comidasPorDia,
+      params.alternativasPorComida,
+    );
+
+    if (advertenciasEstructura.length > 0) {
+      throw new BadRequestError(
+        `PLAN_ESTRUCTURA_INVALIDA: ${advertenciasEstructura.join('; ')}`,
+        { codigo: 'PLAN_ESTRUCTURA_INVALIDA', socioId: params.socioId },
+      );
+    }
+
+    return { planJson, validacionMacros };
+  }
+
+  private async generarPlanCompletoConReintentos(params: {
+    systemPrompt: string;
+    userPrompt: string;
+    socioId: number;
+    diasEsperados: DiaSemana[];
+    comidasPorDia: number;
+    alternativasPorComida: number;
+    fechaInicio: Date;
+    objetivoMacros: ObjetivoNutricional;
+  }): Promise<ResultadoGeneracionCompleta> {
+    let promptActual = this.combinarPrompts(
+      params.systemPrompt,
+      params.userPrompt,
+    );
+
+    for (
+      let intentoEstructura = 1;
+      intentoEstructura <= MAX_REINTENTOS_ESTRUCTURA + 1;
+      intentoEstructura++
+    ) {
+      const planCandidato = await this.generarPlanConReintentosGroq(
+        promptActual,
+        params.socioId,
+      );
+
+      if (!this.esEstructuraValida(planCandidato)) {
+        const rawPreview =
+          JSON.stringify(planCandidato)?.slice(0, 500) ?? String(planCandidato);
+        const advertencias = [
+          'el JSON generado no tiene la estructura mínima esperada',
+        ];
+
+        this.logger.error(
+          `PLAN_ESTRUCTURA_INVALIDA para socio ${params.socioId}. Preview: ${rawPreview}`,
+        );
+
+        if (intentoEstructura > MAX_REINTENTOS_ESTRUCTURA) {
+          throw new BadRequestError(
+            `PLAN_ESTRUCTURA_INVALIDA: ${advertencias.join('; ')}`,
+            {
+              codigo: 'PLAN_ESTRUCTURA_INVALIDA',
+              socioId: params.socioId,
+            },
+          );
+        }
+
+        promptActual = this.construirPromptCorreccionEstructura(
+          params.systemPrompt,
+          params.userPrompt,
+          advertencias,
+          params.diasEsperados,
+          params.comidasPorDia,
+          params.alternativasPorComida,
+        );
+        continue;
+      }
+
+      const validacionMacros = MacrosValidator.validar(
+        planCandidato,
+        params.objetivoMacros,
+        params.diasEsperados.length,
+        params.comidasPorDia,
+        params.fechaInicio,
+      );
+      const advertenciasEstructura = this.obtenerAdvertenciasEstructura(
+        planCandidato,
+        params.diasEsperados,
+        params.comidasPorDia,
+        params.alternativasPorComida,
+      );
+
+      if (advertenciasEstructura.length === 0) {
+        return { planJson: planCandidato, validacionMacros };
+      }
+
+      this.logger.warn(
+        `Plan IA incompleto (intento ${intentoEstructura}/${MAX_REINTENTOS_ESTRUCTURA + 1}): ${advertenciasEstructura.join('; ')}`,
+      );
+
+      if (intentoEstructura > MAX_REINTENTOS_ESTRUCTURA) {
+        throw new BadRequestError(
+          `PLAN_ESTRUCTURA_INVALIDA: ${advertenciasEstructura.join('; ')}`,
+          {
+            codigo: 'PLAN_ESTRUCTURA_INVALIDA',
+            socioId: params.socioId,
+          },
+        );
+      }
+
+      promptActual = this.construirPromptCorreccionEstructura(
+        params.systemPrompt,
+        params.userPrompt,
+        advertenciasEstructura,
+        params.diasEsperados,
+        params.comidasPorDia,
+        params.alternativasPorComida,
+      );
+    }
+
+    throw new BadRequestError('No se pudo generar el plan con la IA');
+  }
+
+  private async generarPlanConReintentosGroq(
+    prompt: string,
+    socioId: number,
+  ): Promise<PlanAlimentacionDatosJson> {
+    let intentoGroq = 0;
+
+    while (intentoGroq < MAX_REINTENTOS_GROQ) {
+      intentoGroq++;
+      try {
+        return await this.aiProvider.generarRecomendacion<PlanAlimentacionDatosJson>(
+          prompt,
+          {
+            temperature: TEMPERATURA_PLAN_COMPLETO,
+            max_tokens: MAX_TOKENS_PLAN_COMPLETO,
+            timeoutMs: TIMEOUT_PLAN_COMPLETO_MS,
+          },
+        );
+      } catch (error) {
+        const mensaje = error instanceof Error ? error.message : String(error);
+        if (this.esTimeout(mensaje)) {
+          this.logger.warn(
+            `Groq timeout (intento ${intentoGroq}/${MAX_REINTENTOS_GROQ}): ${mensaje}`,
+          );
+          if (intentoGroq < MAX_REINTENTOS_GROQ) {
+            await this.sleep(TIMEOUT_BACKOFF_MS);
+            continue;
+          }
+          throw new ServiceUnavailableError(`GROQ_TIMEOUT: ${mensaje}`, {
+            codigo: 'GROQ_TIMEOUT',
+            socioId,
+          });
+        }
+
+        if (this.esJsonInvalido(mensaje)) {
+          this.logger.warn(
+            `Groq JSON inválido (intento ${intentoGroq}/${MAX_REINTENTOS_GROQ}): ${mensaje}`,
+          );
+          if (intentoGroq < MAX_REINTENTOS_GROQ) {
+            continue;
+          }
+          throw new BadGatewayError(`GROQ_INVALID_JSON: ${mensaje}`, {
+            codigo: 'GROQ_INVALID_JSON',
+            socioId,
+          });
+        }
+
+        this.logger.error(`Groq error no esperado: ${mensaje}`);
+        throw new BadGatewayError(`GROQ_UPSTREAM_ERROR: ${mensaje}`, {
+          codigo: 'GROQ_UPSTREAM_ERROR',
+          socioId,
+        });
+      }
+    }
+
+    throw new BadRequestError('No se pudo generar el plan con la IA');
+  }
+
+  private obtenerAdvertenciasEstructura(
+    plan: PlanAlimentacionDatosJson,
+    diasEsperados: DiaSemana[],
+    comidasPorDia: number,
+    alternativasPorComida: number,
+  ): string[] {
+    const advertencias: string[] = [];
+    const diasPresentes = new Set(plan.estructura.map((dia) => dia.dia));
+    const diasEsperadosSet = new Set(diasEsperados);
+
+    const diasFaltantes = diasEsperados.filter(
+      (dia) => !diasPresentes.has(dia),
+    );
+    if (diasFaltantes.length > 0) {
+      advertencias.push(
+        `Días faltantes en el plan: ${diasFaltantes.join(', ')}`,
+      );
+    }
+
+    const diasExtra = plan.estructura
+      .map((dia) => dia.dia)
+      .filter((dia) => !diasEsperadosSet.has(dia));
+    if (diasExtra.length > 0) {
+      advertencias.push(
+        `Días no solicitados en el plan: ${diasExtra.join(', ')}`,
+      );
+    }
+
+    if (plan.estructura.length !== diasEsperados.length) {
+      advertencias.push(
+        `Cantidad de días inválida: ${plan.estructura.length}/${diasEsperados.length}`,
+      );
+    }
+
+    const tiposComidaEsperados = TIPOS_COMIDA_GENERACION.slice(
+      0,
+      comidasPorDia,
+    );
+
+    for (const dia of plan.estructura) {
+      const tiposPresentes = new Set(dia.comidas.map((comida) => comida.tipo));
+      const comidasFaltantes = tiposComidaEsperados.filter(
+        (tipo) => !tiposPresentes.has(tipo),
+      );
+      if (comidasFaltantes.length > 0) {
+        advertencias.push(
+          `comidas faltantes en ${dia.dia}: ${comidasFaltantes.join(', ')}`,
+        );
+      }
+
+      const comidasExtra = dia.comidas
+        .map((comida) => comida.tipo)
+        .filter((tipo) => !tiposComidaEsperados.includes(tipo));
+      if (comidasExtra.length > 0) {
+        advertencias.push(
+          `comidas no solicitadas en ${dia.dia}: ${comidasExtra.join(', ')}`,
+        );
+      }
+
+      if (dia.comidas.length !== comidasPorDia) {
+        advertencias.push(
+          `Cantidad de comidas inválida en ${dia.dia}: ${dia.comidas.length}/${comidasPorDia}`,
+        );
+      }
+
+      for (const comida of dia.comidas) {
+        const cantidadAlternativas = comida.alternativas.length;
+        if (cantidadAlternativas < alternativasPorComida) {
+          advertencias.push(
+            `alternativas faltantes en ${dia.dia}/${comida.tipo}: ${cantidadAlternativas}/${alternativasPorComida}`,
+          );
+        }
+        if (cantidadAlternativas > alternativasPorComida) {
+          advertencias.push(
+            `alternativas excedentes en ${dia.dia}/${comida.tipo}: ${cantidadAlternativas}/${alternativasPorComida}`,
+          );
+        }
+      }
+    }
+
+    return [...new Set(advertencias)];
+  }
+
+  private construirPromptCorreccionEstructura(
+    systemPrompt: string,
+    userPrompt: string,
+    advertencias: string[],
+    diasEsperados: DiaSemana[],
+    comidasPorDia: number,
+    alternativasPorComida: number,
+  ): string {
+    const userPromptCorregido = `${userPrompt}
+
+CORRECCIÓN OBLIGATORIA:
+La respuesta anterior NO cumple el contrato estructural:
+- ${advertencias.join('\n- ')}
+
+Devolvé nuevamente el plan COMPLETO desde cero.
+Requisitos exactos:
+- ${diasEsperados.length} días completos: ${diasEsperados.join(', ')}.
+- ${comidasPorDia} comidas por día.
+- ${alternativasPorComida} alternativas por comida.
+No omitas días, comidas ni alternativas aunque el JSON sea largo.`;
+
+    return this.combinarPrompts(systemPrompt, userPromptCorregido);
+  }
+
+  private construirMacrosPorDia(
+    macrosCalculados: ValidacionMacrosPlan['macrosPorDia'],
+  ): PlanAlimentacionDatosJson['macrosPorDia'] {
+    const macrosPorDia: Partial<Record<DiaSemana, ResumenMacrosDia>> = {};
+
+    for (const [dia, resumen] of Object.entries(macrosCalculados) as Array<
+      [DiaSemana, ResumenMacrosDia]
+    >) {
+      macrosPorDia[dia] = {
+        calorias: resumen.calorias,
+        proteinas: resumen.proteinas,
+        carbohidratos: resumen.carbohidratos,
+        grasas: resumen.grasas,
+      };
+    }
+
+    return macrosPorDia as PlanAlimentacionDatosJson['macrosPorDia'];
   }
 
   private calcularObjetivoMacros(

@@ -4,14 +4,25 @@
  */
 export const AI_PROVIDER_SERVICE = Symbol('AI_PROVIDER_SERVICE');
 
+export interface ConfiguracionGeneracionIA {
+  schema?: object;
+  temperature?: number;
+  max_tokens?: number;
+  maxTokens?: number;
+  timeoutMs?: number;
+}
+
 export interface IAiProviderService {
   /**
    * Genera una recomendación estructurada usando el modelo de IA.
    * @param prompt - Instrucción para el modelo
-   * @param schema - Esquema JSON para validar la salida
+   * @param configuracion - Esquema JSON u opciones del proveedor
    * @returns Promesa con los datos estructurados generados
    */
-  generarRecomendacion<T>(prompt: string, schema: object): Promise<T>;
+  generarRecomendacion<T>(
+    prompt: string,
+    configuracion?: object | ConfiguracionGeneracionIA,
+  ): Promise<T>;
 
   /**
    * Verifica si el proveedor de IA está correctamente configurado.
