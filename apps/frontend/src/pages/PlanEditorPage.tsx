@@ -401,12 +401,10 @@ export function PlanEditorPage() {
             <Sparkles className="size-4 text-fuchsia-500" aria-hidden="true" />
             Generar con IA
           </TabsTrigger>
-          {respuesta?.planAlimentacionId && (
-            <TabsTrigger value="manual" className="gap-1.5">
-              <PenLine className="size-4" aria-hidden="true" />
-              Manual
-            </TabsTrigger>
-          )}
+          <TabsTrigger value="manual" className="gap-1.5">
+            <PenLine className="size-4" aria-hidden="true" />
+            Manual
+          </TabsTrigger>
           <TabsTrigger value="historial" className="gap-1.5">
             <History className="size-4" aria-hidden="true" />
             Historial
@@ -593,14 +591,21 @@ export function PlanEditorPage() {
         </TabsContent>
 
         {/* Tab: Manual */}
-        {respuesta?.planAlimentacionId && (
-          <TabsContent value="manual" className="mt-0">
+        <TabsContent value="manual" className="mt-0">
+          {respuesta?.planAlimentacionId ? (
             <EditorManualPlan
               planId={respuesta.planAlimentacionId}
               pacienteNombre={paciente?.nombreCompleto ?? ''}
             />
-          </TabsContent>
-        )}
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
+              <PenLine className="size-8 text-muted-foreground/50" aria-hidden="true" />
+              <p className="text-sm text-muted-foreground">
+                Generá un plan con IA primero para editarlo manualmente.
+              </p>
+            </div>
+          )}
+        </TabsContent>
 
         {/* Tab: Historial */}
         <TabsContent value="historial" className="mt-0">

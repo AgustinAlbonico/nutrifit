@@ -3,26 +3,18 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SlotComidaManual } from './SlotComidaManual';
 
-// Mock SugerenciasIaSlot so we don't depend on its async fetch in this test
-vi.mock('./SugerenciasIaSlot', () => ({
-  SugerenciasIaSlot: vi.fn(() => (
-    <div data-testid="sugerencias-ia-slot-mock">SugerenciasIaSlot mock</div>
-  )),
-}));
-
 describe('SlotComidaManual', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('renderiza slot vacío con SugerenciasIaSlot y texto instructivo', async () => {
+  it('renderiza slot vacío con texto instructivo', async () => {
     const onChange = vi.fn();
     render(
       <SlotComidaManual
         slotKey="LUNES-DESAYUNO"
         dia="LUNES"
         tipoComida="DESAYUNO"
-        planId={1}
         alternativas={[]}
         onChange={onChange}
       />,
@@ -31,8 +23,6 @@ describe('SlotComidaManual', () => {
     expect(screen.getByTestId('slot-comida-LUNES-DESAYUNO')).toBeInTheDocument();
     // Text shown when empty
     expect(screen.getByText(/arrastrá ideas/i)).toBeInTheDocument();
-    // SugerenciasIaSlot mock renders
-    expect(screen.getByTestId('sugerencias-ia-slot-mock')).toBeInTheDocument();
   });
 
   it('renderiza alternativas con toolbar cuando slot tiene contenido', async () => {
@@ -54,7 +44,6 @@ describe('SlotComidaManual', () => {
         slotKey="LUNES-DESAYUNO"
         dia="LUNES"
         tipoComida="DESAYUNO"
-        planId={1}
         alternativas={alternativasIniciales}
         onChange={onChange}
       />,
@@ -86,7 +75,6 @@ describe('SlotComidaManual', () => {
         slotKey="LUNES-DESAYUNO"
         dia="LUNES"
         tipoComida="DESAYUNO"
-        planId={1}
         alternativas={alternativasIniciales}
         onChange={onChange}
       />,
@@ -118,7 +106,6 @@ describe('SlotComidaManual', () => {
         slotKey="LUNES-DESAYUNO"
         dia="LUNES"
         tipoComida="DESAYUNO"
-        planId={1}
         alternativas={alternativasIniciales}
         onChange={onChange}
       />,
@@ -152,7 +139,7 @@ describe('SlotComidaManual', () => {
         slotKey="LUNES-DESAYUNO"
         dia="LUNES"
         tipoComida="DESAYUNO"
-        planId={1}
+
         alternativas={alternativasIniciales}
         onChange={onChange}
       />,
@@ -198,7 +185,7 @@ describe('SlotComidaManual', () => {
         slotKey="LUNES-DESAYUNO"
         dia="LUNES"
         tipoComida="DESAYUNO"
-        planId={1}
+
         alternativas={alternativasIniciales}
         onChange={onChange}
       />,

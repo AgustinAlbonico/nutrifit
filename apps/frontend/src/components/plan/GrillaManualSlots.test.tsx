@@ -4,13 +4,6 @@ import { describe, it, expect, vi } from 'vitest';
 import { GrillaManualSlots } from './GrillaManualSlots';
 import type { EstructuraDiaFE } from '@/types/ia';
 
-// Mock SugerenciasIaSlot so 35 concurrent API calls don't cause issues in tests
-vi.mock('./SugerenciasIaSlot', () => ({
-  SugerenciasIaSlot: vi.fn(() => (
-    <div data-testid="sugerencias-ia-slot-mock">SugerenciasIaSlot mock</div>
-  )),
-}));
-
 const ESTRUCTURA_VACIA = [
   { dia: 'LUNES' as const, comidas: [{ tipo: 'DESAYUNO' as const, alternativas: [] }, { tipo: 'ALMUERZO' as const, alternativas: [] }, { tipo: 'MERIENDA' as const, alternativas: [] }, { tipo: 'CENA' as const, alternativas: [] }, { tipo: 'COLACION' as const, alternativas: [] }] },
   { dia: 'MARTES' as const, comidas: [{ tipo: 'DESAYUNO' as const, alternativas: [] }, { tipo: 'ALMUERZO' as const, alternativas: [] }, { tipo: 'MERIENDA' as const, alternativas: [] }, { tipo: 'CENA' as const, alternativas: [] }, { tipo: 'COLACION' as const, alternativas: [] }] },
@@ -26,7 +19,7 @@ describe('GrillaManualSlots', () => {
     const onChange = vi.fn();
     render(
       <GrillaManualSlots
-        planId={1}
+
         estructura={ESTRUCTURA_VACIA}
         onChange={onChange}
       />,
@@ -71,7 +64,7 @@ describe('GrillaManualSlots', () => {
 
     render(
       <GrillaManualSlots
-        planId={1}
+
         estructura={estructuraConDatos}
         onChange={onChange}
       />,
@@ -100,7 +93,7 @@ describe('GrillaManualSlots', () => {
     const user = userEvent.setup();
     render(
       <GrillaManualSlots
-        planId={1}
+
         estructura={estructuraConDatos}
         onChange={onChange}
       />,

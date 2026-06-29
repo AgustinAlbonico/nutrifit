@@ -1,4 +1,4 @@
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition } from 'react';
 import { Sparkles, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { apiRequest } from '@/lib/api';
 import { traducirErrorApi } from '@/lib/error-messages';
@@ -45,12 +45,6 @@ export function SugerenciasIaSlot({
       setLoading(false);
     }
   };
-
-  // Auto-fetch on mount
-  useEffect(() => {
-    cargar();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const inicio = pagina * 3;
   const visibles = ideas.slice(inicio, inicio + 3);

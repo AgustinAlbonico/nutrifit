@@ -146,7 +146,7 @@ export class PersistirPlanManualUseCase implements BaseUseCase {
       ...new Set(
         payload.dias.flatMap((d) =>
           d.comidas.flatMap((c) =>
-            c.alternativas.flatMap((a) => a.items.map((i) => i.alimentoId)),
+            c.alternativas.flatMap((a) => a.alimentos.map((i) => i.alimentoId)),
           ),
         ),
       ),
@@ -169,7 +169,7 @@ export class PersistirPlanManualUseCase implements BaseUseCase {
       payload.dias.flatMap((diaDto) =>
         diaDto.comidas.flatMap((comidaDto) =>
           comidaDto.alternativas.flatMap((altDto, idxAlt) =>
-            altDto.items.map((itemDto, idxItem) => {
+            altDto.alimentos.map((itemDto, idxItem) => {
               const alimento = alimentoMap.get(itemDto.alimentoId)!;
               return {
                 dia: diaDto.dia,
@@ -197,7 +197,7 @@ export class PersistirPlanManualUseCase implements BaseUseCase {
         comidas: d.comidas.map((c) => ({
           tipo: c.tipoComida,
           alternativas: c.alternativas.map((a) => {
-            const itemSnapshots = a.items.map((i) => {
+            const itemSnapshots = a.alimentos.map((i) => {
               const al = alimentoMap.get(i.alimentoId)!;
               return {
                 alimentoId: al.idAlimento,
@@ -206,19 +206,19 @@ export class PersistirPlanManualUseCase implements BaseUseCase {
               };
             });
             // Macros por alternativa = suma simple de los items (proporción a cantidad/unidad)
-            const totalCal = a.items.reduce((acc, i) => {
+            const totalCal = a.alimentos.reduce((acc, i) => {
               const al = alimentoMap.get(i.alimentoId)!;
               return acc + (al.calorias ?? 0);
             }, 0);
-            const totalPro = a.items.reduce((acc, i) => {
+            const totalPro = a.alimentos.reduce((acc, i) => {
               const al = alimentoMap.get(i.alimentoId)!;
               return acc + (al.proteinas ?? 0);
             }, 0);
-            const totalCarb = a.items.reduce((acc, i) => {
+            const totalCarb = a.alimentos.reduce((acc, i) => {
               const al = alimentoMap.get(i.alimentoId)!;
               return acc + (al.carbohidratos ?? 0);
             }, 0);
-            const totalGras = a.items.reduce((acc, i) => {
+            const totalGras = a.alimentos.reduce((acc, i) => {
               const al = alimentoMap.get(i.alimentoId)!;
               return acc + (al.grasas ?? 0);
             }, 0);

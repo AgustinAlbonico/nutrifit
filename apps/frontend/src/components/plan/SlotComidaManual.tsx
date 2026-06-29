@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import { Copy, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { SugerenciasIaSlot } from './SugerenciasIaSlot';
 import { useSlotDroppable } from '@/hooks/useDragDropSlot';
-import type { ItemComidaIaFE } from '@/types/ia';
 
 export interface AlternativaSlot {
   /** Temporary id for FE-only items (e.g. `tmp-1`). */
@@ -25,7 +23,6 @@ export interface SlotComidaManualProps {
   slotKey: string;
   dia: string;
   tipoComida: string;
-  planId: number;
   /** Alternativas already in this slot (may be empty). */
   alternativas: AlternativaSlot[];
   onChange: (alternativas: AlternativaSlot[]) => void;
@@ -35,24 +32,10 @@ export function SlotComidaManual({
   slotKey,
   dia,
   tipoComida,
-  planId,
   alternativas,
   onChange,
 }: SlotComidaManualProps) {
   const { setNodeRef, isOver } = useSlotDroppable(slotKey);
-
-  const agregarAlternativa = (idea: ItemComidaIaFE) => {
-    const nueva: AlternativaSlot = {
-      id: idea.idTemp,
-      nombre: idea.nombre,
-      alimentos: idea.alimentos,
-      calorias: idea.calorias,
-      proteinas: idea.proteinas,
-      carbohidratos: idea.carbohidratos,
-      grasas: idea.grasas,
-    };
-    onChange([...alternativas, nueva]);
-  };
 
   const eliminarAlternativa = (id: string) => {
     onChange(alternativas.filter((a) => a.id !== id));
@@ -93,17 +76,9 @@ export function SlotComidaManual({
       </div>
 
       {alternativas.length === 0 ? (
-        <div className="space-y-2">
-          <SugerenciasIaSlot
-            planId={planId}
-            dia={dia}
-            tipoComida={tipoComida}
-            onAdd={agregarAlternativa}
-          />
-          <p className="text-xs text-muted-foreground">
-            Arrastrá ideas o agregá manualmente
-          </p>
-        </div>
+        <p className="text-xs text-muted-foreground">
+          Arrastrá ideas acá o usá el botón "Generar ideas IA"
+        </p>
       ) : (
         <div className="space-y-2">
           {alternativas.map((alt) => (
@@ -115,12 +90,6 @@ export function SlotComidaManual({
               onEdit={editarAlternativa}
             />
           ))}
-          <SugerenciasIaSlot
-            planId={planId}
-            dia={dia}
-            tipoComida={tipoComida}
-            onAdd={agregarAlternativa}
-          />
         </div>
       )}
     </div>

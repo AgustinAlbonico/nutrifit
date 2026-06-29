@@ -18,14 +18,15 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { Sparkles } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { GrillaManualSlots } from '@/components/plan/GrillaManualSlots';
-import { DialogResumenMacros } from '@/components/plan/DialogResumenMacros';
+import { DialogGenerarIdeasIa } from '@/components/plan/DialogGenerarIdeasIa';
 
 import { apiRequest } from '@/lib/api';
 import { useDebounce } from '@/hooks/useDebounce';
-import type { EstructuraDiaFE, PlanAlimentacionDatosJsonFE } from '@/types/ia';
+import type { EstructuraDiaFE, PlanAlimentacionDatosJsonFE, DiaSemana, TipoComidaPlan, IdeaComidaIa } from '@/types/ia';
 import type { ApiResponse } from '@/types/api';
 
 interface Props {
@@ -98,6 +99,8 @@ export function EditorManualPlan({ planId, pacienteNombre }: Props) {
   const [cargandoVersion, setCargandoVersion] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [ultimoGuardado, setUltimoGuardado] = useState<Date | null>(null);
+  const [dialogoAbierto, setDialogoAbierto] = useState(false);
+  const [haSidoModificado, setHaSidoModificado] = useState(false);
   const isMountedRef = useRef(true);
 
   // Carga versión V2 activa del plan al montar
@@ -131,6 +134,47 @@ export function EditorManualPlan({ planId, pacienteNombre }: Props) {
     };
   }, [planId]);
 
+  const handleEstructuraChange = useCallback((nueva: EstructuraDiaFE[]) => {
+    setEstructura(nueva);
+    setHaSidoModificado(true);
+  }, []);
+
+  const handleAddIdea = useCallback(
+    (dia: DiaSemana, tipoComida: TipoComidaPlan, idea: IdeaComidaIa) => {
+      setEstructura((prev) =>
+        prev.map((d) => {
+          if (d.dia !== dia) return d;
+          return {
+            ...d,
+            comidas: d.comidas.map((c) => {
+              if (c.tipo !== tipoComida) return c;
+              return {
+                ...c,
+                alternativas: [
+                  ...c.alternativas,
+                  {
+                    nombre: idea.nombre,
+                    alimentos: idea.alimentos.map((a) => ({
+                      alimentoId: a.alimentoId,
+                      cantidad: a.cantidad,
+                      unidad: a.unidad,
+                    })),
+                    calorias: idea.calorias,
+                    proteinas: idea.proteinas,
+                    carbohidratos: idea.carbohidratos,
+                    grasas: idea.grasas,
+                  },
+                ],
+              };
+            }),
+          };
+        }),
+      );
+      setHaSidoModificado(true);
+    },
+    [],
+  );
+
   // Auto-save debounced (800ms) — mutation silenciosa sin toast
   const debouncedEstructura = useDebounce(estructura, 800);
   const persistirSilencioso = useCallback(
@@ -151,11 +195,15 @@ export function EditorManualPlan({ planId, pacienteNombre }: Props) {
     [planId],
   );
 
+  const tieneContenido = estructura.some((dia) =>
+    dia.comidas.some((c) => c.alternativas.length > 0),
+  );
+
   useEffect(() => {
-    if (debouncedEstructura) {
+    if (debouncedEstructura && haSidoModificado && tieneContenido) {
       persistirSilencioso(debouncedEstructura);
     }
-  }, [debouncedEstructura, persistirSilencioso]);
+  }, [debouncedEstructura, haSidoModificado, tieneContenido, persistirSilencioso]);
 
   // Guardado manual (botón "Guardar borrador")
   const guardarBorrador = async () => {
@@ -186,11 +234,17 @@ export function EditorManualPlan({ planId, pacienteNombre }: Props) {
           <h1 className="text-xl font-bold">Editor Manual</h1>
           <p className="text-sm text-muted-foreground">{pacienteNombre}</p>
         </div>
-        {ultimoGuardado && (
-          <p className="text-xs text-muted-foreground" aria-live="polite">
-            Guardado {ultimoGuardado.toLocaleTimeString()}
-          </p>
-        )}
+        <div className="flex items-center gap-3">
+          {ultimoGuardado && (
+            <p className="text-xs text-muted-foreground" aria-live="polite">
+              Guardado {ultimoGuardado.toLocaleTimeString()}
+            </p>
+          )}
+          <Button variant="outline" onClick={() => setDialogoAbierto(true)}>
+            <Sparkles className="mr-1.5 size-4" aria-hidden="true" />
+            Sugerencias IA
+          </Button>
+        </div>
       </div>
 
       {/* Loading state */}
@@ -201,10 +255,15 @@ export function EditorManualPlan({ planId, pacienteNombre }: Props) {
       )}
 
       {/* Grilla de slots manuales */}
-      <GrillaManualSlots planId={planId} estructura={estructura} onChange={setEstructura} />
+      <GrillaManualSlots estructura={estructura} onChange={handleEstructuraChange} />
 
-      {/* Diálogo de resumen de macros (sticky bottom-right) */}
-      <DialogResumenMacros estructura={estructura} />
+      {/* Diálogo de generación de ideas IA */}
+      <DialogGenerarIdeasIa
+        open={dialogoAbierto}
+        onOpenChange={setDialogoAbierto}
+        planId={planId}
+        onAddIdea={handleAddIdea}
+      />
 
       {/* Footer sticky con botón guardar */}
       <div

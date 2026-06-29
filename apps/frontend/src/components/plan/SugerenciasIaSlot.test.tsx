@@ -46,7 +46,7 @@ describe('SugerenciasIaSlot', () => {
     // Reset handlers between tests
   });
 
-  it('llama al endpoint al abrir y muestra las ideas', async () => {
+  it('al hacer click en Sugerir ideas IA, llama al endpoint y muestra las ideas', async () => {
     server.use(
       http.post('/planes-alimentacion/:id/ideas-comida', () => {
         return HttpResponse.json({
@@ -56,6 +56,7 @@ describe('SugerenciasIaSlot', () => {
       }),
     );
 
+    const user = userEvent.setup();
     render(
       <SugerenciasIaSlot
         planId={1}
@@ -65,7 +66,13 @@ describe('SugerenciasIaSlot', () => {
       />,
     );
 
-    // Should show loading then ideas
+    // Initially shows the button, not ideas
+    expect(screen.getByTestId('boton-sugerir-ideas')).toBeInTheDocument();
+
+    // Click to trigger fetch
+    await user.click(screen.getByTestId('boton-sugerir-ideas'));
+
+    // Wait for ideas to appear
     expect(await screen.findByText(/Comida 1/i)).toBeInTheDocument();
   });
 
@@ -88,6 +95,9 @@ describe('SugerenciasIaSlot', () => {
         onAdd={vi.fn()}
       />,
     );
+
+    // Click button to load ideas
+    await user.click(screen.getByTestId('boton-sugerir-ideas'));
 
     // Wait for ideas to load
     await screen.findByText(/Comida 1/i);
@@ -130,6 +140,9 @@ describe('SugerenciasIaSlot', () => {
         onAdd={onAdd}
       />,
     );
+
+    // Click button to load ideas
+    await user.click(screen.getByTestId('boton-sugerir-ideas'));
 
     // Wait for the idea to appear
     await screen.findByText(/Avena con frutas/i);

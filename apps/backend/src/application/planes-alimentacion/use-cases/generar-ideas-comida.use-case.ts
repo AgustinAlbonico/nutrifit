@@ -123,7 +123,7 @@ export class GenerarIdeasComidaUseCase {
 
     const plan = await this.planRepo.findOne({
       where: { idPlanAlimentacion: dto.planAlimentacionId },
-      relations: { nutricionista: true },
+      relations: { nutricionista: true, socio: true },
     });
 
     if (!plan) {

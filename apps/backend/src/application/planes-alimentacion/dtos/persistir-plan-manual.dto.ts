@@ -35,7 +35,7 @@ export class PersistirAlternativaComidaManualDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => PersistirItemComidaManualDto)
-  items: PersistirItemComidaManualDto[];
+  alimentos: PersistirItemComidaManualDto[];
 }
 
 export class PersistirComidaSlotManualDto {

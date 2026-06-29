@@ -27,7 +27,6 @@ const DIAS = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DO
 const TIPOS_COMIDA = ['DESAYUNO', 'ALMUERZO', 'MERIENDA', 'CENA', 'COLACION'] as const;
 
 interface Props {
-  planId: number;
   estructura: EstructuraDiaFE[];
   onChange: (estructura: EstructuraDiaFE[]) => void;
 }
@@ -63,7 +62,7 @@ function convertirAAlternativaSlot(
   };
 }
 
-export function GrillaManualSlots({ planId, estructura, onChange }: Props) {
+export function GrillaManualSlots({ estructura, onChange }: Props) {
   // Sensores para drag-drop
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -296,7 +295,6 @@ export function GrillaManualSlots({ planId, estructura, onChange }: Props) {
                         dia={celdaDia}
                         tipoComida={tipoComida}
                         alternativas={alternativas}
-                        planId={planId}
                         onChange={handleSlotChange}
                       />
                     ))}
@@ -325,14 +323,12 @@ function CeldaSlot({
   dia,
   tipoComida,
   alternativas,
-  planId,
   onChange,
 }: {
   slotKey: string;
   dia: (typeof DIAS)[number];
   tipoComida: (typeof TIPOS_COMIDA)[number];
   alternativas: AlternativaSlot[];
-  planId: number;
   onChange: (alternativas: AlternativaSlot[]) => void;
 }) {
   return (
@@ -340,7 +336,6 @@ function CeldaSlot({
       slotKey={slotKey}
       dia={dia}
       tipoComida={tipoComida}
-      planId={planId}
       alternativas={alternativas}
       onChange={onChange}
     />

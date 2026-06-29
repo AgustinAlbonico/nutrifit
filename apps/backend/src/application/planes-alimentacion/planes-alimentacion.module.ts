@@ -34,6 +34,7 @@ import { NotificacionesService } from 'src/application/notificaciones/notificaci
 import { RestriccionesModule } from 'src/application/restricciones/restricciones.module';
 import { RepositoriesModule } from 'src/infrastructure/persistence/typeorm/repositories/repositories.module';
 import { AppLoggerModule } from 'src/infrastructure/common/logger/app-logger.module';
+import { GroqModule } from 'src/infrastructure/services/groq/groq.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { AppLoggerModule } from 'src/infrastructure/common/logger/app-logger.mod
     RestriccionesModule,
     RepositoriesModule,
     AppLoggerModule,
+    GroqModule,
   ],
   providers: [
     CrearPlanAlimentacionUseCase,
@@ -87,6 +89,8 @@ import { AppLoggerModule } from 'src/infrastructure/common/logger/app-logger.mod
     EditarFeedbackPlanUseCase,
     ActivarPlanAlimentacionUseCase,
     FinalizarPlanAlimentacionUseCase,
+    PersistirPlanManualUseCase,
+    GenerarIdeasComidaUseCase,
   ],
 })
 export class PlanesAlimentacionModule {}
