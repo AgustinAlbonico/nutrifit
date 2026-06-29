@@ -21,3 +21,4 @@ export * from './finalizar-plan-alimentacion.use-case';
 export * from './generar-ideas-comida.use-case';
 export * from './persistir-plan-manual.use-case';
 export * from './crear-plan-manual-vacio.use-case';
+export * from './guardar-version-plan.use-case';

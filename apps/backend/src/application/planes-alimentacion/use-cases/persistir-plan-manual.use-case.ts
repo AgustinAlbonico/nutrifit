@@ -43,6 +43,7 @@ import {
   OpcionComidaOrmEntity,
   PlanAlimentacionOrmEntity,
   SocioOrmEntity,
+  PlanAlimentacionVersionOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
 import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
 import { AccionAuditoria } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
@@ -252,103 +253,38 @@ export class PersistirPlanManualUseCase implements BaseUseCase {
       },
     };
 
-    // 7) Calcular nuevo numeroVersion
-    const versionesExistentes = await this.planVersionRepo.listarPorPlan(planId);
-    const maxVersion = versionesExistentes.reduce(
-      (max, v) => Math.max(max, v.numeroVersion),
-      0,
-    );
-    const nuevoNumeroVersion = maxVersion + 1;
-    const esCreacionInicial = versionesExistentes.length === 0;
+    // 7) Guardar o actualizar versión borrador (numeroVersion = 0)
+    const esCreacionInicial = (await this.planVersionRepo.listarPorPlan(planId)).length === 0;
 
-    // 8) Transacción: crear nueva versión, desactivar anteriores
-    const nuevaVersion = await this.dataSource.transaction(async () => {
-      const versionCreada = await this.planVersionRepo.crear({
-        idPlanAlimentacion: planId,
-        numeroVersion: nuevoNumeroVersion,
-        datosJson,
-        motivoCambio: esCreacionInicial ? 'creacion_inicial' : 'edicion_manual',
-        activa: true,
-        createdBy: userId,
-      });
-
-      // Marcar anteriores como inactivas
-      for (const v of versionesExistentes) {
-        if (v.activa) {
-          await this.planVersionRepo.marcarActiva(planId, v.idPlanAlimentacionVersion);
-        }
-      }
-      // Reactivar la nueva (la lógica anterior las desactivó)
-      await this.planVersionRepo.marcarActiva(planId, versionCreada.idPlanAlimentacionVersion);
-
-      // Sincronizar `dias` del plan activo con la nueva estructura
-      for (const diaExistente of plan.dias ?? []) {
-        for (const opcion of diaExistente.opcionesComida ?? []) {
-          await this.opcionRepo.remove(opcion);
-        }
-        await this.diaRepo.remove(diaExistente);
-      }
-      for (const [idx, diaEstructura] of estructura.entries()) {
-        const dia = new DiaPlanOrmEntity();
-        dia.dia = diaEstructura.dia;
-        dia.orden = idx + 1;
-        dia.planAlimentacion = plan;
-        const diaGuardado = await this.diaRepo.save(dia);
-        for (const comidaEstructura of diaEstructura.comidas) {
-          const opcion = new OpcionComidaOrmEntity();
-          opcion.tipoComida = comidaEstructura.tipo;
-          opcion.comentarios = null;
-          opcion.diaPlan = diaGuardado;
-          for (const alt of comidaEstructura.alternativas) {
-            for (const ali of alt.alimentos) {
-              const item = new ItemComidaOrmEntity();
-              const al = alimentoMap.get(ali.alimentoId)!;
-              item.alimentoId = al.idAlimento;
-              item.alimentoNombre = al.nombre;
-              item.cantidad = ali.cantidad;
-              item.unidad = (ali.unidad ?? al.unidadMedida) as never;
-              item.notas = null;
-              item.calorias = al.calorias;
-              item.proteinas = al.proteinas;
-              item.carbohidratos = al.carbohidratos;
-              item.grasas = al.grasas;
-              item.alimento = al;
-              item.opcionComida = opcion;
-              opcion.items = [...(opcion.items ?? []), item];
-            }
-          }
-          if (opcion.items) {
-            await this.opcionRepo.save(opcion);
-          }
-        }
-      }
-
-      return versionCreada;
-    });
-
-    // 9) Auditoría (tolerante)
-    try {
-      await this.auditoriaService.registrar({
-        accion: AccionAuditoria.PLAN_EDITADO,
-        entidad: 'PlanAlimentacion',
-        entidadId: planId,
-        usuarioId: userId,
-        gimnasioId: this.tenantContext.gimnasioId,
-        metadata: {
-          versionId: nuevaVersion.idPlanAlimentacionVersion,
-          numeroVersion: nuevoNumeroVersion,
-          motivoCambio: esCreacionInicial ? 'creacion_inicial' : 'edicion_manual',
+    const nuevaVersion = await this.dataSource.transaction(async (manager) => {
+      const versionRepo = manager.getRepository(PlanAlimentacionVersionOrmEntity);
+      let orm = await versionRepo.findOne({
+        where: {
+          idPlanAlimentacion: planId,
+          numeroVersion: 0,
         },
       });
-    } catch (error) {
-      this.logger.warn(
-        `Auditoria PLAN_EDITADO falló (no afecta operación): ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      );
-    }
 
-    // 10) Recargar plan completo con relaciones
+      if (orm) {
+        orm.datosJson = datosJson;
+        orm.motivoCambio = esCreacionInicial ? 'creacion_inicial' : 'edicion_manual';
+        orm.createdBy = userId;
+        orm.createdAt = new Date();
+      } else {
+        orm = versionRepo.create({
+          idPlanAlimentacion: planId,
+          numeroVersion: 0,
+          datosJson,
+          motivoCambio: esCreacionInicial ? 'creacion_inicial' : 'edicion_manual',
+          activa: false,
+          createdBy: userId,
+        });
+      }
+      const saved = await versionRepo.save(orm);
+      return saved;
+    });
+
+    // 10) Recargar plan completo
     const planCompleto = await this.planRepo.findOne({
       where: { idPlanAlimentacion: planId },
       relations: {

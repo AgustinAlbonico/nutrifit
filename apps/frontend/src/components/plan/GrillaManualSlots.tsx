@@ -2,26 +2,19 @@
  * GrillaManualSlots — EditorManualPlan (Task 2.8).
  *
  * Renderiza una grilla 7×5 (días × tipos de comida) donde cada celda es un
- * <SlotComidaManual> con drag-drop (DndContext) y acceso a SugerenciasIaSlot.
+ * <SlotComidaManual> con acceso a SugerenciasIaSlot.
  *
  * Interfaz:
- * - `planId: number` — ID del plan para pasar al slot
  * - `estructura: EstructuraDiaFE[]` — días + comidas del plan
  * - `onChange: (estructura: EstructuraDiaFE[]) => void` — callback al modificar
+ * - `onSelectSlot?: (dia: string, tipoComida: string) => void` — callback para seleccionar slot para ideas IA
  */
 
 import { useCallback, useMemo } from 'react';
-import {
-  DndContext,
-  type DragEndEvent,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
 
 import { SlotComidaManual, type AlternativaSlot } from './SlotComidaManual';
 import { DialogResumenMacros } from './DialogResumenMacros';
-import type { EstructuraDiaFE, ItemComidaIaFE, ItemComidaSnapshotFE } from '@/types/ia';
+import type { EstructuraDiaFE, ItemComidaSnapshotFE } from '@/types/ia';
 
 const DIAS = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'] as const;
 const TIPOS_COMIDA = ['DESAYUNO', 'ALMUERZO', 'MERIENDA', 'CENA', 'COLACION'] as const;
@@ -29,16 +22,12 @@ const TIPOS_COMIDA = ['DESAYUNO', 'ALMUERZO', 'MERIENDA', 'CENA', 'COLACION'] as
 interface Props {
   estructura: EstructuraDiaFE[];
   onChange: (estructura: EstructuraDiaFE[]) => void;
+  onSelectSlot?: (dia: any, tipoComida: any) => void;
 }
 
 /**
  * Convierte ItemComidaSnapshotFE (sin id) a AlternativaSlot (con id)
  * usando un id sintético basado en la posición en el array.
- *
- * El id sintético es `"${dia}-${tipoComida}-${index}"`. Cuando se elimina,
- * el índice del item es fijo (se capturó al momento de renderizar), por lo
- * que la baja es correcta aunque los índices del array se desplacen tras
- * filter().
  */
 function convertirAAlternativaSlot(
   item: ItemComidaSnapshotFE,
@@ -62,19 +51,10 @@ function convertirAAlternativaSlot(
   };
 }
 
-export function GrillaManualSlots({ estructura, onChange }: Props) {
-  // Sensores para drag-drop
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-  );
-
+export function GrillaManualSlots({ estructura, onChange, onSelectSlot }: Props) {
   // ------------------------------------------------------------------
   // Helper: encuentra la comida de un slot en la estructura, creando
-  // una entrada vacía si no existe (para estructuras parciales).
+  // una entrada vacía si no existe.
   // ------------------------------------------------------------------
   const obtenerComidaDelSlot = useCallback(
     (dia: (typeof DIAS)[number], tipoComida: (typeof TIPOS_COMIDA)[number]) => {
@@ -86,71 +66,7 @@ export function GrillaManualSlots({ estructura, onChange }: Props) {
   );
 
   // ------------------------------------------------------------------
-  // onDragEnd: una idea (ItemComidaIaFE) se soltó en un slot.
-  // El event.over.id es el slotKey (ej. "LUNES-DESAYUNO").
-  // ------------------------------------------------------------------
-  const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      const { active, over } = event;
-      if (!over) return;
-
-      const ideaIdTemp = active.id as string; // viene de useIdeaDraggable: idea.idTemp
-      const slotKey = over.id as string; // viene de useSlotDroppable: slotKey
-
-      // El data del draggable contiene el idea completo (ItemComidaIaFE)
-      const idea = active.data.current as ItemComidaIaFE | undefined;
-      if (!idea || idea.idTemp !== ideaIdTemp) return;
-
-      // Parsear slotKey → dia, tipoComida
-      const guionIdx = slotKey.indexOf('-');
-      if (guionIdx === -1) return;
-      const dia = slotKey.slice(0, guionIdx) as EstructuraDiaFE['dia'];
-      const tipoComida = slotKey.slice(guionIdx + 1) as (typeof TIPOS_COMIDA)[number];
-
-      // Encontrar el slot en la estructura
-      const diaIdx = estructura.findIndex((d) => d.dia === dia);
-      if (diaIdx === -1) return;
-      const comidaIdx = estructura[diaIdx].comidas.findIndex((c) => c.tipo === tipoComida);
-      if (comidaIdx === -1) return;
-
-      // Construir la nueva alternativa (ItemComidaSnapshotFE)
-      const nuevaAlternativa: ItemComidaSnapshotFE = {
-        nombre: idea.nombre,
-        alimentos: idea.alimentos.map((a) => ({
-          alimentoId: a.alimentoId,
-          cantidad: a.cantidad,
-          unidad: a.unidad,
-        })),
-        calorias: idea.calorias,
-        proteinas: idea.proteinas,
-        carbohidratos: idea.carbohidratos,
-        grasas: idea.grasas,
-      };
-
-      // Agregar a la estructura
-      const nuevaEstructura = estructura.map((d, i) => {
-        if (i !== diaIdx) return d;
-        return {
-          ...d,
-          comidas: d.comidas.map((c, j) => {
-            if (j !== comidaIdx) return c;
-            return {
-              ...c,
-              alternativas: [...c.alternativas, nuevaAlternativa],
-            };
-          }),
-        };
-      });
-
-      onChange(nuevaEstructura);
-    },
-    [estructura, onChange],
-  );
-
-  // ------------------------------------------------------------------
   // Render del grid.
-  // Por cada slotKey generamos las alternativas convertidas y un map
-  // idSintetico → itemRef para poder actualizar la estructura original.
   // ------------------------------------------------------------------
   const filas = useMemo(() => {
     return DIAS.map((dia) => {
@@ -159,8 +75,6 @@ export function GrillaManualSlots({ estructura, onChange }: Props) {
         const comida = obtenerComidaDelSlot(dia, tipoComida);
         const alternativasRaw = comida?.alternativas ?? [];
 
-        // Convertir ItemComidaSnapshotFE[] → alternativas para SlotComidaManual
-        // Generar mapping idSintetico → ref del item original en estructura
         const refs = new Map<string, ItemComidaSnapshotFE>();
         const alternativasConvertidas = alternativasRaw.map((item, idx) => {
           const converted = convertirAAlternativaSlot(item, slotKey, idx);
@@ -184,11 +98,9 @@ export function GrillaManualSlots({ estructura, onChange }: Props) {
           const comidaIdx = estructura[diaIdx].comidas.findIndex((c) => c.tipo === tipoComida);
           if (comidaIdx === -1) return;
 
-          // Reconstruir ItemComidaSnapshotFE[] actualizando los items originales
           const actualizadas = nuevasAlternativas.map((alt) => {
             const ref = refs.get(alt.id);
             if (ref) {
-              // Mutación in-place del item original en estructura
               ref.nombre = alt.nombre;
               ref.alimentos = alt.alimentos;
               ref.calorias = alt.calorias;
@@ -207,7 +119,6 @@ export function GrillaManualSlots({ estructura, onChange }: Props) {
             };
           });
 
-          // Reemplazar el array de alternativas (nuevo array = trigger de re-render)
           const nuevaEstructura = estructura.map((d, i) => {
             if (i !== diaIdx) return d;
             return {
@@ -238,75 +149,65 @@ export function GrillaManualSlots({ estructura, onChange }: Props) {
 
   return (
     <div className="flex flex-col gap-4">
-      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-        <div
-          data-testid="grilla-manual-slots"
-          aria-label="Grilla de slots manuales"
-          className="min-w-0 overflow-x-auto rounded-xl border bg-card/40 p-2"
-        >
-          {/* Layout: columna de día + grid de slots */}
-          <div className="flex min-w-[760px] gap-2">
-            {/* Columna de día + header (alineado con los slots) */}
-            <div className="flex flex-col" style={{ width: '72px' }}>
-              {/* Header vacío para alinear con columnas de slots */}
-              <div className="h-8" />
+      <div
+        data-testid="grilla-manual-slots"
+        aria-label="Grilla de slots manuales"
+        className="min-w-0 overflow-x-auto rounded-xl border bg-card/40 p-2"
+      >
+        <div className="flex min-w-[760px] gap-2">
+          <div className="flex flex-col" style={{ width: '72px' }}>
+            <div className="h-8" />
+            {DIAS.map((dia) => (
+              <div
+                key={dia}
+                className="flex items-center font-bold text-xs uppercase tracking-wide text-muted-foreground"
+                style={{ height: '120px' }}
+              >
+                {dia}
+              </div>
+            ))}
+          </div>
 
-              {/* Día labels */}
-              {DIAS.map((dia) => (
+          <div className="flex-1">
+            <div
+              className="mb-2 grid gap-2"
+              style={{ gridTemplateColumns: `repeat(${TIPOS_COMIDA.length}, 1fr)` }}
+            >
+              {TIPOS_COMIDA.map((tipo) => (
                 <div
-                  key={dia}
-                  className="flex items-center font-bold text-xs uppercase tracking-wide text-muted-foreground"
-                  style={{ height: '120px' }}
+                  key={tipo}
+                  className="text-center text-xs font-bold uppercase tracking-wide text-muted-foreground"
                 >
-                  {dia}
+                  {tipo}
                 </div>
               ))}
             </div>
 
-            {/* Grid de slots */}
-            <div className="flex-1">
-              {/* Header: tipos de comida */}
-              <div
-                className="mb-2 grid gap-2"
-                style={{ gridTemplateColumns: `repeat(${TIPOS_COMIDA.length}, 1fr)` }}
-              >
-                {TIPOS_COMIDA.map((tipo) => (
-                  <div
-                    key={tipo}
-                    className="text-center text-xs font-bold uppercase tracking-wide text-muted-foreground"
-                  >
-                    {tipo}
-                  </div>
-                ))}
-              </div>
-
-              {/* Day rows */}
-              <div className="flex flex-col gap-2">
-                {filas.map(({ dia, celdas }) => (
-                  <div
-                    key={dia}
-                    className="grid gap-2"
-                    style={{ gridTemplateColumns: `repeat(${TIPOS_COMIDA.length}, 1fr)` }}
-                  >
-                    {celdas.map(({ slotKey, dia: celdaDia, tipoComida, alternativas, handleSlotChange }) => (
-                      <CeldaSlot
-                        key={slotKey}
-                        slotKey={slotKey}
-                        dia={celdaDia}
-                        tipoComida={tipoComida}
-                        alternativas={alternativas}
-                        onChange={handleSlotChange}
-                      />
-                    ))}
-                  </div>
-                ))}
-              </div>
+            <div className="flex flex-col gap-2">
+              {filas.map(({ dia, celdas }) => (
+                <div
+                  key={dia}
+                  className="grid gap-2"
+                  style={{ gridTemplateColumns: `repeat(${TIPOS_COMIDA.length}, 1fr)` }}
+                >
+                  {celdas.map(({ slotKey, dia: celdaDia, tipoComida, alternativas, handleSlotChange }) => (
+                    <CeldaSlot
+                      key={slotKey}
+                      slotKey={slotKey}
+                      dia={celdaDia}
+                      tipoComida={tipoComida}
+                      alternativas={alternativas}
+                      onChange={handleSlotChange}
+                      onSelectForIa={() => onSelectSlot?.(celdaDia, tipoComida)}
+                    />
+                  ))}
+                </div>
+              ))}
             </div>
           </div>
         </div>
-      </DndContext>
+      </div>
 
-      {/* Resumen de macros — sticky footer */}
       <div className="sticky bottom-0 z-10">
         <DialogResumenMacros estructura={estructura} />
       </div>
@@ -314,22 +215,20 @@ export function GrillaManualSlots({ estructura, onChange }: Props) {
   );
 }
 
-// ------------------------------------------------------------------
-// Componente interno: celda individual de la grilla.
-// Se renderiza dentro de DndContext (hereda el contexto).
-// ------------------------------------------------------------------
 function CeldaSlot({
   slotKey,
   dia,
   tipoComida,
   alternativas,
   onChange,
+  onSelectForIa,
 }: {
   slotKey: string;
   dia: (typeof DIAS)[number];
   tipoComida: (typeof TIPOS_COMIDA)[number];
   alternativas: AlternativaSlot[];
   onChange: (alternativas: AlternativaSlot[]) => void;
+  onSelectForIa?: () => void;
 }) {
   return (
     <SlotComidaManual
@@ -338,6 +237,7 @@ function CeldaSlot({
       tipoComida={tipoComida}
       alternativas={alternativas}
       onChange={onChange}
+      onSelectForIa={onSelectForIa}
     />
   );
 }

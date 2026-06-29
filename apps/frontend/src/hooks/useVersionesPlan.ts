@@ -91,7 +91,9 @@ export function useVersionesPlan(planId: number) {
         `/planes-alimentacion/${planId}/versiones`,
         { method: 'GET' },
       );
-      return normalizarVersionesPlan(respuesta, planId);
+      return normalizarVersionesPlan(respuesta, planId).filter(
+        (v) => v.numeroVersion > 0,
+      );
     },
     enabled: Number.isFinite(planId) && planId > 0,
     staleTime: 30_000,

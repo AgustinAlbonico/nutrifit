@@ -10,6 +10,18 @@
  *
  * Layout: grid responsive (1 columna mobile, 3 columnas desktop).
  * En desktop: main (2/3) + sidebar versiones (1/3).
+/**
+ * PlanEditorPage — Editor de plan con IA V2.
+ *
+ * Compone los nuevos componentes del change `plan-alimentacion-ia-v2`:
+ * - `<GeneradorPlanSemanal />` form V2 (RHF + Zod)
+ * - `<WeeklyPlanGrid />` vista V2 con MacrosBadge + botones regen por scope
+ * - `<RazonamientoCumplimiento />` panel colapsable con detalles de validación
+ * - `<VersionHistory />` sidebar con historial inmutable de versiones
+ * - `<FeedbackModal />` modal de feedback (botón flotante)
+ *
+ * Layout: grid responsive (1 columna mobile, 3 columnas desktop).
+ * En desktop: main (2/3) + sidebar versiones (1/3).
  * Botón flotante "Dar feedback" abre el FeedbackModal cuando hay un plan activo.
  *
  * Accesibilidad:
@@ -19,7 +31,7 @@
  * - Skip-links implícitos por jerarquía de headings
  */
 
-import { useMemo, useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
 import {
   ArrowLeft,
@@ -30,8 +42,18 @@ import {
   Lock,
   PenLine,
   History,
+  Save,
+  CheckCircle2,
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+import {
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -41,26 +63,27 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 import { GeneradorPlanSemanal } from '@/components/ia/GeneradorPlanSemanal';
 import { FeedbackModal } from '@/components/ia/FeedbackModal';
-import {
-  WeeklyPlanGrid,
-  type ManejadoresRegeneracion,
-} from '@/components/plan/WeeklyPlanGrid';
 import { VersionHistory } from '@/components/plan/VersionHistory';
 import { RazonamientoCumplimiento } from '@/components/plan/RazonamientoCumplimiento';
 import { RestriccionesEditablesCard } from '@/components/plan/RestriccionesEditablesCard';
-import { EditorManualPlan } from '@/pages/EditorManualPlan';
+import { GrillaManualSlots } from '@/components/plan/GrillaManualSlots';
+import { PanelIdeasIa } from '@/components/plan/PanelIdeasIa';
 
 import { apiRequest } from '@/lib/api';
 import { desenvolverRespuestaApi } from '@/lib/api-response';
-import { traducirErrorApi } from '@/lib/error-messages';
 import { useObtenerFichaNutricionista } from '@/hooks/useObtenerFichaNutricionista';
 import { useEditarFichaPaciente } from '@/hooks/useEditarFichaPaciente';
+import { useDebounce } from '@/hooks/useDebounce';
+import { normalizarVersionesPlan } from '@/hooks/useVersionesPlan';
 import type { PaginatedData } from '@nutrifit/shared';
 import type { ApiResponse } from '@/types/api';
 import type {
   RespuestaPlanSemanalV2FE,
-  RespuestaRegeneracionFE,
-  SolicitudRegeneracionFE,
+  EstructuraDiaFE,
+  PlanAlimentacionDatosJsonFE,
+  DiaSemana,
+  TipoComidaPlan,
+  IdeaComidaIa,
 } from '@/types/ia';
 import type { FichaSaludSocio } from '@/types/ficha-salud';
 
@@ -122,6 +145,99 @@ function esPlanEditableExistente(
   return true;
 }
 
+const DIAS_PLAN: DiaSemana[] = [
+  'LUNES',
+  'MARTES',
+  'MIERCOLES',
+  'JUEVES',
+  'VIERNES',
+  'SABADO',
+  'DOMINGO',
+];
+
+const TIPOS_COMIDA_PLAN: TipoComidaPlan[] = [
+  'DESAYUNO',
+  'ALMUERZO',
+  'MERIENDA',
+  'CENA',
+  'COLACION',
+];
+
+interface VersionPlanCompletaFE {
+  id: number;
+  planAlimentacionId: number;
+  numeroVersion: number;
+  datosJson: PlanAlimentacionDatosJsonFE;
+}
+
+function crearEstructuraInicial(): EstructuraDiaFE[] {
+  return DIAS_PLAN.map((dia) => ({
+    dia,
+    comidas: TIPOS_COMIDA_PLAN.map((tipo) => ({ tipo, alternativas: [] })),
+  }));
+}
+
+function completarEstructuraManual(
+  estructuraPersistida?: EstructuraDiaFE[],
+): EstructuraDiaFE[] {
+  const estructuraBase = crearEstructuraInicial();
+  if (!estructuraPersistida || estructuraPersistida.length === 0) {
+    return estructuraBase;
+  }
+
+  return estructuraBase.map((diaBase) => {
+    const diaPersistido = estructuraPersistida.find((dia) => dia.dia === diaBase.dia);
+    if (!diaPersistido) return diaBase;
+
+    return {
+      dia: diaBase.dia,
+      comidas: diaBase.comidas.map((comidaBase) => {
+        const comidaPersistida = diaPersistido.comidas.find(
+          (comida) => comida.tipo === comidaBase.tipo,
+        );
+        return comidaPersistida
+          ? { ...comidaPersistida, alternativas: comidaPersistida.alternativas ?? [] }
+          : comidaBase;
+      }),
+    };
+  });
+}
+
+interface PersistirManualPayload {
+  dias: Array<{
+    dia: string;
+    orden: number;
+    comidas: Array<{
+      tipoComida: string;
+      alternativas: Array<{
+        nombre?: string;
+        alimentos: Array<{
+          alimentoId: number;
+          cantidad: number;
+          unidad?: string;
+        }>;
+      }>;
+    }>;
+  }>;
+  notas?: string;
+}
+
+function estructuraToPayload(estructura: EstructuraDiaFE[]): PersistirManualPayload {
+  return {
+    dias: estructura.map((dia, orden) => ({
+      dia: dia.dia,
+      orden,
+      comidas: dia.comidas.map((comida) => ({
+        tipoComida: comida.tipo,
+        alternativas: comida.alternativas.map((alt) => ({
+          nombre: alt.nombre,
+          alimentos: alt.alimentos,
+        })),
+      })),
+    })),
+  };
+}
+
 export function PlanEditorPage() {
   const { token, personaId, rol } = useAuth();
   const params = useParams({ strict: false }) as { socioId?: string };
@@ -141,24 +257,30 @@ export function PlanEditorPage() {
   // Modal de feedback
   const [feedbackAbierto, setFeedbackAbierto] = useState(false);
 
-  // Modo de tabs: ia | manual | historial
-  const [modo, setModo] = useState<'ia' | 'manual' | 'historial'>('ia');
+  // Modo de tabs: editor | versiones
+  const [modo, setModo] = useState<'editor' | 'versiones'>('editor');
   const [planManualExistenteId, setPlanManualExistenteId] = useState<number | null>(
     null,
   );
   const [cargandoPlanExistente, setCargandoPlanExistente] = useState(false);
 
-  // Slots editados manualmente (set conservador: el backend puede marcarlos,
-  // o el usuario marca antes de regenerar)
-  const [slotsEditadosManualmente, setSlotsEditadosManualmente] = useState<
-    Set<string>
-  >(new Set());
 
-  // Paciente (header avatar + nombre)
+  // Paciente
   const [paciente, setPaciente] = useState<PacienteResumen | null>(null);
   const [cargandoPaciente, setCargandoPaciente] = useState(false);
 
-  // Ficha de salud del paciente (para mostrar restricciones)
+  // Estados del editor unificado y autoguardado de borrador
+  const [estructura, setEstructura] = useState<EstructuraDiaFE[]>(crearEstructuraInicial);
+  const [ultimoGuardado, setUltimoGuardado] = useState<Date | null>(null);
+  const [guardandoBorrador, setGuardandoBorrador] = useState(false);
+  const [cargandoEstructura, setCargandoEstructura] = useState(false);
+  const haSidoModificadoRef = useRef(false);
+
+  // Estados de sugerencias IA por slot
+  const [diaSeleccionado, setDiaSeleccionado] = useState<DiaSemana>('LUNES');
+  const [comidaSeleccionada, setComidaSeleccionada] = useState<TipoComidaPlan>('DESAYUNO');
+
+  // Ficha de salud del paciente
   const {
     data: ficha,
     isLoading: cargandoFicha,
@@ -172,8 +294,7 @@ export function PlanEditorPage() {
     habilitado: puedeEditarPlanes,
   });
 
-  // Mutación para que el NUT edite la ficha del paciente
-  // (PUT /turnos/profesional/:nutricionistaId/pacientes/:socioId/ficha-salud).
+  // Mutación para editar ficha
   const {
     editarFichaAsync,
     isPending: guardandoFicha,
@@ -282,14 +403,14 @@ export function PlanEditorPage() {
     try {
       const res = await apiRequest<
         RespuestaPlanSemanalV2FE | ApiResponse<RespuestaPlanSemanalV2FE>
-      >(
-        `/planes-alimentacion/crear-manual/${socioIdNumero}`,
-        { method: 'POST' },
-      );
+      >(`/planes-alimentacion/crear-manual/${socioIdNumero}`, {
+        method: 'POST',
+      });
       const planData = normalizarRespuestaConMacros(desenvolverRespuestaApi(res));
       setRespuesta(planData);
       setPlanManualExistenteId(planData.planAlimentacionId);
-      setModo('manual');
+      setEstructura(crearEstructuraInicial());
+      setModo('editor');
       toast.success('Plan manual creado');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al crear plan manual';
@@ -299,101 +420,228 @@ export function PlanEditorPage() {
     }
   };
 
-  // Handlers de regeneración
-  const alRegenerarPlan = () => {
-    if (!respuesta) return;
-    // La regeneración PLAN completa genera una nueva versión.
-    // Implementamos vía apiRequest directo (no usamos useIa para mantener
-    // el scope del componente acotado a esta página).
-    regenerar({
-      planAlimentacionVersionId: respuesta.versionId,
-      scope: 'PLAN',
-      confirmarPerdidaEdicionManual: true, // El usuario ya clickeó el botón
-    });
-  };
+  const planIdActual = respuesta?.planAlimentacionId ?? planManualExistenteId;
 
-  const alRegenerarDia: ManejadoresRegeneracion['alRegenerarDia'] = (dia) => {
-    if (!respuesta) return;
-    regenerar({
-      planAlimentacionVersionId: respuesta.versionId,
-      scope: 'DIA',
-      dia,
-    });
-  };
+  // Carga el borrador o versión activa al montar o cambiar de plan
+  useEffect(() => {
+    if (!planIdActual) return;
+    let cancelado = false;
 
-  const alRegenerarAlternativa: ManejadoresRegeneracion['alRegenerarAlternativa'] =
-    ({ dia, comidaSlot, alternativaIndex }) => {
-      if (!respuesta) return;
-      regenerar({
-        planAlimentacionVersionId: respuesta.versionId,
-        scope: 'ALTERNATIVA',
-        dia,
-        comidaSlot,
-        alternativaIndex,
-      });
+    const cargarBorradorOActiva = async () => {
+      try {
+        setCargandoEstructura(true);
+        const respuestaVersiones = await apiRequest<Parameters<typeof normalizarVersionesPlan>[0]>(
+          `/planes-alimentacion/${planIdActual}/versiones`,
+          { token }
+        );
+        const versiones = normalizarVersionesPlan(respuestaVersiones, planIdActual);
+        
+        // Buscar borrador (numeroVersion === 0)
+        const borrador = versiones.find((v) => v.numeroVersion === 0);
+        const activa = versiones.find((v) => v.activa);
+        const seleccionada = borrador ?? activa ?? versiones[0] ?? null;
+
+        if (cancelado) return;
+        if (!seleccionada) {
+          setEstructura(crearEstructuraInicial());
+          return;
+        }
+
+        const respuestaVersion = await apiRequest<VersionPlanCompletaFE | ApiResponse<VersionPlanCompletaFE>>(
+          `/planes-alimentacion/version/${seleccionada.idPlanAlimentacionVersion}`,
+          { token }
+        );
+        const versionCompleta = desenvolverRespuestaApi(respuestaVersion);
+
+        if (cancelado) return;
+        setEstructura(completarEstructuraManual(versionCompleta.datosJson?.estructura));
+        setVersionSeleccionadaId(seleccionada.idPlanAlimentacionVersion);
+      } catch {
+        if (!cancelado) setEstructura(crearEstructuraInicial());
+      } finally {
+        if (!cancelado) setCargandoEstructura(false);
+      }
     };
 
-  const regenerar = async (solicitud: SolicitudRegeneracionFE) => {
+    void cargarBorradorOActiva();
+    return () => {
+      cancelado = true;
+    };
+  }, [planIdActual, token]);
+
+  // Auto-save debounced (800ms)
+  const debouncedEstructura = useDebounce(estructura, 800);
+
+  const tieneContenido = estructura.some((dia) =>
+    dia.comidas.some((c) => c.alternativas.length > 0),
+  );
+
+  const persistirSilencioso = useCallback(
+    async (estructuraParaGuardar: EstructuraDiaFE[]) => {
+      if (!planIdActual) return;
+      setGuardandoBorrador(true);
+      try {
+        await apiRequest(
+          `/planes-alimentacion/${planIdActual}/persistir-manual`,
+          {
+            method: 'POST',
+            body: estructuraToPayload(estructuraParaGuardar),
+          },
+        );
+        setUltimoGuardado(new Date());
+      } catch {
+        // Silencioso
+      } finally {
+        setGuardandoBorrador(false);
+      }
+    },
+    [planIdActual],
+  );
+
+  useEffect(() => {
+    if (debouncedEstructura && haSidoModificadoRef.current && tieneContenido) {
+      persistirSilencioso(debouncedEstructura);
+    }
+  }, [debouncedEstructura, tieneContenido, persistirSilencioso]);
+
+  // Guardar versión explicitamente (V1, V2, etc.)
+  const guardarVersionExplicita = async () => {
+    if (!planIdActual) return;
+    setGuardandoBorrador(true);
     try {
-      const respuestaApi = await apiRequest<
-        RespuestaRegeneracionFE | ApiResponse<RespuestaRegeneracionFE>
-      >(
-        '/ia/plan-semanal/regenerar',
+      const res = await apiRequest<RespuestaPlanSemanalV2FE | ApiResponse<RespuestaPlanSemanalV2FE>>(
+        `/planes-alimentacion/${planIdActual}/guardar-version`,
         {
           method: 'POST',
-          body: solicitud,
         },
       );
-      const data = normalizarRespuestaConMacros(
-        desenvolverRespuestaApi(respuestaApi),
-      );
-
-      // Actualizar respuesta con el nuevo plan y versionId
-      setRespuesta((prev) =>
-        prev
-          ? {
-              ...prev,
-              versionId: data.nuevaVersionId,
-              numeroVersion: data.numeroVersion,
-              plan: data.plan,
-              validacion: data.validacion,
-              macros: data.macros,
-              advertencias: prev.advertencias,
-            }
-          : null,
-      );
-      setVersionSeleccionadaId(data.nuevaVersionId);
-
-      toast.success(`Plan regenerado (v${data.numeroVersion})`, {
-        description: `Motivo: ${data.motivoCambio.replace(/_/g, ' ')}. Revisá y activá cuando esté listo.`,
+      const planData = normalizarRespuestaConMacros(desenvolverRespuestaApi(res));
+      setRespuesta(planData);
+      setVersionSeleccionadaId(planData.versionId);
+      haSidoModificadoRef.current = false;
+      toast.success('Nueva versión guardada correctamente', {
+        description: `Se creó la versión v${planData.numeroVersion} y se activó para el socio.`,
       });
     } catch (err) {
-      const errorTraducido = traducirErrorApi(err);
-      toast.error(errorTraducido.titulo, {
-        description: errorTraducido.descripcion,
-      });
+      const msg = err instanceof Error ? err.message : 'Error al guardar la versión';
+      toast.error(msg);
+    } finally {
+      setGuardandoBorrador(false);
     }
   };
 
-  const marcarSlotEditado = (slotKey: string) => {
-    setSlotsEditadosManualmente((prev) => {
-      const nuevo = new Set(prev);
-      nuevo.add(slotKey);
-      return nuevo;
-    });
-  };
-
-  const regen: ManejadoresRegeneracion = useMemo(
-    () => ({
-      alRegenerarPlan,
-      alRegenerarDia,
-      alRegenerarAlternativa,
-      slotsEditadosManualmente,
-      estaRegenerando: false,
+  // Drag and drop setup
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [respuesta?.versionId, slotsEditadosManualmente],
   );
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over) return;
+
+      const ideaIdTemp = active.id as string;
+      const slotKey = over.id as string;
+
+      const idea = active.data.current as IdeaComidaIa | undefined;
+      if (!idea || idea.idTemp !== ideaIdTemp) return;
+
+      const guionIdx = slotKey.indexOf('-');
+      if (guionIdx === -1) return;
+      const dia = slotKey.slice(0, guionIdx) as DiaSemana;
+      const tipoComida = slotKey.slice(guionIdx + 1) as TipoComidaPlan;
+
+      const diaIdx = estructura.findIndex((d) => d.dia === dia);
+      if (diaIdx === -1) return;
+      const comidaIdx = estructura[diaIdx].comidas.findIndex((c) => c.tipo === tipoComida);
+      if (comidaIdx === -1) return;
+
+      const nuevaAlternativa = {
+        nombre: idea.nombre,
+        alimentos: idea.alimentos.map((a) => ({
+          alimentoId: a.alimentoId,
+          cantidad: a.cantidad,
+          unidad: a.unidad,
+        })),
+        calorias: idea.calorias,
+        proteinas: idea.proteinas,
+        carbohidratos: idea.carbohidratos,
+        grasas: idea.grasas,
+      };
+
+      setEstructura((prev) =>
+        prev.map((d, i) => {
+          if (i !== diaIdx) return d;
+          return {
+            ...d,
+            comidas: d.comidas.map((c, j) => {
+              if (j !== comidaIdx) return c;
+              return {
+                ...c,
+                alternativas: [...c.alternativas, nuevaAlternativa],
+              };
+            }),
+          };
+        }),
+      );
+      haSidoModificadoRef.current = true;
+    },
+    [estructura],
+  );
+
+  const handleEstructuraChange = useCallback((nueva: EstructuraDiaFE[]) => {
+    setEstructura(nueva);
+    haSidoModificadoRef.current = true;
+  }, []);
+
+  const handleAddIdea = useCallback(
+    (dia: DiaSemana, tipoComida: TipoComidaPlan, idea: IdeaComidaIa) => {
+      setEstructura((prev) =>
+        prev.map((d) => {
+          if (d.dia !== dia) return d;
+          return {
+            ...d,
+            comidas: d.comidas.map((c) => {
+              if (c.tipo !== tipoComida) return c;
+              return {
+                ...c,
+                alternativas: [
+                  ...c.alternativas,
+                  {
+                    nombre: idea.nombre,
+                    alimentos: idea.alimentos.map((a) => ({
+                      alimentoId: a.alimentoId,
+                      cantidad: a.cantidad,
+                      unidad: a.unidad,
+                    })),
+                    calorias: idea.calorias,
+                    proteinas: idea.proteinas,
+                    carbohidratos: idea.carbohidratos,
+                    grasas: idea.grasas,
+                  },
+                ],
+              };
+            }),
+          };
+        }),
+      );
+      haSidoModificadoRef.current = true;
+    },
+    [],
+  );
+
+  const handleSelectSlotForIa = useCallback((dia: DiaSemana, tipoComida: TipoComidaPlan) => {
+    setDiaSeleccionado(dia);
+    setComidaSeleccionada(tipoComida);
+  }, []);
+
+
+
+
 
   const planIdEditorManual = respuesta?.planAlimentacionId ?? planManualExistenteId;
 
@@ -416,10 +664,6 @@ export function PlanEditorPage() {
       />
     );
   }
-
-  // ============================================================================
-  // Render
-  // ============================================================================
 
   return (
     <div className="flex flex-col gap-6 pb-24">
@@ -485,235 +729,231 @@ export function PlanEditorPage() {
         </div>
       </header>
 
-      {/* Tabs: IA / Manual / Historial */}
+      {/* Tabs: Editor / Versiones */}
       <Tabs value={modo} onValueChange={(v) => setModo(v as typeof modo)}>
         <TabsList variant="line" aria-label="Modo de edición del plan">
-          <TabsTrigger value="ia" className="gap-1.5">
+          <TabsTrigger value="editor" className="gap-1.5">
             <Sparkles className="size-4 text-fuchsia-500" aria-hidden="true" />
-            Generar con IA
+            Editor
           </TabsTrigger>
-          <TabsTrigger value="manual" className="gap-1.5">
-            <PenLine className="size-4" aria-hidden="true" />
-            Manual
-          </TabsTrigger>
-          <TabsTrigger value="historial" className="gap-1.5">
+          <TabsTrigger value="versiones" className="gap-1.5">
             <History className="size-4" aria-hidden="true" />
-            Historial
+            Historial de versiones
           </TabsTrigger>
         </TabsList>
 
-        {/* Tab: Generar con IA */}
-        <TabsContent value="ia" className="mt-0">
-          <div
-            className="grid gap-6 lg:grid-cols-[1fr_320px]"
-            data-testid="plan-editor-layout"
-          >
-            {/* Main: Generador + Plan + Razonamiento */}
-            <main className="flex flex-col gap-6">
-              {/* Card: Ficha de salud del paciente (editable por el NUT) */}
-              {socioIdNumero && (
-                <RestriccionesEditablesCard
-                  ficha={ficha}
-                  socio={
-                    paciente
-                      ? {
-                          nombreCompleto: paciente.nombreCompleto,
-                          dni: paciente.dni,
-                        }
-                      : null
-                  }
-                  isLoading={cargandoFicha}
-                  isError={errorFicha}
-                  sinFicha={sinFicha}
-                  sinPermisos={sinPermisos}
-                  onSave={manejarGuardarFicha}
-                  isSaving={guardandoFicha}
-                  errorGuardar={errorGuardarFicha?.message ?? null}
-                />
-              )}
-
-              {/* Card: Generador de plan */}
-              <Card className="rounded-2xl border-border/50">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Sparkles
-                      className="size-4 text-fuchsia-500"
-                      aria-hidden="true"
-                    />
-                    Generar plan con IA
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <GeneradorPlanSemanal
-                    planAlimentacionId={respuesta?.planAlimentacionId}
-                    socioIdPreseleccionado={socioIdNumero}
-                    fichaDisponible={!!ficha && !cargandoFicha && !sinPermisos && !sinFicha && !errorFicha}
-                    onSuccess={(data) => {
-                      const respuestaNormalizada = normalizarRespuestaConMacros(data);
-                      setRespuesta(respuestaNormalizada);
-                      setVersionSeleccionadaId(respuestaNormalizada.versionId);
-                      setSlotsEditadosManualmente(new Set());
-                    }}
-                  />
-                </CardContent>
-              </Card>
-
-              {/* Card: Plan generado (solo si hay respuesta) */}
-              {respuesta && (
-                <Card
-                  className="rounded-2xl border-border/50"
-                  data-testid="plan-generado-card"
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <CardTitle className="flex items-center gap-2 text-lg">
-                          <div
-                            className="size-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500"
-                            aria-hidden="true"
-                          />
-                          Plan semanal generado
-                        </CardTitle>
-                        <p className="mt-0.5 text-sm text-muted-foreground">
-                          Versión {respuesta.numeroVersion} ·{' '}
-                          {Object.keys(respuesta.macros?.macrosPorDia ?? {}).length}{' '}
-                          días con macros validadas
-                        </p>
-                      </div>
+        {/* Tab: Editor */}
+        <TabsContent value="editor" className="mt-0">
+          <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+            {planIdEditorManual ? (
+              <div
+                className="grid gap-6 lg:grid-cols-[1fr_360px]"
+                data-testid="plan-editor-layout"
+              >
+                {/* Columna Izquierda: Grilla + Validaciones */}
+                <main className="flex flex-col gap-6 min-w-0">
+                  {cargandoEstructura ? (
+                    <div className="flex items-center justify-center gap-2 py-16 text-center text-sm text-muted-foreground bg-card/25 rounded-2xl border border-dashed">
+                      <Loader2 className="size-5 animate-spin" aria-hidden="true" />
+                      Cargando borrador del plan...
                     </div>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <WeeklyPlanGrid
-                      planV2={respuesta.plan}
-                      regen={regen}
+                  ) : (
+                    <GrillaManualSlots
+                      estructura={estructura}
+                      onChange={handleEstructuraChange}
+                      onSelectSlot={handleSelectSlotForIa}
                     />
-                  </CardContent>
-                </Card>
-              )}
+                  )}
 
-              {/* Card: Razonamiento de cumplimiento (solo si hay plan) */}
-              {respuesta && (
-                <Card className="rounded-2xl border-border/50">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base">
-                      Validación de cumplimiento
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <RazonamientoCumplimiento
-                      razonamiento={respuesta.plan.razonamientoCumplimiento}
+                  {/* Card: Razonamiento de cumplimiento */}
+                  {respuesta && (
+                    <Card className="rounded-2xl border-border/50">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base">
+                          Validación de cumplimiento
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <RazonamientoCumplimiento
+                          razonamiento={respuesta.plan.razonamientoCumplimiento}
+                        />
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Advertencias del backend */}
+                  {respuesta && respuesta.advertencias.length > 0 && (
+                    <section
+                      role="alert"
+                      aria-label="Advertencias de generación"
+                      className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4"
+                    >
+                      <h3 className="mb-2 text-sm font-semibold text-amber-900 dark:text-amber-200">
+                        Advertencias ({respuesta.advertencias.length})
+                      </h3>
+                      <ul className="space-y-1 text-sm text-amber-800 dark:text-amber-300">
+                        {respuesta.advertencias.map((adv, idx) => (
+                          <li key={idx}>• {adv}</li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+                </main>
+
+                {/* Columna Derecha: Sidebar de Acciones */}
+                <aside aria-label="Controles del plan" className="space-y-6">
+                  {/* Card: Estado del Borrador y Guardar Versión Definitiva */}
+                  <Card className="rounded-2xl border-border/50 bg-card/60 backdrop-blur-sm shadow-md">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
+                        <CheckCircle2 className="size-4 text-emerald-500" />
+                        Autoguardado
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <p className="text-xs text-muted-foreground">
+                        Tus cambios se guardan automáticamente en un borrador. Hacé clic en "Guardar versión definitiva" para publicar y activar el plan para el paciente.
+                      </p>
+                      {ultimoGuardado && !guardandoBorrador && (
+                        <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                          <CheckCircle2 className="size-3.5" />
+                          Borrador actualizado a las {ultimoGuardado.toLocaleTimeString()}
+                        </div>
+                      )}
+                      {guardandoBorrador && (
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Loader2 className="size-3.5 animate-spin" />
+                          Guardando borrador...
+                        </div>
+                      )}
+                      <Button
+                        onClick={guardarVersionExplicita}
+                        disabled={guardandoBorrador || cargandoEstructura}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-9 flex items-center justify-center gap-1.5 rounded-xl transition-all shadow"
+                        data-testid="guardar-version-btn"
+                      >
+                        <Save className="size-4" />
+                        Guardar versión definitiva
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  {/* Panel de Ideas IA (Sugerencias) */}
+                  <PanelIdeasIa
+                    planId={planIdEditorManual}
+                    diaSeleccionado={diaSeleccionado}
+                    comidaSeleccionada={comidaSeleccionada}
+                    onSelectSlot={handleSelectSlotForIa}
+                    onAddIdea={handleAddIdea}
+                  />
+
+                  {/* Generador de plan completo con IA */}
+                  <Card className="rounded-2xl border-border/50">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-md">
+                        <Sparkles
+                          className="size-4 text-fuchsia-500 animate-pulse"
+                          aria-hidden="true"
+                        />
+                        Generar plan completo con IA
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <GeneradorPlanSemanal
+                        planAlimentacionId={planIdEditorManual}
+                        socioIdPreseleccionado={socioIdNumero}
+                        fichaDisponible={!!ficha && !cargandoFicha && !sinPermisos && !sinFicha && !errorFicha}
+                        onSuccess={(data) => {
+                          const respuestaNormalizada = normalizarRespuestaConMacros(data);
+                          setRespuesta(respuestaNormalizada);
+                          setEstructura(completarEstructuraManual(respuestaNormalizada.plan.estructura));
+                          setVersionSeleccionadaId(respuestaNormalizada.versionId);
+                          haSidoModificadoRef.current = false;
+                        }}
+                      />
+                    </CardContent>
+                  </Card>
+
+                  {/* Ficha de salud del paciente (editable) */}
+                  {socioIdNumero && (
+                    <RestriccionesEditablesCard
+                      ficha={ficha}
+                      socio={
+                        paciente
+                          ? {
+                              nombreCompleto: paciente.nombreCompleto,
+                              dni: paciente.dni,
+                            }
+                          : null
+                      }
+                      isLoading={cargandoFicha}
+                      isError={errorFicha}
+                      sinFicha={sinFicha}
+                      sinPermisos={sinPermisos}
+                      onSave={manejarGuardarFicha}
+                      isSaving={guardandoFicha}
+                      errorGuardar={errorGuardarFicha?.message ?? null}
                     />
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Advertencias del backend */}
-              {respuesta && respuesta.advertencias.length > 0 && (
-                <section
-                  role="alert"
-                  aria-label="Advertencias de generación"
-                  className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4"
-                >
-                  <h3 className="mb-2 text-sm font-semibold text-amber-900 dark:text-amber-200">
-                    Advertencias ({respuesta.advertencias.length})
-                  </h3>
-                  <ul className="space-y-1 text-sm text-amber-800 dark:text-amber-300">
-                    {respuesta.advertencias.map((adv, idx) => (
-                      <li key={idx}>• {adv}</li>
-                    ))}
-                  </ul>
-                </section>
-              )}
-            </main>
-
-            {/* Sidebar: ayuda (solo en tab IA) */}
-            <aside aria-label="Edición manual" className="space-y-4">
-              {respuesta && (
-                <Card className="rounded-2xl border-border/50">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base">Versiones</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <VersionHistory
-                      planId={respuesta.planAlimentacionId}
-                      versionSeleccionadaId={versionSeleccionadaId}
-                      onSelect={(vid) => {
-                        setVersionSeleccionadaId(vid);
-                        toast.info(`Versión ${vid} seleccionada`, {
-                          description: 'Cargando datos de la versión…',
-                        });
+                  )}
+                </aside>
+              </div>
+            ) : cargandoPlanExistente ? (
+              <div className="flex items-center justify-center gap-2 py-16 text-center text-sm text-muted-foreground">
+                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                Buscando planes y borradores existentes…
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center gap-4 py-16 text-center max-w-md mx-auto">
+                <PenLine className="size-12 text-muted-foreground/30" aria-hidden="true" />
+                <div>
+                  <h3 className="font-semibold text-lg">Comenzá a planificar</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Podés generar un plan semanal completo usando IA, o empezar a cargarlo de forma manual slot por slot.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2 w-full pt-4">
+                  <Card className="rounded-2xl border-border/50 p-4 text-left">
+                    <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
+                      <Sparkles className="size-4 text-fuchsia-500" />
+                      Opción A: Generar con IA
+                    </h4>
+                    <GeneradorPlanSemanal
+                      planAlimentacionId={undefined}
+                      socioIdPreseleccionado={socioIdNumero}
+                      fichaDisponible={!!ficha && !cargandoFicha && !sinPermisos && !sinFicha && !errorFicha}
+                      onSuccess={(data) => {
+                        const respuestaNormalizada = normalizarRespuestaConMacros(data);
+                        setRespuesta(respuestaNormalizada);
+                        setPlanManualExistenteId(respuestaNormalizada.planAlimentacionId);
+                        setEstructura(completarEstructuraManual(respuestaNormalizada.plan.estructura));
+                        setVersionSeleccionadaId(respuestaNormalizada.versionId);
+                        haSidoModificadoRef.current = false;
                       }}
                     />
-                  </CardContent>
-                </Card>
-              )}
+                  </Card>
 
-              <Card className="rounded-2xl border-border/50 bg-muted/20">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Edición manual</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-xs text-muted-foreground">
-                    Si editás un alimento manualmente y luego regenerás, el
-                    sistema te va a pedir confirmación para no perder los
-                    cambios.
-                  </p>
+                  <div className="relative flex py-2 items-center">
+                    <div className="flex-grow border-t border-border/60"></div>
+                    <span className="flex-shrink mx-4 text-muted-foreground text-xs font-medium uppercase">o también</span>
+                    <div className="flex-grow border-t border-border/60"></div>
+                  </div>
+
                   <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      if (respuesta) {
-                        const slot = 'LUNES-DESAYUNO';
-                        marcarSlotEditado(slot);
-                        toast.info(`Slot ${slot} marcado como editado`);
-                      }
-                    }}
-                    disabled={!respuesta}
-                    className="mt-2 h-7 text-xs"
-                    data-testid="marcar-editado-demo"
+                    onClick={manejarCrearPlanManual}
+                    disabled={cargandoPlanManual || !socioIdNumero}
+                    variant="outline"
+                    className="w-full h-11 text-sm font-semibold border-dashed"
                   >
-                    Marcar desayuno lunes como editado (demo)
+                    {cargandoPlanManual ? 'Creando…' : 'Opción B: Crear plan manual vacío'}
                   </Button>
-                </CardContent>
-              </Card>
-            </aside>
-          </div>
-        </TabsContent>
-
-        {/* Tab: Manual */}
-        <TabsContent value="manual" className="mt-0">
-          {planIdEditorManual ? (
-            <EditorManualPlan
-              planId={planIdEditorManual}
-              pacienteNombre={paciente?.nombreCompleto ?? ''}
-            />
-          ) : cargandoPlanExistente ? (
-            <div className="flex items-center justify-center gap-2 py-16 text-center text-sm text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-              Buscando borradores existentes…
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
-              <PenLine className="size-10 text-muted-foreground/40" aria-hidden="true" />
-              <div>
-                <p className="font-medium">Creá un plan manual</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Sin necesidad de usar la IA. Agregá comidas slot por slot.
-                </p>
+                </div>
               </div>
-              <Button
-                onClick={manejarCrearPlanManual}
-                disabled={cargandoPlanManual || !socioIdNumero}
-              >
-                {cargandoPlanManual ? 'Creando…' : 'Nuevo plan manual'}
-              </Button>
-            </div>
-          )}
+            )}
+          </DndContext>
         </TabsContent>
 
         {/* Tab: Historial */}
-        <TabsContent value="historial" className="mt-0">
+        <TabsContent value="versiones" className="mt-0">
           {planIdEditorManual ? (
             <div className="flex flex-col gap-4">
               <Card className="rounded-2xl border-border/50">
@@ -726,11 +966,31 @@ export function PlanEditorPage() {
                   <VersionHistory
                     planId={planIdEditorManual}
                     versionSeleccionadaId={versionSeleccionadaId}
-                    onSelect={(vid) => {
+                    onSelect={async (vid) => {
                       setVersionSeleccionadaId(vid);
-                      toast.info(`Versión ${vid} seleccionada`, {
-                        description: 'Cargando datos de la versión…',
+                      toast.info(`Versión ${vid} cargada en el editor`, {
+                        description: 'Se usará como borrador actual.',
                       });
+                      try {
+                        const res = await apiRequest<VersionPlanCompletaFE | ApiResponse<VersionPlanCompletaFE>>(
+                          `/planes-alimentacion/version/${vid}`,
+                          { token }
+                        );
+                        const versionCompleta = desenvolverRespuestaApi(res);
+                        setEstructura(completarEstructuraManual(versionCompleta.datosJson?.estructura));
+                        
+                        // Guardarla como borrador en el servidor inmediatamente
+                        await apiRequest(
+                          `/planes-alimentacion/${planIdEditorManual}/persistir-manual`,
+                          {
+                            method: 'POST',
+                            body: estructuraToPayload(completarEstructuraManual(versionCompleta.datosJson?.estructura)),
+                          },
+                        );
+                        haSidoModificadoRef.current = false;
+                      } catch (err) {
+                        toast.error('Error al cargar la versión');
+                      }
                     }}
                   />
                 </CardContent>

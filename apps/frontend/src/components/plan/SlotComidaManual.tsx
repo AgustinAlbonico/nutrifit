@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Copy, Pencil, Trash2 } from 'lucide-react';
+import { Copy, Pencil, Trash2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSlotDroppable } from '@/hooks/useDragDropSlot';
 
@@ -26,6 +26,7 @@ export interface SlotComidaManualProps {
   /** Alternativas already in this slot (may be empty). */
   alternativas: AlternativaSlot[];
   onChange: (alternativas: AlternativaSlot[]) => void;
+  onSelectForIa?: () => void;
 }
 
 export function SlotComidaManual({
@@ -34,6 +35,7 @@ export function SlotComidaManual({
   tipoComida,
   alternativas,
   onChange,
+  onSelectForIa,
 }: SlotComidaManualProps) {
   const { setNodeRef, isOver } = useSlotDroppable(slotKey);
 
@@ -70,9 +72,21 @@ export function SlotComidaManual({
       data-testid={`slot-comida-${slotKey}`}
     >
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
           {dia} · {tipoComida}
         </span>
+        {onSelectForIa && (
+          <Button
+            size="icon"
+            variant="ghost"
+            className="size-5 text-fuchsia-500 hover:text-fuchsia-600 hover:bg-fuchsia-500/10"
+            onClick={onSelectForIa}
+            aria-label={`Generar sugerencias para ${dia} ${tipoComida}`}
+            data-testid={`select-ia-${slotKey}`}
+          >
+            <Sparkles className="size-3" />
+          </Button>
+        )}
       </div>
 
       {alternativas.length === 0 ? (

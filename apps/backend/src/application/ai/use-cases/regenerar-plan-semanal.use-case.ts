@@ -424,20 +424,33 @@ export class RegenerarPlanSemanalUseCase implements BaseUseCase {
 
     // 19) Persistir nueva versión (transacción para garantizar consistencia)
     const motivoCambio = this.mapearMotivoCambio(solicitud.scope);
-    const numeroVersionNuevo = versionActual.numeroVersion + 1;
+    const numeroVersionNuevo = 0;
 
     const versionNueva = await this.dataSource.transaction(async (manager) => {
       const versionRepo = manager.getRepository(
         PlanAlimentacionVersionOrmEntity,
       );
-      const orm = versionRepo.create({
-        idPlanAlimentacion: plan.idPlanAlimentacion,
-        numeroVersion: numeroVersionNuevo,
-        datosJson: planMerged,
-        motivoCambio,
-        activa: false,
-        createdBy: solicitud.nutricionistaUserId,
+      let orm = await versionRepo.findOne({
+        where: {
+          idPlanAlimentacion: plan.idPlanAlimentacion,
+          numeroVersion: 0,
+        },
       });
+      if (orm) {
+        orm.datosJson = planMerged;
+        orm.motivoCambio = motivoCambio;
+        orm.createdBy = solicitud.nutricionistaUserId;
+        orm.createdAt = new Date();
+      } else {
+        orm = versionRepo.create({
+          idPlanAlimentacion: plan.idPlanAlimentacion,
+          numeroVersion: 0,
+          datosJson: planMerged,
+          motivoCambio,
+          activa: false,
+          createdBy: solicitud.nutricionistaUserId,
+        });
+      }
       const saved = await versionRepo.save(orm);
       return saved;
     });
@@ -448,14 +461,14 @@ export class RegenerarPlanSemanalUseCase implements BaseUseCase {
       await this.notificacionesService.crear({
         destinatarioId: solicitud.nutricionistaUserId,
         tipo: TipoNotificacion.PLAN_REVISAR,
-        titulo: 'Versión regenerada con IA',
+        titulo: 'Versión borrador regenerada con IA',
         mensaje: `Se regeneró ${
           solicitud.scope === 'PLAN'
-            ? 'el plan completo'
+            ? 'el borrador completo'
             : solicitud.scope === 'DIA'
-              ? `el día ${solicitud.dia}`
-              : `la alternativa #${solicitud.alternativaIndex} del ${solicitud.dia} ${solicitud.comidaSlot}`
-        }. Revisalo antes de activarlo.`,
+              ? `el día ${solicitud.dia} en borrador`
+              : `la alternativa #${solicitud.alternativaIndex} del ${solicitud.dia} ${solicitud.comidaSlot} en borrador`
+        }. Revisalo antes de guardarlo de forma definitiva.`,
         metadata: {
           planId: plan.idPlanAlimentacion,
           versionId: versionNueva.idPlanAlimentacionVersion,
@@ -463,7 +476,7 @@ export class RegenerarPlanSemanalUseCase implements BaseUseCase {
           scope: solicitud.scope,
           motivoCambio,
         },
-      });
+      } as any);
 
       // 20b) PLAN_VALIDACION_WARNING si hay restricciones no cumplidas
       if (validacionRestricciones.restriccionesNoCumplidas.length > 0) {
@@ -471,7 +484,7 @@ export class RegenerarPlanSemanalUseCase implements BaseUseCase {
           destinatarioId: solicitud.nutricionistaUserId,
           tipo: TipoNotificacion.PLAN_VALIDACION_WARNING,
           titulo: 'Validación con advertencias',
-          mensaje: `La versión regenerada tiene ${validacionRestricciones.restriccionesNoCumplidas.length} violación(es) de restricciones.`,
+          mensaje: `El borrador regenerado tiene ${validacionRestricciones.restriccionesNoCumplidas.length} violación(es) de restricciones.`,
           metadata: {
             planId: plan.idPlanAlimentacion,
             versionId: versionNueva.idPlanAlimentacionVersion,
@@ -487,7 +500,7 @@ export class RegenerarPlanSemanalUseCase implements BaseUseCase {
           destinatarioId: solicitud.nutricionistaUserId,
           tipo: TipoNotificacion.PLAN_MACROS_FUERA_RANGO,
           titulo: 'Macros fuera de rango',
-          mensaje: `La versión regenerada tiene macros fuera del rango aceptable (±10%). Banda global: ROJO.`,
+          mensaje: `El borrador regenerado tiene macros fuera del rango aceptable (±10%). Banda global: ROJO.`,
           metadata: {
             planId: plan.idPlanAlimentacion,
             versionId: versionNueva.idPlanAlimentacionVersion,
@@ -513,7 +526,7 @@ export class RegenerarPlanSemanalUseCase implements BaseUseCase {
           planId: plan.idPlanAlimentacion,
           versionAnteriorId: versionActual.idPlanAlimentacionVersion,
           versionNuevaId: versionNueva.idPlanAlimentacionVersion,
-          numeroVersion: numeroVersionNuevo,
+          numeroVersion: 0,
           scope: solicitud.scope,
           motivoCambio,
           bandaGlobal: validacionMacros.bandaGlobal,
@@ -531,14 +544,14 @@ export class RegenerarPlanSemanalUseCase implements BaseUseCase {
     }
 
     this.logger.log(
-      `Plan IA regenerado: planId=${plan.idPlanAlimentacion} scope=${solicitud.scope} v${numeroVersionNuevo} banda=${validacionMacros.bandaGlobal} duracionMs=${Date.now() - inicioMs}`,
+      `Plan IA regenerado: planId=${plan.idPlanAlimentacion} scope=${solicitud.scope} v0 banda=${validacionMacros.bandaGlobal} duracionMs=${Date.now() - inicioMs}`,
     );
 
     return {
       planAlimentacionId: plan.idPlanAlimentacion,
       versionAnteriorId: versionActual.idPlanAlimentacionVersion,
       versionNuevaId: versionNueva.idPlanAlimentacionVersion,
-      numeroVersionNuevo,
+      numeroVersionNuevo: 0,
       plan: planMerged,
       motivoCambio,
       validacion: validacionRestricciones,

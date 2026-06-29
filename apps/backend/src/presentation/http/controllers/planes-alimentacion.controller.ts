@@ -40,6 +40,7 @@ import {
   ActivarPlanAlimentacionUseCase,
   FinalizarPlanAlimentacionUseCase,
   PersistirPlanManualUseCase,
+  GuardarVersionPlanUseCase,
 } from 'src/application/planes-alimentacion/use-cases';
 import { Rol as RolEnum } from 'src/domain/entities/Usuario/Rol';
 import {
@@ -93,6 +94,7 @@ export class PlanAlimentacionController {
     private readonly activarPlanAlimentacionUseCase: ActivarPlanAlimentacionUseCase,
     private readonly finalizarPlanAlimentacionUseCase: FinalizarPlanAlimentacionUseCase,
     private readonly persistirPlanManualUseCase: PersistirPlanManualUseCase,
+    private readonly guardarVersionPlanUseCase: GuardarVersionPlanUseCase,
     @Inject(PLAN_FEEDBACK_REPOSITORY)
     private readonly feedbackRepo: PlanFeedbackRepository,
     @Inject(APP_LOGGER_SERVICE)
@@ -426,5 +428,28 @@ export class PlanAlimentacionController {
       id,
       body as never,
     );
+  }
+
+  @Post(':id/guardar-version')
+  @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN)
+  @Actions(ACCIONES.PLANES_ACTIVAR)
+  async guardarVersion(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser()
+    user: {
+      id: number;
+      rol: RolEnum;
+      personaId: number | null;
+      gimnasioId: number | null;
+    },
+  ) {
+    this.logger.log(
+      `Guardando versión del plan ${id} por nutricionista ${user.personaId}.`,
+    );
+    return this.guardarVersionPlanUseCase.execute({
+      planAlimentacionId: id,
+      nutricionistaUserId: user.personaId ?? 0,
+      gimnasioId: user.gimnasioId ?? 0,
+    });
   }
 }

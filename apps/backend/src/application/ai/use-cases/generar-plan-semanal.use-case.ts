@@ -404,7 +404,7 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
     );
     const versionGuardada = await this.planVersionRepo.crear({
       idPlanAlimentacion: planGuardado.idPlanAlimentacion,
-      numeroVersion: 1,
+      numeroVersion: 0,
       datosJson: planJson,
       motivoCambio: 'creacion_inicial',
       activa: false,
@@ -421,7 +421,7 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
         gimnasioId: solicitud.gimnasioId,
         metadata: {
           versionId: versionGuardada.idPlanAlimentacionVersion,
-          numeroVersion: 1,
+          numeroVersion: 0,
           modo: 'IA',
           bandaGlobal: validacionMacros.bandaGlobal,
           restriccionesCumplidas:
@@ -468,8 +468,8 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
 
       // 12c) PLAN_VALIDACION_WARNING si restricciones no cumplidas >= cumplidas
       if (
-        validacionRestricciones.restriccionesNoCumplidas.length > 0 &&
-        validacionRestricciones.restriccionesNoCumplidas.length >=
+          validacionRestricciones.restriccionesNoCumplidas.length > 0 &&
+          validacionRestricciones.restriccionesNoCumplidas.length >=
           validacionRestricciones.restriccionesCumplidas.length
       ) {
         await this.notificacionesService.crear({
@@ -498,7 +498,7 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
     return {
       planAlimentacionId: planGuardado.idPlanAlimentacion,
       versionId: versionGuardada.idPlanAlimentacionVersion,
-      numeroVersion: 1,
+      numeroVersion: 0,
       plan: planJson,
       validacion: validacionRestricciones,
       macros: validacionMacros,

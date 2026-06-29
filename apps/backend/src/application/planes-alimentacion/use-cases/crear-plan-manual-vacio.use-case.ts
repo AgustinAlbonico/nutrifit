@@ -201,10 +201,10 @@ export class CrearPlanManualVacioUseCase implements BaseUseCase {
 
     const versionCreada = await this.planVersionRepo.crear({
       idPlanAlimentacion: planGuardado.idPlanAlimentacion,
-      numeroVersion: 1,
+      numeroVersion: 0,
       datosJson,
       motivoCambio: 'creacion_inicial',
-      activa: true,
+      activa: false,
       createdBy: nutricionistaUserId,
     });
 
@@ -243,10 +243,13 @@ export class CrearPlanManualVacioUseCase implements BaseUseCase {
   private async obtenerVersionParaEditar(
     planId: number,
   ): Promise<PlanAlimentacionVersionEntity | null> {
-    const activa = await this.planVersionRepo.obtenerActiva(planId);
+    const versiones = await this.planVersionRepo.listarPorPlan(planId);
+    const borrador = versiones.find((v) => v.numeroVersion === 0);
+    if (borrador) return borrador;
+
+    const activa = versiones.find((v) => v.activa);
     if (activa) return activa;
 
-    const versiones = await this.planVersionRepo.listarPorPlan(planId);
     return (
       [...versiones].sort((a, b) => b.numeroVersion - a.numeroVersion)[0] ?? null
     );

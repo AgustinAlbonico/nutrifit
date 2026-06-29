@@ -29,6 +29,7 @@ import {
   FinalizarPlanAlimentacionUseCase,
   GenerarIdeasComidaUseCase,
   PersistirPlanManualUseCase,
+  GuardarVersionPlanUseCase,
 } from './use-cases';
 import { AuditoriaModule } from 'src/infrastructure/services/auditoria/auditoria.module';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
@@ -74,6 +75,7 @@ import { GroqModule } from 'src/infrastructure/services/groq/groq.module';
     FinalizarPlanAlimentacionUseCase,
     GenerarIdeasComidaUseCase,
     PersistirPlanManualUseCase,
+    GuardarVersionPlanUseCase,
     NotificacionesService,
   ],
   exports: [
@@ -94,6 +96,7 @@ import { GroqModule } from 'src/infrastructure/services/groq/groq.module';
     FinalizarPlanAlimentacionUseCase,
     PersistirPlanManualUseCase,
     GenerarIdeasComidaUseCase,
+    GuardarVersionPlanUseCase,
   ],
 })
 export class PlanesAlimentacionModule {}
