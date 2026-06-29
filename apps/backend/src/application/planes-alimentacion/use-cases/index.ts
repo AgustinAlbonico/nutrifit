@@ -18,3 +18,4 @@ export * from './crear-feedback-plan.use-case';
 export * from './editar-feedback-plan.use-case';
 export * from './activar-plan-alimentacion.use-case';
 export * from './finalizar-plan-alimentacion.use-case';
+export * from './generar-ideas-comida.use-case';
