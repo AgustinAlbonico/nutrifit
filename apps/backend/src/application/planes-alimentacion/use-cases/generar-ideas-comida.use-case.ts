@@ -130,10 +130,6 @@ export class GenerarIdeasComidaUseCase {
       throw new NotFoundError('Plan de alimentación', String(dto.planAlimentacionId));
     }
 
-    if (!plan.activo) {
-      throw new BadRequestError('El plan no está activo.');
-    }
-
     // Auth: el NUT debe ser dueño del plan o ser ADMIN
     const esDueno =
       plan.nutricionista?.idPersona === user.personaId;

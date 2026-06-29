@@ -11,7 +11,7 @@
  * Usa MSW para mockear los endpoints del backend.
  */
 
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
@@ -283,6 +283,11 @@ describe('PlanEditorPage (Packet 5b)', () => {
           errors: [],
         }),
       ),
+      http.get('/profesional/mi-perfil/preferencias-ia', () =>
+        HttpResponse.json({
+          preferencias: 'Priorizar fibra y proteínas',
+        }),
+      ),
     );
   });
 
@@ -442,7 +447,6 @@ describe('PlanEditorPage (Packet 5b)', () => {
       }),
     );
 
-    const user = userEvent.setup();
     render(<PlanEditorPage />, { wrapper: crearWrapper() });
 
     expect(await screen.findByTestId('grilla-manual-slots')).toBeInTheDocument();
@@ -657,13 +661,13 @@ describe('PlanEditorPage (Packet 5b)', () => {
     });
   });
 
-  it('el link a preferencias IA navega a /profesional/mi-perfil', async () => {
+  it('el link a preferencias IA está presente', async () => {
     render(<PlanEditorPage />, { wrapper: crearWrapper() });
 
     const link = await screen.findByTestId('link-preferencias-ia');
     expect(link).toHaveAttribute(
       'aria-label',
-      expect.stringContaining('preferencias IA'),
+      'Editar preferencias de la IA',
     );
   });
 

@@ -37,7 +37,6 @@ import {
   ArrowLeft,
   Sparkles,
   ThumbsUp,
-  ExternalLink,
   Loader2,
   Lock,
   PenLine,
@@ -68,6 +67,7 @@ import { RazonamientoCumplimiento } from '@/components/plan/RazonamientoCumplimi
 import { RestriccionesEditablesCard } from '@/components/plan/RestriccionesEditablesCard';
 import { GrillaManualSlots } from '@/components/plan/GrillaManualSlots';
 import { PanelIdeasIa } from '@/components/plan/PanelIdeasIa';
+import { DialogPreferenciasIa } from '@/components/plan/DialogPreferenciasIa';
 
 import { apiRequest } from '@/lib/api';
 import { desenvolverRespuestaApi } from '@/lib/api-response';
@@ -256,6 +256,7 @@ export function PlanEditorPage() {
 
   // Modal de feedback
   const [feedbackAbierto, setFeedbackAbierto] = useState(false);
+  const [preferenciasIaAbierto, setPreferenciasIaAbierto] = useState(false);
 
   // Modo de tabs: editor | versiones
   const [modo, setModo] = useState<'editor' | 'versiones'>('editor');
@@ -391,9 +392,6 @@ export function PlanEditorPage() {
     }
   };
 
-  const irAMiPerfil = () => {
-    void navigate({ to: '/profesional/mi-perfil' });
-  };
 
   const [cargandoPlanManual, setCargandoPlanManual] = useState(false);
 
@@ -719,11 +717,11 @@ export function PlanEditorPage() {
             type="button"
             variant="outline"
             size="sm"
-            onClick={irAMiPerfil}
-            aria-label="Editar mis preferencias IA en mi perfil"
+            onClick={() => setPreferenciasIaAbierto(true)}
+            aria-label="Editar preferencias de la IA"
             data-testid="link-preferencias-ia"
           >
-            <ExternalLink className="size-4" aria-hidden="true" />
+            <Sparkles className="size-4 text-fuchsia-500" aria-hidden="true" />
             Preferencias IA
           </Button>
         </div>
@@ -1032,6 +1030,12 @@ export function PlanEditorPage() {
           }}
         />
       )}
+
+      {/* Modal de Preferencias IA */}
+      <DialogPreferenciasIa
+        open={preferenciasIaAbierto}
+        onOpenChange={setPreferenciasIaAbierto}
+      />
     </div>
   );
 }
