@@ -59,6 +59,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AvatarPaciente } from '@/components/ui/avatar-paciente';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 import { GeneradorPlanSemanal } from '@/components/ia/GeneradorPlanSemanal';
 import { FeedbackModal } from '@/components/ia/FeedbackModal';
@@ -257,6 +263,7 @@ export function PlanEditorPage() {
   // Modal de feedback
   const [feedbackAbierto, setFeedbackAbierto] = useState(false);
   const [preferenciasIaAbierto, setPreferenciasIaAbierto] = useState(false);
+  const [generadorIaAbierto, setGeneradorIaAbierto] = useState(false);
 
   // Modo de tabs: editor | versiones
   const [modo, setModo] = useState<'editor' | 'versiones'>('editor');
@@ -797,33 +804,57 @@ export function PlanEditorPage() {
                     onAddIdea={handleAddIdea}
                   />
 
-                  {/* Columna 3: Generación Completa IA */}
-                  <Card className="rounded-2xl border-border/50 bg-card/60 backdrop-blur-sm shadow-md flex flex-col">
+                  {/* Columna 3: Botón para abrir generador IA en modal */}
+                  <Card className="rounded-2xl border-border/50 bg-card/60 backdrop-blur-sm shadow-md flex flex-col justify-between">
                     <CardHeader className="pb-2">
                       <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                         <Sparkles
                           className="size-4 text-fuchsia-500 animate-pulse"
                           aria-hidden="true"
                         />
-                        Herramientas de IA
+                        Plan completo con IA
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="flex-1 flex flex-col justify-center">
-                      <GeneradorPlanSemanal
-                        planAlimentacionId={planIdEditorManual}
-                        socioIdPreseleccionado={socioIdNumero}
-                        fichaDisponible={!!ficha && !cargandoFicha && !sinPermisos && !sinFicha && !errorFicha}
-                        onSuccess={(data) => {
-                          const respuestaNormalizada = normalizarRespuestaConMacros(data);
-                          setRespuesta(respuestaNormalizada);
-                          setEstructura(completarEstructuraManual(respuestaNormalizada.plan.estructura));
-                          setVersionSeleccionadaId(respuestaNormalizada.versionId);
-                          haSidoModificadoRef.current = false;
-                        }}
-                      />
+                    <CardContent className="flex-1 flex flex-col justify-center gap-3">
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Generá un plan semanal completo respetando restricciones y macros del paciente.
+                      </p>
+                      <Button
+                        onClick={() => setGeneradorIaAbierto(true)}
+                        className="w-full bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-700 hover:to-indigo-700 text-white font-semibold text-xs h-9 rounded-xl transition-all shadow gap-1.5"
+                        data-testid="abrir-generador-ia-btn"
+                      >
+                        <Sparkles className="size-4" aria-hidden="true" />
+                        Generar plan completo
+                      </Button>
                     </CardContent>
                   </Card>
                 </div>
+
+                {/* Dialog modal para GeneradorPlanSemanal */}
+                <Dialog open={generadorIaAbierto} onOpenChange={setGeneradorIaAbierto}>
+                  <DialogContent className="max-w-2xl rounded-2xl border bg-background p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="text-lg font-bold flex items-center gap-2">
+                        <Sparkles className="size-5 text-fuchsia-500" aria-hidden="true" />
+                        Generar plan semanal con IA
+                      </DialogTitle>
+                    </DialogHeader>
+                    <GeneradorPlanSemanal
+                      planAlimentacionId={planIdEditorManual}
+                      socioIdPreseleccionado={socioIdNumero}
+                      fichaDisponible={!!ficha && !cargandoFicha && !sinPermisos && !sinFicha && !errorFicha}
+                      onSuccess={(data) => {
+                        const respuestaNormalizada = normalizarRespuestaConMacros(data);
+                        setRespuesta(respuestaNormalizada);
+                        setEstructura(completarEstructuraManual(respuestaNormalizada.plan.estructura));
+                        setVersionSeleccionadaId(respuestaNormalizada.versionId);
+                        haSidoModificadoRef.current = false;
+                        setGeneradorIaAbierto(false);
+                      }}
+                    />
+                  </DialogContent>
+                </Dialog>
 
                 {/* Ficha de salud del paciente (editable) - Fila intermedia */}
                 {socioIdNumero && (
