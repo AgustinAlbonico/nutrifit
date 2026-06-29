@@ -36,6 +36,7 @@ import {
   EditarFeedbackPlanUseCase,
   ActivarPlanAlimentacionUseCase,
   FinalizarPlanAlimentacionUseCase,
+  PersistirPlanManualUseCase,
 } from 'src/application/planes-alimentacion/use-cases';
 import { Rol as RolEnum } from 'src/domain/entities/Usuario/Rol';
 import {
@@ -87,6 +88,7 @@ export class PlanAlimentacionController {
     private readonly editarFeedbackPlanUseCase: EditarFeedbackPlanUseCase,
     private readonly activarPlanAlimentacionUseCase: ActivarPlanAlimentacionUseCase,
     private readonly finalizarPlanAlimentacionUseCase: FinalizarPlanAlimentacionUseCase,
+    private readonly persistirPlanManualUseCase: PersistirPlanManualUseCase,
     @Inject(PLAN_FEEDBACK_REPOSITORY)
     private readonly feedbackRepo: PlanFeedbackRepository,
     @Inject(APP_LOGGER_SERVICE)
@@ -383,5 +385,27 @@ export class PlanAlimentacionController {
       nutricionistaUserId: user.personaId ?? 0,
       gimnasioId: user.gimnasioId ?? 0,
     });
+  }
+
+  @Post(':id/persistir-manual')
+  @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN)
+  @Actions(ACCIONES.PLANES_PERSISTIR_MANUAL)
+  async persistirManual(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser()
+    user: {
+      id: number;
+      rol: RolEnum;
+      personaId: number | null;
+      gimnasioId: number | null;
+    },
+    @Body() body: { dias: unknown[]; notas?: string },
+  ) {
+    return this.persistirPlanManualUseCase.execute(
+      user.personaId ?? 0,
+      user.rol as string,
+      id,
+      body as never,
+    );
   }
 }

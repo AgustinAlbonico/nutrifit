@@ -18,6 +18,7 @@ import {
   ConfiguracionController,
   RecepcionistasController,
   NutricionistaIaMemoriaController,
+  IdeasComidaController,
 } from './controllers';
 import { ProgresoModule } from 'src/application/progreso/progreso.module';
 import { ApplicationModule } from 'src/application/application.module';
@@ -110,6 +111,7 @@ import { GimnasiosModule } from './gimnasios.module';
     ConfiguracionController,
     RecepcionistasController,
     NutricionistaIaMemoriaController,
+    IdeasComidaController,
   ],
 })
 export class ControllersModule {}

@@ -26,6 +26,8 @@ import {
   EditarFeedbackPlanUseCase,
   ActivarPlanAlimentacionUseCase,
   FinalizarPlanAlimentacionUseCase,
+  GenerarIdeasComidaUseCase,
+  PersistirPlanManualUseCase,
 } from './use-cases';
 import { AuditoriaModule } from 'src/infrastructure/services/auditoria/auditoria.module';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
@@ -66,6 +68,8 @@ import { AppLoggerModule } from 'src/infrastructure/common/logger/app-logger.mod
     EditarFeedbackPlanUseCase,
     ActivarPlanAlimentacionUseCase,
     FinalizarPlanAlimentacionUseCase,
+    GenerarIdeasComidaUseCase,
+    PersistirPlanManualUseCase,
     NotificacionesService,
   ],
   exports: [
