@@ -212,18 +212,118 @@ const [estadoLocal, setEstadoLocal] = useState<{
 
 ## 5. UX flow detallado
 
-### Flujo feliz — NUT crea plan manual con ayuda de IA
+### 5.1 Cobertura de restricciones — Garantía explícita
+
+Las 10 alternativas sugeridas por slot deben respetar **las mismas restricciones clínicas** que se aplican al plan completo generado por IA. Esta es una promesa de seguridad clínica: el NUT puede confiar en que cada idea está validada.
+
+#### Tabla de restricciones (idéntica al flujo V2 IA plan completo)
+
+| # | Restricción | Origen en ficha | Aplicación en prompt | Validación post-filter |
+|---|-------------|----------------|----------------------|--------------------------|
+| 1 | **Alergias** | `ficha.alergias[]` (p.ej. `["Maní", "Mariscos"]`) | Bloque estricto: alimentos con la alérgeno excluido del pool de generación | `restriccionesValidator.validar()` → 0 incidencias críticas |
+| 2 | **Restricciones alimentarias** | `ficha.restriccionesAlimentarias` (texto libre: "vegano", "sin TACC", "sin lactosa") | Parseo de keywords + reglas semánticas: si "vegano" → no huevo, carne, lácteos, miel | Misma validación que en `GenerarPlanSemanalUseCase` |
+| 3 | **Patologías** | `ficha.patologias[]` (p.ej. `["Diabetes tipo 2", "Hipertensión"]`) | Reglas preestablecidas: diabetes → bajo índice glucémico, hipertensión → bajo sodio | Warnings (no bloqueo) reportadas en cada alternativa con etiqueta |
+| 4 | **Medicación** | `ficha.medicacionActual` (texto libre) | Heurística conservadora: anticoagulantes → alertar sobre Vitamina K alta | Solo warning — nunca bloquea, pero aparece en tooltip de la card |
+| 5 | **Suplementos** | `ficha.suplementosActuales` (texto libre) | Info context: si toma hierro → incluir fuentes vegetales | Sin restricción; se muestra como sugerencia en card |
+
+#### Cómo se aplican — Pipeline
+
+```
+┌─────────────────────┐    ┌──────────────────────┐    ┌────────────────────┐
+│ fichaSaludSocio     │ ─► │ PromptIdeasComida    │ ─► │ Groq (modelo V2)   │
+│ - alergias          │    │ .build({ ficha,     │    │ genera N alts.     │
+│ - restricciones     │    │   slot, n, contexto})│    │ considerando TODO   │
+│ - patologías        │    │                       │    │ el contexto        │
+│ - medicación        │    │ (mismo builder que   │    └────────┬───────────┘
+│ - suplementos       │    │  PromptPlanSemanal)  │              │
+└─────────────────────┘    └──────────────────────┘              ▼
+                                                          ┌────────────────────┐
+                                                          │ Post-filter server: │
+                                                          │ restriccionesValid. │
+                                                          │ .validarAlternativa()│
+                                                          │ → 0 críticos, warns │
+                                                          │ opcionales          │
+                                                          └────────┬────────────┘
+                                                                   │
+                                                                   ▼
+                                                          ┌────────────────────┐
+                                                          │ Persiste memoria IA │
+                                                          │ (ya existe backend) │
+                                                          └────────────────────┘
+```
+
+#### Implementación concreta
+
+**Reusar `RestriccionesValidatorV2`** (ya existe en `apps/backend/src/application/restricciones/restricciones-validator.service.ts`) agregando un método nuevo:
+
+```ts
+class RestriccionesValidatorV2 {
+  // Ya existe (usado por plan completo):
+  validarPlanCompleto(plan: PlanAlimentacionDatosJson): Incidencias[];
+
+  // NUEVO método para ideas individuales:
+  validarAlternativa(
+    ficha: FichaSaludSocio,
+    alternativa: { nombre: string; alimentos: AlimentoItem[] },
+  ): {
+    criticas: IncidenciaRestriccion[];   // bloquean (alergia, restricción dura)
+    warnings: string[];                  // muestran al NUT (p.ej. "Alto sodio")
+  };
+}
+```
+
+Comportamiento:
+- Si `criticas.length > 0` → la IA descarta la idea y regenera automáticamente (loop hasta 12 iteraciones o fallback).
+- Si `warnings.length > 0` → la idea se devuelve igual; la UI muestra ⚠️ con tooltip explicativo.
+
+**Reusar `PromptPlanSemanalBuilder`** como base. Crear `PromptIdeasComidaBuilder` con composición:
+
+```ts
+class PromptIdeasComidaBuilder {
+  build(args: {
+    ficha: FichaSaludSocio;
+    slot: { dia: DiaSemana; tipoComida: TipoComida };
+    cantidad: number;
+  }): { system: string; user: string };
+  // Reusa `componerContextoRestricciones(ficha)` del builder V2 existente.
+  // Garantiza coherencia 1-a-1 entre el contexto del prompt IA plan completo
+  // y el contexto del prompt IA ideas individuales.
+}
+```
+
+Esto es **una sola fuente de verdad** (`componerContextoRestricciones`) para que NUT jamás vea una idea que contradiga el plan completo.
+
+#### Visualización en UI
+
+Cada card de idea lleva opcional:
+- **Badge verde** "✓ Cumple restricciones del paciente"
+- **Badge amarillo** "⚠️ Consideración: alto en sodio" con tooltip
+- **Badge rojo** (NO debería aparecer post-filter) — si aparece es bug crítico
+
+El usuario final (NUT) puede:
+- Click en badge de warning → ver detalle (qué restricción y por qué).
+- Toggle "Mostrar ideas que casi encajan pero con warnings" en el popover (default ON).
+
+#### Edge cases resueltos
+
+| Caso | Manejo |
+|------|---------|
+| Ficha sin restricciones declaradas | La IA genera alternativas genéricas; badge neutro "Sin restricciones aplicadas". |
+| Restricción contradictoria (p.ej. vegano + frecuente consumo de huevo) | La IA descarta ideas con la contradicción; si tras 12 iteraciones no logra, devuelve 5 con warnings visibles. |
+| Alergia que no está en el catálogo de alimentos | El backend no encuentra el alimento relacionado → pasa sin bloqueo (warning de "no se encontró match"). |
+| Medicación con interacción seria (p.ej. anticoagulante + alto Vit-K) | Warning crítico bloqueante en tooltip pero la IA intenta alternativas seguras. |
+
+### 5.2 UX flow
+
+#### Flujo feliz — NUT crea plan manual con ayuda de IA
 
 1. NUT entra a `/profesional/plan/273/editar` como nutri-central.
 2. Ve tabs `IA | Manual | Historial`. Tab "Manual" es default si no hay plan previo.
 3. Tab "Manual" muestra grilla 7×5 vacía con placeholders.
 4. NUT click en slot "Lunes Desayuno" → tooltip "✨ Sugerir ideas".
-5. Pide ideas → popover con 10 cards. Cards 4 y 5 tienen macros macros.OK (verde).
-6. NUT arrastra Card 4 al slot → alternativa aparece con animación.
-7. Sticky footer bottom-right actualiza con kcal totales del plan.
-8. NUT agrega manualmente 2 slots más sin IA (input de alimento + cantidad).
-9. NUT click "Guardar borrador" → modal con preview de macros.
-10. Confirma → backend persiste → nueva versión V2 aparece en pestaña "Historial".
+5. Pide ideas → popover con 10 cards. Cada card muestra macro-resumen y un badge de cumplimiento de restricciones:
+   - Verde: "Cumple todas las restricciones del paciente"
+   - Amarillo: "Consideración: ..."
 
 ### Flujo de error
 
@@ -236,12 +336,29 @@ const [estadoLocal, setEstadoLocal] = useState<{
 ### 6.1 Tests backend nuevos
 
 - `ideas-comida.use-case.spec.ts`:
-  - Genera 10 alternativas con ficha completa (vegano, sin lactosa).
+  - **Cobertura de restricciones** (un test por cada fila de la tabla 5.1):
+    - Alergia: ficha con alergia al maní → 0 alternativas incluyen maní o derivados (validar nombres de alimentos contra catálogo).
+    - Restricción alimentaria "vegano" → 0 alternativas con huevo, carne, lácteos, miel.
+    - Restricción alimentaria "sin TACC" → 0 alternativas con trigo, avena estándar, cebada.
+    - Patología "diabetes tipo 2" → todas las ideas con `indiceGlucemico < 55` o etiqueta "bajo-IG".
+    - Medicación "warfarina" → warnings sobre alimentos altos en vitamina K (espinaca, brócoli); alternativas con etiqueta "⚠️ Consideración Vit-K".
+    - Ficha sin alergias → ideas genéricas con badge neutro "Sin restricciones aplicadas".
+  - Genera 10 alternativas con ficha completa (mix de restricciones: vegano + sin TACC + diabetes).
+  - Loop de regeneración: 12 iteraciones si la primera salida incluye 1 crítica → retorna la siguiente sin críticas.
   - Genera 10 alternativas con ficha vacía (genéricas).
-  - Error timeout Groq → 503.
+  - Error timeout Groq → 503 con mensaje semántico.
   - Plan sin socio → 404.
-  - Paciente sin ficha → 400 semántico.
+  - Paciente sin ficha → 400 semántico "Paciente sin ficha, completala primero".
   - Auth: NUT no dueño → 403; ADMIN del gimnasio → 200.
+  - RestriccionesValidatorV2.validarAlternativa():
+    - Caso 0 incidencias → { criticas: [], warnings: [] }.
+    - Caso 1 crítica (alergia al maní + idea incluye maní) → { criticas: [alergia maní], warnings: [] }.
+    - Caso 0 críticas + 1 warning → { criticas: [], warnings: ["Alto en sodio"] }.
+    - Caso 2 críticas → { criticas: [alergia1, restricción-dura], warnings: [] }.
+
+- `validar-restricciones-alternativa.spec.ts` (unit test del validador):
+  - 8 tests parametrizados con combinaciones (alergia × restricción × patología × medicamento).
+  - Verifica que la salida es determinística y categoriza bien crítica vs warning.
 
 - `editar-slot-manual.use-case.spec.ts`:
   - Patch cantidades válidas → 200 y macros recalculadas.
