@@ -13,6 +13,7 @@ import {
 } from 'src/infrastructure/persistence/typeorm/entities';
 import {
   CrearPlanAlimentacionUseCase,
+  CrearPlanManualVacioUseCase,
   EditarPlanAlimentacionUseCase,
   EliminarPlanAlimentacionUseCase,
   ListarPlanesSocioUseCase,
@@ -57,6 +58,7 @@ import { GroqModule } from 'src/infrastructure/services/groq/groq.module';
   ],
   providers: [
     CrearPlanAlimentacionUseCase,
+    CrearPlanManualVacioUseCase,
     EditarPlanAlimentacionUseCase,
     EliminarPlanAlimentacionUseCase,
     ListarPlanesActivosSocioUseCase,
@@ -76,6 +78,7 @@ import { GroqModule } from 'src/infrastructure/services/groq/groq.module';
   ],
   exports: [
     CrearPlanAlimentacionUseCase,
+    CrearPlanManualVacioUseCase,
     EditarPlanAlimentacionUseCase,
     EliminarPlanAlimentacionUseCase,
     ListarPlanesActivosSocioUseCase,

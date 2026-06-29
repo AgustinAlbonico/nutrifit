@@ -18,8 +18,10 @@ import {
   EliminarPlanAlimentacionDto,
   PlanAlimentacionResponseDto,
 } from 'src/application/planes-alimentacion/dtos';
+
 import {
   CrearPlanAlimentacionUseCase,
+  CrearPlanManualVacioUseCase,
   EditarPlanAlimentacionUseCase,
   EliminarPlanAlimentacionUseCase,
   EliminarPlanAlimentacionResponseDto,
@@ -72,6 +74,7 @@ export class ActivarPlanHttpDTO {
 export class PlanAlimentacionController {
   constructor(
     private readonly crearPlanAlimentacionUseCase: CrearPlanAlimentacionUseCase,
+    private readonly crearPlanManualVacioUseCase: CrearPlanManualVacioUseCase,
     private readonly editarPlanAlimentacionUseCase: EditarPlanAlimentacionUseCase,
     private readonly eliminarPlanAlimentacionUseCase: EliminarPlanAlimentacionUseCase,
     // Hotfix Packet 8: el endpoint /socio/:id/activo ahora devuelve
@@ -108,6 +111,21 @@ export class PlanAlimentacionController {
     return this.crearPlanAlimentacionUseCase.execute(
       nutricionistaUserId,
       payload,
+    );
+  }
+
+  @Post('crear-manual/:socioId')
+  @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN)
+  async crearPlanManual(
+    @CurrentUserId() nutricionistaUserId: number,
+    @Param('socioId', ParseIntPipe) socioId: number,
+  ): Promise<PlanAlimentacionResponseDto> {
+    this.logger.log(
+      `Creando plan manual vacío para socio ${socioId} por nutricionista ${nutricionistaUserId}.`,
+    );
+    return this.crearPlanManualVacioUseCase.execute(
+      nutricionistaUserId,
+      socioId,
     );
   }
 

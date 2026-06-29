@@ -210,6 +210,29 @@ export function PlanEditorPage() {
     void navigate({ to: '/profesional/mi-perfil' });
   };
 
+  const [cargandoPlanManual, setCargandoPlanManual] = useState(false);
+
+  const manejarCrearPlanManual = async () => {
+    if (!socioIdNumero) return;
+    setCargandoPlanManual(true);
+    try {
+      const res = await apiRequest<ApiResponse<RespuestaPlanSemanalV2FE>>(
+        `/planes-alimentacion/crear-manual/${socioIdNumero}`,
+        { method: 'POST' },
+      );
+      // apiRequest ya desempaqueta ApiResponse, res es directo el objeto
+      const planData = res as unknown as RespuestaPlanSemanalV2FE;
+      setRespuesta(planData);
+      setModo('manual');
+      toast.success('Plan manual creado');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al crear plan manual';
+      toast.error(msg);
+    } finally {
+      setCargandoPlanManual(false);
+    }
+  };
+
   // Handlers de regeneración
   const alRegenerarPlan = () => {
     if (!respuesta) return;
@@ -598,11 +621,20 @@ export function PlanEditorPage() {
               pacienteNombre={paciente?.nombreCompleto ?? ''}
             />
           ) : (
-            <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
-              <PenLine className="size-8 text-muted-foreground/50" aria-hidden="true" />
-              <p className="text-sm text-muted-foreground">
-                Generá un plan con IA primero para editarlo manualmente.
-              </p>
+            <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+              <PenLine className="size-10 text-muted-foreground/40" aria-hidden="true" />
+              <div>
+                <p className="font-medium">Creá un plan manual</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Sin necesidad de usar la IA. Agregá comidas slot por slot.
+                </p>
+              </div>
+              <Button
+                onClick={manejarCrearPlanManual}
+                disabled={cargandoPlanManual || !socioIdNumero}
+              >
+                {cargandoPlanManual ? 'Creando…' : 'Nuevo plan manual'}
+              </Button>
             </div>
           )}
         </TabsContent>
