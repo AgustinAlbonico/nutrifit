@@ -23,6 +23,8 @@ import type {
   RespuestaRegeneracionFE,
   SolicitudPlanSemanalV2FE,
   SolicitudRegeneracionFE,
+  GenerarIdeasComidaArgs,
+  GenerarIdeasComidaRespuesta,
 } from '@/types/ia';
 
 function crearWrapper() {
@@ -253,6 +255,60 @@ describe('useIa — Packet 5b', () => {
     await waitFor(() => {
       expect(result.current.regenerarPlanSemanal.isSuccess).toBe(true);
     });
+  });
+
+  it('generarIdeasComida hace POST a /planes-alimentacion/:id/ideas-comida', async () => {
+    let peticionUrl = '';
+    let peticionBody: unknown = null;
+
+    server.use(
+      http.post('/planes-alimentacion/42/ideas-comida', ({ request }) => {
+        peticionUrl = request.url;
+        return request.json().then((body) => {
+          peticionBody = body;
+          return HttpResponse.json({
+            promptUsado: 'Generar ideas para LUNES DESAYUNO',
+            alternativas: [
+              {
+                idTemp: 'tmp-1',
+                nombre: 'Avena con frutas',
+                alimentos: [{ alimentoId: 1, cantidad: 50, unidad: 'g', nombre: 'Avena' }],
+                calorias: 350,
+                proteinas: 12,
+                carbohidratos: 60,
+                grasas: 8,
+                etiquetas: ['vegano'],
+                warnings: [],
+              },
+            ],
+          });
+        });
+      }),
+    );
+
+    const { result } = renderHook(() => useIa(), { wrapper: crearWrapper() });
+
+    const payload: GenerarIdeasComidaArgs = {
+      planAlimentacionId: 42,
+      dia: 'LUNES',
+      tipoComida: 'DESAYUNO',
+      cantidadAlternativas: 10,
+    };
+
+    let respuestaFinal!: GenerarIdeasComidaRespuesta;
+    await act(async () => {
+      respuestaFinal = await result.current.generarIdeasComida.mutateAsync(payload);
+    });
+
+    expect(peticionUrl).toContain('/planes-alimentacion/42/ideas-comida');
+    expect(peticionBody).toMatchObject({
+      planAlimentacionId: 42,
+      dia: 'LUNES',
+      tipoComida: 'DESAYUNO',
+      cantidadAlternativas: 10,
+    });
+    expect(respuestaFinal.alternativas).toHaveLength(1);
+    expect(respuestaFinal.alternativas[0].nombre).toBe('Avena con frutas');
   });
 
   it('propaga errores del backend como excepción', async () => {

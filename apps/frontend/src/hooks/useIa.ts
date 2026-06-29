@@ -25,6 +25,8 @@ import {
 import { apiRequest } from '@/lib/api';
 import { desenvolverRespuestaApi } from '@/lib/api-response';
 import type { ApiResponse } from '@/types/api';
+import { traducirErrorApi } from '@/lib/error-messages';
+import { toast } from 'sonner';
 import type {
   RecomendacionComida,
   PlanSemanalIA,
@@ -41,6 +43,8 @@ import type {
   RespuestaPlanSemanalV2FE,
   SolicitudRegeneracionFE,
   RespuestaRegeneracionFE,
+  GenerarIdeasComidaArgs,
+  GenerarIdeasComidaRespuesta,
 } from '@/types/ia';
 
 interface UseIaOptions {
@@ -138,13 +142,15 @@ export function useGenerarIdeasComida({ token }: UseIaOptions) {
 /**
  * Hook que agrupa las mutations de IA para el plan semanal V2.
  *
- * Retorna dos mutations:
+ * Retorna tres mutations:
  * - `generarPlanSemanalV2`: POST /ia/plan-semanal — versión V2 con validación
  *   de restricciones, validación de macros y versionado inmutable.
  * - `regenerarPlanSemanal`: POST /ia/plan-semanal/regenerar — regeneración
  *   granular por scope (PLAN/DIA/ALTERNATIVA).
+ * - `generarIdeasComida`: POST /planes-alimentacion/:id/ideas-comida — genera
+ *   ideas de comida para un slot específico del plan.
  *
- * Ambas invalidan queries de `['planes-alimentacion']` para refrescar
+ * Todas invalidan queries de `['planes-alimentacion']` para refrescar
  * automáticamente listados y versiones en pantalla.
  *
  * Spanish naming — sigue convención del proyecto.
@@ -201,8 +207,32 @@ export function useIa() {
     },
   });
 
+  const generarIdeasComida: UseMutationResult<
+    GenerarIdeasComidaRespuesta,
+    Error,
+    GenerarIdeasComidaArgs
+  > = useMutation({
+    mutationFn: async (args: GenerarIdeasComidaArgs) => {
+      const respuesta = await apiRequest<
+        GenerarIdeasComidaRespuesta | ApiResponse<GenerarIdeasComidaRespuesta>
+      >(`/planes-alimentacion/${args.planAlimentacionId}/ideas-comida`, {
+        method: 'POST',
+        body: args,
+      });
+      return desenvolverRespuestaApi(respuesta);
+    },
+    onError: (err) => {
+      const errorTraducido = traducirErrorApi(err);
+      toast.error(errorTraducido.titulo, { description: errorTraducido.descripcion });
+    },
+    onSuccess: () => {
+      toast.success('Ideas generadas correctamente');
+    },
+  });
+
   return {
     generarPlanSemanalV2,
     regenerarPlanSemanal,
+    generarIdeasComida,
   };
 }
