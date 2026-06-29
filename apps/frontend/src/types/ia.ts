@@ -123,6 +123,45 @@ export interface ItemComidaSnapshotFE {
   grasas: number;
 }
 
+/**
+ * Item sugerido por la IA en el endpoint /ideas-comida.
+ * Mismo shape que la alternativa de un plan, más `idTemp` (server-side) y
+ * `warnings` (clínica).
+ */
+export interface ItemComidaIaFE {
+  idTemp: string;
+  nombre: string;
+  alimentos: Array<{
+    alimentoId: number;
+    cantidad: number;
+    unidad: string;
+    /** Denormalizado para mostrar en la card sin segundo fetch. */
+    nombre: string;
+  }>;
+  calorias: number;
+  proteinas: number;
+  carbohidratos: number;
+  grasas: number;
+  etiquetas: string[];
+  /** No bloquean: solo warning (vegetales altos en Vit-K para anticoagulantes, etc.). */
+  warnings: string[];
+}
+
+/** Args para POST /planes-alimentacion/:id/ideas-comida. */
+export interface GenerarIdeasComidaArgs {
+  planAlimentacionId: number;
+  dia: DiaSemana;
+  tipoComida: TipoComidaPlan;
+  cantidadAlternativas?: number;
+}
+
+/** Respuesta del endpoint /planes-alimentacion/:id/ideas-comida. */
+export interface GenerarIdeasComidaRespuesta {
+  /** Texto del prompt enviado (para debug/auditoría). */
+  promptUsado: string;
+  alternativas: ItemComidaIaFE[];
+}
+
 /** Estructura de un día en el plan semanal. */
 export interface EstructuraDiaFE {
   dia: DiaSemana;
