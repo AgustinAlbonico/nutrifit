@@ -28,6 +28,8 @@ import {
   ExternalLink,
   Loader2,
   Lock,
+  PenLine,
+  History,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -35,6 +37,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AvatarPaciente } from '@/components/ui/avatar-paciente';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 import { GeneradorPlanSemanal } from '@/components/ia/GeneradorPlanSemanal';
 import { FeedbackModal } from '@/components/ia/FeedbackModal';
@@ -45,6 +48,7 @@ import {
 import { VersionHistory } from '@/components/plan/VersionHistory';
 import { RazonamientoCumplimiento } from '@/components/plan/RazonamientoCumplimiento';
 import { RestriccionesEditablesCard } from '@/components/plan/RestriccionesEditablesCard';
+import { EditorManualPlan } from '@/pages/EditorManualPlan';
 
 import { apiRequest } from '@/lib/api';
 import { desenvolverRespuestaApi } from '@/lib/api-response';
@@ -106,6 +110,9 @@ export function PlanEditorPage() {
 
   // Modal de feedback
   const [feedbackAbierto, setFeedbackAbierto] = useState(false);
+
+  // Modo de tabs: ia | manual | historial
+  const [modo, setModo] = useState<'ia' | 'manual' | 'historial'>('ia');
 
   // Slots editados manualmente (set conservador: el backend puede marcarlos,
   // o el usuario marca antes de regenerar)
@@ -324,7 +331,7 @@ export function PlanEditorPage() {
   // ============================================================================
 
   return (
-    <div className="space-y-6 pb-24">
+    <div className="flex flex-col gap-6 pb-24">
       {/* Header */}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-3">
@@ -352,7 +359,7 @@ export function PlanEditorPage() {
               />
               <div>
                 <h1 className="text-2xl font-bold tracking-tight">
-                  Editor de plan con IA
+                  Editor de plan
                 </h1>
                 <p className="text-sm text-muted-foreground">
                   {paciente.nombreCompleto}
@@ -363,10 +370,10 @@ export function PlanEditorPage() {
           ) : (
             <div>
               <h1 className="text-2xl font-bold tracking-tight">
-                Editor de plan con IA
+                Editor de plan
               </h1>
               <p className="text-sm text-muted-foreground">
-                Generá un plan para el socio #{(socioIdNumero ?? 0).toString()}
+                Socio #{(socioIdNumero ?? 0).toString()}
               </p>
             </div>
           )}
@@ -387,183 +394,247 @@ export function PlanEditorPage() {
         </div>
       </header>
 
-      {/* Layout principal: grid responsive */}
-      <div
-        className="grid gap-6 lg:grid-cols-[1fr_320px]"
-        data-testid="plan-editor-layout"
-      >
-        {/* Main: Generador + Plan + Razonamiento */}
-        <main className="flex flex-col gap-6">
-          {/* Card: Ficha de salud del paciente (editable por el NUT) */}
-          {socioIdNumero && (
-            <RestriccionesEditablesCard
-              ficha={ficha}
-              socio={
-                paciente
-                  ? {
-                      nombreCompleto: paciente.nombreCompleto,
-                      dni: paciente.dni,
-                    }
-                  : null
-              }
-              isLoading={cargandoFicha}
-              isError={errorFicha}
-              sinFicha={sinFicha}
-              sinPermisos={sinPermisos}
-              onSave={manejarGuardarFicha}
-              isSaving={guardandoFicha}
-              errorGuardar={errorGuardarFicha?.message ?? null}
-            />
+      {/* Tabs: IA / Manual / Historial */}
+      <Tabs value={modo} onValueChange={(v) => setModo(v as typeof modo)}>
+        <TabsList variant="line" aria-label="Modo de edición del plan">
+          <TabsTrigger value="ia" className="gap-1.5">
+            <Sparkles className="size-4 text-fuchsia-500" aria-hidden="true" />
+            Generar con IA
+          </TabsTrigger>
+          {respuesta?.planAlimentacionId && (
+            <TabsTrigger value="manual" className="gap-1.5">
+              <PenLine className="size-4" aria-hidden="true" />
+              Manual
+            </TabsTrigger>
           )}
+          <TabsTrigger value="historial" className="gap-1.5">
+            <History className="size-4" aria-hidden="true" />
+            Historial
+          </TabsTrigger>
+        </TabsList>
 
-          {/* Card: Generador de plan */}
-          <Card className="rounded-2xl border-border/50">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Sparkles
-                  className="size-4 text-fuchsia-500"
-                  aria-hidden="true"
-                />
-                Generar plan con IA
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <GeneradorPlanSemanal
-                planAlimentacionId={respuesta?.planAlimentacionId}
-                socioIdPreseleccionado={socioIdNumero}
-                fichaDisponible={!!ficha && !cargandoFicha && !sinPermisos && !sinFicha && !errorFicha}
-                onSuccess={(data) => {
-                  const respuestaNormalizada = normalizarRespuestaConMacros(data);
-                  setRespuesta(respuestaNormalizada);
-                  setVersionSeleccionadaId(respuestaNormalizada.versionId);
-                  // Limpiar slots editados al generar plan nuevo
-                  setSlotsEditadosManualmente(new Set());
-                }}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Card: Plan generado (solo si hay respuesta) */}
-          {respuesta && (
-            <Card
-              className="rounded-2xl border-border/50"
-              data-testid="plan-generado-card"
-            >
-              <CardHeader className="pb-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <div
-                        className="size-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500"
-                        aria-hidden="true"
-                      />
-                      Plan semanal generado
-                    </CardTitle>
-                    <p className="mt-0.5 text-sm text-muted-foreground">
-                      Versión {respuesta.numeroVersion} ·{' '}
-                      {Object.keys(respuesta.macros.macrosPorDia ?? {}).length}{' '}
-                      días con macros validadas
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                <WeeklyPlanGrid
-                  planV2={respuesta.plan}
-                  regen={regen}
-                />
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Card: Razonamiento de cumplimiento (solo si hay plan) */}
-          {respuesta && (
-            <Card className="rounded-2xl border-border/50">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">
-                  Validación de cumplimiento
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <RazonamientoCumplimiento
-                  razonamiento={respuesta.plan.razonamientoCumplimiento}
-                />
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Advertencias del backend */}
-          {respuesta && respuesta.advertencias.length > 0 && (
-            <section
-              role="alert"
-              aria-label="Advertencias de generación"
-              className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4"
-            >
-              <h3 className="mb-2 text-sm font-semibold text-amber-900 dark:text-amber-200">
-                Advertencias ({respuesta.advertencias.length})
-              </h3>
-              <ul className="space-y-1 text-sm text-amber-800 dark:text-amber-300">
-                {respuesta.advertencias.map((adv, idx) => (
-                  <li key={idx}>• {adv}</li>
-                ))}
-              </ul>
-            </section>
-          )}
-        </main>
-
-        {/* Sidebar: Versiones (solo si hay plan) */}
-        <aside aria-label="Historial de versiones" className="space-y-4">
-          {respuesta && (
-            <Card className="rounded-2xl border-border/50">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Versiones</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <VersionHistory
-                  planId={respuesta.planAlimentacionId}
-                  versionSeleccionadaId={versionSeleccionadaId}
-                  onSelect={(vid) => {
-                    setVersionSeleccionadaId(vid);
-                    toast.info(`Versión ${vid} seleccionada`, {
-                      description: 'Cargando datos de la versión…',
-                    });
-                  }}
-                />
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Help: Cómo editar manualmente */}
-          <Card className="rounded-2xl border-border/50 bg-muted/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Edición manual</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-xs text-muted-foreground">
-                Si editás un alimento manualmente y luego regenerás, el sistema
-                te va a pedir confirmación para no perder los cambios.
-              </p>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  if (respuesta) {
-                    const slot = 'LUNES-DESAYUNO';
-                    marcarSlotEditado(slot);
-                    toast.info(`Slot ${slot} marcado como editado`);
+        {/* Tab: Generar con IA */}
+        <TabsContent value="ia" className="mt-0">
+          <div
+            className="grid gap-6 lg:grid-cols-[1fr_320px]"
+            data-testid="plan-editor-layout"
+          >
+            {/* Main: Generador + Plan + Razonamiento */}
+            <main className="flex flex-col gap-6">
+              {/* Card: Ficha de salud del paciente (editable por el NUT) */}
+              {socioIdNumero && (
+                <RestriccionesEditablesCard
+                  ficha={ficha}
+                  socio={
+                    paciente
+                      ? {
+                          nombreCompleto: paciente.nombreCompleto,
+                          dni: paciente.dni,
+                        }
+                      : null
                   }
-                }}
-                disabled={!respuesta}
-                className="mt-2 h-7 text-xs"
-                data-testid="marcar-editado-demo"
-              >
-                Marcar desayuno lunes como editado (demo)
-              </Button>
-            </CardContent>
-          </Card>
-        </aside>
-      </div>
+                  isLoading={cargandoFicha}
+                  isError={errorFicha}
+                  sinFicha={sinFicha}
+                  sinPermisos={sinPermisos}
+                  onSave={manejarGuardarFicha}
+                  isSaving={guardandoFicha}
+                  errorGuardar={errorGuardarFicha?.message ?? null}
+                />
+              )}
+
+              {/* Card: Generador de plan */}
+              <Card className="rounded-2xl border-border/50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Sparkles
+                      className="size-4 text-fuchsia-500"
+                      aria-hidden="true"
+                    />
+                    Generar plan con IA
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <GeneradorPlanSemanal
+                    planAlimentacionId={respuesta?.planAlimentacionId}
+                    socioIdPreseleccionado={socioIdNumero}
+                    fichaDisponible={!!ficha && !cargandoFicha && !sinPermisos && !sinFicha && !errorFicha}
+                    onSuccess={(data) => {
+                      const respuestaNormalizada = normalizarRespuestaConMacros(data);
+                      setRespuesta(respuestaNormalizada);
+                      setVersionSeleccionadaId(respuestaNormalizada.versionId);
+                      setSlotsEditadosManualmente(new Set());
+                    }}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Card: Plan generado (solo si hay respuesta) */}
+              {respuesta && (
+                <Card
+                  className="rounded-2xl border-border/50"
+                  data-testid="plan-generado-card"
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                          <div
+                            className="size-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500"
+                            aria-hidden="true"
+                          />
+                          Plan semanal generado
+                        </CardTitle>
+                        <p className="mt-0.5 text-sm text-muted-foreground">
+                          Versión {respuesta.numeroVersion} ·{' '}
+                          {Object.keys(respuesta.macros.macrosPorDia ?? {}).length}{' '}
+                          días con macros validadas
+                        </p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <WeeklyPlanGrid
+                      planV2={respuesta.plan}
+                      regen={regen}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Card: Razonamiento de cumplimiento (solo si hay plan) */}
+              {respuesta && (
+                <Card className="rounded-2xl border-border/50">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">
+                      Validación de cumplimiento
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <RazonamientoCumplimiento
+                      razonamiento={respuesta.plan.razonamientoCumplimiento}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Advertencias del backend */}
+              {respuesta && respuesta.advertencias.length > 0 && (
+                <section
+                  role="alert"
+                  aria-label="Advertencias de generación"
+                  className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4"
+                >
+                  <h3 className="mb-2 text-sm font-semibold text-amber-900 dark:text-amber-200">
+                    Advertencias ({respuesta.advertencias.length})
+                  </h3>
+                  <ul className="space-y-1 text-sm text-amber-800 dark:text-amber-300">
+                    {respuesta.advertencias.map((adv, idx) => (
+                      <li key={idx}>• {adv}</li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+            </main>
+
+            {/* Sidebar: ayuda (solo en tab IA) */}
+            <aside aria-label="Edición manual" className="space-y-4">
+              {respuesta && (
+                <Card className="rounded-2xl border-border/50">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Versiones</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <VersionHistory
+                      planId={respuesta.planAlimentacionId}
+                      versionSeleccionadaId={versionSeleccionadaId}
+                      onSelect={(vid) => {
+                        setVersionSeleccionadaId(vid);
+                        toast.info(`Versión ${vid} seleccionada`, {
+                          description: 'Cargando datos de la versión…',
+                        });
+                      }}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+
+              <Card className="rounded-2xl border-border/50 bg-muted/20">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Edición manual</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground">
+                    Si editás un alimento manualmente y luego regenerás, el
+                    sistema te va a pedir confirmación para no perder los
+                    cambios.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      if (respuesta) {
+                        const slot = 'LUNES-DESAYUNO';
+                        marcarSlotEditado(slot);
+                        toast.info(`Slot ${slot} marcado como editado`);
+                      }
+                    }}
+                    disabled={!respuesta}
+                    className="mt-2 h-7 text-xs"
+                    data-testid="marcar-editado-demo"
+                  >
+                    Marcar desayuno lunes como editado (demo)
+                  </Button>
+                </CardContent>
+              </Card>
+            </aside>
+          </div>
+        </TabsContent>
+
+        {/* Tab: Manual */}
+        {respuesta?.planAlimentacionId && (
+          <TabsContent value="manual" className="mt-0">
+            <EditorManualPlan
+              planId={respuesta.planAlimentacionId}
+              pacienteNombre={paciente?.nombreCompleto ?? ''}
+            />
+          </TabsContent>
+        )}
+
+        {/* Tab: Historial */}
+        <TabsContent value="historial" className="mt-0">
+          {respuesta ? (
+            <div className="flex flex-col gap-4">
+              <Card className="rounded-2xl border-border/50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">
+                    Historial de versiones
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <VersionHistory
+                    planId={respuesta.planAlimentacionId}
+                    versionSeleccionadaId={versionSeleccionadaId}
+                    onSelect={(vid) => {
+                      setVersionSeleccionadaId(vid);
+                      toast.info(`Versión ${vid} seleccionada`, {
+                        description: 'Cargando datos de la versión…',
+                      });
+                    }}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <Card className="rounded-2xl border-border/50">
+              <CardContent className="py-8 text-center text-sm text-muted-foreground">
+                Generá un plan con IA para ver el historial de versiones.
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Botón flotante: Dar feedback (solo si hay plan) */}
       {respuesta && (
