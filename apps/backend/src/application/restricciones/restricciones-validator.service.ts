@@ -3,6 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { FichaSaludOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/ficha-salud.entity';
 
+const PROTEINAS_ANIMALES = ['carne', 'pollo', 'res', 'cerdo', 'pescado', 'huevo'];
+const LACTOS = ['leche', 'queso', 'yogur', 'manteca'];
+const MIEL = ['miel'];
+const GLUTEN = ['trigo', 'avena', 'cebada', 'centeno'];
+
 const STOPWORDS_RESTRICCIONES = new Set([
   'a',
   'al',
@@ -131,6 +136,17 @@ const CATALOGO_EQUIVALENCIAS_RESTRICCIONES: Array<{
   },
 ];
 
+interface IncidenciaValidacion {
+  tipo: 'alergia' | 'restriccion-dura' | 'medicamento-critico';
+  ingrediente: string;
+  mensaje: string;
+}
+
+interface ResultadoValidacionAlternativa {
+  criticas: IncidenciaValidacion[];
+  warnings: string[];
+}
+
 interface ReglaRestriccionDetectada {
   texto: string;
   tipo: IncidenciaRestriccion['tipoRestriccion'];
@@ -204,6 +220,10 @@ export class RestriccionesValidator {
       return token.slice(0, -1);
     }
     return token;
+  }
+
+  private _contieneAlgunaDe(nombreAlimento: string, listaNegra: string[]): boolean {
+    return listaNegra.some((a) => nombreAlimento.toLowerCase().includes(a));
   }
 
   private extraerTerminosSignificativos(texto: string): string[] {
@@ -440,8 +460,8 @@ export class RestriccionesValidator {
         alimentoNombre?: string;
       }>;
     },
-  ): { criticas: Array<{ tipo: string; ingrediente: string; mensaje: string }>; warnings: string[] } {
-    const criticas: Array<{ tipo: string; ingrediente: string; mensaje: string }> = [];
+  ): ResultadoValidacionAlternativa {
+    const criticas: IncidenciaValidacion[] = [];
     const warnings: string[] = [];
 
     const nombresAlimentos = alternativa.alimentos
@@ -470,40 +490,28 @@ export class RestriccionesValidator {
       || restricciones.includes('celiac')
       || restricciones.includes('gluten');
 
-    const PROTEINAS_ANIMALES = ['carne', 'pollo', 'res', 'cerdo', 'pescado', 'huevo'];
-    const LACTOS = ['leche', 'queso', 'yogur', 'manteca'];
-    const MIEL = ['miel'];
-    const GLUTEN = ['trigo', 'avena', 'cebada', 'centeno'];
-
     if (isVegano) {
-      const incluyeAnimal = nombresAlimentos.some((n) =>
-        [...PROTEINAS_ANIMALES, ...LACTOS, ...MIEL].some((a) =>
-          n.toLowerCase().includes(a),
-        ),
+      const animalYLeche = [...PROTEINAS_ANIMALES, ...LACTOS, ...MIEL];
+      const infractor = nombresAlimentos.find((n) =>
+        this._contieneAlgunaDe(n, animalYLeche),
       );
-      if (incluyeAnimal) {
+      if (infractor) {
         criticas.push({
           tipo: 'restriccion-dura',
-          ingrediente: nombresAlimentos.find((n) =>
-            [...PROTEINAS_ANIMALES, ...LACTOS, ...MIEL].some((a) =>
-              n.toLowerCase().includes(a),
-            ),
-          ) ?? '',
+          ingrediente: infractor,
           mensaje: 'La idea incluye productos animales y la restriccion es vegana.',
         });
       }
     }
 
     if (isSinTACC) {
-      const incluyeGluten = nombresAlimentos.some((n) =>
-        GLUTEN.some((g) => n.toLowerCase().includes(g)),
+      const infractor = nombresAlimentos.find((n) =>
+        this._contieneAlgunaDe(n, GLUTEN),
       );
-      if (incluyeGluten) {
+      if (infractor) {
         criticas.push({
           tipo: 'restriccion-dura',
-          ingrediente: nombresAlimentos.find((n) =>
-            GLUTEN.some((g) => n.toLowerCase().includes(g)),
-          ) ?? '',
+          ingrediente: infractor,
           mensaje: 'La idea incluye gluten y la restriccion es sin TACC.',
         });
       }
@@ -512,12 +520,8 @@ export class RestriccionesValidator {
     // 3. Medicacion (warning, no critico)
     const medicacion = (ficha.medicacionActual ?? '').toLowerCase();
     if (medicacion.includes('warfarina') || medicacion.includes('anticoagulante')) {
-      const altoVitK = nombresAlimentos.some((n) =>
-        ['espinaca', 'brocoli', 'col rizada', 'acelga'].some((v) =>
-          n.toLowerCase().includes(v),
-        ),
-      );
-      if (altoVitK) {
+      const altoVitK = ['espinaca', 'brocoli', 'col rizada', 'acelga'];
+      if (nombresAlimentos.some((n) => this._contieneAlgunaDe(n, altoVitK))) {
         warnings.push(
           'El paciente toma anticoagulantes: el alimento es alto en Vitamina K.',
         );

@@ -83,6 +83,26 @@ describe('RestriccionesValidator.validarAlternativa', () => {
     expect(resultado.criticas).toHaveLength(0);
     expect(resultado.warnings).toHaveLength(0);
   });
+
+  it('rechaza alternativa con gluten cuando restriccion es sin TACC (celiaco)', () => {
+    const ficha = {
+      alergias: [],
+      restriccionesAlimentarias: 'celiaco',
+      patologias: [],
+      medicacionActual: null,
+      suplementosActuales: null,
+    } as never;
+    const alternativa = {
+      nombre: 'Tostadas',
+      alimentos: [{ alimentoId: 2, cantidad: 50, unidad: 'g', alimentoNombre: 'Trigo' }],
+    };
+
+    const resultado = sut.validarAlternativa(ficha, alternativa);
+
+    expect(resultado.criticas).toHaveLength(1);
+    expect(resultado.criticas[0]).toMatchObject({ tipo: 'restriccion-dura', ingrediente: 'Trigo' });
+    expect(resultado.warnings).toHaveLength(0);
+  });
 });
 
 describe('RestriccionesValidator', () => {
