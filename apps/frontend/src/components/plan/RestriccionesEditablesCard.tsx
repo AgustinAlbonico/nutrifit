@@ -30,6 +30,8 @@ import {
   AlertCircle,
   Check,
   Edit3,
+  Heart,
+  ListChecks,
   Loader2,
   Lock,
   Plus,
@@ -51,6 +53,12 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -453,106 +461,143 @@ function VistaLectura({ ficha }: PropiedadesVistaLectura) {
   const suplementosActuales = ficha.suplementosActuales ?? '';
 
   return (
-    <dl
-      className="grid gap-4 sm:grid-cols-2"
+    <Tabs
+      defaultValue="clinica"
+      className="gap-3"
       aria-label="Datos de la ficha del paciente"
     >
-      {/* Antropometría */}
-      <SeccionLectura titulo="Antropometría">
-        <div className="flex flex-wrap gap-2 text-sm">
-          <Badge variant="outline" className="text-xs">
-            Altura: {ficha.altura} cm
-          </Badge>
-          <Badge variant="outline" className="text-xs">
-            Peso: {ficha.peso} kg
-          </Badge>
-          <Badge variant="secondary" className="text-xs">
-            {formatearNivelActividad(ficha.nivelActividadFisica)}
-          </Badge>
-        </div>
-      </SeccionLectura>
+      <TabsList variant="line" className="w-full justify-start gap-4 border-b border-border/40 px-0">
+        <TabsTrigger
+          value="clinica"
+          className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-emerald-500"
+        >
+          <Heart className="mr-1.5 size-3.5" aria-hidden="true" />
+          Datos clínicos
+        </TabsTrigger>
+        <TabsTrigger
+          value="restricciones"
+          className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-rose-500"
+        >
+          <ShieldAlert className="mr-1.5 size-3.5" aria-hidden="true" />
+          Restricciones
+        </TabsTrigger>
+        <TabsTrigger
+          value="habitos"
+          className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-orange-500"
+        >
+          <ListChecks className="mr-1.5 size-3.5" aria-hidden="true" />
+          Hábitos y objetivo
+        </TabsTrigger>
+      </TabsList>
 
-      {/* Alergias */}
-      <SeccionLectura titulo="Alergias">
-        {alergias.length > 0 ? (
-          <ul className="flex flex-wrap gap-1.5" aria-label="Alergias">
-            {alergias.map((a) => (
-              <li
-                key={a}
-                className="inline-flex items-center rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-900 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-200"
-              >
-                <ShieldAlert className="mr-1 size-3" aria-hidden="true" />
-                {a}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <span className="text-sm text-muted-foreground">Sin alergias declaradas</span>
-        )}
-      </SeccionLectura>
+      {/* Tab 1: datos clínicos (antropometría + medicación + suplementos). */}
+      <TabsContent value="clinica" className="mt-3">
+        <dl className="grid gap-4 sm:grid-cols-2">
+          <SeccionLectura titulo="Antropometría">
+            <div className="flex flex-wrap gap-2 text-sm">
+              <Badge variant="outline" className="text-xs">
+                Altura: {ficha.altura} cm
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                Peso: {ficha.peso} kg
+              </Badge>
+              <Badge variant="secondary" className="text-xs">
+                {formatearNivelActividad(ficha.nivelActividadFisica)}
+              </Badge>
+            </div>
+          </SeccionLectura>
 
-      {/* Patologías */}
-      <SeccionLectura titulo="Patologías">
-        {patologias.length > 0 ? (
-          <ul className="flex flex-wrap gap-1.5" aria-label="Patologías">
-            {patologias.map((p) => (
-              <li
-                key={p}
-                className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
-              >
-                {p}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <span className="text-sm text-muted-foreground">Sin patologías declaradas</span>
-        )}
-      </SeccionLectura>
+          <SeccionLectura titulo="Medicación actual">
+            {medicacionActual ? (
+              <p className="text-sm">{medicacionActual}</p>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
+                <Lock className="size-3" aria-hidden="true" />
+                No declarada
+              </span>
+            )}
+          </SeccionLectura>
 
-      {/* Restricciones alimentarias */}
-      <SeccionLectura titulo="Restricciones alimentarias">
-        {restriccionesAlimentarias ? (
-          <p className="text-sm">{restriccionesAlimentarias}</p>
-        ) : (
-          <span className="text-sm text-muted-foreground">Sin restricciones</span>
-        )}
-      </SeccionLectura>
+          <SeccionLectura titulo="Suplementos actuales">
+            {suplementosActuales ? (
+              <p className="text-sm">{suplementosActuales}</p>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
+                <Lock className="size-3" aria-hidden="true" />
+                No declarados
+              </span>
+            )}
+          </SeccionLectura>
+        </dl>
+      </TabsContent>
 
-      {/* Objetivo personal */}
-      <SeccionLectura titulo="Objetivo personal" fullWidth>
-        {objetivoPersonal ? (
-          <p className="text-sm">{objetivoPersonal}</p>
-        ) : (
-          <span className="text-sm text-muted-foreground">Sin objetivo declarado</span>
-        )}
-      </SeccionLectura>
+      {/* Tab 2: restricciones (alergias + patologías + restricciones alimentarias). */}
+      <TabsContent value="restricciones" className="mt-3">
+        <dl className="grid gap-4 sm:grid-cols-2">
+          <SeccionLectura titulo="Alergias">
+            {alergias.length > 0 ? (
+              <ul className="flex flex-wrap gap-1.5" aria-label="Alergias">
+                {alergias.map((a) => (
+                  <li
+                    key={a}
+                    className="inline-flex items-center rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-900 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-200"
+                  >
+                    <ShieldAlert className="mr-1 size-3" aria-hidden="true" />
+                    {a}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <span className="text-sm text-muted-foreground">Sin alergias declaradas</span>
+            )}
+          </SeccionLectura>
 
-      {/* Medicación */}
-      <SeccionLectura titulo="Medicación actual">
-        {medicacionActual ? (
-          <p className="text-sm">{medicacionActual}</p>
-        ) : (
-          <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
-            <Lock className="size-3" aria-hidden="true" />
-            No declarada
-          </span>
-        )}
-      </SeccionLectura>
+          <SeccionLectura titulo="Patologías">
+            {patologias.length > 0 ? (
+              <ul className="flex flex-wrap gap-1.5" aria-label="Patologías">
+                {patologias.map((p) => (
+                  <li
+                    key={p}
+                    className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+                  >
+                    {p}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <span className="text-sm text-muted-foreground">Sin patologías declaradas</span>
+            )}
+          </SeccionLectura>
 
-      {/* Suplementos */}
-      <SeccionLectura titulo="Suplementos actuales">
-        {suplementosActuales ? (
-          <p className="text-sm">{suplementosActuales}</p>
-        ) : (
-          <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
-            <Lock className="size-3" aria-hidden="true" />
-            No declarados
-          </span>
-        )}
-      </SeccionLectura>
-    </dl>
+          <SeccionLectura titulo="Restricciones alimentarias" fullWidth>
+            {restriccionesAlimentarias ? (
+              <p className="text-sm">{restriccionesAlimentarias}</p>
+            ) : (
+              <span className="text-sm text-muted-foreground">Sin restricciones</span>
+            )}
+          </SeccionLectura>
+        </dl>
+      </TabsContent>
+
+      {/* Tab 3: hábitos y objetivo. */}
+      <TabsContent value="habitos" className="mt-3">
+        <dl className="grid gap-4">
+          <SeccionLectura titulo="Objetivo personal" fullWidth>
+            {objetivoPersonal ? (
+              <p className="text-sm">{objetivoPersonal}</p>
+            ) : (
+              <span className="text-sm text-muted-foreground">Sin objetivo declarado</span>
+            )}
+          </SeccionLectura>
+        </dl>
+      </TabsContent>
+    </Tabs>
   );
 }
+
+// =============================================================================
+// Sub-componentes
+// =============================================================================
 
 interface PropiedadesSeccionLectura {
   titulo: string;

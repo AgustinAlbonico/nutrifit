@@ -1,18 +1,23 @@
 /**
  * Modal para que el nutricionista vote (👍 / 👎) un plan generado por IA.
  *
+ * Mejora v2 (ver `iteracion 1/errores/plan-alimentacion-validacion-playwright.md`):
+ * - El voto positivo es `default` (botón verde lleno).
+ * - El voto negativo es `outline` (ghost rojo).
+ * Antes ambos eran `outline` y visualmente pesaban igual.
+ *
  * Props:
  * - open / onOpenChange: controlan la visibilidad
  * - versionId: versión del plan a votar
  * - onSuccess: callback opcional al guardar el voto
  *
  * Usa `useFeedbackPlan({ versionId })` para enviar POST al backend.
- * Al éxito cierra el modal y notifica al padre.
  *
  * Accesibilidad:
  * - DialogTitle obligatorio (Radix)
  * - Textarea con label asociado y contador visible
- * - Botones grandes (size lg) con iconos descriptivos
+ * - Botones grandes (size lg) con aria-label descriptivo y feedback visual
+ *   al pasar el mouse
  */
 
 import { useState } from 'react';
@@ -52,8 +57,8 @@ export function FeedbackModal({
 
   const { votar, isVoting, isError, error } = useFeedbackPlan({ versionId });
 
-  // Resetear comentario al abrir vía handler de evento (no en useEffect
-  // para evitar renders en cascada).
+  // Resetear comentario al abrir (handler de evento, no useEffect para
+  // evitar renders en cascada).
   const handleOpenChange = (nuevoAbierto: boolean) => {
     if (nuevoAbierto) {
       setComentario('');
@@ -91,48 +96,42 @@ export function FeedbackModal({
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3" role="group" aria-label="Voto sobre la recomendación">
+            {/* Voto positivo: jerarquía primaria (verde lleno, llama la atención). */}
             <Button
               type="button"
               size="lg"
-              variant="outline"
               disabled={isVoting}
               onClick={() => handleVoto('POSITIVO')}
-              aria-label="Votar positivo"
+              aria-label="Votar positivo: la recomendación me sirvió"
               data-testid="feedback-positivo"
               className={cn(
-                'h-20 flex-col gap-1 border-emerald-500/40 hover:border-emerald-500 hover:bg-emerald-500/10',
+                'h-20 flex-col gap-1 border-emerald-500/40 bg-emerald-500 text-white shadow-sm hover:bg-emerald-600 hover:border-emerald-600',
+                'dark:bg-emerald-600 dark:hover:bg-emerald-700',
               )}
             >
               {isVoting ? (
                 <Loader2 className="animate-spin" />
               ) : (
-                <ThumbsUp
-                  className="text-emerald-600 dark:text-emerald-400"
-                  aria-hidden="true"
-                />
+                <ThumbsUp aria-hidden="true" />
               )}
               <span className="text-sm font-semibold">Me sirvió</span>
             </Button>
+            {/* Voto negativo: jerarquía secundaria (ghost/outline rojo). */}
             <Button
               type="button"
               size="lg"
               variant="outline"
               disabled={isVoting}
               onClick={() => handleVoto('NEGATIVO')}
-              aria-label="Votar negativo"
+              aria-label="Votar negativo: la recomendación no me sirvió"
               data-testid="feedback-negativo"
-              className={cn(
-                'h-20 flex-col gap-1 border-red-500/40 hover:border-red-500 hover:bg-red-500/10',
-              )}
+              className="h-20 flex-col gap-1 border-red-500/40 text-red-700 hover:border-red-500 hover:bg-red-500/10 hover:text-red-800 dark:text-red-300 dark:hover:bg-red-500/15 dark:hover:text-red-200"
             >
               {isVoting ? (
                 <Loader2 className="animate-spin" />
               ) : (
-                <ThumbsDown
-                  className="text-red-600 dark:text-red-400"
-                  aria-hidden="true"
-                />
+                <ThumbsDown aria-hidden="true" />
               )}
               <span className="text-sm font-semibold">No me sirvió</span>
             </Button>

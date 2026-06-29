@@ -4,20 +4,25 @@
  * o más planes activos (RF-010: N cards si tiene N nutricionistas).
  *
  * Composición:
- * - Header: nombre del NUT + fecha de inicio + badge "Activo"
+ * - Header: nombre del NUT + fecha de inicio + EstadoPlanBadge
  * - Body: WeeklyPlanGrid V2 read-only (sin botones de regenerar)
- * - Body: RazonamientoCumplimiento read-only (sin colapsable interactivo)
- * - Footer: botón "Descargar PDF" (placeholder: el botón real se mantiene
- *   mientras se actualiza el endpoint a V2; cuando esté disponible se
- *   reusa `<ExportPlanPDFButton>`)
+ * - Body: RazonamientoCumplimiento read-only
+ * - Footer: acciones secundarias útiles (marcar leído, contactar al NUT)
+ *
+ * Mejora v2 (ver `iteracion 1/errores/plan-alimentacion-validacion-playwright.md`):
+ * - Reemplaza el botón "Descargar PDF" deshabilitado (que confundía al socio)
+ *   por un footer con CTAs claros: marcar leído + contactar al NUT.
+ * - Muestra el EstadoPlanBadge completo (BORRADOR/ACTIVO/FINALIZADO).
+ * - Hint contextual sobre cuándo se inició el plan.
  *
  * Accesibilidad:
  * - El card usa `<section aria-labelledby>` para vincular el header
- * - Botón "Descargar PDF" tiene aria-label descriptivo
+ * - Botones con aria-label descriptivo
  * - Contraste WCAG AA en todo el texto
  */
 
-import { Calendar, Download, User } from 'lucide-react';
+import { Calendar, CheckCheck, Mail, Sparkles } from 'lucide-react';
+import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -28,20 +33,22 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { RazonamientoCumplimiento } from '@/components/plan/RazonamientoCumplimiento';
+import { EstadoPlanBadge } from '@/components/plan/EstadoPlanBadge';
+import {
+  derivarEstadoPlan,
+  type EstadoPlanVisual,
+} from '@/components/plan/estado-plan.types';
 import { WeeklyPlanGrid } from '@/components/plan/WeeklyPlanGrid';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import type { PlanSocioActivo } from '@/types/ia';
 
 interface PropiedadesPlanSocioCard {
   /** Plan activo del socio (asociado a un nutricionista). */
   plan: PlanSocioActivo;
-  /**
-   * Callback cuando el socio hace click en "Descargar PDF". Mientras el
-   * endpoint V2 no esté listo, este callback es opcional: si no se pasa,
-   * el botón se renderiza deshabilitado.
-   */
-  alDescargarPdf?: (planId: number, versionId: number) => void;
+  /** Fecha de finalización del plan (opcional). Si existe, alimenta el badge. */
+  finalizadoAt?: string | null;
   /** Clases extra para composición con el contenedor padre. */
   className?: string;
 }
@@ -50,7 +57,7 @@ interface PropiedadesPlanSocioCard {
  * Formatea una fecha ISO 8601 a formato argentino legible:
  * "15 de junio de 2026". Devuelve string vacío si el input es inválido.
  */
-function formatearFecha(fechaIso: string): string {
+function formatearFecha(fechaIso: string | null | undefined): string {
   if (!fechaIso) return '';
   const fecha = new Date(fechaIso);
   if (Number.isNaN(fecha.getTime())) return '';
@@ -61,16 +68,37 @@ function formatearFecha(fechaIso: string): string {
   });
 }
 
+const MENSAJE_CONFIRMACION =
+  'Plan marcado como leído. Te avisaremos cuando tu nutricionista lo actualice.';
+
 export function PlanSocioCard({
   plan,
-  alDescargarPdf,
+  finalizadoAt,
   className,
 }: PropiedadesPlanSocioCard) {
   const headerId = `plan-socio-card-header-${plan.idPlanAlimentacion}`;
   const fechaInicioFormateada = formatearFecha(plan.fechaInicio);
+  const [marcadoLeido, setMarcadoLeido] = useState(false);
 
-  const manejarClickDescargarPdf = () => {
-    alDescargarPdf?.(plan.idPlanAlimentacion, plan.versionId);
+  // Estado visual: Activo, Borrador o Finalizado. Default Activo.
+  // Aceptamos `finalizadoAt` como prop opcional además del campo del plan
+  // si en el futuro el backend lo incluye en `PlanSocioActivo`.
+  const estado: EstadoPlanVisual = derivarEstadoPlan({
+    activo: true,
+    finalizadoAt: finalizadoAt ?? null,
+  });
+  const etiquetaEstado =
+    estado === 'ACTIVO'
+      ? 'Activo'
+      : estado === 'BORRADOR'
+        ? 'En revisión'
+        : 'Finalizado';
+
+  const manejarMarcarLeido = () => {
+    setMarcadoLeido(true);
+    toast.success(MENSAJE_CONFIRMACION, {
+      description: `Última actualización: ${fechaInicioFormateada || 'hace unos días'}.`,
+    });
   };
 
   return (
@@ -79,40 +107,35 @@ export function PlanSocioCard({
       data-plan-id={plan.idPlanAlimentacion}
       data-nutricionista-id={plan.nutricionistaId}
       aria-labelledby={headerId}
-      className={className}
+      className={cn('overflow-hidden', className)}
     >
-      <CardHeader className="border-b border-border/40">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="space-y-1.5">
-            <CardTitle
-              id={headerId}
-              className="flex items-center gap-2 text-xl sm:text-2xl"
-            >
-              <User
-                className="size-5 text-orange-600 dark:text-orange-400"
-                aria-hidden="true"
-              />
-              Mi plan con {plan.nutricionistaNombre}
-            </CardTitle>
-            <CardDescription className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-              {fechaInicioFormateada && (
-                <span className="inline-flex items-center gap-1.5">
-                  <Calendar
-                    className="size-3.5"
-                    aria-hidden="true"
-                  />
-                  Plan activo desde {fechaInicioFormateada}
-                </span>
-              )}
-            </CardDescription>
-          </div>
-          <Badge
-            variant="secondary"
-            className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+      <CardHeader className="flex-row items-start justify-between gap-3 space-y-0 border-b border-border/40 bg-muted/10">
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <CardTitle
+            id={headerId}
+            className="flex items-center gap-2 text-base sm:text-lg"
           >
-            Activo
-          </Badge>
+            <Sparkles
+              className="size-4 shrink-0 text-orange-500"
+              aria-hidden="true"
+            />
+            <span className="truncate">Plan con {plan.nutricionistaNombre}</span>
+          </CardTitle>
+          {fechaInicioFormateada && (
+            <CardDescription
+              className="flex items-center gap-1.5 text-xs"
+              data-testid="plan-fecha-inicio"
+            >
+              <Calendar className="size-3.5" aria-hidden="true" />
+              {estado === 'ACTIVO'
+                ? `Activo desde ${fechaInicioFormateada}`
+                : estado === 'FINALIZADO'
+                  ? `Finalizado el ${formatearFecha(finalizadoAt ?? null)}`
+                  : `En revisión desde ${fechaInicioFormateada}`}
+            </CardDescription>
+          )}
         </div>
+        <EstadoPlanBadge estado={estado} className="shrink-0 self-start" />
       </CardHeader>
 
       <CardContent className="space-y-5 pt-5">
@@ -135,23 +158,42 @@ export function PlanSocioCard({
         </section>
       </CardContent>
 
-      <CardFooter className="flex flex-wrap items-center justify-between gap-3 border-t border-border/40 bg-muted/20 pt-4">
+      <CardFooter className="flex flex-wrap items-center justify-between gap-3 border-t border-border/40 bg-muted/20 px-6 py-4">
         <p className="text-xs text-muted-foreground">
-          Este plan es de solo lectura. Si querés cambios, contactá a tu
-          nutricionista.
+          Plan {etiquetaEstado.toLowerCase()}. Si querés cambios, contactá a
+          tu nutricionista.
         </p>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={manejarClickDescargarPdf}
-          disabled={!alDescargarPdf}
-          aria-label={`Descargar PDF del plan con ${plan.nutricionistaNombre}`}
-          data-testid="boton-descargar-pdf"
-        >
-          <Download className="mr-2 size-4" aria-hidden="true" />
-          Descargar PDF
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={manejarMarcarLeido}
+            disabled={marcadoLeido}
+            aria-label="Marcar plan como leído"
+            data-testid="boton-marcar-leido"
+            className="text-muted-foreground"
+          >
+            <CheckCheck className="mr-1.5 size-4" aria-hidden="true" />
+            {marcadoLeido ? 'Leído' : 'Marcar leído'}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            asChild
+          >
+            <a
+              href={`mailto:?subject=${encodeURIComponent(
+                `Mi plan de alimentación con ${plan.nutricionistaNombre}`,
+              )}`}
+              data-testid="boton-contactar-nutricionista"
+            >
+              <Mail className="mr-1.5 size-4" aria-hidden="true" />
+              Contactar al NUT
+            </a>
+          </Button>
+        </div>
       </CardFooter>
     </Card>
   );

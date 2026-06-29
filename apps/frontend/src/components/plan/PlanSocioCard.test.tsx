@@ -13,9 +13,19 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
+import { toast } from 'sonner';
 
 import { PlanSocioCard } from '@/components/plan/PlanSocioCard';
 import type { PlanSocioActivo } from '@/types/ia';
+
+vi.mock('sonner', () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warning: vi.fn(),
+  },
+}));
 
 function crearPlanSocioMock(
   overrides: Partial<PlanSocioActivo> = {},
@@ -110,10 +120,11 @@ describe('PlanSocioCard', () => {
   it('renderiza el header con el nombre del nutricionista y la fecha de inicio', () => {
     render(<PlanSocioCard plan={crearPlanSocioMock()} />);
 
-    expect(screen.getByText(/Mi plan con Lic\. Pérez/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(/Plan activo desde 15 de junio de 2026/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Plan con Lic\. Pérez/i)).toBeInTheDocument();
+    // El día se parte por el icono, por eso usamos data-testid.
+    expect(screen.getByTestId('plan-fecha-inicio').textContent ?? '').toMatch(
+      /Activo desde 15 de junio de 2026/,
+    );
   });
 
   it('renderiza la WeeklyPlanGrid V2 con la estructura del plan', () => {
@@ -157,33 +168,30 @@ describe('PlanSocioCard', () => {
     expect(screen.queryByText(/no cumplidas/i)).not.toBeInTheDocument();
   });
 
-  it('el botón "Descargar PDF" está deshabilitado cuando no se pasa callback', () => {
+  it('muestra el botón "Marcar leído" y dispara toast de confirmación', async () => {
+    const user = userEvent.setup();
     render(<PlanSocioCard plan={crearPlanSocioMock()} />);
 
-    const boton = screen.getByTestId('boton-descargar-pdf');
+    const boton = screen.getByTestId('boton-marcar-leido');
+    expect(boton).toBeEnabled();
+    await user.click(boton);
+
+    expect(toast.success).toHaveBeenCalledWith(
+      expect.stringContaining('marcado como leído'),
+      expect.objectContaining({
+        description: expect.any(String),
+      }),
+    );
     expect(boton).toBeDisabled();
   });
 
-  it('el botón "Descargar PDF" invoca el callback con idPlanAlimentacion y versionId', async () => {
-    const alDescargarPdf = vi.fn();
-    const user = userEvent.setup();
+  it('muestra el enlace "Contactar al NUT" como mailto funcional', () => {
+    render(<PlanSocioCard plan={crearPlanSocioMock()} />);
 
-    render(
-      <PlanSocioCard
-        plan={crearPlanSocioMock({
-          idPlanAlimentacion: 123,
-          versionId: 456,
-        })}
-        alDescargarPdf={alDescargarPdf}
-      />,
-    );
-
-    const boton = screen.getByTestId('boton-descargar-pdf');
-    expect(boton).not.toBeDisabled();
-    await user.click(boton);
-
-    expect(alDescargarPdf).toHaveBeenCalledTimes(1);
-    expect(alDescargarPdf).toHaveBeenCalledWith(123, 456);
+    const link = screen.getByTestId('boton-contactar-nutricionista');
+    expect(link).toHaveAttribute('href');
+    expect(link.getAttribute('href')).toMatch(/^mailto:/);
+    expect(link.getAttribute('href') ?? '').toContain('Lic.%20P%C3%A9rez');
   });
 
   it('atributos data-* permiten testing e2e y selectores por nutricionista', () => {

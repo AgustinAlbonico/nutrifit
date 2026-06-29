@@ -54,7 +54,9 @@ describe('GeneradorPlanSemanal V2', () => {
       wrapper: crearWrapper(),
     });
 
-    expect(screen.getByLabelText(/ID del socio/i)).toBeInTheDocument();
+    // socioId es un campo hidden (no tiene label visible, lo llena el NUT
+    // desde la URL); validamos su existencia con data-testid.
+    expect(screen.getByTestId('socio-id-input')).toBeInTheDocument();
     expect(screen.getByLabelText(/Días a generar/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Comidas por día/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Alternativas por comida/i)).toBeInTheDocument();
@@ -76,19 +78,20 @@ describe('GeneradorPlanSemanal V2', () => {
     expect(inputSocioId.value).toBe('123');
   });
 
-  it('muestra error de validación si socioId es 0 o negativo', async () => {
+  it('bloquea submit si socioId no está cargado', async () => {
     const user = userEvent.setup();
+    // Sin socioIdPreseleccionado, el form tiene socioId=0 (default).
     render(<GeneradorPlanSemanal />, { wrapper: crearWrapper() });
 
     const inputSocioId = screen.getByTestId('socio-id-input');
-    // Limpiar valor y poner 0 (inválido)
-    await user.clear(inputSocioId);
-    await user.type(inputSocioId, '0');
-    await user.tab();
+    expect(inputSocioId).toHaveValue('0');
 
-    await waitFor(() => {
-      expect(screen.getByRole('alert')).toHaveTextContent(/positivo/i);
-    });
+    // El botón debe estar deshabilitado porque socioId=0 falla el Zod.
+    expect(screen.getByTestId('generar-plan-button')).toBeDisabled();
+
+    // No se dispara request
+    await user.click(screen.getByTestId('generar-plan-button')).catch(() => {});
+    expect(screen.getByTestId('generar-plan-button')).toBeDisabled();
   });
 
   it('envía POST /ia/plan-semanal con el payload correcto al hacer submit', async () => {

@@ -26,7 +26,7 @@ import { useState } from 'react';
 import { useForm, Controller, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
-import { Calendar, Loader2, Sparkles, AlertCircle } from 'lucide-react';
+import { Calendar, Loader2, Sparkles, AlertCircle, Info } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -42,6 +42,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useIa } from '@/hooks/useIa';
 import { cn } from '@/lib/utils';
+import { traducirErrorApi } from '@/lib/error-messages';
 import {
   solicitudPlanSemanalSchema,
 } from '@/schemas/ia-plan-semanal.schema';
@@ -152,11 +153,10 @@ export function GeneradorPlanSemanal({
 
       onSuccess?.(respuesta);
     } catch (err) {
-      const mensaje =
-        err instanceof Error
-          ? err.message
-          : 'No se pudo generar el plan. Reintentá en unos minutos.';
-      toast.error('Error al generar el plan', { description: mensaje });
+      const errorTraducido = traducirErrorApi(err);
+      toast.error(errorTraducido.titulo, {
+        description: errorTraducido.descripcion,
+      });
     } finally {
       setEnviando(false);
     }
@@ -198,7 +198,11 @@ export function GeneradorPlanSemanal({
 
       <div className="grid gap-4 sm:grid-cols-2">
         {/* socioId — campo oculto, el socio ya está en el header de la página */}
-        <input type="hidden" {...register('socioId', { valueAsNumber: true })} />
+        <input
+          type="hidden"
+          data-testid="socio-id-input"
+          {...register('socioId', { valueAsNumber: true })}
+        />
 
         {/* diasAGenerar */}
         <div className="flex flex-col gap-1.5">
@@ -381,33 +385,27 @@ export function GeneradorPlanSemanal({
         )}
       </div>
 
-      {/* Aviso: no se puede generar sin ficha de salud */}
+      {/* Hint suave: avisa que el botón estará bloqueado si no hay ficha.
+          Antes era un alert rojo redundante con el botón deshabilitado. */}
       {!fichaDisponible && (
         <div
-          role="alert"
-          className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+          role="status"
+          aria-live="polite"
+          className="flex items-start gap-2 rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground"
         >
-          <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
           <p>
-            No se puede generar el plan porque el socio no tiene ficha de
-            salud cargada. El socio debe completarla primero.
+            El socio debe completar su ficha de salud antes de poder generar
+            un plan.
           </p>
         </div>
       )}
 
-      {/* Error global del mutation (si existe y no fue capturado) */}
+      {/* Error global del mutation con mensaje semántico en español. */}
       {generarPlanSemanalV2.isError && (
-        <div
-          role="alert"
-          className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
-        >
-          <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          <p>
-            {generarPlanSemanalV2.error instanceof Error
-              ? generarPlanSemanalV2.error.message
-              : 'Ocurrió un error al generar el plan.'}
-          </p>
-        </div>
+        <ErrorGlobal
+          error={generarPlanSemanalV2.error}
+        />
       )}
 
       <div className="flex items-center justify-end gap-2">
@@ -464,4 +462,28 @@ function obtenerLunesArgentina(): string {
   const mes = String(ar.getUTCMonth() + 1).padStart(2, '0');
   const dia = String(ar.getUTCDate()).padStart(2, '0');
   return `${anio}-${mes}-${dia}`;
+}
+
+// ============================================================================
+// Sub-componente: ErrorGlobal con mensaje semántico
+// ============================================================================
+
+function ErrorGlobal({ error }: { error: unknown }) {
+  const errorTraducido = traducirErrorApi(error);
+  return (
+    <div
+      role="alert"
+      className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+    >
+      <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+      <div className="flex-1">
+        <p className="font-medium">{errorTraducido.titulo}</p>
+        {errorTraducido.descripcion && (
+          <p className="mt-0.5 text-xs opacity-90">
+            {errorTraducido.descripcion}
+          </p>
+        )}
+      </div>
+    </div>
+  );
 }

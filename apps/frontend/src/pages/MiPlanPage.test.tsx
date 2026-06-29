@@ -160,8 +160,11 @@ describe('MiPlanPage (Packet 6)', () => {
       ).toBeInTheDocument();
     });
     expect(
-      screen.getByText(/Tu nutricionista está preparando tu plan/i),
+      screen.getByText(/Aún no tenés un plan activo/i),
     ).toBeInTheDocument();
+    expect(
+      screen.getAllByRole('link', { name: /Ver mis turnos/i }),
+    ).toHaveLength(1);
   });
 
   it('renderiza 1 PlanSocioCard cuando el socio tiene 1 plan activo (objeto único)', async () => {
@@ -180,7 +183,7 @@ describe('MiPlanPage (Packet 6)', () => {
     const cards = screen.getAllByTestId('plan-socio-card');
     expect(cards).toHaveLength(1);
 
-    expect(screen.getByText(/Mi plan con Lic\. Pérez/i)).toBeInTheDocument();
+    expect(screen.getByText(/Plan con Lic\. Pérez/i)).toBeInTheDocument();
     expect(screen.getByTestId('weekly-plan-grid-v2')).toBeInTheDocument();
   });
 
@@ -210,8 +213,8 @@ describe('MiPlanPage (Packet 6)', () => {
       expect(screen.getAllByTestId('plan-socio-card')).toHaveLength(2);
     });
 
-    expect(screen.getByText(/Mi plan con Lic\. Pérez/i)).toBeInTheDocument();
-    expect(screen.getByText(/Mi plan con Lic\. Gómez/i)).toBeInTheDocument();
+    expect(screen.getByText(/Plan con Lic\. Pérez/i)).toBeInTheDocument();
+    expect(screen.getByText(/Plan con Lic\. Gómez/i)).toBeInTheDocument();
   });
 
   it('normaliza respuesta envuelta en { data: ... } a array', async () => {
@@ -244,6 +247,6 @@ describe('MiPlanPage (Packet 6)', () => {
     await waitFor(() => {
       expect(screen.getByTestId('mi-plan-error')).toBeInTheDocument();
     });
-    expect(screen.getByText(/No se pudieron cargar tus planes/i)).toBeInTheDocument();
+    expect(screen.getByText(/No pudimos cargar tus planes/i)).toBeInTheDocument();
   });
 });

@@ -18,12 +18,12 @@ describe('MacrosBadge', () => {
     );
   });
 
-  it('muestra label "Desvío menor" con banda AMARILLO', () => {
+  it('muestra label "Aceptable" con banda AMARILLO', () => {
     render(<MacrosBadge banda="AMARILLO" desvioPorcentaje={7} />);
 
     const badge = screen.getByTestId('macros-badge');
     expect(badge).toHaveAttribute('data-banda', 'AMARILLO');
-    expect(badge).toHaveTextContent(/Desvío menor/i);
+    expect(badge).toHaveTextContent(/Aceptable/i);
     expect(badge).toHaveTextContent(/\+7\.0%/);
   });
 

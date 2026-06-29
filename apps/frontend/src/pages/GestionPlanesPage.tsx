@@ -28,7 +28,8 @@ import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { EstadoPlanBadge } from '@/components/plan/EstadoPlanBadge';
+import { derivarEstadoPlan } from '@/components/plan/estado-plan.types';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,6 +46,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
 
 // ── Tipos ─────────────────────────────────────────────────────────────
 
@@ -59,6 +61,8 @@ interface PlanAlimentacion {
   idPlanAlimentacion: number;
   objetivoNutricional: string | null;
   activo: boolean;
+  /** Fecha de finalización (cuando pasa a FINALIZADO). Opcional. */
+  finalizadoAt?: string | null;
   fechaCreacion: string;
   socioId: number;
   socio?: {
@@ -211,9 +215,16 @@ export function GestionPlanesPage() {
     );
   });
 
-  // Agrupar por activo/inactivo
-  const planesActivos = planesFiltrados?.filter((p) => p.activo) ?? [];
-  const planesInactivos = planesFiltrados?.filter((p) => !p.activo) ?? [];
+  // Agrupar por activo/inactivo (memoizamos los filtros para que React
+  // Compiler no se queje por "dep that may be mutated later").
+  const planesActivos = useMemo(
+    () => planesFiltrados?.filter((p) => p.activo) ?? [],
+    [planesFiltrados],
+  );
+  const planesInactivos = useMemo(
+    () => planesFiltrados?.filter((p) => !p.activo) ?? [],
+    [planesFiltrados],
+  );
 
   const totalPaginasInactivos = Math.max(1, Math.ceil(planesInactivos.length / limiteInactivos));
   const inicioInactivos = (paginaInactivos - 1) * limiteInactivos;
@@ -237,8 +248,13 @@ export function GestionPlanesPage() {
 
   return (
     <div className="space-y-8 pb-10">
-      {/* Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-orange-500/10 via-rose-500/10 to-transparent p-8 border border-orange-500/20 shadow-sm">
+      {/* Header asimétrico — bloque sólido de acento naranja a la izquierda,
+          sin blobs blur (estética AI slop). */}
+      <div className="relative overflow-hidden rounded-2xl bg-orange-50/60 dark:bg-orange-950/20 p-8 border border-orange-200/60 dark:border-orange-900/50 shadow-sm">
+        <div
+          aria-hidden="true"
+          className="absolute right-0 top-0 h-full w-1/3 bg-gradient-to-r from-transparent to-rose-200/40 dark:to-rose-900/20"
+        />
         <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 to-rose-600 bg-clip-text text-transparent flex items-center gap-3">
@@ -256,7 +272,9 @@ export function GestionPlanesPage() {
                 placeholder="Buscar por paciente u objetivo..."
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
+                aria-label="Buscar planes por paciente o por objetivo"
                 className="pl-10 bg-white/50 border-orange-200 focus:border-orange-400"
+                aria-describedby="resultados-busqueda-planes"
               />
             </div>
             <Button
@@ -268,9 +286,19 @@ export function GestionPlanesPage() {
             </Button>
           </div>
         </div>
-        <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-orange-500/10 blur-3xl" />
-        <div className="absolute -bottom-10 right-20 h-32 w-32 rounded-full bg-rose-500/10 blur-3xl" />
       </div>
+
+      {/* Screen-reader: anuncia resultados de búsqueda */}
+      <p
+        id="resultados-busqueda-planes"
+        role="status"
+        aria-live="polite"
+        className="sr-only"
+      >
+        {busqueda
+          ? `${planesFiltrados?.length ?? 0} resultados para "${busqueda}"`
+          : `${planes?.length ?? 0} planes en total`}
+      </p>
 
       {/* Estadísticas */}
       <div className="grid gap-4 sm:grid-cols-3">
@@ -311,27 +339,33 @@ export function GestionPlanesPage() {
 
       {/* Lista de planes activos */}
       <div>
-        <h2 className="mb-4 text-lg font-semibold">Planes Activos</h2>
-        <div className="grid gap-4">
+        <div className="mb-4 flex items-baseline justify-between gap-2">
+          <h2 className="text-lg font-semibold">Planes Activos</h2>
+          {isLoading ? (
+            <span className="text-xs text-muted-foreground" aria-live="polite">
+              Cargando tus planes…
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">
+              {planesActivos.length} {planesActivos.length === 1 ? 'plan activo' : 'planes activos'}
+            </span>
+          )}
+        </div>
+        <div
+          className="grid gap-4"
+          role="status"
+          aria-busy={isLoading}
+        >
           {isLoading ? (
             Array.from({ length: 3 }).map((_, i) => (
-              <Card key={i}>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                    <Skeleton className="h-12 w-12 rounded-full" />
-                    <div className="flex-1 space-y-2">
-                      <Skeleton className="h-4 w-48" />
-                      <Skeleton className="h-3 w-32" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <Skeleton key={i} className="h-24 w-full rounded-xl" />
             ))
           ) : planesActivos.length > 0 ? (
             planesActivos.map((plan) => (
               <PlanCard
                 key={plan.idPlanAlimentacion}
                 plan={plan}
+                destacado
                 onEliminar={() => setPlanAEliminar(plan.idPlanAlimentacion)}
                 onVaciar={() => setPlanAVaciar(plan.idPlanAlimentacion)}
               />
@@ -363,11 +397,12 @@ export function GestionPlanesPage() {
           <h2 className="mb-4 text-lg font-semibold text-muted-foreground">
             Historial de Planes ({planesInactivos.length})
           </h2>
-          <div className="grid gap-4 opacity-75">
+          <div className="grid gap-3">
             {planesInactivosPaginados.map((plan) => (
               <PlanCard
                 key={plan.idPlanAlimentacion}
                 plan={plan}
+                destacado={false}
                 onEliminar={() => setPlanAEliminar(plan.idPlanAlimentacion)}
                 onVaciar={() => setPlanAVaciar(plan.idPlanAlimentacion)}
               />
@@ -517,10 +552,13 @@ function PlanCard({
   plan,
   onEliminar,
   onVaciar,
+  destacado = true,
 }: {
   plan: PlanAlimentacion;
   onEliminar: () => void;
   onVaciar: () => void;
+  /** false → plan histórico (opacidad reducida). */
+  destacado?: boolean;
 }) {
   // Calcular edad a partir de fechaNacimiento
   const calcularEdad = (fechaNacimiento: string): number | null => {
@@ -540,7 +578,12 @@ function PlanCard({
     : null;
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card
+      className={cn(
+        'hover:shadow-md transition-shadow',
+        !destacado && 'opacity-75',
+      )}
+    >
       <CardContent className="p-4">
         <div className="flex items-start gap-4">
           {/* Avatar del paciente con foto */}
@@ -565,9 +608,12 @@ function PlanCard({
                   ? `${plan.socio.nombre || 'Paciente'} ${plan.socio.apellido || ''}`
                   : `Plan #${plan.idPlanAlimentacion}`}
               </h3>
-              <Badge variant={plan.activo ? 'default' : 'secondary'}>
-                {plan.activo ? 'Activo' : 'Inactivo'}
-              </Badge>
+              <EstadoPlanBadge
+                estado={derivarEstadoPlan({
+                  activo: plan.activo,
+                  finalizadoAt: plan.finalizadoAt ?? null,
+                })}
+              />
             </div>
             <p className="text-sm text-muted-foreground truncate">
               {plan.objetivoNutricional || 'Sin objetivo definido'}

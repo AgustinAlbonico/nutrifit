@@ -48,6 +48,7 @@ import { RestriccionesEditablesCard } from '@/components/plan/RestriccionesEdita
 
 import { apiRequest } from '@/lib/api';
 import { desenvolverRespuestaApi } from '@/lib/api-response';
+import { traducirErrorApi } from '@/lib/error-messages';
 import { useObtenerFichaNutricionista } from '@/hooks/useObtenerFichaNutricionista';
 import { useEditarFichaPaciente } from '@/hooks/useEditarFichaPaciente';
 import type { PaginatedData } from '@nutrifit/shared';
@@ -271,9 +272,10 @@ export function PlanEditorPage() {
         description: `Motivo: ${data.motivoCambio.replace(/_/g, ' ')}. Revisá y activá cuando esté listo.`,
       });
     } catch (err) {
-      const mensaje =
-        err instanceof Error ? err.message : 'No se pudo regenerar el plan.';
-      toast.error('Error al regenerar', { description: mensaje });
+      const errorTraducido = traducirErrorApi(err);
+      toast.error(errorTraducido.titulo, {
+        description: errorTraducido.descripcion,
+      });
     }
   };
 
