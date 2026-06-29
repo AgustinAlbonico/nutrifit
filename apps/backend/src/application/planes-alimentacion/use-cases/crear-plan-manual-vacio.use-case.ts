@@ -22,8 +22,52 @@ import {
   PlanAlimentacionVersionRepository,
 } from 'src/domain/repositories/plan-alimentacion-version.repository';
 import { PlanAlimentacionDatosJson } from 'src/domain/entities/PlanAlimentacionVersion/plan-alimentacion-datos-json';
-import { mapPlanToResponse } from './plan-alimentacion.mapper';
-import type { PlanAlimentacionResponseDto } from '../dtos';
+
+type BandaMacroManual = 'VERDE' | 'AMARILLO' | 'ROJO';
+
+interface DetalleMacroManualDto {
+  real: number;
+  objetivo: number;
+  desvio: number;
+  banda: BandaMacroManual;
+}
+
+interface ResumenMacrosDiaManualDto {
+  calorias: number;
+  proteinas: number;
+  carbohidratos: number;
+  grasas: number;
+  desvioPorcentaje: number;
+  banda: BandaMacroManual;
+  detallePorMacro: {
+    calorias: DetalleMacroManualDto;
+    proteinas: DetalleMacroManualDto;
+    carbohidratos: DetalleMacroManualDto;
+    grasas: DetalleMacroManualDto;
+  };
+}
+
+export interface CrearPlanManualVacioResponseDto {
+  planAlimentacionId: number;
+  versionId: number;
+  numeroVersion: number;
+  plan: PlanAlimentacionDatosJson;
+  validacion: {
+    restriccionesCumplidas: Array<{ restriccion: string; detalle: string }>;
+    restriccionesNoCumplidas: Array<{ restriccion: string; detalle: string }>;
+    advertencias: string[];
+  };
+  macros: {
+    cumpleEstructura: boolean;
+    diasFaltantes: string[];
+    comidasFaltantes: Array<{ dia: string; faltantes: string[] }>;
+    advertencias: string[];
+    macrosPorDia: Record<string, ResumenMacrosDiaManualDto>;
+    bandaGlobal: BandaMacroManual;
+    puedeAceptar: boolean;
+  };
+  advertencias: string[];
+}
 
 @Injectable()
 export class CrearPlanManualVacioUseCase implements BaseUseCase {
@@ -44,7 +88,7 @@ export class CrearPlanManualVacioUseCase implements BaseUseCase {
   async execute(
     nutricionistaUserId: number,
     socioId: number,
-  ): Promise<PlanAlimentacionResponseDto> {
+  ): Promise<CrearPlanManualVacioResponseDto> {
     const usuario = await this.usuarioRepo.findOne({
       where: { idUsuario: nutricionistaUserId },
     });
@@ -141,7 +185,7 @@ export class CrearPlanManualVacioUseCase implements BaseUseCase {
       },
     };
 
-    await this.planVersionRepo.crear({
+    const versionCreada = await this.planVersionRepo.crear({
       idPlanAlimentacion: planGuardado.idPlanAlimentacion,
       numeroVersion: 1,
       datosJson,
@@ -150,15 +194,57 @@ export class CrearPlanManualVacioUseCase implements BaseUseCase {
       createdBy: nutricionistaUserId,
     });
 
-    const planCompleto = await this.planRepo.findOne({
-      where: { idPlanAlimentacion: planGuardado.idPlanAlimentacion },
-      relations: {
-        dias: { opcionesComida: { items: { alimento: true } } },
-        socio: true,
-        nutricionista: true,
-      },
-    });
+    const macrosDetallados = Object.values(DiaSemana).reduce<
+      Record<string, ResumenMacrosDiaManualDto>
+    >((acc, dia) => {
+      acc[dia] = this.crearResumenMacrosDiaVacio();
+      return acc;
+    }, {});
 
-    return mapPlanToResponse(planCompleto!);
+    return {
+      planAlimentacionId: planGuardado.idPlanAlimentacion,
+      versionId: versionCreada.idPlanAlimentacionVersion,
+      numeroVersion: versionCreada.numeroVersion,
+      plan: datosJson,
+      validacion: {
+        restriccionesCumplidas: [],
+        restriccionesNoCumplidas: [],
+        advertencias: [],
+      },
+      macros: {
+        cumpleEstructura: false,
+        diasFaltantes: [],
+        comidasFaltantes: [],
+        advertencias: [],
+        macrosPorDia: macrosDetallados,
+        bandaGlobal: 'VERDE',
+        puedeAceptar: false,
+      },
+      advertencias: [],
+    };
+  }
+
+  private crearResumenMacrosDiaVacio(): ResumenMacrosDiaManualDto {
+    const detalleVacio: DetalleMacroManualDto = {
+      real: 0,
+      objetivo: 0,
+      desvio: 0,
+      banda: 'VERDE',
+    };
+
+    return {
+      calorias: 0,
+      proteinas: 0,
+      carbohidratos: 0,
+      grasas: 0,
+      desvioPorcentaje: 0,
+      banda: 'VERDE',
+      detallePorMacro: {
+        calorias: detalleVacio,
+        proteinas: detalleVacio,
+        carbohidratos: detalleVacio,
+        grasas: detalleVacio,
+      },
+    };
   }
 }

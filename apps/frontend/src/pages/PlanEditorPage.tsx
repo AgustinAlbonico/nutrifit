@@ -87,7 +87,7 @@ function normalizarRespuestaConMacros<
     ...respuesta,
     plan: {
       ...respuesta.plan,
-      macrosPorDia: respuesta.macros.macrosPorDia ?? respuesta.plan.macrosPorDia,
+      macrosPorDia: respuesta.macros?.macrosPorDia ?? respuesta.plan.macrosPorDia,
     },
   };
 }
@@ -216,12 +216,13 @@ export function PlanEditorPage() {
     if (!socioIdNumero) return;
     setCargandoPlanManual(true);
     try {
-      const res = await apiRequest<ApiResponse<RespuestaPlanSemanalV2FE>>(
+      const res = await apiRequest<
+        RespuestaPlanSemanalV2FE | ApiResponse<RespuestaPlanSemanalV2FE>
+      >(
         `/planes-alimentacion/crear-manual/${socioIdNumero}`,
         { method: 'POST' },
       );
-      // apiRequest ya desempaqueta ApiResponse, res es directo el objeto
-      const planData = res as unknown as RespuestaPlanSemanalV2FE;
+      const planData = normalizarRespuestaConMacros(desenvolverRespuestaApi(res));
       setRespuesta(planData);
       setModo('manual');
       toast.success('Plan manual creado');
@@ -508,7 +509,7 @@ export function PlanEditorPage() {
                         </CardTitle>
                         <p className="mt-0.5 text-sm text-muted-foreground">
                           Versión {respuesta.numeroVersion} ·{' '}
-                          {Object.keys(respuesta.macros.macrosPorDia ?? {}).length}{' '}
+                          {Object.keys(respuesta.macros?.macrosPorDia ?? {}).length}{' '}
                           días con macros validadas
                         </p>
                       </div>

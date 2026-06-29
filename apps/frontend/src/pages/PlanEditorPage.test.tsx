@@ -329,6 +329,42 @@ describe('PlanEditorPage (Packet 5b)', () => {
     expect(screen.getByTestId('link-preferencias-ia')).toBeInTheDocument();
   });
 
+  it('crea un plan manual desde una respuesta ApiResponse envuelta', async () => {
+    server.use(
+      http.post('/planes-alimentacion/crear-manual/42', () =>
+        HttpResponse.json({
+          success: true,
+          message: 'Creado correctamente',
+          data: crearRespuestaV2(),
+          meta: null,
+          errors: [],
+        }),
+      ),
+      http.get('/planes-alimentacion/99/versiones', () =>
+        HttpResponse.json({
+          success: true,
+          message: 'Datos obtenidos correctamente',
+          data: {
+            idPlanAlimentacionVersion: 1,
+            datosJson: crearRespuestaV2().plan,
+          },
+          meta: null,
+          errors: [],
+        }),
+      ),
+    );
+
+    const user = userEvent.setup();
+    render(<PlanEditorPage />, { wrapper: crearWrapper() });
+
+    await user.click(await screen.findByRole('tab', { name: /Manual/i }));
+    await user.click(screen.getByRole('button', { name: /Nuevo plan manual/i }));
+
+    expect(await screen.findByTestId('editor-manual-plan')).toBeInTheDocument();
+    expect(toast.success).toHaveBeenCalledWith('Plan manual creado');
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
   it('al generar un plan muestra la grilla V2 + razonamiento + sidebar + botón feedback', async () => {
     server.use(
       http.post('/ia/plan-semanal', () =>

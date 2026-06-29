@@ -35,6 +35,7 @@ import {
   ListarVersionesPlanUseCase,
   ObtenerVersionPlanUseCase,
   CrearFeedbackPlanUseCase,
+  type CrearPlanManualVacioResponseDto,
   EditarFeedbackPlanUseCase,
   ActivarPlanAlimentacionUseCase,
   FinalizarPlanAlimentacionUseCase,
@@ -119,7 +120,7 @@ export class PlanAlimentacionController {
   async crearPlanManual(
     @CurrentUserId() nutricionistaUserId: number,
     @Param('socioId', ParseIntPipe) socioId: number,
-  ): Promise<PlanAlimentacionResponseDto> {
+  ): Promise<CrearPlanManualVacioResponseDto> {
     this.logger.log(
       `Creando plan manual vacío para socio ${socioId} por nutricionista ${nutricionistaUserId}.`,
     );
