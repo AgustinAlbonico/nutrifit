@@ -1,5 +1,90 @@
 import { RestriccionesValidator } from './restricciones-validator.service';
 
+describe('RestriccionesValidator.validarAlternativa', () => {
+  let sut: RestriccionesValidator;
+
+  beforeEach(() => {
+    sut = new RestriccionesValidator({} as never);
+  });
+
+  it('rechaza alternativa con alergia (critico)', () => {
+    const ficha = {
+      alergias: ['Mani'],
+      restriccionesAlimentarias: null,
+      patologias: [],
+      medicacionActual: null,
+      suplementosActuales: null,
+    } as never;
+    const alternativa = {
+      nombre: 'Almendras garrapiñadas',
+      alimentos: [{ alimentoId: 1, cantidad: 30, unidad: 'g', alimentoNombre: 'Mani' }],
+    };
+
+    const resultado = sut.validarAlternativa(ficha, alternativa);
+
+    expect(resultado.criticas.length).toBeGreaterThan(0);
+    expect(resultado.criticas[0]).toMatchObject({ tipo: 'alergia', ingrediente: 'Mani' });
+    expect(resultado.warnings).toHaveLength(0);
+  });
+
+  it('rechaza alternativa no vegana cuando restriccion es vegana', () => {
+    const ficha = {
+      alergias: [],
+      restriccionesAlimentarias: 'vegano',
+      patologias: [],
+      medicacionActual: null,
+      suplementosActuales: null,
+    } as never;
+    const alternativa = {
+      nombre: 'Omelette',
+      alimentos: [{ alimentoId: 1, cantidad: 100, unidad: 'g', alimentoNombre: 'Huevo' }],
+    };
+
+    const resultado = sut.validarAlternativa(ficha, alternativa);
+
+    expect(resultado.criticas[0]).toMatchObject({ tipo: 'restriccion-dura' });
+  });
+
+  it('devuelve warning (no critico) para interaccion medicacion-alimento', () => {
+    const ficha = {
+      alergias: [],
+      restriccionesAlimentarias: null,
+      patologias: [],
+      medicacionActual: 'warfarina',
+      suplementosActuales: null,
+    } as never;
+    const alternativa = {
+      nombre: 'Ensalada de espinaca',
+      alimentos: [{ alimentoId: 5, cantidad: 100, unidad: 'g', alimentoNombre: 'Espinaca' }],
+    };
+
+    const resultado = sut.validarAlternativa(ficha, alternativa);
+
+    expect(resultado.criticas).toHaveLength(0);
+    expect(resultado.warnings.length).toBeGreaterThan(0);
+    expect(resultado.warnings[0]).toMatch(/Vitamina K/);
+  });
+
+  it('devuelve 0 criticas y 0 warnings con ficha vacia', () => {
+    const ficha = {
+      alergias: [],
+      restriccionesAlimentarias: null,
+      patologias: [],
+      medicacionActual: null,
+      suplementosActuales: null,
+    } as never;
+    const alternativa = {
+      nombre: 'Manzana',
+      alimentos: [{ alimentoId: 1, cantidad: 1, unidad: 'unidad', alimentoNombre: 'Manzana' }],
+    };
+
+    const resultado = sut.validarAlternativa(ficha, alternativa);
+
+    expect(resultado.criticas).toHaveLength(0);
+    expect(resultado.warnings).toHaveLength(0);
+  });
+});
+
 describe('RestriccionesValidator', () => {
   it('detecta incidencias por restricciones y patologias con heuristicas normalizadas', async () => {
     const fichaSaludRepo = {

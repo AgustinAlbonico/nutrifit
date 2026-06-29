@@ -417,4 +417,113 @@ export class RestriccionesValidator {
 
     return incidencias;
   }
+
+  /**
+   * Valida una alternativa de comida individual contra la ficha de salud del socio.
+   * Detecta violaciones criticas (alergias, restricciones duras como vegano/sin TACC)
+   * y advertencias (interacciones medicamento-alimento).
+   */
+  validarAlternativa(
+    ficha: {
+      alergias: string[] | null;
+      restriccionesAlimentarias: string | null;
+      patologias: unknown[];
+      medicacionActual: string | null;
+      suplementosActuales: string | null;
+    },
+    alternativa: {
+      nombre: string;
+      alimentos: Array<{
+        alimentoId: number;
+        cantidad: number;
+        unidad: string;
+        alimentoNombre?: string;
+      }>;
+    },
+  ): { criticas: Array<{ tipo: string; ingrediente: string; mensaje: string }>; warnings: string[] } {
+    const criticas: Array<{ tipo: string; ingrediente: string; mensaje: string }> = [];
+    const warnings: string[] = [];
+
+    const nombresAlimentos = alternativa.alimentos
+      .map((a) => a.alimentoNombre ?? '')
+      .filter(Boolean);
+
+    // 1. Alergias (critico)
+    if (ficha.alergias?.length) {
+      for (const nombre of nombresAlimentos) {
+        if (ficha.alergias.some((a) =>
+          nombre.toLowerCase().includes(a.toLowerCase()),
+        )) {
+          criticas.push({
+            tipo: 'alergia',
+            ingrediente: nombre,
+            mensaje: `La idea contiene "${nombre}", que esta en las alergias declaradas.`,
+          });
+        }
+      }
+    }
+
+    // 2. Restricciones alimentarias (critico si vegano/TACC/etc)
+    const restricciones = (ficha.restriccionesAlimentarias ?? '').toLowerCase();
+    const isVegano = restricciones.includes('vegano');
+    const isSinTACC = restricciones.includes('tacc')
+      || restricciones.includes('celiac')
+      || restricciones.includes('gluten');
+
+    const PROTEINAS_ANIMALES = ['carne', 'pollo', 'res', 'cerdo', 'pescado', 'huevo'];
+    const LACTOS = ['leche', 'queso', 'yogur', 'manteca'];
+    const MIEL = ['miel'];
+    const GLUTEN = ['trigo', 'avena', 'cebada', 'centeno'];
+
+    if (isVegano) {
+      const incluyeAnimal = nombresAlimentos.some((n) =>
+        [...PROTEINAS_ANIMALES, ...LACTOS, ...MIEL].some((a) =>
+          n.toLowerCase().includes(a),
+        ),
+      );
+      if (incluyeAnimal) {
+        criticas.push({
+          tipo: 'restriccion-dura',
+          ingrediente: nombresAlimentos.find((n) =>
+            [...PROTEINAS_ANIMALES, ...LACTOS, ...MIEL].some((a) =>
+              n.toLowerCase().includes(a),
+            ),
+          ) ?? '',
+          mensaje: 'La idea incluye productos animales y la restriccion es vegana.',
+        });
+      }
+    }
+
+    if (isSinTACC) {
+      const incluyeGluten = nombresAlimentos.some((n) =>
+        GLUTEN.some((g) => n.toLowerCase().includes(g)),
+      );
+      if (incluyeGluten) {
+        criticas.push({
+          tipo: 'restriccion-dura',
+          ingrediente: nombresAlimentos.find((n) =>
+            GLUTEN.some((g) => n.toLowerCase().includes(g)),
+          ) ?? '',
+          mensaje: 'La idea incluye gluten y la restriccion es sin TACC.',
+        });
+      }
+    }
+
+    // 3. Medicacion (warning, no critico)
+    const medicacion = (ficha.medicacionActual ?? '').toLowerCase();
+    if (medicacion.includes('warfarina') || medicacion.includes('anticoagulante')) {
+      const altoVitK = nombresAlimentos.some((n) =>
+        ['espinaca', 'brocoli', 'col rizada', 'acelga'].some((v) =>
+          n.toLowerCase().includes(v),
+        ),
+      );
+      if (altoVitK) {
+        warnings.push(
+          'El paciente toma anticoagulantes: el alimento es alto en Vitamina K.',
+        );
+      }
+    }
+
+    return { criticas, warnings };
+  }
 }
