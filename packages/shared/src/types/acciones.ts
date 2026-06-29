@@ -266,6 +266,9 @@ export const ACCIONES = {
   PLANES_IA_REGENERAR: 'planes-ia.regenerar',
   PLANES_IA_FEEDBACK: 'planes-ia.feedback',
   PLANES_IA_MEMORIA_EDITAR: 'planes-ia.memoria.editar',
+  PLANES_IDEAS_GENERAR: 'planes-ia.ideas.generar',
+  PLANES_SLOTS_EDITAR: 'planes-ia.slots.editar',
+  PLANES_PERSISTIR_MANUAL: 'planes-ia.persistir-manual',
   PLANES_ACTIVAR: 'planes.activar',
   PLANES_FINALIZAR: 'planes.finalizar',
 
