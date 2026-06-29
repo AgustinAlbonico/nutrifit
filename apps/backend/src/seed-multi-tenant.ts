@@ -733,8 +733,8 @@ async function runSeedMultiTenant() {
         }
 
         const resultadoPersona: unknown = await dataSource.query(
-          `INSERT INTO persona (nombre, apellido, fecha_nacimiento, genero, telefono, direccion, ciudad, provincia, id_gimnasio, matricula, anios_experiencia, tarifa_sesion, presentacion, certificaciones, tipo_persona)
-           VALUES (?, ?, '1990-01-01', 'OTRO', '341-000-0000', 'Sin direccion', 'Rosario', 'Santa Fe', ?, ?, 5, 0, ?, ?, 'NutricionistaOrmEntity')
+          `INSERT INTO persona (nombre, apellido, fecha_nacimiento, genero, telefono, direccion, ciudad, provincia, id_gimnasio, matricula, anios_experiencia, tarifa_sesion, presentacion, tipo_persona)
+           VALUES (?, ?, '1990-01-01', 'OTRO', '341-000-0000', 'Sin direccion', 'Rosario', 'Santa Fe', ?, ?, 5, 0, ?, 'NutricionistaOrmEntity')
            ON DUPLICATE KEY UPDATE id_persona = LAST_INSERT_ID(id_persona)`,
           [
             nutri.nombre,
@@ -742,7 +742,6 @@ async function runSeedMultiTenant() {
             idGimnasio,
             nutri.matricula,
             nutri.presentacion,
-            nutri.certificaciones,
           ],
         );
 
@@ -797,8 +796,8 @@ async function runSeedMultiTenant() {
         if (!idGimnasio) continue;
 
         const resultadoPersona: unknown = await dataSource.query(
-          `INSERT INTO persona (nombre, apellido, fecha_nacimiento, genero, telefono, direccion, ciudad, provincia, id_gimnasio, dni, matricula, anios_experiencia, tarifa_sesion, presentacion, certificaciones, tipo_persona)
-           VALUES (?, ?, '1990-06-15', ?, '341-555-5000', 'Av. Demo 1000', 'Rosario', 'Santa Fe', ?, ?, ?, ?, ?, ?, ?, 'NutricionistaOrmEntity')
+          `INSERT INTO persona (nombre, apellido, fecha_nacimiento, genero, telefono, direccion, ciudad, provincia, id_gimnasio, dni, matricula, anios_experiencia, tarifa_sesion, presentacion, tipo_persona)
+           VALUES (?, ?, '1990-06-15', ?, '341-555-5000', 'Av. Demo 1000', 'Rosario', 'Santa Fe', ?, ?, ?, ?, ?, ?, 'NutricionistaOrmEntity')
            ON DUPLICATE KEY UPDATE id_persona = LAST_INSERT_ID(id_persona)`,
           [
             nutri.nombre,
@@ -810,7 +809,6 @@ async function runSeedMultiTenant() {
             nutri.aniosExperiencia,
             nutri.tarifaSesion,
             nutri.presentacion,
-            nutri.certificaciones,
           ],
         );
 
@@ -1211,6 +1209,40 @@ async function runSeedMultiTenant() {
       console.log(`Planes de alimentacion creados: ${planesData.length}`);
     };
 
+    const crearAlimentosSeed = async (): Promise<void> => {
+      console.log('Seeding alimentos...');
+      const catalog = [
+        { nombre: 'Leche entera', cantidad: 100, calorias: 61, proteinas: 3, carbohidratos: 5, grasas: 3, unidadMedida: 'mililitro' },
+        { nombre: 'Yogur natural', cantidad: 100, calorias: 63, proteinas: 4, carbohidratos: 5, grasas: 3, unidadMedida: 'gramo' },
+        { nombre: 'Huevo', cantidad: 1, calorias: 78, proteinas: 6.5, carbohidratos: 0.6, grasas: 5, unidadMedida: 'unidad' },
+        { nombre: 'Pechuga de pollo', cantidad: 100, calorias: 165, proteinas: 31, carbohidratos: 0, grasas: 4, unidadMedida: 'gramo' },
+        { nombre: 'Carne vacuna magra', cantidad: 100, calorias: 187, proteinas: 27, carbohidratos: 0, grasas: 8, unidadMedida: 'gramo' },
+        { nombre: 'Carne de cuadril', cantidad: 100, calorias: 200, proteinas: 20, carbohidratos: 0, grasas: 12, unidadMedida: 'gramo' },
+        { nombre: 'Merluza', cantidad: 100, calorias: 90, proteinas: 19, carbohidratos: 0, grasas: 1, unidadMedida: 'gramo' },
+        { nombre: 'Arroz blanco cocido', cantidad: 100, calorias: 130, proteinas: 3, carbohidratos: 28, grasas: 0, unidadMedida: 'gramo' },
+        { nombre: 'Pan frances', cantidad: 100, calorias: 272, proteinas: 8, carbohidratos: 57, grasas: 1, unidadMedida: 'gramo' },
+        { nombre: 'Avena', cantidad: 100, calorias: 389, proteinas: 17, carbohidratos: 66, grasas: 7, unidadMedida: 'gramo' },
+        { nombre: 'Lentejas cocidas', cantidad: 100, calorias: 116, proteinas: 9, carbohidratos: 20, grasas: 0, unidadMedida: 'gramo' },
+        { nombre: 'Papa', cantidad: 100, calorias: 77, proteinas: 2, carbohidratos: 17, grasas: 0, unidadMedida: 'gramo' },
+        { nombre: 'Zanahoria', cantidad: 100, calorias: 41, proteinas: 1, carbohidratos: 10, grasas: 0, unidadMedida: 'gramo' },
+        { nombre: 'Manzana', cantidad: 1, calorias: 95, proteinas: 0.5, carbohidratos: 25, grasas: 0.3, unidadMedida: 'unidad' },
+        { nombre: 'Banana', cantidad: 1, calorias: 105, proteinas: 1.3, carbohidratos: 27, grasas: 0.4, unidadMedida: 'unidad' },
+        { nombre: 'Masitas de agua', cantidad: 100, calorias: 420, proteinas: 9, carbohidratos: 72, grasas: 10, unidadMedida: 'gramo' },
+        { nombre: 'Aceite de oliva', cantidad: 100, calorias: 884, proteinas: 0, carbohidratos: 0, grasas: 100, unidadMedida: 'mililitro' },
+        { nombre: 'Azucar', cantidad: 100, calorias: 387, proteinas: 0, carbohidratos: 100, grasas: 0, unidadMedida: 'gramo' }
+      ];
+
+      for (const a of catalog) {
+        await dataSource.query(
+          `INSERT IGNORE INTO alimento (nombre, cantidad, calorias, proteinas, carbohidratos, grasas, hidratos_de_carbono, unidad_medida)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [a.nombre, a.cantidad, a.calorias, a.proteinas, a.carbohidratos, a.grasas, a.carbohidratos, a.unidadMedida]
+        );
+      }
+      console.log('Alimentos seeded.');
+    };
+
+    await crearAlimentosSeed();
     await crearPlanesDemo();
 
     console.log('Seed multi-tenant completado');

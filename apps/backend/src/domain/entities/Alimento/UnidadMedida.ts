@@ -7,4 +7,5 @@ export enum UnidadMedida {
   TAZA = 'taza',
   CUCHARADA = 'cucharada',
   CUCHARADITA = 'cucharadita',
+  UNIDAD = 'unidad',
 }

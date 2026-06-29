@@ -745,14 +745,113 @@ export function PlanEditorPage() {
           <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
             {planIdEditorManual ? (
               <div
-                className="grid gap-6 lg:grid-cols-[1fr_360px]"
+                className="flex flex-col gap-6 w-full animate-in fade-in duration-300"
                 data-testid="plan-editor-layout"
               >
-                {/* Columna Izquierda: Grilla + Validaciones */}
+                {/* Fila superior: Controles horizontales responsivos */}
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {/* Columna 1: Estado del Plan y Publicación */}
+                  <Card className="rounded-2xl border-border/50 bg-card/60 backdrop-blur-sm shadow-md flex flex-col justify-between">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
+                        <CheckCircle2 className="size-4 text-emerald-500 animate-pulse" />
+                        Estado del Borrador
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3 flex-1 flex flex-col justify-between">
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Tus cambios se guardan automáticamente. Hacé clic en "Guardar versión definitiva" para activar el plan para el paciente.
+                      </p>
+                      <div className="space-y-3 pt-2">
+                        {ultimoGuardado && !guardandoBorrador && (
+                          <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                            <CheckCircle2 className="size-3.5" />
+                            Actualizado a las {ultimoGuardado.toLocaleTimeString()}
+                          </div>
+                        )}
+                        {guardandoBorrador && (
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
+                            Guardando borrador...
+                          </div>
+                        )}
+                        <Button
+                          onClick={guardarVersionExplicita}
+                          disabled={guardandoBorrador || cargandoEstructura}
+                          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-9 flex items-center justify-center gap-1.5 rounded-xl transition-all shadow"
+                          data-testid="guardar-version-btn"
+                        >
+                          <Save className="size-4" />
+                          Guardar versión definitiva
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Columna 2: Sugerencias por Slot (PanelIdeasIa) */}
+                  <PanelIdeasIa
+                    planId={planIdEditorManual}
+                    diaSeleccionado={diaSeleccionado}
+                    comidaSeleccionada={comidaSeleccionada}
+                    onSelectSlot={handleSelectSlotForIa}
+                    onAddIdea={handleAddIdea}
+                  />
+
+                  {/* Columna 3: Generación Completa IA */}
+                  <Card className="rounded-2xl border-border/50 bg-card/60 backdrop-blur-sm shadow-md flex flex-col">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                        <Sparkles
+                          className="size-4 text-fuchsia-500 animate-pulse"
+                          aria-hidden="true"
+                        />
+                        Herramientas de IA
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex-1 flex flex-col justify-center">
+                      <GeneradorPlanSemanal
+                        planAlimentacionId={planIdEditorManual}
+                        socioIdPreseleccionado={socioIdNumero}
+                        fichaDisponible={!!ficha && !cargandoFicha && !sinPermisos && !sinFicha && !errorFicha}
+                        onSuccess={(data) => {
+                          const respuestaNormalizada = normalizarRespuestaConMacros(data);
+                          setRespuesta(respuestaNormalizada);
+                          setEstructura(completarEstructuraManual(respuestaNormalizada.plan.estructura));
+                          setVersionSeleccionadaId(respuestaNormalizada.versionId);
+                          haSidoModificadoRef.current = false;
+                        }}
+                      />
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Ficha de salud del paciente (editable) - Fila intermedia */}
+                {socioIdNumero && (
+                  <RestriccionesEditablesCard
+                    ficha={ficha}
+                    socio={
+                      paciente
+                        ? {
+                            nombreCompleto: paciente.nombreCompleto,
+                            dni: paciente.dni,
+                          }
+                        : null
+                    }
+                    isLoading={cargandoFicha}
+                    isError={errorFicha}
+                    sinFicha={sinFicha}
+                    sinPermisos={sinPermisos}
+                    onSave={manejarGuardarFicha}
+                    isSaving={guardandoFicha}
+                    errorGuardar={errorGuardarFicha?.message ?? null}
+                  />
+                )}
+
+                {/* Grilla Semanal Principal (Ancho Completo) y Validaciones */}
                 <main className="flex flex-col gap-6 min-w-0">
                   {cargandoEstructura ? (
                     <div className="flex items-center justify-center gap-2 py-16 text-center text-sm text-muted-foreground bg-card/25 rounded-2xl border border-dashed">
-                      <Loader2 className="size-5 animate-spin" aria-hidden="true" />
+                      <Loader2 className="size-5 animate-spin text-muted-foreground" aria-hidden="true" />
                       Cargando borrador del plan...
                     </div>
                   ) : (
@@ -797,103 +896,6 @@ export function PlanEditorPage() {
                     </section>
                   )}
                 </main>
-
-                {/* Columna Derecha: Sidebar de Acciones */}
-                <aside aria-label="Controles del plan" className="space-y-6">
-                  {/* Card: Estado del Borrador y Guardar Versión Definitiva */}
-                  <Card className="rounded-2xl border-border/50 bg-card/60 backdrop-blur-sm shadow-md">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
-                        <CheckCircle2 className="size-4 text-emerald-500" />
-                        Autoguardado
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <p className="text-xs text-muted-foreground">
-                        Tus cambios se guardan automáticamente en un borrador. Hacé clic en "Guardar versión definitiva" para publicar y activar el plan para el paciente.
-                      </p>
-                      {ultimoGuardado && !guardandoBorrador && (
-                        <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                          <CheckCircle2 className="size-3.5" />
-                          Borrador actualizado a las {ultimoGuardado.toLocaleTimeString()}
-                        </div>
-                      )}
-                      {guardandoBorrador && (
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <Loader2 className="size-3.5 animate-spin" />
-                          Guardando borrador...
-                        </div>
-                      )}
-                      <Button
-                        onClick={guardarVersionExplicita}
-                        disabled={guardandoBorrador || cargandoEstructura}
-                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-9 flex items-center justify-center gap-1.5 rounded-xl transition-all shadow"
-                        data-testid="guardar-version-btn"
-                      >
-                        <Save className="size-4" />
-                        Guardar versión definitiva
-                      </Button>
-                    </CardContent>
-                  </Card>
-
-                  {/* Panel de Ideas IA (Sugerencias) */}
-                  <PanelIdeasIa
-                    planId={planIdEditorManual}
-                    diaSeleccionado={diaSeleccionado}
-                    comidaSeleccionada={comidaSeleccionada}
-                    onSelectSlot={handleSelectSlotForIa}
-                    onAddIdea={handleAddIdea}
-                  />
-
-                  {/* Generador de plan completo con IA */}
-                  <Card className="rounded-2xl border-border/50">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="flex items-center gap-2 text-md">
-                        <Sparkles
-                          className="size-4 text-fuchsia-500 animate-pulse"
-                          aria-hidden="true"
-                        />
-                        Generar plan completo con IA
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <GeneradorPlanSemanal
-                        planAlimentacionId={planIdEditorManual}
-                        socioIdPreseleccionado={socioIdNumero}
-                        fichaDisponible={!!ficha && !cargandoFicha && !sinPermisos && !sinFicha && !errorFicha}
-                        onSuccess={(data) => {
-                          const respuestaNormalizada = normalizarRespuestaConMacros(data);
-                          setRespuesta(respuestaNormalizada);
-                          setEstructura(completarEstructuraManual(respuestaNormalizada.plan.estructura));
-                          setVersionSeleccionadaId(respuestaNormalizada.versionId);
-                          haSidoModificadoRef.current = false;
-                        }}
-                      />
-                    </CardContent>
-                  </Card>
-
-                  {/* Ficha de salud del paciente (editable) */}
-                  {socioIdNumero && (
-                    <RestriccionesEditablesCard
-                      ficha={ficha}
-                      socio={
-                        paciente
-                          ? {
-                              nombreCompleto: paciente.nombreCompleto,
-                              dni: paciente.dni,
-                            }
-                          : null
-                      }
-                      isLoading={cargandoFicha}
-                      isError={errorFicha}
-                      sinFicha={sinFicha}
-                      sinPermisos={sinPermisos}
-                      onSave={manejarGuardarFicha}
-                      isSaving={guardandoFicha}
-                      errorGuardar={errorGuardarFicha?.message ?? null}
-                    />
-                  )}
-                </aside>
               </div>
             ) : cargandoPlanExistente ? (
               <div className="flex items-center justify-center gap-2 py-16 text-center text-sm text-muted-foreground">

@@ -15,6 +15,9 @@ import { apiRequest } from '@/lib/api';
 import { traducirErrorApi } from '@/lib/error-messages';
 import { AlternativaIaCard } from './AlternativaIaCard';
 import type { DiaSemana, TipoComidaPlan, IdeaComidaIa } from '@/types/ia';
+import { useAuth } from '@/contexts/AuthContext';
+import { desenvolverRespuestaApi } from '@/lib/api-response';
+import type { ApiResponse } from '@/types/api';
 
 const DIAS: DiaSemana[] = [
   'LUNES',
@@ -49,6 +52,7 @@ export function PanelIdeasIa({
   comidaSeleccionada,
   onSelectSlot,
 }: Props) {
+  const { token } = useAuth();
   const [cantidadAlternativas, setCantidadAlternativas] = useState(5);
   const [ideas, setIdeas] = useState<IdeaComidaIa[]>([]);
   const [pagina, setPagina] = useState(0);
@@ -60,7 +64,7 @@ export function PanelIdeasIa({
     setIdeas([]);
     setPagina(0);
     try {
-      const res = await apiRequest<{ alternativas: IdeaComidaIa[] }>(
+      const res = await apiRequest<ApiResponse<{ alternativas: IdeaComidaIa[] }>>(
         `/planes-alimentacion/${planId}/ideas-comida`,
         {
           method: 'POST',
@@ -69,9 +73,11 @@ export function PanelIdeasIa({
             tipoComida: comidaSeleccionada,
             cantidadAlternativas,
           },
+          token,
         },
       );
-      setIdeas(res.alternativas || []);
+      const data = desenvolverRespuestaApi(res);
+      setIdeas(data.alternativas || []);
     } catch (err) {
       const errorTraducido = traducirErrorApi(err);
       toast.error(errorTraducido.titulo, {
