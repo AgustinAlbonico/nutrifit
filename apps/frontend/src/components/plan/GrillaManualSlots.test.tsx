@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import { GrillaManualSlots } from './GrillaManualSlots';
+import type { EstructuraDiaFE } from '@/types/ia';
 
 // Mock SugerenciasIaSlot so 35 concurrent API calls don't cause issues in tests
 vi.mock('./SugerenciasIaSlot', () => ({
@@ -110,7 +111,7 @@ describe('GrillaManualSlots', () => {
 
     expect(onChange).toHaveBeenCalledTimes(1);
     // The LUNES DESAYUNO alternativas should now be empty
-    const resultado = onChange.mock.calls[0][0] as { comidas: Array<{ tipo: string; alternativas: unknown[] }> };
+    const resultado = onChange.mock.calls[0][0] as EstructuraDiaFE[];
     const lunesDesayuno = resultado[0].comidas.find((c) => c.tipo === 'DESAYUNO');
     expect(lunesDesayuno?.alternativas).toHaveLength(0);
   });

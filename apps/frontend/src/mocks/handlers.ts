@@ -17,4 +17,18 @@ export const handlers = [
       alternativas: [],
     });
   }),
+  // Persistir plan manual (Task 2.9)
+  http.post('/planes-alimentacion/:id/persistir-manual', ({ params }) => {
+    const { id } = params;
+    return HttpResponse.json({ versionId: Number(id) * 100 + 1 });
+  }),
+  // Obtener versiones del plan (para cargar versión V2 activa)
+  http.get('/planes-alimentacion/:id/versiones', () => {
+    return HttpResponse.json({
+      success: true,
+      data: {
+        versiones: [],
+      },
+    });
+  }),
 ];
