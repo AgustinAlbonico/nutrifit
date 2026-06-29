@@ -58,6 +58,7 @@ import {
   PLAN_FEEDBACK_REPOSITORY,
   PlanFeedbackRepository,
 } from 'src/domain/repositories/plan-feedback.repository';
+import { ACCIONES } from '@nutrifit/shared';
 
 export class ActivarPlanHttpDTO {
   @IsInt()
@@ -207,7 +208,7 @@ export class PlanAlimentacionController {
 
   @Get(':id/versiones')
   @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN, RolEnum.SUPERADMIN, RolEnum.SOCIO)
-  @Actions('PLANES_IA_VERSIONES')
+  @Actions(ACCIONES.PLANES_VER)
   async listarVersiones(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser()
@@ -232,7 +233,7 @@ export class PlanAlimentacionController {
 
   @Get('version/:versionId')
   @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN, RolEnum.SUPERADMIN, RolEnum.SOCIO)
-  @Actions('PLANES_IA_VERSIONES')
+  @Actions(ACCIONES.PLANES_VER)
   async obtenerVersion(
     @Param('versionId', ParseIntPipe) versionId: number,
     @CurrentUser()

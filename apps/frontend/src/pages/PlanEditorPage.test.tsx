@@ -19,6 +19,15 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { toast } from 'sonner';
 import type { ReactNode } from 'react';
 
+const authMock = vi.hoisted(() => ({
+  token: 'mock-token',
+  personaId: 1,
+  gimnasioId: 1,
+  rol: 'NUTRICIONISTA',
+  permissions: ['PLANES_IA_GENERAR'],
+  isAuthenticated: true,
+}));
+
 vi.mock('sonner', () => ({
   toast: {
     success: vi.fn(),
@@ -30,14 +39,7 @@ vi.mock('sonner', () => ({
 
 // Mock del AuthContext para evitar dependencias de localStorage / tokens
 vi.mock('@/contexts/AuthContext', () => ({
-  useAuth: () => ({
-    token: 'mock-token',
-    personaId: 1,
-    gimnasioId: 1,
-    rol: 'NUTRICIONISTA',
-    permissions: ['PLANES_IA_GENERAR'],
-    isAuthenticated: true,
-  }),
+  useAuth: () => authMock,
 }));
 
 // Mock del router de TanStack para usar MemoryRouter
@@ -59,6 +61,7 @@ import type {
   RespuestaPlanSemanalV2FE,
   VersionPlanFE,
 } from '@/types/ia';
+import type { FichaSaludSocio } from '@/types/ficha-salud';
 
 function crearWrapper() {
   const queryClient = new QueryClient({
@@ -145,30 +148,14 @@ function crearRespuestaV2(): RespuestaPlanSemanalV2FE {
         proteinas: 100,
         carbohidratos: 250,
         grasas: 60,
-        desvioPorcentaje: 0,
-        banda: 'VERDE',
-        detallePorMacro: {
-          calorias: { real: 2000, objetivo: 2000, desvio: 0, banda: 'VERDE' },
-          proteinas: { real: 100, objetivo: 100, desvio: 0, banda: 'VERDE' },
-          carbohidratos: { real: 250, objetivo: 250, desvio: 0, banda: 'VERDE' },
-          grasas: { real: 60, objetivo: 60, desvio: 0, banda: 'VERDE' },
-        },
       },
       MARTES: {
         calorias: 1800,
         proteinas: 80,
         carbohidratos: 220,
         grasas: 50,
-        desvioPorcentaje: -10,
-        banda: 'ROJO',
-        detallePorMacro: {
-          calorias: { real: 1800, objetivo: 2000, desvio: -10, banda: 'ROJO' },
-          proteinas: { real: 80, objetivo: 100, desvio: -20, banda: 'ROJO' },
-          carbohidratos: { real: 220, objetivo: 250, desvio: -12, banda: 'ROJO' },
-          grasas: { real: 50, objetivo: 60, desvio: -16.67, banda: 'ROJO' },
-        },
       },
-    },
+    } as unknown as PlanAlimentacionDatosJsonFE['macrosPorDia'],
     razonamientoCumplimiento: {
       restriccionesCumplidas: [
         {
@@ -201,7 +188,36 @@ function crearRespuestaV2(): RespuestaPlanSemanalV2FE {
       diasFaltantes: [],
       comidasFaltantes: [],
       advertencias: [],
-      macrosPorDia: plan.macrosPorDia,
+      macrosPorDia: {
+        LUNES: {
+          calorias: 2000,
+          proteinas: 100,
+          carbohidratos: 250,
+          grasas: 60,
+          desvioPorcentaje: 0,
+          banda: 'VERDE',
+          detallePorMacro: {
+            calorias: { real: 2000, objetivo: 2000, desvio: 0, banda: 'VERDE' },
+            proteinas: { real: 100, objetivo: 100, desvio: 0, banda: 'VERDE' },
+            carbohidratos: { real: 250, objetivo: 250, desvio: 0, banda: 'VERDE' },
+            grasas: { real: 60, objetivo: 60, desvio: 0, banda: 'VERDE' },
+          },
+        },
+        MARTES: {
+          calorias: 1800,
+          proteinas: 80,
+          carbohidratos: 220,
+          grasas: 50,
+          desvioPorcentaje: -10,
+          banda: 'ROJO',
+          detallePorMacro: {
+            calorias: { real: 1800, objetivo: 2000, desvio: -10, banda: 'ROJO' },
+            proteinas: { real: 80, objetivo: 100, desvio: -20, banda: 'ROJO' },
+            carbohidratos: { real: 220, objetivo: 250, desvio: -12, banda: 'ROJO' },
+            grasas: { real: 50, objetivo: 60, desvio: -16.67, banda: 'ROJO' },
+          },
+        },
+      },
       bandaGlobal: 'AMARILLO',
       puedeAceptar: false,
     },
@@ -209,17 +225,88 @@ function crearRespuestaV2(): RespuestaPlanSemanalV2FE {
   };
 }
 
+function crearFichaPaciente(): FichaSaludSocio {
+  return {
+    socioId: 42,
+    fichaSaludId: 7,
+    altura: 170,
+    peso: 72,
+    nivelActividadFisica: 'MODERADO',
+    alergias: [],
+    patologias: [],
+    objetivoPersonal: 'Mejorar hábitos alimentarios',
+    medicacionActual: null,
+    suplementosActuales: null,
+    cirugiasPrevias: null,
+    antecedentesFamiliares: null,
+    frecuenciaComidas: null,
+    consumoAguaDiario: null,
+    restriccionesAlimentarias: null,
+    consumoAlcohol: null,
+    fumaTabaco: false,
+    horasSueno: null,
+    contactoEmergenciaNombre: null,
+    contactoEmergenciaTelefono: null,
+    completada: true,
+    completadaAt: new Date('2026-06-01T12:00:00.000Z'),
+    actualizadaAt: new Date('2026-06-01T12:00:00.000Z'),
+    consentAt: new Date('2026-06-01T12:00:00.000Z'),
+    versionActual: 1,
+  };
+}
+
 describe('PlanEditorPage (Packet 5b)', () => {
   beforeEach(() => {
     server.resetHandlers();
     vi.clearAllMocks();
+    authMock.token = 'mock-token';
+    authMock.personaId = 1;
+    authMock.gimnasioId = 1;
+    authMock.rol = 'NUTRICIONISTA';
+    authMock.permissions = ['PLANES_IA_GENERAR'];
+    authMock.isAuthenticated = true;
 
     // Default: endpoint de pacientes vacío (no encuentra paciente)
     server.use(
       http.get('/turnos/profesional/1/pacientes', () =>
         HttpResponse.json({ data: [], meta: { total: 0 } }),
       ),
+      http.get('/turnos/profesional/1/pacientes/42/ficha-salud', () =>
+        HttpResponse.json(crearFichaPaciente()),
+      ),
     );
+  });
+
+  it('bloquea el editor completo para roles sin acceso clínico', async () => {
+    authMock.rol = 'RECEPCIONISTA';
+
+    render(<PlanEditorPage />, { wrapper: crearWrapper() });
+
+    expect(
+      await screen.findByText(/No tenés permisos para editar planes/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId('plan-editor-layout')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('generar-plan-button')).not.toBeInTheDocument();
+  });
+
+  it('si el paciente no pertenece al nutricionista, no lo trata como ficha ausente', async () => {
+    server.use(
+      http.get('/turnos/profesional/1/pacientes/42/ficha-salud', () =>
+        HttpResponse.json(
+          { error: { message: 'Paciente no encontrado' } },
+          { status: 404 },
+        ),
+      ),
+    );
+
+    render(<PlanEditorPage />, { wrapper: crearWrapper() });
+
+    expect(
+      await screen.findByText(/No tenés acceso a este paciente/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/El paciente aún no completó su ficha/i),
+    ).not.toBeInTheDocument();
   });
 
   it('renderiza el layout principal con GeneradorPlanSemanal', async () => {
@@ -324,25 +411,31 @@ describe('PlanEditorPage (Packet 5b)', () => {
         request.json().then((body) => {
           peticionRegenerar = body;
           return HttpResponse.json({
-            nuevaVersionId: 2,
-            numeroVersion: 2,
-            motivoCambio: 'regeneracion_dia',
-            cambios: { dias_modificados: ['LUNES'] },
-            validacion: {
-              restriccionesCumplidas: [],
-              restriccionesNoCumplidas: [],
-              advertencias: [],
+            success: true,
+            message: 'Creado correctamente',
+            data: {
+              nuevaVersionId: 2,
+              numeroVersion: 2,
+              motivoCambio: 'regeneracion_dia',
+              cambios: { dias_modificados: ['LUNES'] },
+              validacion: {
+                restriccionesCumplidas: [],
+                restriccionesNoCumplidas: [],
+                advertencias: [],
+              },
+              macros: {
+                cumpleEstructura: true,
+                diasFaltantes: [],
+                comidasFaltantes: [],
+                advertencias: [],
+                macrosPorDia: {},
+                bandaGlobal: 'VERDE',
+                puedeAceptar: true,
+              },
+              plan: crearRespuestaV2().plan,
             },
-            macros: {
-              cumpleEstructura: true,
-              diasFaltantes: [],
-              comidasFaltantes: [],
-              advertencias: [],
-              macrosPorDia: {},
-              bandaGlobal: 'VERDE',
-              puedeAceptar: true,
-            },
-            plan: crearRespuestaV2().plan,
+            meta: null,
+            errors: [],
           });
         }),
       ),
@@ -373,7 +466,7 @@ describe('PlanEditorPage (Packet 5b)', () => {
 
     // Toast de éxito
     expect(toast.success).toHaveBeenCalledWith(
-      expect.stringContaining('regenerado'),
+      'Plan regenerado (v2)',
       expect.objectContaining({ description: expect.any(String) }),
     );
   });
@@ -452,8 +545,11 @@ describe('PlanEditorPage (Packet 5b)', () => {
   it('el link a preferencias IA navega a /profesional/mi-perfil', async () => {
     render(<PlanEditorPage />, { wrapper: crearWrapper() });
 
-    const link = screen.getByTestId('link-preferencias-ia');
-    expect(link).toHaveAttribute('aria-label', expect.stringContaining('preferencias IA'));
+    const link = await screen.findByTestId('link-preferencias-ia');
+    expect(link).toHaveAttribute(
+      'aria-label',
+      expect.stringContaining('preferencias IA'),
+    );
   });
 
   it('muestra advertencias del backend cuando las hay', async () => {

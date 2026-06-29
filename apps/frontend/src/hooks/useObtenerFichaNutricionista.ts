@@ -76,14 +76,26 @@ export function useObtenerFichaNutricionista({
 
   // Clasificar el error para que el componente muestre el mensaje correcto:
   // - 403: NUT sin turno previo con el socio (sin permisos para acceder)
-  // - 404: socio existe pero no tiene ficha completada (caso válido)
+  // - 404 con "no encontr*": paciente/socio ajeno o no vinculado al NUT
+  // - 404 restante: socio existe pero no tiene ficha completada (caso válido)
   // - otros: error de red u otro
   const errorStatus = (query.error as Error & { status?: number })?.status;
   const errorMensaje = query.error?.message ?? '';
+  const errorMensajeNormalizado = errorMensaje.toLowerCase();
+  const pacienteNoAccesible =
+    errorStatus === 404 &&
+    (errorMensajeNormalizado.includes('paciente no encontrado') ||
+      errorMensajeNormalizado.includes('socio no encontrado') ||
+      errorMensajeNormalizado.includes('paciente no pertenece') ||
+      errorMensajeNormalizado.includes('socio no pertenece') ||
+      errorMensajeNormalizado.includes('no tenés acceso') ||
+      errorMensajeNormalizado.includes('no tenes acceso') ||
+      errorMensajeNormalizado.includes('no encontrad'));
   const sinPermisos =
     query.isError &&
     (errorStatus === 403 ||
-      errorMensaje.toLowerCase().includes('solo puede acceder'));
+      pacienteNoAccesible ||
+      errorMensajeNormalizado.includes('solo puede acceder'));
   const sinFicha =
     query.isError &&
     !sinPermisos &&

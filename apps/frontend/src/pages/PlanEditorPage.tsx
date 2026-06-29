@@ -27,6 +27,7 @@ import {
   ThumbsUp,
   ExternalLink,
   Loader2,
+  Lock,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -46,9 +47,11 @@ import { RazonamientoCumplimiento } from '@/components/plan/RazonamientoCumplimi
 import { RestriccionesEditablesCard } from '@/components/plan/RestriccionesEditablesCard';
 
 import { apiRequest } from '@/lib/api';
+import { desenvolverRespuestaApi } from '@/lib/api-response';
 import { useObtenerFichaNutricionista } from '@/hooks/useObtenerFichaNutricionista';
 import { useEditarFichaPaciente } from '@/hooks/useEditarFichaPaciente';
 import type { PaginatedData } from '@nutrifit/shared';
+import type { ApiResponse } from '@/types/api';
 import type {
   RespuestaPlanSemanalV2FE,
   RespuestaRegeneracionFE,
@@ -63,11 +66,33 @@ interface PacienteResumen {
   fotoPerfilUrl: string | null;
 }
 
+interface PropiedadesEstadoBloqueadoPlanEditor {
+  titulo: string;
+  descripcion: string;
+  onVolver: () => void;
+}
+
+function normalizarRespuestaConMacros<
+  T extends {
+    plan: RespuestaPlanSemanalV2FE['plan'];
+    macros: RespuestaPlanSemanalV2FE['macros'];
+  },
+>(respuesta: T): T {
+  return {
+    ...respuesta,
+    plan: {
+      ...respuesta.plan,
+      macrosPorDia: respuesta.macros.macrosPorDia ?? respuesta.plan.macrosPorDia,
+    },
+  };
+}
+
 export function PlanEditorPage() {
-  const { token, personaId } = useAuth();
+  const { token, personaId, rol } = useAuth();
   const params = useParams({ strict: false }) as { socioId?: string };
   const navigate = useNavigate();
   const socioIdNumero = params.socioId ? Number(params.socioId) : undefined;
+  const puedeEditarPlanes = rol === 'NUTRICIONISTA';
 
   // Estado principal: respuesta del backend con el plan generado
   const [respuesta, setRespuesta] = useState<RespuestaPlanSemanalV2FE | null>(
@@ -102,6 +127,7 @@ export function PlanEditorPage() {
     token,
     nutricionistaId: personaId,
     socioId: socioIdNumero ?? null,
+    habilitado: puedeEditarPlanes,
   });
 
   // Mutación para que el NUT edite la ficha del paciente
@@ -119,7 +145,7 @@ export function PlanEditorPage() {
   const manejarGuardarFicha = async (
     datosEditados: Partial<FichaSaludSocio>,
   ): Promise<void> => {
-    if (!socioIdNumero || !personaId) return;
+    if (!puedeEditarPlanes || !socioIdNumero || !personaId) return;
     await editarFichaAsync({ payload: datosEditados });
     toast.success('Ficha del paciente actualizada', {
       description: `Versión guardada. La IA usará los datos actualizados.`,
@@ -128,7 +154,7 @@ export function PlanEditorPage() {
 
   // Carga paciente cuando cambia el socioId
   useEffect(() => {
-    if (!token || !personaId || !socioIdNumero) return;
+    if (!puedeEditarPlanes || !token || !personaId || !socioIdNumero) return;
     let cancelado = false;
 
     const cargarPaciente = async () => {
@@ -162,7 +188,7 @@ export function PlanEditorPage() {
     return () => {
       cancelado = true;
     };
-  }, [token, personaId, socioIdNumero]);
+  }, [puedeEditarPlanes, token, personaId, socioIdNumero]);
 
   const volverAlPlan = () => {
     if (socioIdNumero) {
@@ -212,12 +238,17 @@ export function PlanEditorPage() {
 
   const regenerar = async (solicitud: SolicitudRegeneracionFE) => {
     try {
-      const data = await apiRequest<RespuestaRegeneracionFE>(
+      const respuestaApi = await apiRequest<
+        RespuestaRegeneracionFE | ApiResponse<RespuestaRegeneracionFE>
+      >(
         '/ia/plan-semanal/regenerar',
         {
           method: 'POST',
           body: solicitud,
         },
+      );
+      const data = normalizarRespuestaConMacros(
+        desenvolverRespuestaApi(respuestaApi),
       );
 
       // Actualizar respuesta con el nuevo plan y versionId
@@ -265,6 +296,26 @@ export function PlanEditorPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [respuesta?.versionId, slotsEditadosManualmente],
   );
+
+  if (!puedeEditarPlanes) {
+    return (
+      <EstadoBloqueadoPlanEditor
+        titulo="No tenés permisos para editar planes"
+        descripcion="Este editor está disponible solo para nutricionistas. No se cargan datos clínicos ni acciones de IA para tu rol."
+        onVolver={volverAlPlan}
+      />
+    );
+  }
+
+  if (sinPermisos) {
+    return (
+      <EstadoBloqueadoPlanEditor
+        titulo="No tenés acceso a este paciente"
+        descripcion="Solo podés editar planes y fichas de pacientes vinculados a tu atención profesional."
+        onVolver={volverAlPlan}
+      />
+    );
+  }
 
   // ============================================================================
   // Render
@@ -380,8 +431,9 @@ export function PlanEditorPage() {
                 socioIdPreseleccionado={socioIdNumero}
                 fichaDisponible={!!ficha && !cargandoFicha && !sinPermisos && !sinFicha && !errorFicha}
                 onSuccess={(data) => {
-                  setRespuesta(data);
-                  setVersionSeleccionadaId(data.versionId);
+                  const respuestaNormalizada = normalizarRespuestaConMacros(data);
+                  setRespuesta(respuestaNormalizada);
+                  setVersionSeleccionadaId(respuestaNormalizada.versionId);
                   // Limpiar slots editados al generar plan nuevo
                   setSlotsEditadosManualmente(new Set());
                 }}
@@ -537,6 +589,41 @@ export function PlanEditorPage() {
           }}
         />
       )}
+    </div>
+  );
+}
+
+function EstadoBloqueadoPlanEditor({
+  titulo,
+  descripcion,
+  onVolver,
+}: PropiedadesEstadoBloqueadoPlanEditor) {
+  return (
+    <div className="space-y-6 pb-24">
+      <Button
+        type="button"
+        variant="ghost"
+        onClick={onVolver}
+        aria-label="Volver al plan del socio"
+        className="rounded-full hover:bg-muted"
+      >
+        <ArrowLeft className="size-4" aria-hidden="true" />
+        Volver
+      </Button>
+
+      <Card className="max-w-2xl rounded-2xl border-amber-500/30 bg-amber-500/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-amber-900 dark:text-amber-200">
+            <Lock className="size-5" aria-hidden="true" />
+            {titulo}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-amber-900/80 dark:text-amber-100/80">
+            {descripcion}
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

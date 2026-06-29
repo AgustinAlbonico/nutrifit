@@ -58,6 +58,10 @@ import type { NutricionistaIAMemoriaRepository } from 'src/domain/repositories/n
 import { FichaSaludOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/ficha-salud.entity';
 import { PlanAlimentacionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/plan-alimentacion.entity';
 import {
+  NutricionistaOrmEntity,
+  SocioOrmEntity,
+} from 'src/infrastructure/persistence/typeorm/entities/persona.entity';
+import {
   PlanAlimentacionDatosJson,
   ResumenMacrosDia,
 } from 'src/domain/entities/PlanAlimentacionVersion/plan-alimentacion-datos-json';
@@ -992,6 +996,10 @@ No omitas días, comidas ni alternativas aunque el JSON sea largo.`;
     const plan = new PlanAlimentacionOrmEntity();
     plan.fechaCreacion = new Date();
     plan.objetivoNutricional = `Plan IA - ${planJson.estructura.length} días`;
+    plan.socio = { idPersona: solicitud.socioId } as SocioOrmEntity;
+    plan.nutricionista = {
+      idPersona: solicitud.nutricionistaId,
+    } as NutricionistaOrmEntity;
     // Hotfix Packet 8: NO setear `activo` ni `estado` explícitamente.
     // Los defaults de la entidad (activo=false, estado='BORRADOR')
     // aplican. La activación la maneja `ActivarPlanAlimentacionUseCase`.

@@ -380,6 +380,12 @@ describe('GenerarPlanSemanalUseCase', () => {
       string,
       unknown
     >;
+    expect(planPersistido.socio).toEqual(
+      expect.objectContaining({ idPersona: 50 }),
+    );
+    expect(planPersistido.nutricionista).toEqual(
+      expect.objectContaining({ idPersona: 100 }),
+    );
     // El entity NO debe tener activo=true explícito (queda el default
     // false de la columna).
     expect(planPersistido.activo).not.toBe(true);

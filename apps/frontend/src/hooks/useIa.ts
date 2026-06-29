@@ -23,6 +23,7 @@ import {
   type UseMutationResult,
 } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/api';
+import { desenvolverRespuestaApi } from '@/lib/api-response';
 import type { ApiResponse } from '@/types/api';
 import type {
   RecomendacionComida,
@@ -157,10 +158,13 @@ export function useIa() {
     SolicitudPlanSemanalV2FE
   > = useMutation({
     mutationFn: async (solicitud: SolicitudPlanSemanalV2FE) => {
-      return apiRequest<RespuestaPlanSemanalV2FE>('/ia/plan-semanal', {
+      const respuesta = await apiRequest<
+        RespuestaPlanSemanalV2FE | ApiResponse<RespuestaPlanSemanalV2FE>
+      >('/ia/plan-semanal', {
         method: 'POST',
         body: solicitud,
       });
+      return desenvolverRespuestaApi(respuesta);
     },
     onSuccess: (respuesta) => {
       // Invalidar listado general
@@ -178,10 +182,13 @@ export function useIa() {
     SolicitudRegeneracionFE
   > = useMutation({
     mutationFn: async (solicitud: SolicitudRegeneracionFE) => {
-      return apiRequest<RespuestaRegeneracionFE>('/ia/plan-semanal/regenerar', {
+      const respuesta = await apiRequest<
+        RespuestaRegeneracionFE | ApiResponse<RespuestaRegeneracionFE>
+      >('/ia/plan-semanal/regenerar', {
         method: 'POST',
         body: solicitud,
       });
+      return desenvolverRespuestaApi(respuesta);
     },
     onSuccess: (respuesta) => {
       // Invalidar listado general

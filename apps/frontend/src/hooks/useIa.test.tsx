@@ -85,6 +85,59 @@ describe('useIa — Packet 5b', () => {
     expect(respuestaFinal.versionId).toBe(100);
   });
 
+  it('generarPlanSemanalV2 desenvuelve ApiResponse estándar del backend', async () => {
+    server.use(
+      http.post('/ia/plan-semanal', () =>
+        HttpResponse.json({
+          success: true,
+          message: 'Creado correctamente',
+          data: {
+            planAlimentacionId: 50,
+            versionId: 100,
+            numeroVersion: 1,
+            plan: {
+              estructura: [],
+              macrosPorDia: {},
+              razonamientoCumplimiento: {
+                restriccionesCumplidas: [],
+                restriccionesNoCumplidas: [],
+              },
+            },
+            validacion: {
+              restriccionesCumplidas: [],
+              restriccionesNoCumplidas: [],
+              advertencias: [],
+            },
+            macros: {
+              cumpleEstructura: true,
+              diasFaltantes: [],
+              comidasFaltantes: [],
+              advertencias: [],
+              macrosPorDia: {},
+              bandaGlobal: 'VERDE',
+              puedeAceptar: true,
+            },
+            advertencias: [],
+          },
+          meta: null,
+          errors: [],
+        }),
+      ),
+    );
+
+    const { result } = renderHook(() => useIa(), { wrapper: crearWrapper() });
+
+    let respuestaFinal!: RespuestaPlanSemanalV2FE;
+    await act(async () => {
+      respuestaFinal = await result.current.generarPlanSemanalV2.mutateAsync({
+        socioId: 42,
+      });
+    });
+
+    expect(respuestaFinal.planAlimentacionId).toBe(50);
+    expect(respuestaFinal.macros.macrosPorDia).toEqual({});
+  });
+
   it('generarPlanSemanalV2 invalida queries de planes-alimentacion al éxito', async () => {
     server.use(
       http.post('/ia/plan-semanal', () =>
