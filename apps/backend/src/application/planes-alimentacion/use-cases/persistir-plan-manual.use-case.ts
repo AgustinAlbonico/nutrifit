@@ -12,7 +12,7 @@
  *    activa para legibilidad (los días reales viven en PlanAlimentacionVersion).
  *
  * Flujo:
- *  1. Validar plan existe, activo, NUT dueño (o ADMIN del gimnasio).
+ *  1. Validar plan existe, editable, NUT dueño (o ADMIN del gimnasio).
  *  2. Validar alimentos existen y restricciones.
  *  3. Construir `datosJson` con la estructura del frontend.
  *  4. Calcular `numeroVersion` = max(existente) + 1.
@@ -108,9 +108,9 @@ export class PersistirPlanManualUseCase implements BaseUseCase {
     if (!plan) {
       throw new NotFoundError('Plan de alimentación', String(planId));
     }
-    if (!plan.activo) {
+    if ((plan as { estado?: string }).estado === 'FINALIZADO') {
       throw new BadRequestError(
-        'El plan no está activo. No se puede editar.',
+        'El plan está finalizado. No se puede editar.',
       );
     }
 

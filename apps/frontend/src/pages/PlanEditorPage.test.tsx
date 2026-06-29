@@ -274,6 +274,15 @@ describe('PlanEditorPage (Packet 5b)', () => {
       http.get('/turnos/profesional/1/pacientes/42/ficha-salud', () =>
         HttpResponse.json(crearFichaPaciente()),
       ),
+      http.get('/planes-alimentacion/socio/42', () =>
+        HttpResponse.json({
+          success: true,
+          message: 'Datos obtenidos correctamente',
+          data: [],
+          meta: null,
+          errors: [],
+        }),
+      ),
     );
   });
 
@@ -363,6 +372,92 @@ describe('PlanEditorPage (Packet 5b)', () => {
     expect(await screen.findByTestId('editor-manual-plan')).toBeInTheDocument();
     expect(toast.success).toHaveBeenCalledWith('Plan manual creado');
     expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it('al entrar directo carga un plan editable existente y no crea otro manual', async () => {
+    let crearManualLlamado = false;
+    server.use(
+      http.get('/planes-alimentacion/socio/42', () =>
+        HttpResponse.json({
+          success: true,
+          message: 'Datos obtenidos correctamente',
+          data: [
+            {
+              idPlanAlimentacion: 99,
+              fechaCreacion: '2026-06-29',
+              objetivoNutricional: 'Plan de alimentación manual',
+              activo: false,
+              eliminadoEn: null,
+              motivoEliminacion: null,
+              motivoEdicion: null,
+              ultimaEdicion: null,
+              socioId: 42,
+              nutricionistaId: 1,
+              dias: [],
+            },
+          ],
+          meta: null,
+          errors: [],
+        }),
+      ),
+      http.get('/planes-alimentacion/99/versiones', () =>
+        HttpResponse.json({
+          success: true,
+          message: 'Datos obtenidos correctamente',
+          data: [
+            {
+              id: 7,
+              numeroVersion: 1,
+              motivoCambio: 'creacion_inicial',
+              activa: true,
+              createdAt: '2026-06-29T12:00:00.000Z',
+              createdBy: 1,
+            },
+          ],
+          meta: null,
+          errors: [],
+        }),
+      ),
+      http.get('/planes-alimentacion/version/7', () =>
+        HttpResponse.json({
+          success: true,
+          message: 'Datos obtenidos correctamente',
+          data: {
+            id: 7,
+            planAlimentacionId: 99,
+            numeroVersion: 1,
+            motivoCambio: 'creacion_inicial',
+            activa: true,
+            createdAt: '2026-06-29T12:00:00.000Z',
+            createdBy: 1,
+            datosJson: crearRespuestaV2().plan,
+          },
+          meta: null,
+          errors: [],
+        }),
+      ),
+      http.post('/planes-alimentacion/crear-manual/42', () => {
+        crearManualLlamado = true;
+        return HttpResponse.json({
+          success: true,
+          message: 'Creado correctamente',
+          data: crearRespuestaV2(),
+          meta: null,
+          errors: [],
+        });
+      }),
+    );
+
+    const user = userEvent.setup();
+    render(<PlanEditorPage />, { wrapper: crearWrapper() });
+
+    await user.click(await screen.findByRole('tab', { name: /Manual/i }));
+
+    expect(await screen.findByTestId('editor-manual-plan')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /Nuevo plan manual/i }),
+    ).not.toBeInTheDocument();
+    expect(crearManualLlamado).toBe(false);
   });
 
   it('al generar un plan muestra la grilla V2 + razonamiento + sidebar + botón feedback', async () => {

@@ -25,8 +25,10 @@ import { GrillaManualSlots } from '@/components/plan/GrillaManualSlots';
 import { DialogGenerarIdeasIa } from '@/components/plan/DialogGenerarIdeasIa';
 
 import { apiRequest } from '@/lib/api';
+import { desenvolverRespuestaApi } from '@/lib/api-response';
 import { useDebounce } from '@/hooks/useDebounce';
-import type { EstructuraDiaFE, PlanAlimentacionDatosJsonFE, DiaSemana, TipoComidaPlan, IdeaComidaIa } from '@/types/ia';
+import { normalizarVersionesPlan } from '@/hooks/useVersionesPlan';
+import type { EstructuraDiaFE, PlanAlimentacionDatosJsonFE, DiaSemana, TipoComidaPlan, IdeaComidaIa, VersionPlanFE } from '@/types/ia';
 import type { ApiResponse } from '@/types/api';
 
 interface Props {
@@ -36,26 +38,67 @@ interface Props {
   pacienteNombre: string;
 }
 
-/** Estructura inicial vacía: 7 días sin comidas. */
+const DIAS_PLAN: DiaSemana[] = [
+  'LUNES',
+  'MARTES',
+  'MIERCOLES',
+  'JUEVES',
+  'VIERNES',
+  'SABADO',
+  'DOMINGO',
+];
+
+const TIPOS_COMIDA_PLAN: TipoComidaPlan[] = [
+  'DESAYUNO',
+  'ALMUERZO',
+  'MERIENDA',
+  'CENA',
+  'COLACION',
+];
+
+interface VersionPlanCompletaFE {
+  id: number;
+  planAlimentacionId: number;
+  numeroVersion: number;
+  datosJson: PlanAlimentacionDatosJsonFE;
+}
+
+/** Estructura inicial vacía: 7 días x 5 comidas. */
 function crearEstructuraInicial(): EstructuraDiaFE[] {
-  const dias: EstructuraDiaFE['dia'][] = [
-    'LUNES',
-    'MARTES',
-    'MIERCOLES',
-    'JUEVES',
-    'VIERNES',
-    'SABADO',
-    'DOMINGO',
-  ];
-  return dias.map((dia) => ({
+  return DIAS_PLAN.map((dia) => ({
     dia,
-    comidas: [
-      { tipo: 'DESAYUNO', alternativas: [] },
-      { tipo: 'ALMUERZO', alternativas: [] },
-      { tipo: 'MERIENDA', alternativas: [] },
-      { tipo: 'CENA', alternativas: [] },
-    ],
+    comidas: TIPOS_COMIDA_PLAN.map((tipo) => ({ tipo, alternativas: [] })),
   }));
+}
+
+function completarEstructuraManual(
+  estructuraPersistida?: EstructuraDiaFE[],
+): EstructuraDiaFE[] {
+  const estructuraBase = crearEstructuraInicial();
+  if (!estructuraPersistida || estructuraPersistida.length === 0) {
+    return estructuraBase;
+  }
+
+  return estructuraBase.map((diaBase) => {
+    const diaPersistido = estructuraPersistida.find((dia) => dia.dia === diaBase.dia);
+    if (!diaPersistido) return diaBase;
+
+    return {
+      dia: diaBase.dia,
+      comidas: diaBase.comidas.map((comidaBase) => {
+        const comidaPersistida = diaPersistido.comidas.find(
+          (comida) => comida.tipo === comidaBase.tipo,
+        );
+        return comidaPersistida
+          ? { ...comidaPersistida, alternativas: comidaPersistida.alternativas ?? [] }
+          : comidaBase;
+      }),
+    };
+  });
+}
+
+function elegirVersionEditable(versiones: VersionPlanFE[]): VersionPlanFE | null {
+  return versiones.find((version) => version.activa) ?? versiones[0] ?? null;
 }
 
 /** Payload para POST /planes-alimentacion/:id/persistir-manual. */
@@ -96,38 +139,47 @@ function estructuraToPayload(estructura: EstructuraDiaFE[]): PersistirManualPayl
 
 export function EditorManualPlan({ planId, pacienteNombre }: Props) {
   const [estructura, setEstructura] = useState<EstructuraDiaFE[]>(crearEstructuraInicial);
-  const [cargandoVersion, setCargandoVersion] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [ultimoGuardado, setUltimoGuardado] = useState<Date | null>(null);
   const [dialogoAbierto, setDialogoAbierto] = useState(false);
-  const [haSidoModificado, setHaSidoModificado] = useState(false);
+  const haSidoModificadoRef = useRef(false);
   const isMountedRef = useRef(true);
 
-  // Carga versión V2 activa del plan al montar
+  // Carga el listado resumido y luego el snapshot completo de la versión activa.
   useEffect(() => {
     isMountedRef.current = true;
-    setCargandoVersion(true);
 
-    apiRequest<ApiResponse<{ datosJson: PlanAlimentacionDatosJsonFE; idPlanAlimentacionVersion: number }>>(
-      `/planes-alimentacion/${planId}/versiones`,
-    )
-      .then((res) => {
+    const cargarVersion = async () => {
+      try {
+        const respuestaVersiones = await apiRequest<Parameters<typeof normalizarVersionesPlan>[0]>(
+          `/planes-alimentacion/${planId}/versiones`,
+        );
+        const versionSeleccionada = elegirVersionEditable(
+          normalizarVersionesPlan(respuestaVersiones, planId),
+        );
+
         if (!isMountedRef.current) return;
-        // Si el backend devuelve datosJson en la respuesta directa
-        const datos = (res as { datosJson?: PlanAlimentacionDatosJsonFE }).datosJson;
-        if (datos?.estructura) {
-          setEstructura(datos.estructura);
+        if (!versionSeleccionada) {
+          setEstructura(crearEstructuraInicial());
+          return;
         }
-      })
-      .catch(() => {
+
+        const respuestaVersion = await apiRequest<
+          VersionPlanCompletaFE | ApiResponse<VersionPlanCompletaFE>
+        >(`/planes-alimentacion/version/${versionSeleccionada.idPlanAlimentacionVersion}`);
+        const versionCompleta = desenvolverRespuestaApi(respuestaVersion);
+
+        if (!isMountedRef.current) return;
+        setEstructura(completarEstructuraManual(versionCompleta.datosJson?.estructura));
+      } catch {
         // Si no hay versión previa, se trabaja con estructura vacía
         if (isMountedRef.current) {
           setEstructura(crearEstructuraInicial());
         }
-      })
-      .finally(() => {
-        if (isMountedRef.current) setCargandoVersion(false);
-      });
+      }
+    };
+
+    void cargarVersion();
 
     return () => {
       isMountedRef.current = false;
@@ -136,7 +188,7 @@ export function EditorManualPlan({ planId, pacienteNombre }: Props) {
 
   const handleEstructuraChange = useCallback((nueva: EstructuraDiaFE[]) => {
     setEstructura(nueva);
-    setHaSidoModificado(true);
+    haSidoModificadoRef.current = true;
   }, []);
 
   const handleAddIdea = useCallback(
@@ -170,7 +222,7 @@ export function EditorManualPlan({ planId, pacienteNombre }: Props) {
           };
         }),
       );
-      setHaSidoModificado(true);
+      haSidoModificadoRef.current = true;
     },
     [],
   );
@@ -200,10 +252,10 @@ export function EditorManualPlan({ planId, pacienteNombre }: Props) {
   );
 
   useEffect(() => {
-    if (debouncedEstructura && haSidoModificado && tieneContenido) {
+    if (debouncedEstructura && haSidoModificadoRef.current && tieneContenido) {
       persistirSilencioso(debouncedEstructura);
     }
-  }, [debouncedEstructura, haSidoModificado, tieneContenido, persistirSilencioso]);
+  }, [debouncedEstructura, tieneContenido, persistirSilencioso]);
 
   // Guardado manual (botón "Guardar borrador")
   const guardarBorrador = async () => {
@@ -227,14 +279,14 @@ export function EditorManualPlan({ planId, pacienteNombre }: Props) {
   };
 
   return (
-    <main className="flex flex-col gap-4" data-testid="editor-manual-plan">
+    <main className="flex min-w-0 flex-col gap-4 pb-4" data-testid="editor-manual-plan">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-bold">Editor Manual</h1>
           <p className="text-sm text-muted-foreground">{pacienteNombre}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {ultimoGuardado && (
             <p className="text-xs text-muted-foreground" aria-live="polite">
               Guardado {ultimoGuardado.toLocaleTimeString()}
@@ -246,13 +298,6 @@ export function EditorManualPlan({ planId, pacienteNombre }: Props) {
           </Button>
         </div>
       </div>
-
-      {/* Loading state */}
-      {cargandoVersion && (
-        <p className="text-sm text-muted-foreground" aria-live="polite">
-          Cargando versión del plan…
-        </p>
-      )}
 
       {/* Grilla de slots manuales */}
       <GrillaManualSlots estructura={estructura} onChange={handleEstructuraChange} />
@@ -267,10 +312,10 @@ export function EditorManualPlan({ planId, pacienteNombre }: Props) {
 
       {/* Footer sticky con botón guardar */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-20 border-t bg-background/95 p-4 backdrop-blur"
+        className="sticky bottom-0 z-20 rounded-2xl border bg-background/95 p-3 shadow-lg backdrop-blur sm:p-4"
         data-testid="editor-manual-plan-footer"
       >
-        <div className="mx-auto max-w-5xl flex justify-end">
+        <div className="flex justify-end">
           <Button
             onClick={guardarBorrador}
             disabled={guardando}

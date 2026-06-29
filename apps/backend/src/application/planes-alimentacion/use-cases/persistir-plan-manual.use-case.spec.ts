@@ -121,7 +121,7 @@ describe('PersistirPlanManualUseCase', () => {
             {
               tipoComida: 'DESAYUNO' as const,
               alternativas: [
-                { nombre: 'Avena con frutas', items: [{ alimentoId: 1, cantidad: 50, unidad: 'g' }] },
+                { nombre: 'Avena con frutas', alimentos: [{ alimentoId: 1, cantidad: 50, unidad: 'g' }] },
               ],
             },
           ],
@@ -138,6 +138,53 @@ describe('PersistirPlanManualUseCase', () => {
         motivoCambio: 'edicion_manual',
         activa: true,
         createdBy: 5,
+      }),
+    );
+  });
+
+  it('permite guardar un plan manual en borrador aunque todavía no esté activo', async () => {
+    planRepo.findOne
+      .mockResolvedValueOnce({
+        idPlanAlimentacion: 1,
+        activo: false,
+        estado: 'BORRADOR',
+        nutricionista: { idPersona: 5 },
+        socio: { idPersona: 50 },
+        dias: [],
+      })
+      .mockResolvedValueOnce({
+        idPlanAlimentacion: 1,
+        activo: false,
+        estado: 'BORRADOR',
+        nutricionista: { idPersona: 5 },
+        socio: { idPersona: 50 },
+        dias: [],
+      });
+
+    const dto = {
+      dias: [
+        {
+          dia: 'LUNES' as const,
+          orden: 1,
+          comidas: [
+            {
+              tipoComida: 'DESAYUNO' as const,
+              alternativas: [
+                { nombre: 'Avena con frutas', alimentos: [{ alimentoId: 1, cantidad: 50, unidad: 'g' }] },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    await sut.execute(5, 'NUTRICIONISTA', 1, dto as never);
+
+    expect(planVersionRepo.crear).toHaveBeenCalledWith(
+      expect.objectContaining({
+        idPlanAlimentacion: 1,
+        motivoCambio: 'creacion_inicial',
+        activa: true,
       }),
     );
   });

@@ -16,6 +16,7 @@ import { http, HttpResponse } from 'msw';
 
 import { server } from '@/mocks/server';
 import { EditorManualPlan } from '@/pages/EditorManualPlan';
+import type { PlanAlimentacionDatosJsonFE } from '@/types/ia';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mocks
@@ -42,6 +43,42 @@ vi.mock('sonner', () => ({
     warning: vi.fn(),
   },
 }));
+
+function crearPlanPersistido(): PlanAlimentacionDatosJsonFE {
+  return {
+    estructura: [
+      {
+        dia: 'LUNES',
+        comidas: [
+          {
+            tipo: 'DESAYUNO',
+            alternativas: [
+              {
+                nombre: 'Avena persistida',
+                alimentos: [{ alimentoId: 1, cantidad: 80, unidad: 'g' }],
+                calorias: 320,
+                proteinas: 12,
+                carbohidratos: 52,
+                grasas: 7,
+              },
+            ],
+          },
+          { tipo: 'ALMUERZO', alternativas: [] },
+          { tipo: 'MERIENDA', alternativas: [] },
+          { tipo: 'CENA', alternativas: [] },
+          { tipo: 'COLACION', alternativas: [] },
+        ],
+      },
+    ],
+    macrosPorDia: {
+      LUNES: { calorias: 320, proteinas: 12, carbohidratos: 52, grasas: 7 },
+    } as PlanAlimentacionDatosJsonFE['macrosPorDia'],
+    razonamientoCumplimiento: {
+      restriccionesCumplidas: [],
+      restriccionesNoCumplidas: [],
+    },
+  };
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tests
@@ -102,6 +139,17 @@ describe('EditorManualPlan', () => {
             },
           }),
         ),
+        http.get('/planes-alimentacion/version/7', () =>
+          HttpResponse.json({
+            success: true,
+            data: {
+              id: 7,
+              planAlimentacionId: 42,
+              numeroVersion: 1,
+              datosJson: crearPlanPersistido(),
+            },
+          }),
+        ),
         http.post('/planes-alimentacion/:id/persistir-manual', async ({ request }) => {
           cuerpoPersistir = await request.json();
           return HttpResponse.json({ versionId: 8 });
@@ -141,6 +189,61 @@ describe('EditorManualPlan', () => {
       // Cada día tiene comidas
       const primerDia = dias[0] as { comidas: unknown[] };
       expect(primerDia.comidas).toBeDefined();
+      expect(primerDia.comidas).toHaveLength(5);
+      expect(primerDia.comidas).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ tipoComida: 'COLACION' }),
+        ]),
+      );
     });
+  });
+
+  it('carga el snapshot completo de la versión activa del plan', async () => {
+    server.use(
+      http.get('/planes-alimentacion/42/versiones', () =>
+        HttpResponse.json({
+          success: true,
+          message: 'Datos obtenidos correctamente',
+          data: [
+            {
+              id: 7,
+              numeroVersion: 1,
+              motivoCambio: 'creacion_inicial',
+              activa: true,
+              createdAt: '2026-01-01T00:00:00Z',
+              createdBy: 1,
+            },
+          ],
+          meta: null,
+          errors: [],
+        }),
+      ),
+      http.get('/planes-alimentacion/version/7', () =>
+        HttpResponse.json({
+          success: true,
+          message: 'Datos obtenidos correctamente',
+          data: {
+            id: 7,
+            planAlimentacionId: 42,
+            numeroVersion: 1,
+            motivoCambio: 'creacion_inicial',
+            activa: true,
+            createdAt: '2026-01-01T00:00:00Z',
+            createdBy: 1,
+            datosJson: crearPlanPersistido(),
+          },
+          meta: null,
+          errors: [],
+        }),
+      ),
+    );
+
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <EditorManualPlan planId={42} pacienteNombre="Ana García" />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText('Avena persistida')).toBeInTheDocument();
   });
 });

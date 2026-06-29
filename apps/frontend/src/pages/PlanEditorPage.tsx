@@ -71,6 +71,17 @@ interface PacienteResumen {
   fotoPerfilUrl: string | null;
 }
 
+interface PlanAlimentacionListadoFE {
+  idPlanAlimentacion: number;
+  fechaCreacion?: string | Date;
+  objetivoNutricional?: string;
+  activo?: boolean;
+  estado?: 'BORRADOR' | 'ACTIVO' | 'FINALIZADO';
+  eliminadoEn?: string | Date | null;
+  socioId?: number;
+  nutricionistaId?: number;
+}
+
 interface PropiedadesEstadoBloqueadoPlanEditor {
   titulo: string;
   descripcion: string;
@@ -90,6 +101,25 @@ function normalizarRespuestaConMacros<
       macrosPorDia: respuesta.macros?.macrosPorDia ?? respuesta.plan.macrosPorDia,
     },
   };
+}
+
+function normalizarPlanesListado(
+  respuesta: PlanAlimentacionListadoFE[] | ApiResponse<PlanAlimentacionListadoFE[]>,
+): PlanAlimentacionListadoFE[] {
+  const data = desenvolverRespuestaApi(respuesta);
+  return Array.isArray(data) ? data : [];
+}
+
+function esPlanEditableExistente(
+  plan: PlanAlimentacionListadoFE,
+  nutricionistaId: number | null,
+): boolean {
+  if (plan.eliminadoEn) return false;
+  if (plan.estado === 'FINALIZADO') return false;
+  if (nutricionistaId != null && plan.nutricionistaId != null) {
+    return plan.nutricionistaId === nutricionistaId;
+  }
+  return true;
 }
 
 export function PlanEditorPage() {
@@ -113,6 +143,10 @@ export function PlanEditorPage() {
 
   // Modo de tabs: ia | manual | historial
   const [modo, setModo] = useState<'ia' | 'manual' | 'historial'>('ia');
+  const [planManualExistenteId, setPlanManualExistenteId] = useState<number | null>(
+    null,
+  );
+  const [cargandoPlanExistente, setCargandoPlanExistente] = useState(false);
 
   // Slots editados manualmente (set conservador: el backend puede marcarlos,
   // o el usuario marca antes de regenerar)
@@ -198,6 +232,36 @@ export function PlanEditorPage() {
     };
   }, [puedeEditarPlanes, token, personaId, socioIdNumero]);
 
+  useEffect(() => {
+    if (!puedeEditarPlanes || !socioIdNumero) return;
+    let cancelado = false;
+
+    const cargarPlanEditableExistente = async () => {
+      try {
+        setCargandoPlanExistente(true);
+        const respuestaApi = await apiRequest<
+          PlanAlimentacionListadoFE[] | ApiResponse<PlanAlimentacionListadoFE[]>
+        >(`/planes-alimentacion/socio/${socioIdNumero}`, { token });
+
+        if (cancelado) return;
+
+        const planEditable = normalizarPlanesListado(respuestaApi).find((plan) =>
+          esPlanEditableExistente(plan, personaId ?? null),
+        );
+        setPlanManualExistenteId(planEditable?.idPlanAlimentacion ?? null);
+      } catch {
+        if (!cancelado) setPlanManualExistenteId(null);
+      } finally {
+        if (!cancelado) setCargandoPlanExistente(false);
+      }
+    };
+
+    void cargarPlanEditableExistente();
+    return () => {
+      cancelado = true;
+    };
+  }, [puedeEditarPlanes, token, personaId, socioIdNumero]);
+
   const volverAlPlan = () => {
     if (socioIdNumero) {
       void navigate({ to: `/profesional/plan/${socioIdNumero}` });
@@ -224,6 +288,7 @@ export function PlanEditorPage() {
       );
       const planData = normalizarRespuestaConMacros(desenvolverRespuestaApi(res));
       setRespuesta(planData);
+      setPlanManualExistenteId(planData.planAlimentacionId);
       setModo('manual');
       toast.success('Plan manual creado');
     } catch (err) {
@@ -329,6 +394,8 @@ export function PlanEditorPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [respuesta?.versionId, slotsEditadosManualmente],
   );
+
+  const planIdEditorManual = respuesta?.planAlimentacionId ?? planManualExistenteId;
 
   if (!puedeEditarPlanes) {
     return (
@@ -616,11 +683,16 @@ export function PlanEditorPage() {
 
         {/* Tab: Manual */}
         <TabsContent value="manual" className="mt-0">
-          {respuesta?.planAlimentacionId ? (
+          {planIdEditorManual ? (
             <EditorManualPlan
-              planId={respuesta.planAlimentacionId}
+              planId={planIdEditorManual}
               pacienteNombre={paciente?.nombreCompleto ?? ''}
             />
+          ) : cargandoPlanExistente ? (
+            <div className="flex items-center justify-center gap-2 py-16 text-center text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              Buscando borradores existentes…
+            </div>
           ) : (
             <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
               <PenLine className="size-10 text-muted-foreground/40" aria-hidden="true" />
@@ -642,7 +714,7 @@ export function PlanEditorPage() {
 
         {/* Tab: Historial */}
         <TabsContent value="historial" className="mt-0">
-          {respuesta ? (
+          {planIdEditorManual ? (
             <div className="flex flex-col gap-4">
               <Card className="rounded-2xl border-border/50">
                 <CardHeader className="pb-3">
@@ -652,7 +724,7 @@ export function PlanEditorPage() {
                 </CardHeader>
                 <CardContent>
                   <VersionHistory
-                    planId={respuesta.planAlimentacionId}
+                    planId={planIdEditorManual}
                     versionSeleccionadaId={versionSeleccionadaId}
                     onSelect={(vid) => {
                       setVersionSeleccionadaId(vid);
@@ -667,7 +739,7 @@ export function PlanEditorPage() {
           ) : (
             <Card className="rounded-2xl border-border/50">
               <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                Generá un plan con IA para ver el historial de versiones.
+                Creá o generá un plan para ver el historial de versiones.
               </CardContent>
             </Card>
           )}

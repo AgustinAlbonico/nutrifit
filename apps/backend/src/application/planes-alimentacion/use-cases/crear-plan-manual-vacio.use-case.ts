@@ -22,6 +22,7 @@ import {
   PlanAlimentacionVersionRepository,
 } from 'src/domain/repositories/plan-alimentacion-version.repository';
 import { PlanAlimentacionDatosJson } from 'src/domain/entities/PlanAlimentacionVersion/plan-alimentacion-datos-json';
+import { PlanAlimentacionVersionEntity } from 'src/domain/entities/PlanAlimentacionVersion/plan-alimentacion-version.entity';
 
 type BandaMacroManual = 'VERDE' | 'AMARILLO' | 'ROJO';
 
@@ -133,6 +134,29 @@ export class CrearPlanManualVacioUseCase implements BaseUseCase {
       throw new NotFoundError('Socio', String(socioId));
     }
 
+    if (nutricionista.idPersona == null) {
+      throw new ForbiddenError(
+        'El nutricionista asignado no tiene una persona válida.',
+      );
+    }
+
+    const planEditableExistente = await this.buscarPlanEditableExistente(
+      socioId,
+      nutricionista.idPersona,
+    );
+    if (planEditableExistente) {
+      const versionExistente = await this.obtenerVersionParaEditar(
+        planEditableExistente.idPlanAlimentacion,
+      );
+      if (versionExistente) {
+        return this.crearRespuesta(
+          planEditableExistente.idPlanAlimentacion,
+          versionExistente,
+          versionExistente.datosJson,
+        );
+      }
+    }
+
     const planActivoExistente = await this.planRepo.findOne({
       where: {
         socio: { idPersona: socioId, gimnasioId: this.tenantContext.gimnasioId },
@@ -157,17 +181,7 @@ export class CrearPlanManualVacioUseCase implements BaseUseCase {
 
     const planGuardado = await this.planRepo.save(plan);
 
-    const estructuraVacia: PlanAlimentacionDatosJson['estructura'] = (
-      Object.values(DiaSemana) as DiaSemana[]
-    ).map((dia) => ({
-      dia,
-      comidas: (['DESAYUNO', 'ALMUERZO', 'MERIENDA', 'CENA'] as TipoComida[]).map(
-        (tipo) => ({
-          tipo,
-          alternativas: [],
-        }),
-      ),
-    }));
+    const estructuraVacia = this.crearEstructuraVacia();
 
     const macrosPorDia = estructuraVacia.reduce<
       Record<string, { calorias: number; proteinas: number; carbohidratos: number; grasas: number }>
@@ -194,6 +208,65 @@ export class CrearPlanManualVacioUseCase implements BaseUseCase {
       createdBy: nutricionistaUserId,
     });
 
+    return this.crearRespuesta(
+      planGuardado.idPlanAlimentacion,
+      versionCreada,
+      datosJson,
+    );
+  }
+
+  private async buscarPlanEditableExistente(
+    socioId: number,
+    nutricionistaId: number,
+  ): Promise<PlanAlimentacionOrmEntity | null> {
+    const planes = await this.planRepo.find({
+      where: {
+        socio: { idPersona: socioId, gimnasioId: this.tenantContext.gimnasioId },
+        nutricionista: {
+          idPersona: nutricionistaId,
+          gimnasioId: this.tenantContext.gimnasioId,
+        },
+      },
+      relations: { socio: true, nutricionista: true },
+      order: { idPlanAlimentacion: 'DESC' },
+    });
+
+    return (
+      planes.find(
+        (plan) =>
+          !plan.eliminadoEn &&
+          (plan as { estado?: string }).estado !== 'FINALIZADO',
+      ) ?? null
+    );
+  }
+
+  private async obtenerVersionParaEditar(
+    planId: number,
+  ): Promise<PlanAlimentacionVersionEntity | null> {
+    const activa = await this.planVersionRepo.obtenerActiva(planId);
+    if (activa) return activa;
+
+    const versiones = await this.planVersionRepo.listarPorPlan(planId);
+    return (
+      [...versiones].sort((a, b) => b.numeroVersion - a.numeroVersion)[0] ?? null
+    );
+  }
+
+  private crearEstructuraVacia(): PlanAlimentacionDatosJson['estructura'] {
+    return (Object.values(DiaSemana) as DiaSemana[]).map((dia) => ({
+      dia,
+      comidas: (Object.values(TipoComida) as TipoComida[]).map((tipo) => ({
+        tipo,
+        alternativas: [],
+      })),
+    }));
+  }
+
+  private crearRespuesta(
+    planAlimentacionId: number,
+    version: PlanAlimentacionVersionEntity,
+    datosJson: PlanAlimentacionDatosJson,
+  ): CrearPlanManualVacioResponseDto {
     const macrosDetallados = Object.values(DiaSemana).reduce<
       Record<string, ResumenMacrosDiaManualDto>
     >((acc, dia) => {
@@ -202,9 +275,9 @@ export class CrearPlanManualVacioUseCase implements BaseUseCase {
     }, {});
 
     return {
-      planAlimentacionId: planGuardado.idPlanAlimentacion,
-      versionId: versionCreada.idPlanAlimentacionVersion,
-      numeroVersion: versionCreada.numeroVersion,
+      planAlimentacionId,
+      versionId: version.idPlanAlimentacionVersion,
+      numeroVersion: version.numeroVersion,
       plan: datosJson,
       validacion: {
         restriccionesCumplidas: [],

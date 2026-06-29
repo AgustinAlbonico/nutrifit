@@ -80,6 +80,50 @@ describe('VersionHistory', () => {
     expect(screen.getByText(/v1/i)).toBeInTheDocument();
   });
 
+  it('normaliza la respuesta real envuelta del backend', async () => {
+    server.use(
+      http.get('/planes-alimentacion/10/versiones', () =>
+        HttpResponse.json({
+          success: true,
+          message: 'Datos obtenidos correctamente',
+          data: [
+            {
+              id: 30,
+              numeroVersion: 3,
+              motivoCambio: 'regeneracion_dia',
+              activa: false,
+              createdAt: '2026-06-20T12:00:00.000Z',
+              createdBy: 1,
+            },
+            {
+              id: 29,
+              numeroVersion: 2,
+              motivoCambio: 'edicion_manual',
+              activa: true,
+              createdAt: '2026-06-19T12:00:00.000Z',
+              createdBy: 1,
+            },
+          ],
+          meta: null,
+          errors: [],
+        }),
+      ),
+    );
+
+    render(<VersionHistory planId={10} />, { wrapper: crearWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getAllByTestId('version-item')).toHaveLength(2);
+    });
+
+    expect(screen.getAllByTestId('version-item')[0]).toHaveAttribute(
+      'data-version-id',
+      '30',
+    );
+    expect(screen.getByText(/v3/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Activa/i)).toBeInTheDocument();
+  });
+
   it('invoca onSelect al hacer click en una versión', async () => {
     server.use(
       http.get('/planes-alimentacion/10/versiones', () =>

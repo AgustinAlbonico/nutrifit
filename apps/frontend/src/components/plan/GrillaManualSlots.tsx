@@ -242,10 +242,10 @@ export function GrillaManualSlots({ estructura, onChange }: Props) {
         <div
           data-testid="grilla-manual-slots"
           aria-label="Grilla de slots manuales"
-          className="overflow-auto"
+          className="min-w-0 overflow-x-auto rounded-xl border bg-card/40 p-2"
         >
           {/* Layout: columna de día + grid de slots */}
-          <div className="flex gap-2">
+          <div className="flex min-w-[760px] gap-2">
             {/* Columna de día + header (alineado con los slots) */}
             <div className="flex flex-col" style={{ width: '72px' }}>
               {/* Header vacío para alinear con columnas de slots */}
