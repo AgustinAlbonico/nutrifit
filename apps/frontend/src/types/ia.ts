@@ -47,6 +47,9 @@ export interface ParametrosAnalisis {
   planId: number;
 }
 
+/** Alias para ItemComidaIaFE — nombre usado en el editor de plan manual con IA. */
+export type IdeaComidaIa = ItemComidaIaFE;
+
 // --- IdeasComida (RF36-RF38) ---
 export interface IngredienteIA {
   nombre: string;

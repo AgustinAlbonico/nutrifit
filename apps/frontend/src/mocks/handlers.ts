@@ -10,4 +10,11 @@ export const handlers = [
   http.get('/profesional', () => {
     return HttpResponse.json({ success: true, message: 'ok', data: [] });
   }),
+  // Ideas IA para editor de plan manual
+  http.post('/planes-alimentacion/:id/ideas-comida', () => {
+    return HttpResponse.json({
+      promptUsado: 'prompt de prueba',
+      alternativas: [],
+    });
+  }),
 ];
