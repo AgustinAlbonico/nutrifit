@@ -1209,39 +1209,106 @@ async function runSeedMultiTenant() {
       console.log(`Planes de alimentacion creados: ${planesData.length}`);
     };
 
+    const crearGruposAlimenticios = async (): Promise<Map<string, number>> => {
+      console.log('Seeding grupos alimenticios localizados en Argentina...');
+      const grupoAlimenticioIds = new Map<string, number>();
+      const grupos = [
+        { id: 1, descripcion: 'Lácteos, quesos y huevos' },
+        { id: 2, descripcion: 'Hierbas, condimentos y especias' },
+        { id: 3, descripcion: 'Alimentos infantiles y fórmulas' },
+        { id: 4, descripcion: 'Aceites, grasas y aderezos' },
+        { id: 5, descripcion: 'Pollo y carnes de ave' },
+        { id: 6, descripcion: 'Sopas, salsas y caldos' },
+        { id: 7, descripcion: 'Fiambres y embutidos' },
+        { id: 8, descripcion: 'Cereales de desayuno y barras' },
+        { id: 9, descripcion: 'Frutas y jugos naturales' },
+        { id: 10, descripcion: 'Carne de cerdo y derivados' },
+        { id: 11, descripcion: 'Verduras, hortalizas y tubérculos' },
+        { id: 12, descripcion: 'Frutos secos y semillas' },
+        { id: 13, descripcion: 'Carne vacuna y derivados' },
+        { id: 14, descripcion: 'Bebidas e infusiones' },
+        { id: 15, descripcion: 'Pescados y mariscos' },
+        { id: 16, descripcion: 'Legumbres y harinas de legumbres' },
+        { id: 17, descripcion: 'Otras carnes (cordero, chivito, caza)' },
+        { id: 18, descripcion: 'Panificados, galletas y repostería' },
+        { id: 19, descripcion: 'Dulces, mermeladas y azúcares' },
+        { id: 20, descripcion: 'Cereales, pastas y harinas' },
+        { id: 21, descripcion: 'Comida rápida (Fast Food)' },
+        { id: 22, descripcion: 'Platos elaborados y guarniciones' },
+        { id: 23, descripcion: 'Snacks y copetín' },
+        { id: 24, descripcion: 'Alimentos regionales y autóctonos' },
+        { id: 25, descripcion: 'Platos de restaurante y rotisería' },
+        { id: 26, descripcion: 'Suplementos deportivos' },
+      ];
+
+      for (const g of grupos) {
+        await dataSource.query(
+          `INSERT INTO grupo_alimenticio (id_grupo_alimenticio, descripcion)
+           VALUES (?, ?)
+           ON DUPLICATE KEY UPDATE descripcion = ?`,
+          [g.id, g.descripcion, g.descripcion]
+        );
+        grupoAlimenticioIds.set(g.descripcion, g.id);
+      }
+
+      console.log(`Grupos alimenticios insertados: ${grupos.length}`);
+      return grupoAlimenticioIds;
+    };
+
     const crearAlimentosSeed = async (): Promise<void> => {
       console.log('Seeding alimentos...');
       const catalog = [
-        { nombre: 'Leche entera', cantidad: 100, calorias: 61, proteinas: 3, carbohidratos: 5, grasas: 3, unidadMedida: 'mililitro' },
-        { nombre: 'Yogur natural', cantidad: 100, calorias: 63, proteinas: 4, carbohidratos: 5, grasas: 3, unidadMedida: 'gramo' },
-        { nombre: 'Huevo', cantidad: 1, calorias: 78, proteinas: 6.5, carbohidratos: 0.6, grasas: 5, unidadMedida: 'unidad' },
-        { nombre: 'Pechuga de pollo', cantidad: 100, calorias: 165, proteinas: 31, carbohidratos: 0, grasas: 4, unidadMedida: 'gramo' },
-        { nombre: 'Carne vacuna magra', cantidad: 100, calorias: 187, proteinas: 27, carbohidratos: 0, grasas: 8, unidadMedida: 'gramo' },
-        { nombre: 'Carne de cuadril', cantidad: 100, calorias: 200, proteinas: 20, carbohidratos: 0, grasas: 12, unidadMedida: 'gramo' },
-        { nombre: 'Merluza', cantidad: 100, calorias: 90, proteinas: 19, carbohidratos: 0, grasas: 1, unidadMedida: 'gramo' },
-        { nombre: 'Arroz blanco cocido', cantidad: 100, calorias: 130, proteinas: 3, carbohidratos: 28, grasas: 0, unidadMedida: 'gramo' },
-        { nombre: 'Pan frances', cantidad: 100, calorias: 272, proteinas: 8, carbohidratos: 57, grasas: 1, unidadMedida: 'gramo' },
-        { nombre: 'Avena', cantidad: 100, calorias: 389, proteinas: 17, carbohidratos: 66, grasas: 7, unidadMedida: 'gramo' },
-        { nombre: 'Lentejas cocidas', cantidad: 100, calorias: 116, proteinas: 9, carbohidratos: 20, grasas: 0, unidadMedida: 'gramo' },
-        { nombre: 'Papa', cantidad: 100, calorias: 77, proteinas: 2, carbohidratos: 17, grasas: 0, unidadMedida: 'gramo' },
-        { nombre: 'Zanahoria', cantidad: 100, calorias: 41, proteinas: 1, carbohidratos: 10, grasas: 0, unidadMedida: 'gramo' },
-        { nombre: 'Manzana', cantidad: 1, calorias: 95, proteinas: 0.5, carbohidratos: 25, grasas: 0.3, unidadMedida: 'unidad' },
-        { nombre: 'Banana', cantidad: 1, calorias: 105, proteinas: 1.3, carbohidratos: 27, grasas: 0.4, unidadMedida: 'unidad' },
-        { nombre: 'Masitas de agua', cantidad: 100, calorias: 420, proteinas: 9, carbohidratos: 72, grasas: 10, unidadMedida: 'gramo' },
-        { nombre: 'Aceite de oliva', cantidad: 100, calorias: 884, proteinas: 0, carbohidratos: 0, grasas: 100, unidadMedida: 'mililitro' },
-        { nombre: 'Azucar', cantidad: 100, calorias: 387, proteinas: 0, carbohidratos: 100, grasas: 0, unidadMedida: 'gramo' }
+        { nombre: 'Leche entera', cantidad: 100, calorias: 61, proteinas: 3, carbohidratos: 5, grasas: 3, unidadMedida: 'mililitro', grupoId: 1 },
+        { nombre: 'Yogur natural', cantidad: 100, calorias: 63, proteinas: 4, carbohidratos: 5, grasas: 3, unidadMedida: 'gramo', grupoId: 1 },
+        { nombre: 'Huevo', cantidad: 1, calorias: 78, proteinas: 6.5, carbohidratos: 0.6, grasas: 5, unidadMedida: 'unidad', grupoId: 1 },
+        { nombre: 'Pechuga de pollo', cantidad: 100, calorias: 165, proteinas: 31, carbohidratos: 0, grasas: 4, unidadMedida: 'gramo', grupoId: 5 },
+        { nombre: 'Carne vacuna magra', cantidad: 100, calorias: 187, proteinas: 27, carbohidratos: 0, grasas: 8, unidadMedida: 'gramo', grupoId: 13 },
+        { nombre: 'Carne de cuadril', cantidad: 100, calorias: 200, proteinas: 20, carbohidratos: 0, grasas: 12, unidadMedida: 'gramo', grupoId: 13 },
+        { nombre: 'Merluza', cantidad: 100, calorias: 90, proteinas: 19, carbohidratos: 0, grasas: 1, unidadMedida: 'gramo', grupoId: 15 },
+        { nombre: 'Arroz blanco cocido', cantidad: 100, calorias: 130, proteinas: 3, carbohidratos: 28, grasas: 0, unidadMedida: 'gramo', grupoId: 20 },
+        { nombre: 'Pan frances', cantidad: 100, calorias: 272, proteinas: 8, carbohidratos: 57, grasas: 1, unidadMedida: 'gramo', grupoId: 18 },
+        { nombre: 'Avena', cantidad: 100, calorias: 389, proteinas: 17, carbohidratos: 66, grasas: 7, unidadMedida: 'gramo', grupoId: 20 },
+        { nombre: 'Lentejas cocidas', cantidad: 100, calorias: 116, proteinas: 9, carbohidratos: 20, grasas: 0, unidadMedida: 'gramo', grupoId: 16 },
+        { nombre: 'Papa', cantidad: 100, calorias: 77, proteinas: 2, carbohidratos: 17, grasas: 0, unidadMedida: 'gramo', grupoId: 11 },
+        { nombre: 'Zanahoria', cantidad: 100, calorias: 41, proteinas: 1, carbohidratos: 10, grasas: 0, unidadMedida: 'gramo', grupoId: 11 },
+        { nombre: 'Manzana', cantidad: 1, calorias: 95, proteinas: 0.5, carbohidratos: 25, grasas: 0.3, unidadMedida: 'unidad', grupoId: 9 },
+        { nombre: 'Banana', cantidad: 1, calorias: 105, proteinas: 1.3, carbohidratos: 27, grasas: 0.4, unidadMedida: 'unidad', grupoId: 9 },
+        { nombre: 'Masitas de agua', cantidad: 100, calorias: 420, proteinas: 9, carbohidratos: 72, grasas: 10, unidadMedida: 'gramo', grupoId: 18 },
+        { nombre: 'Aceite de oliva', cantidad: 100, calorias: 884, proteinas: 0, carbohidratos: 0, grasas: 100, unidadMedida: 'mililitro', grupoId: 4 },
+        { nombre: 'Azucar', cantidad: 100, calorias: 387, proteinas: 0, carbohidratos: 100, grasas: 0, unidadMedida: 'gramo', grupoId: 19 }
       ];
 
       for (const a of catalog) {
-        await dataSource.query(
-          `INSERT IGNORE INTO alimento (nombre, cantidad, calorias, proteinas, carbohidratos, grasas, hidratos_de_carbono, unidad_medida)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        const resAlimento = await dataSource.query(
+          `INSERT INTO alimento (nombre, cantidad, calorias, proteinas, carbohidratos, grasas, hidratos_de_carbono, unidad_medida)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE nombre = VALUES(nombre)`,
           [a.nombre, a.cantidad, a.calorias, a.proteinas, a.carbohidratos, a.grasas, a.carbohidratos, a.unidadMedida]
         );
+
+        let idAlimento: number;
+        if ((resAlimento as any).insertId) {
+          idAlimento = (resAlimento as any).insertId;
+        } else {
+          const existente = await dataSource.query(
+            `SELECT id_alimento FROM alimento WHERE nombre = ? LIMIT 1`,
+            [a.nombre]
+          );
+          idAlimento = (existente as any)[0]?.id_alimento;
+        }
+
+        if (idAlimento && a.grupoId) {
+          await dataSource.query(
+            `INSERT IGNORE INTO alimento_grupo_alimenticio (id_alimento, id_grupo_alimenticio)
+             VALUES (?, ?)`,
+            [idAlimento, a.grupoId]
+          );
+        }
       }
       console.log('Alimentos seeded.');
     };
 
+    await crearGruposAlimenticios();
     await crearAlimentosSeed();
     await crearPlanesDemo();
 
