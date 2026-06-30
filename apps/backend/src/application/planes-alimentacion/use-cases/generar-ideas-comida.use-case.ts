@@ -370,7 +370,11 @@ export class GenerarIdeasComidaUseCase {
 
         return [
           {
-            nombre: idea.nombre ?? 'Sin nombre',
+            nombre: this.resolverNombreAlternativa(
+              idea.nombre,
+              alimentos,
+              dto.tipoComida,
+            ),
             alimentos,
             calorias: idea.calorias ?? 0,
             proteinas: idea.proteinas ?? 0,
@@ -399,6 +403,39 @@ export class GenerarIdeasComidaUseCase {
     if (normalizado.endsWith('s')) claves.push(normalizado.slice(0, -1));
 
     return [...new Set(claves)];
+  }
+
+  private resolverNombreAlternativa(
+    nombre: string | undefined,
+    alimentos: Array<{ alimentoNombre: string }>,
+    tipoComida: TipoComida,
+  ): string {
+    const nombreActual = nombre?.trim() || 'Sin nombre';
+    if (!this.esNombreGenerico(nombreActual, tipoComida)) {
+      return nombreActual;
+    }
+
+    const nombresAlimentos = alimentos
+      .map((alimento) => alimento.alimentoNombre.trim())
+      .filter(Boolean)
+      .slice(0, 3);
+
+    if (nombresAlimentos.length === 0) return nombreActual;
+    if (nombresAlimentos.length === 1) return nombresAlimentos[0];
+
+    const [principal, ...resto] = nombresAlimentos;
+    return `${principal} con ${resto.join(' y ')}`;
+  }
+
+  private esNombreGenerico(nombre: string, tipoComida: TipoComida): boolean {
+    const normalizado = normalizarTexto(nombre);
+    const tipoNormalizado = normalizarTexto(tipoComida);
+    const numerosGenericos =
+      '(\\d+|uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)';
+
+    return [tipoNormalizado, 'alternativa', 'opcion', 'idea'].some((prefijo) =>
+      new RegExp(`^${prefijo} ${numerosGenericos}$`).test(normalizado),
+    );
   }
 
   private obtenerNombre(valor: unknown): string {

@@ -44,6 +44,7 @@ ${catalogoTexto}
 Reglas:
 - Devuelve EXACTAMENTE ${cantidad} alternativas distintas.
 - Usá exclusivamente alimentos del catálogo disponible y copiá sus nombres exactos en alimentoNombre.
+- El nombre de cada alternativa debe describir el plato con sus alimentos principales. No uses nombres genéricos como "Desayuno 1", "Alternativa 2" u "Opción 3".
 - Cada alternativa debe tener nombre, alimentos con cantidades en gramos o mililitros.
 - Incluye calorías, proteínas, carbohidratos y grasas estimadas.
 - Si no podés cumplir todas las restricciones, devolvé menos alternativas y agregá un campo "advertencias" explicando el motivo.`;

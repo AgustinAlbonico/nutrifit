@@ -62,4 +62,18 @@ describe('PromptIdeasComidaBuilder.build', () => {
     expect(texto).toContain('Huevo');
     expect(texto.toLowerCase()).toContain('nombres exactos');
   });
+
+  it('pide nombres descriptivos y prohibe nombres genericos numerados', () => {
+    const prompt = sut.build({
+      ficha: {} as never,
+      slot: { dia: DiaSemana.LUNES, tipoComida: TipoComida.DESAYUNO },
+      cantidad: 3,
+      alimentosDisponibles: ['Avena', 'Banana', 'Huevo'],
+    });
+    const texto = `${prompt.system}\n${prompt.user}`.toLowerCase();
+
+    expect(texto).toContain('nombre de cada alternativa debe describir');
+    expect(texto).toContain('desayuno 1');
+    expect(texto).toContain('alternativa 2');
+  });
 });

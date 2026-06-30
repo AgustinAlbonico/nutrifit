@@ -64,6 +64,7 @@ describe('GenerarIdeasComidaUseCase', () => {
         { idAlimento: 3, nombre: 'Maní' },
         { idAlimento: 4, nombre: 'Yogur natural' },
         { idAlimento: 5, nombre: 'Banana' },
+        { idAlimento: 6, nombre: 'Manzana' },
       ]),
     } as never;
     const socioRepo = { findOne: jest.fn() } as never;
@@ -281,6 +282,53 @@ describe('GenerarIdeasComidaUseCase', () => {
       expect.objectContaining({ alimentoId: 5, alimentoNombre: 'Banana' }),
       expect.objectContaining({ alimentoId: 2, alimentoNombre: 'Huevo' }),
     ]);
+  });
+
+  it('reemplaza nombres genericos de la IA por nombres descriptivos basados en alimentos', async () => {
+    planRepo.findOne.mockResolvedValue(planBase);
+    fichaRepo.findOne.mockResolvedValue(fichaBase);
+    alimentoRepo.find.mockResolvedValue([
+      {
+        idAlimento: 4,
+        nombre: 'Yogur natural',
+      } as unknown as AlimentoOrmEntity,
+      { idAlimento: 6, nombre: 'Manzana' } as unknown as AlimentoOrmEntity,
+    ]);
+    aiProvider.generarRecomendacion.mockResolvedValue({
+      alternativas: [
+        {
+          nombre: 'Desayuno 1',
+          alimentos: [
+            {
+              cantidad: 200,
+              unidad: 'g',
+              alimentoNombre: 'Yogur natural',
+            },
+            {
+              cantidad: 1,
+              unidad: 'unidad',
+              alimentoNombre: 'Manzana',
+            },
+          ],
+          calorias: 220,
+          proteinas: 20,
+          carbohidratos: 30,
+          grasas: 8,
+        },
+      ],
+    });
+
+    const respuesta = await sut.execute(
+      { personaId: 5, gimnasioId: 1, rol: 'NUTRICIONISTA' } as never,
+      {
+        planAlimentacionId: 1,
+        dia: 'LUNES',
+        tipoComida: 'DESAYUNO',
+        cantidadAlternativas: 1,
+      } as never,
+    );
+
+    expect(respuesta.alternativas[0].nombre).toBe('Yogur natural con Manzana');
   });
 
   it('envia un schema explicito al provider para evitar respuestas con formato ambiguo', async () => {
