@@ -40,10 +40,18 @@ export interface PlanAlimentacionDatosJson {
  */
 export interface ItemComidaSnapshot {
   nombre: string;
+  /** Si la alternativa fue armada desde una preparación reutilizable. */
+  preparacionId?: number | null;
   alimentos: Array<{
     alimentoId: number;
+    nombre?: string;
     cantidad: number;
     unidad: string;
+    /** Macros individuales escalados a la cantidad especificada. */
+    calorias?: number;
+    proteinas?: number;
+    carbohidratos?: number;
+    grasas?: number;
   }>;
   calorias: number;
   proteinas: number;

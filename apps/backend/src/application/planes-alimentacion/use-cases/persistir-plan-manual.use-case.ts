@@ -198,38 +198,44 @@ export class PersistirPlanManualUseCase implements BaseUseCase {
         comidas: d.comidas.map((c) => ({
           tipo: c.tipoComida,
           alternativas: c.alternativas.map((a) => {
+            let totalCal = 0;
+            let totalPro = 0;
+            let totalCarb = 0;
+            let totalGras = 0;
+
             const itemSnapshots = a.alimentos.map((i) => {
               const al = alimentoMap.get(i.alimentoId)!;
+              const base = al.cantidad || 100;
+              const factor = i.cantidad / base;
+              const cal = Math.round(((al.calorias ?? 0) * factor) * 100) / 100;
+              const pro = Math.round(((al.proteinas ?? 0) * factor) * 100) / 100;
+              const carb = Math.round(((al.carbohidratos ?? 0) * factor) * 100) / 100;
+              const gras = Math.round(((al.grasas ?? 0) * factor) * 100) / 100;
+
+              totalCal += cal;
+              totalPro += pro;
+              totalCarb += carb;
+              totalGras += gras;
+
               return {
                 alimentoId: al.idAlimento,
+                nombre: al.nombre,
                 cantidad: i.cantidad,
                 unidad: i.unidad ?? al.unidadMedida,
+                calorias: cal,
+                proteinas: pro,
+                carbohidratos: carb,
+                grasas: gras,
               };
             });
-            // Macros por alternativa = suma simple de los items (proporción a cantidad/unidad)
-            const totalCal = a.alimentos.reduce((acc, i) => {
-              const al = alimentoMap.get(i.alimentoId)!;
-              return acc + (al.calorias ?? 0);
-            }, 0);
-            const totalPro = a.alimentos.reduce((acc, i) => {
-              const al = alimentoMap.get(i.alimentoId)!;
-              return acc + (al.proteinas ?? 0);
-            }, 0);
-            const totalCarb = a.alimentos.reduce((acc, i) => {
-              const al = alimentoMap.get(i.alimentoId)!;
-              return acc + (al.carbohidratos ?? 0);
-            }, 0);
-            const totalGras = a.alimentos.reduce((acc, i) => {
-              const al = alimentoMap.get(i.alimentoId)!;
-              return acc + (al.grasas ?? 0);
-            }, 0);
+
             return {
               nombre: a.nombre ?? '',
               alimentos: itemSnapshots,
-              calorias: totalCal,
-              proteinas: totalPro,
-              carbohidratos: totalCarb,
-              grasas: totalGras,
+              calorias: Math.round(totalCal * 100) / 100,
+              proteinas: Math.round(totalPro * 100) / 100,
+              carbohidratos: Math.round(totalCarb * 100) / 100,
+              grasas: Math.round(totalGras * 100) / 100,
             };
           }),
         })),

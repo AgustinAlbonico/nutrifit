@@ -115,10 +115,18 @@ export type TipoEjemploIA = 'POSITIVO' | 'NEGATIVO';
 /** Item de comida snapshot dentro de una estructura de plan. */
 export interface ItemComidaSnapshotFE {
   nombre: string;
+  /** Si fue armada desde una preparación reutilizable. */
+  preparacionId?: number | null;
   alimentos: Array<{
     alimentoId: number;
+    nombre?: string;
     cantidad: number;
     unidad: string;
+    /** Macros individuales escalados (opcionales para compatibilidad). */
+    calorias?: number;
+    proteinas?: number;
+    carbohidratos?: number;
+    grasas?: number;
   }>;
   calorias: number;
   proteinas: number;

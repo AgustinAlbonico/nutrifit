@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Search, Loader2, ArrowLeft, Save } from 'lucide-react';
+import { Plus, Trash2, Search, Loader2, ArrowLeft, Save, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
@@ -36,6 +36,28 @@ interface AlimentoSeleccionado {
   baseGrasas: number;
 }
 
+interface PreparacionItemResponse {
+  idPreparacionItem: number;
+  alimentoId: number;
+  alimentoNombre: string;
+  cantidadDefault: number;
+  unidadDefault: string;
+  calorias: number;
+  proteinas: number;
+  carbohidratos: number;
+  grasas: number;
+}
+
+interface PreparacionResponse {
+  idPreparacion: number;
+  nombre: string;
+  items: PreparacionItemResponse[];
+  totalCalorias: number;
+  totalProteinas: number;
+  totalCarbohidratos: number;
+  totalGrasas: number;
+}
+
 interface AlimentoResponseDto {
   idAlimento: number;
   nombre: string;
@@ -67,6 +89,13 @@ export function DialogEditarAlternativa({
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<AlimentoResponseDto[]>([]);
   const [searching, setSearching] = useState(false);
+
+  // Buscador de preparaciones reutilizables
+  const [prepSearchQuery, setPrepSearchQuery] = useState('');
+  const [prepSearchResults, setPrepSearchResults] = useState<PreparacionResponse[]>([]);
+  const [searchingPreps, setSearchingPreps] = useState(false);
+  const [guardarComoPreparacion, setGuardarComoPreparacion] = useState(false);
+  const [guardandoPreparacion, setGuardandoPreparacion] = useState(false);
 
   // Formulario para CREAR nuevo alimento en la base de datos
   const [mostrandoCrearAlimento, setMostrandoCrearAlimento] = useState(false);
@@ -115,6 +144,9 @@ export function DialogEditarAlternativa({
       }
       setSearchQuery('');
       setSearchResults([]);
+      setPrepSearchQuery('');
+      setPrepSearchResults([]);
+      setGuardarComoPreparacion(false);
       setMostrandoCrearAlimento(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -284,10 +316,81 @@ export function DialogEditarAlternativa({
     }
   };
 
-  const guardarCambios = () => {
+  // Buscar preparaciones (debounce 400ms)
+  useEffect(() => {
+    if (!prepSearchQuery.trim()) {
+      setPrepSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setSearchingPreps(true);
+      try {
+        const res = await apiRequest<{ data: PreparacionResponse[] }>(
+          `/preparaciones?search=${encodeURIComponent(prepSearchQuery)}&limit=8`,
+          { token }
+        );
+        setPrepSearchResults(res.data || []);
+      } catch {
+        toast.error('Error al buscar preparaciones');
+      } finally {
+        setSearchingPreps(false);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [prepSearchQuery, token]);
+
+  const cargarDesdePreparacion = (prep: PreparacionResponse) => {
+    setNombre(prep.nombre);
+    const nuevosAlimentos: AlimentoSeleccionado[] = prep.items.map((item) => ({
+      alimentoId: item.alimentoId,
+      nombre: item.alimentoNombre,
+      cantidad: item.cantidadDefault,
+      unidad: item.unidadDefault === 'gramo' ? 'g' : item.unidadDefault === 'mililitro' ? 'ml' : item.unidadDefault === 'unidad' ? 'un' : item.unidadDefault,
+      baseCantidad: item.cantidadDefault,
+      baseCalorias: item.calorias,
+      baseProteinas: item.proteinas,
+      baseCarbohidratos: item.carbohidratos,
+      baseGrasas: item.grasas,
+    }));
+    setAlimentos(nuevosAlimentos);
+    setCalorias(Math.round(prep.totalCalorias));
+    setProteinas(Math.round(prep.totalProteinas * 10) / 10);
+    setCarbohidratos(Math.round(prep.totalCarbohidratos * 10) / 10);
+    setGrasas(Math.round(prep.totalGrasas * 10) / 10);
+    setPrepSearchQuery('');
+    setPrepSearchResults([]);
+    toast.success(`Preparación "${prep.nombre}" cargada`);
+  };
+
+  const guardarCambios = async () => {
     if (!nombre.trim()) {
       toast.error('El nombre de la comida es obligatorio.');
       return;
+    }
+
+    // Opcionalmente guardar como preparación reutilizable
+    if (guardarComoPreparacion && alimentos.length > 0) {
+      setGuardandoPreparacion(true);
+      try {
+        await apiRequest('/preparaciones', {
+          method: 'POST',
+          body: {
+            nombre: nombre.trim(),
+            items: alimentos.map((a) => ({
+              alimentoId: a.alimentoId,
+              cantidadDefault: a.cantidad,
+              unidadDefault: a.unidad === 'g' ? 'gramo' : a.unidad === 'ml' ? 'mililitro' : a.unidad === 'un' ? 'unidad' : a.unidad,
+            })),
+          },
+          token,
+        });
+        toast.success('Preparación guardada para reutilizar');
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Error al guardar la preparación';
+        toast.error(msg);
+      } finally {
+        setGuardandoPreparacion(false);
+      }
     }
 
     const altGuardada: AlternativaSlot = {
@@ -456,9 +559,51 @@ export function DialogEditarAlternativa({
               />
             </div>
 
+            {/* Buscador de Preparaciones */}
+            <div className="space-y-2 relative">
+              <Label className="text-sm font-semibold flex items-center gap-1.5">
+                <BookOpen className="size-4 text-emerald-600" />
+                Cargar desde preparación guardada
+              </Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-3 size-4 text-muted-foreground" />
+                <Input
+                  value={prepSearchQuery}
+                  onChange={(e) => setPrepSearchQuery(e.target.value)}
+                  placeholder="Buscar preparación guardada (ej: Pollo con puré)..."
+                  className="pl-9 rounded-xl h-10"
+                  data-testid="search-preparaciones-input"
+                />
+                {searchingPreps && (
+                  <Loader2 className="absolute right-3 top-3 size-4 animate-spin text-muted-foreground" />
+                )}
+              </div>
+
+              {/* Resultados de búsqueda de preparaciones */}
+              {prepSearchResults.length > 0 && (
+                <div className="absolute z-30 w-full rounded-xl border bg-popover text-popover-foreground shadow-lg mt-1 max-h-56 overflow-y-auto divide-y divide-border/60">
+                  {prepSearchResults.map((p) => (
+                    <button
+                      key={p.idPreparacion}
+                      onClick={() => cargarDesdePreparacion(p)}
+                      className="flex w-full items-center justify-between px-4 py-2.5 text-left text-sm hover:bg-accent/60 transition-colors"
+                    >
+                      <div>
+                        <p className="font-semibold text-xs text-foreground">{p.nombre}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {p.totalCalorias} kcal · P {p.totalProteinas}g · C {p.totalCarbohidratos}g · G {p.totalGrasas}g
+                        </p>
+                      </div>
+                      <Plus className="size-4 text-emerald-500 shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Buscador de Alimentos */}
             <div className="space-y-2 relative">
-              <Label className="text-sm font-semibold">Agregar ingredientes</Label>
+              <Label className="text-sm font-semibold">Agregar ingredientes sueltos</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-3 size-4 text-muted-foreground" />
                 <Input
@@ -556,7 +701,7 @@ export function DialogEditarAlternativa({
                 <div className="space-y-1">
                   <Label htmlFor="kcal-total" className="text-[10px] font-bold uppercase text-muted-foreground">Calorías</Label>
                   <Input
-                    id="kcal-total"
+                     id="kcal-total"
                     type="number"
                     value={calorias}
                     onChange={(e) => setCalorias(Number(e.target.value))}
@@ -596,12 +741,29 @@ export function DialogEditarAlternativa({
               </div>
             </div>
 
+            {/* Checkbox para guardar como preparación reutilizable */}
+            {alimentos.length > 0 && (
+              <div className="flex items-center space-x-2 px-1 py-1">
+                <input
+                  type="checkbox"
+                  id="guardar-como-prep"
+                  checked={guardarComoPreparacion}
+                  onChange={(e) => setGuardarComoPreparacion(e.target.checked)}
+                  disabled={guardandoPreparacion}
+                  className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 size-4 cursor-pointer disabled:opacity-50"
+                />
+                <Label htmlFor="guardar-como-prep" className="text-xs font-semibold text-muted-foreground cursor-pointer hover:text-foreground transition-colors select-none">
+                  {guardandoPreparacion ? 'Guardando preparación...' : 'Guardar esta comida como preparación reutilizable en el gimnasio'}
+                </Label>
+              </div>
+            )}
+
             <DialogFooter className="mt-4 gap-2">
-              <Button variant="ghost" onClick={() => onOpenChange(false)} className="rounded-xl">
+              <Button variant="ghost" onClick={() => onOpenChange(false)} className="rounded-xl" disabled={guardandoPreparacion}>
                 Cancelar
               </Button>
-              <Button onClick={guardarCambios} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold">
-                Guardar comida
+              <Button onClick={guardarCambios} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold" disabled={guardandoPreparacion}>
+                {guardandoPreparacion ? <Loader2 className="size-4 animate-spin" /> : 'Guardar comida'}
               </Button>
             </DialogFooter>
           </div>

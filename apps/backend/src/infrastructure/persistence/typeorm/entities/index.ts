@@ -23,6 +23,8 @@ export * from './plan-alimentacion.entity';
 export * from './plan-alimentacion-version.entity';
 export * from './plan-feedback.entity';
 export * from './nutricionista-ia-memoria.entity';
+export * from './preparacion.entity';
+export * from './preparacion-item.entity';
 export * from './sugerencia-ia.entity';
 export * from './turno.entity';
 export * from './notificacion.entity';
@@ -31,3 +33,4 @@ export * from './turno-confirmacion-token.entity';
 export * from './usuario.entity';
 export * from './gimnasio.entity';
 export * from './usuario-grupo-permiso.entity';
+

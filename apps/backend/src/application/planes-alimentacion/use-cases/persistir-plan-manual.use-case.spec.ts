@@ -53,6 +53,11 @@ describe('PersistirPlanManualUseCase', () => {
     crear: jest.Mock;
     marcarActiva: jest.Mock;
   };
+  let versionRepoMock: {
+    findOne: jest.Mock;
+    create: jest.Mock;
+    save: jest.Mock;
+  };
 
   beforeEach(async () => {
     planRepo = { findOne: jest.fn() };
@@ -68,6 +73,11 @@ describe('PersistirPlanManualUseCase', () => {
       })),
       marcarActiva: jest.fn().mockResolvedValue({}),
     };
+    versionRepoMock = {
+      findOne: jest.fn().mockResolvedValue(null),
+      create: jest.fn().mockImplementation((x) => x),
+      save: jest.fn().mockImplementation(async (x) => x),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -81,7 +91,15 @@ describe('PersistirPlanManualUseCase', () => {
         { provide: getRepositoryToken(UsuarioOrmEntity), useValue: {} },
         { provide: getRepositoryToken(ItemComidaOrmEntity), useValue: {} },
         { provide: PLAN_ALIMENTACION_VERSION_REPOSITORY, useValue: planVersionRepo },
-        { provide: DataSource, useValue: { transaction: async (fn: (m: unknown) => unknown) => fn({}) } },
+        {
+          provide: DataSource,
+          useValue: {
+            transaction: async (fn: (m: unknown) => unknown) =>
+              fn({
+                getRepository: () => versionRepoMock,
+              }),
+          },
+        },
         { provide: AuditoriaService, useValue: { registrar: jest.fn().mockResolvedValue(undefined) } },
         { provide: NotificacionesService, useValue: { crear: jest.fn().mockResolvedValue(undefined) } },
         { provide: RestriccionesValidator, useValue: { generarIncidencias: jest.fn().mockResolvedValue([]) } },
@@ -131,12 +149,12 @@ describe('PersistirPlanManualUseCase', () => {
 
     await sut.execute(5, 'NUTRICIONISTA', 1, dto as never);
 
-    expect(planVersionRepo.crear).toHaveBeenCalledWith(
+    expect(versionRepoMock.create).toHaveBeenCalledWith(
       expect.objectContaining({
         idPlanAlimentacion: 1,
-        numeroVersion: 2,
+        numeroVersion: 0,
         motivoCambio: 'edicion_manual',
-        activa: true,
+        activa: false,
         createdBy: 5,
       }),
     );
@@ -180,11 +198,13 @@ describe('PersistirPlanManualUseCase', () => {
 
     await sut.execute(5, 'NUTRICIONISTA', 1, dto as never);
 
-    expect(planVersionRepo.crear).toHaveBeenCalledWith(
+    expect(versionRepoMock.create).toHaveBeenCalledWith(
       expect.objectContaining({
         idPlanAlimentacion: 1,
+        numeroVersion: 0,
         motivoCambio: 'creacion_inicial',
-        activa: true,
+        activa: false,
+        createdBy: 5,
       }),
     );
   });

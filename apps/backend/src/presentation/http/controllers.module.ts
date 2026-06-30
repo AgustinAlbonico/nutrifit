@@ -6,6 +6,7 @@ import {
   AuthController,
   PermisosController,
   PlanAlimentacionController,
+  PreparacionesController,
   ProfesionalController,
   ProgresoController,
   SocioController,
@@ -37,6 +38,13 @@ import { CrearAlimentoUseCase } from 'src/application/alimentos/use-cases/crear-
 import { ActualizarAlimentoUseCase } from 'src/application/alimentos/use-cases/actualizar-alimento.use-case';
 import { EliminarAlimentoUseCase } from 'src/application/alimentos/use-cases/eliminar-alimento.use-case';
 import { BuscarSociosConFichaUseCase } from 'src/application/socios/buscar-socios-con-ficha.use-case';
+import { CrearPreparacionUseCase } from 'src/application/preparaciones/use-cases';
+import { ListarPreparacionesUseCase } from 'src/application/preparaciones/use-cases';
+import { ObtenerPreparacionUseCase } from 'src/application/preparaciones/use-cases';
+import { ActualizarPreparacionUseCase } from 'src/application/preparaciones/use-cases';
+import { EliminarPreparacionUseCase } from 'src/application/preparaciones/use-cases';
+import { PreparacionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/preparacion.entity';
+import { PreparacionItemOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/preparacion-item.entity';
 import { FotoProgresoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/foto-progreso.entity';
 import { ObjetivoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/objetivo.entity';
 import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/turno.entity';
@@ -75,6 +83,8 @@ import { GimnasiosModule } from './gimnasios.module';
       AuditoriaOrmEntity,
       NotificacionOrmEntity,
       GimnasioOrmEntity,
+      PreparacionOrmEntity,
+      PreparacionItemOrmEntity,
     ]),
     RepositoriesModule,
   ],
@@ -92,6 +102,11 @@ import { GimnasiosModule } from './gimnasios.module';
     BuscarSociosConFichaUseCase,
     GimnasioRepository,
     NotificacionesService,
+    CrearPreparacionUseCase,
+    ListarPreparacionesUseCase,
+    ObtenerPreparacionUseCase,
+    ActualizarPreparacionUseCase,
+    EliminarPreparacionUseCase,
   ],
   controllers: [
     AgendaController,
@@ -112,6 +127,7 @@ import { GimnasiosModule } from './gimnasios.module';
     RecepcionistasController,
     NutricionistaIaMemoriaController,
     IdeasComidaController,
+    PreparacionesController,
   ],
 })
 export class ControllersModule {}

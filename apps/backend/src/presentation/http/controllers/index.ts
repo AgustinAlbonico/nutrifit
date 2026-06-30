@@ -3,6 +3,7 @@ export * from './alimentos.controller';
 export * from './auth.controller';
 export * from './permisos.controller';
 export * from './planes-alimentacion.controller';
+export * from './preparaciones.controller';
 export * from './profesional.controller';
 export * from './socios.controller';
 export * from './turnos.controller';
@@ -18,3 +19,4 @@ export * from './nutricionista-ia-memoria.controller';
 export * from './ideas-comida.controller';
 
 export * from './ai.controller';
+

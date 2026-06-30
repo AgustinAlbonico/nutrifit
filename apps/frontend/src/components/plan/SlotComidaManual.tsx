@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Copy, Pencil, Trash2, Sparkles, Plus } from 'lucide-react';
+import { Copy, Pencil, Trash2, Sparkles, Plus, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSlotDroppable } from '@/hooks/useDragDropSlot';
 import { DialogEditarAlternativa } from './DialogEditarAlternativa';
@@ -8,6 +8,7 @@ export interface AlternativaSlot {
   /** Temporary id for FE-only items (e.g. `tmp-1`). */
   id: string;
   nombre: string;
+  preparacionId?: number | null;
   alimentos: Array<{
     alimentoId: number;
     cantidad: number;
@@ -167,7 +168,10 @@ function SlotAlternativaItem({
     >
       <div className="flex items-start justify-between gap-1">
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold text-foreground truncate" title={alternativa.nombre}>
+          <p className="text-xs font-semibold text-foreground truncate flex items-center gap-1" title={alternativa.nombre}>
+            {alternativa.preparacionId && (
+              <BookOpen className="size-3 text-emerald-600 shrink-0" />
+            )}
             {alternativa.nombre}
           </p>
           <p className="text-[9px] text-muted-foreground tabular-nums">
