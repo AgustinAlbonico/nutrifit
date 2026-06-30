@@ -33,6 +33,22 @@ describe('GenerarIdeasComidaUseCase', () => {
   let fichaRepo: jest.Mocked<Repository<FichaSaludOrmEntity>>;
   let planRepo: jest.Mocked<Repository<PlanAlimentacionOrmEntity>>;
 
+  const planBase = {
+    idPlanAlimentacion: 1,
+    activo: true,
+    nutricionista: { idPersona: 5 },
+    socio: { idPersona: 50 },
+  } as unknown as PlanAlimentacionOrmEntity;
+
+  const fichaBase = {
+    idFichaSalud: 1,
+    alergias: [],
+    restriccionesAlimentarias: null,
+    patologias: [],
+    medicacionActual: null,
+    suplementosActuales: null,
+  } as unknown as FichaSaludOrmEntity;
+
   beforeEach(async () => {
     aiProvider = { generarRecomendacion: jest.fn(), verificarConexion: jest.fn() } as never;
     fichaRepo = { findOne: jest.fn() } as never;
@@ -57,6 +73,114 @@ describe('GenerarIdeasComidaUseCase', () => {
     }).compile();
 
     sut = module.get(GenerarIdeasComidaUseCase);
+  });
+
+  it('normaliza alternativas cuando la IA responde con la clave del contrato del editor', async () => {
+    planRepo.findOne!.mockResolvedValue(planBase);
+    fichaRepo.findOne!.mockResolvedValue(fichaBase);
+    aiProvider.generarRecomendacion.mockResolvedValue({
+      alternativas: [
+        {
+          nombre: 'Avena con banana',
+          alimentos: [
+            {
+              alimentoId: 1,
+              cantidad: 50,
+              unidad: 'g',
+              nombre: 'Avena',
+            },
+          ],
+          calorias: 330,
+          proteinas: 11,
+          carbohidratos: 58,
+          grasas: 7,
+        },
+      ],
+    });
+
+    const respuesta = await sut.execute(
+      { personaId: 5, gimnasioId: 1, rol: 'NUTRICIONISTA' } as never,
+      {
+        planAlimentacionId: 1,
+        dia: 'LUNES',
+        tipoComida: 'DESAYUNO',
+        cantidadAlternativas: 1,
+      } as never,
+    );
+
+    expect(respuesta.alternativas).toHaveLength(1);
+    expect(respuesta.alternativas[0]).toMatchObject({
+      nombre: 'Avena con banana',
+      alimentos: [
+        expect.objectContaining({
+          alimentoNombre: 'Avena',
+          nombre: 'Avena',
+        }),
+      ],
+    });
+  });
+
+  it('envia un schema explicito al provider para evitar respuestas con formato ambiguo', async () => {
+    planRepo.findOne!.mockResolvedValue(planBase);
+    fichaRepo.findOne!.mockResolvedValue(fichaBase);
+    aiProvider.generarRecomendacion.mockResolvedValue({
+      alternativas: [
+        {
+          nombre: 'Yogur con granola',
+          alimentos: [
+            {
+              alimentoId: 2,
+              cantidad: 200,
+              unidad: 'g',
+              alimentoNombre: 'Yogur natural',
+            },
+          ],
+          calorias: 280,
+          proteinas: 16,
+          carbohidratos: 35,
+          grasas: 8,
+        },
+      ],
+    });
+
+    await sut.execute(
+      { personaId: 5, gimnasioId: 1, rol: 'NUTRICIONISTA' } as never,
+      {
+        planAlimentacionId: 1,
+        dia: 'LUNES',
+        tipoComida: 'DESAYUNO',
+        cantidadAlternativas: 1,
+      } as never,
+    );
+
+    expect(aiProvider.generarRecomendacion).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        schema: expect.objectContaining({
+          properties: expect.objectContaining({
+            alternativas: expect.any(Object),
+          }),
+        }),
+      }),
+    );
+  });
+
+  it('no devuelve exito vacio si la IA no genera alternativas parseables', async () => {
+    planRepo.findOne!.mockResolvedValue(planBase);
+    fichaRepo.findOne!.mockResolvedValue(fichaBase);
+    aiProvider.generarRecomendacion.mockResolvedValue({ alternativas: [] });
+
+    await expect(
+      sut.execute(
+        { personaId: 5, gimnasioId: 1, rol: 'NUTRICIONISTA' } as never,
+        {
+          planAlimentacionId: 1,
+          dia: 'LUNES',
+          tipoComida: 'DESAYUNO',
+          cantidadAlternativas: 1,
+        } as never,
+      ),
+    ).rejects.toMatchObject({ errorCode: 'BAD_REQUEST' });
   });
 
   it('retorna alternativas que pasan el filtro de restricciones', async () => {

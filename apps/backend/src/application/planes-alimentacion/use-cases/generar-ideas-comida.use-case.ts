@@ -39,6 +39,7 @@ export interface AlternativaGenerada {
     cantidad: number;
     unidad: string;
     alimentoNombre: string;
+    nombre: string;
   }>;
   calorias: number;
   proteinas: number;
@@ -60,6 +61,7 @@ interface AlternativaRaw {
     cantidad: number;
     unidad: string;
     alimentoNombre?: string;
+    nombre?: string;
   }>;
   calorias?: number;
   proteinas?: number;
@@ -75,6 +77,7 @@ interface AlternativaParaValidar {
     cantidad: number;
     unidad: string;
     alimentoNombre: string;
+    nombre: string;
   }>;
   calorias: number;
   proteinas: number;
@@ -84,6 +87,58 @@ interface AlternativaParaValidar {
 }
 
 const MAX_REINTENTOS_IA = 3;
+const MAX_TOKENS_IDEAS_COMIDA = 4096;
+
+interface RespuestaRawIdeasComida {
+  ideas?: AlternativaRaw[];
+  alternativas?: AlternativaRaw[];
+  advertencias?: string[];
+}
+
+const RESPUESTA_IDEAS_COMIDA_SCHEMA = {
+  type: 'object',
+  properties: {
+    alternativas: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          nombre: { type: 'string' },
+          alimentos: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                alimentoId: { type: 'number' },
+                alimentoNombre: { type: 'string' },
+                cantidad: { type: 'number' },
+                unidad: { type: 'string' },
+              },
+              required: ['alimentoNombre', 'cantidad', 'unidad'],
+            },
+          },
+          calorias: { type: 'number' },
+          proteinas: { type: 'number' },
+          carbohidratos: { type: 'number' },
+          grasas: { type: 'number' },
+        },
+        required: [
+          'nombre',
+          'alimentos',
+          'calorias',
+          'proteinas',
+          'carbohidratos',
+          'grasas',
+        ],
+      },
+    },
+    advertencias: {
+      type: 'array',
+      items: { type: 'string' },
+    },
+  },
+  required: ['alternativas'],
+};
 
 @Injectable()
 export class GenerarIdeasComidaUseCase {
@@ -151,7 +206,6 @@ export class GenerarIdeasComidaUseCase {
     // Loop con reintentos: hasta que la salida pase el filtro
     const alternativasValidadas: AlternativaGenerada[] = [];
     let intento = 0;
-    let ultimaRespuestaIA: Omit<AlternativaGenerada, 'idTemp' | 'warnings'>[] = [];
     let ultimoPrompt = '';
 
     while (
@@ -166,7 +220,6 @@ export class GenerarIdeasComidaUseCase {
         cantidad,
       );
       ultimoPrompt = alternativasRaw.prompt;
-      ultimaRespuestaIA = alternativasRaw.alternativas;
 
       for (const alt of alternativasRaw.alternativas) {
         const validacion = this.restriccionesValidator.validarAlternativa(
@@ -187,6 +240,12 @@ export class GenerarIdeasComidaUseCase {
           );
         }
       }
+    }
+
+    if (alternativasValidadas.length === 0) {
+      throw new BadRequestError(
+        'La IA no generó alternativas válidas para este slot. Probá nuevamente o ajustá las restricciones del paciente.',
+      );
     }
 
     return {
@@ -221,15 +280,18 @@ export class GenerarIdeasComidaUseCase {
     const promptCompleto = `${system}\n\n---\n\n${user}`;
 
     // Llamar al AI provider y parsear la respuesta JSON
-    let resultado: { ideas?: AlternativaRaw[] } = {};
+    let resultado: RespuestaRawIdeasComida = {};
     try {
-      resultado = await this.aiProvider.generarRecomendacion<{
-        ideas?: AlternativaRaw[];
-      }>(promptCompleto, {
-        temperature: 0.4,
-        max_tokens: 1024,
-        timeoutMs: 30000,
-      });
+      resultado =
+        await this.aiProvider.generarRecomendacion<RespuestaRawIdeasComida>(
+          promptCompleto,
+          {
+            schema: RESPUESTA_IDEAS_COMIDA_SCHEMA,
+            temperature: 0.4,
+            max_tokens: MAX_TOKENS_IDEAS_COMIDA,
+            timeoutMs: 30000,
+          },
+        );
     } catch (error) {
       const mensaje = error instanceof Error ? error.message : String(error);
       this.logger.warn(`AI provider error en generarUnaPasada: ${mensaje}`);
@@ -237,23 +299,32 @@ export class GenerarIdeasComidaUseCase {
       return { prompt: promptCompleto, alternativas: [] };
     }
 
-    const alternativasRaw = resultado.ideas ?? [];
+    const alternativasRaw = resultado.alternativas ?? resultado.ideas ?? [];
 
     const alternativas: Omit<AlternativaGenerada, 'idTemp' | 'warnings'>[] =
-      alternativasRaw.map((idea) => ({
-        nombre: idea.nombre ?? 'Sin nombre',
-        alimentos: (idea.alimentos ?? []).map((a) => ({
-          alimentoId: a.alimentoId ?? 0,
-          cantidad: a.cantidad ?? 0,
-          unidad: a.unidad ?? 'g',
-          alimentoNombre: a.alimentoNombre ?? '',
-        })),
-        calorias: idea.calorias ?? 0,
-        proteinas: idea.proteinas ?? 0,
-        carbohidratos: idea.carbohidratos ?? 0,
-        grasas: idea.grasas ?? 0,
-        etiquetas: [],
-      }));
+      alternativasRaw.map((idea) => {
+        const alimentos = (idea.alimentos ?? []).map((a) => {
+          const alimentoNombre = a.alimentoNombre ?? a.nombre ?? '';
+
+          return {
+            alimentoId: a.alimentoId ?? 0,
+            cantidad: a.cantidad ?? 0,
+            unidad: a.unidad ?? 'g',
+            alimentoNombre,
+            nombre: alimentoNombre,
+          };
+        });
+
+        return {
+          nombre: idea.nombre ?? 'Sin nombre',
+          alimentos,
+          calorias: idea.calorias ?? 0,
+          proteinas: idea.proteinas ?? 0,
+          carbohidratos: idea.carbohidratos ?? 0,
+          grasas: idea.grasas ?? 0,
+          etiquetas: [],
+        };
+      });
 
     return { prompt: promptCompleto, alternativas };
   }
