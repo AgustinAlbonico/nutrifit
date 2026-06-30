@@ -44,6 +44,43 @@ export class AlimentoResponseDto {
   grasas: number | null;
   unidadMedida: string;
   grupoAlimenticio: { id: number; descripcion: string } | null;
+  colesterol: number | null;
+  fibraAlimentaria: number | null;
+  sodio: number | null;
+  agua: number | null;
+  vitaminaA: number | null;
+  vitaminaB6: number | null;
+  vitaminaB12: number | null;
+  vitaminaC: number | null;
+  vitaminaD: number | null;
+  vitaminaE: number | null;
+  vitaminaK: number | null;
+  almidon: number | null;
+  lactosa: number | null;
+  alcohol: number | null;
+  cafeina: number | null;
+  azucares: number | null;
+  calcio: number | null;
+  hierro: number | null;
+  magnesio: number | null;
+  fosforo: number | null;
+  potasio: number | null;
+  cinc: number | null;
+  cobre: number | null;
+  fluor: number | null;
+  manganeso: number | null;
+  selenio: number | null;
+  tiamina: number | null;
+  riboflavina: number | null;
+  niacina: number | null;
+  acidoPantotenico: number | null;
+  folato: number | null;
+  acidoFolico: number | null;
+  grasasTrans: number | null;
+  grasasSaturadas: number | null;
+  grasasMonoinsaturadas: number | null;
+  grasasPoliinsaturadas: number | null;
+  cloruro: number | null;
 }
 
 @Controller('alimentos')
@@ -195,6 +232,43 @@ export class AlimentosController {
       grasas: a.grasas,
       unidadMedida: a.unidadMedida,
       grupoAlimenticio: grupoInfo,
+      colesterol: a.colesterol,
+      fibraAlimentaria: a.fibraAlimentaria,
+      sodio: a.sodio,
+      agua: a.agua,
+      vitaminaA: a.vitaminaA,
+      vitaminaB6: a.vitaminaB6,
+      vitaminaB12: a.vitaminaB12,
+      vitaminaC: a.vitaminaC,
+      vitaminaD: a.vitaminaD,
+      vitaminaE: a.vitaminaE,
+      vitaminaK: a.vitaminaK,
+      almidon: a.almidon,
+      lactosa: a.lactosa,
+      alcohol: a.alcohol,
+      cafeina: a.cafeina,
+      azucares: a.azucares,
+      calcio: a.calcio,
+      hierro: a.hierro,
+      magnesio: a.magnesio,
+      fosforo: a.fosforo,
+      potasio: a.potasio,
+      cinc: a.cinc,
+      cobre: a.cobre,
+      fluor: a.fluor,
+      manganeso: a.manganeso,
+      selenio: a.selenio,
+      tiamina: a.tiamina,
+      riboflavina: a.riboflavina,
+      niacina: a.niacina,
+      acidoPantotenico: a.acidoPantotenico,
+      folato: a.folato,
+      acidoFolico: a.acidoFolico,
+      grasasTrans: a.grasasTrans,
+      grasasSaturadas: a.grasasSaturadas,
+      grasasMonoinsaturadas: a.grasasMonoinsaturadas,
+      grasasPoliinsaturadas: a.grasasPoliinsaturadas,
+      cloruro: a.cloruro,
     };
   }
 }
