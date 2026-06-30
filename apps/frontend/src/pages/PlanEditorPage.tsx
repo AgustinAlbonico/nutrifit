@@ -364,6 +364,31 @@ export function PlanEditorPage() {
     };
   }, [puedeEditarPlanes, token, personaId, socioIdNumero]);
 
+  const [cargandoPlanManual, setCargandoPlanManual] = useState(false);
+
+  const manejarCrearPlanManual = useCallback(async () => {
+    if (!socioIdNumero) return;
+    setCargandoPlanManual(true);
+    try {
+      const res = await apiRequest<
+        RespuestaPlanSemanalV2FE | ApiResponse<RespuestaPlanSemanalV2FE>
+      >(`/planes-alimentacion/crear-manual/${socioIdNumero}`, {
+        method: 'POST',
+        token,
+      });
+      const planData = normalizarRespuestaConMacros(desenvolverRespuestaApi(res));
+      setRespuesta(planData);
+      setPlanManualExistenteId(planData.planAlimentacionId);
+      setEstructura(crearEstructuraInicial());
+      setModo('editor');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al crear plan manual';
+      toast.error(msg);
+    } finally {
+      setCargandoPlanManual(false);
+    }
+  }, [socioIdNumero, token]);
+
   useEffect(() => {
     if (!puedeEditarPlanes || !socioIdNumero) return;
     let cancelado = false;
@@ -380,7 +405,13 @@ export function PlanEditorPage() {
         const planEditable = normalizarPlanesListado(respuestaApi).find((plan) =>
           esPlanEditableExistente(plan, personaId ?? null),
         );
-        setPlanManualExistenteId(planEditable?.idPlanAlimentacion ?? null);
+        
+        if (planEditable) {
+          setPlanManualExistenteId(planEditable.idPlanAlimentacion ?? null);
+        } else {
+          // Auto-crear plan manual vacío silenciosamente
+          await manejarCrearPlanManual();
+        }
       } catch {
         if (!cancelado) setPlanManualExistenteId(null);
       } finally {
@@ -392,39 +423,13 @@ export function PlanEditorPage() {
     return () => {
       cancelado = true;
     };
-  }, [puedeEditarPlanes, token, personaId, socioIdNumero]);
+  }, [puedeEditarPlanes, token, personaId, socioIdNumero, manejarCrearPlanManual]);
 
   const volverAlPlan = () => {
     if (socioIdNumero) {
       void navigate({ to: `/profesional/plan/${socioIdNumero}` });
     } else {
       void navigate({ to: '/dashboard' });
-    }
-  };
-
-
-  const [cargandoPlanManual, setCargandoPlanManual] = useState(false);
-
-  const manejarCrearPlanManual = async () => {
-    if (!socioIdNumero) return;
-    setCargandoPlanManual(true);
-    try {
-      const res = await apiRequest<
-        RespuestaPlanSemanalV2FE | ApiResponse<RespuestaPlanSemanalV2FE>
-      >(`/planes-alimentacion/crear-manual/${socioIdNumero}`, {
-        method: 'POST',
-      });
-      const planData = normalizarRespuestaConMacros(desenvolverRespuestaApi(res));
-      setRespuesta(planData);
-      setPlanManualExistenteId(planData.planAlimentacionId);
-      setEstructura(crearEstructuraInicial());
-      setModo('editor');
-      toast.success('Plan manual creado');
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al crear plan manual';
-      toast.error(msg);
-    } finally {
-      setCargandoPlanManual(false);
     }
   };
 
@@ -721,7 +726,52 @@ export function PlanEditorPage() {
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+        <div className="flex flex-wrap items-center gap-2.5 sm:ml-auto">
+          {planIdActual && (
+            <>
+              {/* Estado de autoguardado */}
+              <div className="flex items-center gap-1.5 text-xs mr-1">
+                {ultimoGuardado && !guardandoBorrador && (
+                  <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+                    <CheckCircle2 className="size-3.5" />
+                    Guardado {ultimoGuardado.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                  </div>
+                )}
+                {guardandoBorrador && (
+                  <div className="flex items-center gap-1 text-muted-foreground animate-pulse">
+                    <Loader2 className="size-3.5 animate-spin" />
+                    Guardando...
+                  </div>
+                )}
+              </div>
+
+              {/* Botón: Generar con IA */}
+              <Button
+                type="button"
+                onClick={() => setGeneradorIaAbierto(true)}
+                size="sm"
+                className="bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-700 hover:to-indigo-700 text-white font-semibold text-xs h-9 rounded-xl transition-all shadow gap-1.5"
+                data-testid="abrir-generador-ia-btn"
+              >
+                <Sparkles className="size-4" aria-hidden="true" />
+                Generar plan completo con IA
+              </Button>
+
+              {/* Botón: Guardar versión definitiva */}
+              <Button
+                type="button"
+                onClick={guardarVersionExplicita}
+                disabled={guardandoBorrador || cargandoEstructura}
+                size="sm"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-9 flex items-center justify-center gap-1.5 rounded-xl transition-all shadow"
+                data-testid="guardar-version-btn"
+              >
+                <Save className="size-4" />
+                Guardar versión definitiva
+              </Button>
+            </>
+          )}
+
           <Button
             type="button"
             variant="outline"
@@ -757,72 +807,6 @@ export function PlanEditorPage() {
                 className="flex flex-col gap-6 w-full animate-in fade-in duration-300"
                 data-testid="plan-editor-layout"
               >
-                {/* Fila superior: Controles horizontales responsivos */}
-                <div className="grid gap-6 md:grid-cols-2">
-                  {/* Columna 1: Estado del Plan y Publicación */}
-                  <Card className="rounded-2xl border-border/50 bg-card/60 backdrop-blur-sm shadow-md flex flex-col justify-between">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
-                        <CheckCircle2 className="size-4 text-emerald-500 animate-pulse" />
-                        Estado del Borrador
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3 flex-1 flex flex-col justify-between">
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Tus cambios se guardan automáticamente. Hacé clic en "Guardar versión definitiva" para activar el plan para el paciente.
-                      </p>
-                      <div className="space-y-3 pt-2">
-                        {ultimoGuardado && !guardandoBorrador && (
-                          <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                            <CheckCircle2 className="size-3.5" />
-                            Actualizado a las {ultimoGuardado.toLocaleTimeString()}
-                          </div>
-                        )}
-                        {guardandoBorrador && (
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
-                            Guardando borrador...
-                          </div>
-                        )}
-                        <Button
-                          onClick={guardarVersionExplicita}
-                          disabled={guardandoBorrador || cargandoEstructura}
-                          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-9 flex items-center justify-center gap-1.5 rounded-xl transition-all shadow"
-                          data-testid="guardar-version-btn"
-                        >
-                          <Save className="size-4" />
-                          Guardar versión definitiva
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Columna 2: Botón para abrir generador IA en modal */}
-                  <Card className="rounded-2xl border-border/50 bg-card/60 backdrop-blur-sm shadow-md flex flex-col justify-between">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                        <Sparkles
-                          className="size-4 text-fuchsia-500 animate-pulse"
-                          aria-hidden="true"
-                        />
-                        Plan completo con IA
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex-1 flex flex-col justify-center gap-3">
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Generá un plan semanal completo respetando restricciones y macros del paciente.
-                      </p>
-                      <Button
-                        onClick={() => setGeneradorIaAbierto(true)}
-                        className="w-full bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-700 hover:to-indigo-700 text-white font-semibold text-xs h-9 rounded-xl transition-all shadow gap-1.5"
-                        data-testid="abrir-generador-ia-btn"
-                      >
-                        <Sparkles className="size-4" aria-hidden="true" />
-                        Generar plan completo
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </div>
 
                 <DialogGenerarIdeasIa
                   open={slotIdeasIa !== null}
@@ -931,10 +915,10 @@ export function PlanEditorPage() {
                   )}
                 </main>
               </div>
-            ) : cargandoPlanExistente ? (
+            ) : (cargandoPlanExistente || cargandoPlanManual) ? (
               <div className="flex items-center justify-center gap-2 py-16 text-center text-sm text-muted-foreground">
                 <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                Buscando planes y borradores existentes…
+                Cargando editor de plan…
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center gap-4 py-16 text-center max-w-md mx-auto">
