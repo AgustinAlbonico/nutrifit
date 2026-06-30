@@ -30,6 +30,10 @@ export class PromptIdeasComidaBuilder {
   } {
     const restriccionesTexto = this.componerContextoRestricciones(ficha);
     const catalogoTexto = this.componerCatalogoAlimentos(alimentosDisponibles);
+    const coherenciaTexto = this.componerGuiaTipoComida(
+      slot.tipoComida,
+      alimentosDisponibles ?? [],
+    );
     const slotTexto =
       `${this.formatearDia(slot.dia)} ${this.formatearTipoComida(slot.tipoComida)}`.toLowerCase();
     const cantidadTexto = `${cantidad} alternativa${cantidad === 1 ? '' : 's'}`;
@@ -40,6 +44,8 @@ Todas las sugerencias deben cumplir ESTRICTAMENTE las restricciones del paciente
 ${restriccionesTexto}
 
 ${catalogoTexto}
+
+${coherenciaTexto}
 
 Reglas:
 - Devuelve EXACTAMENTE ${cantidad} alternativas distintas.
@@ -88,6 +94,41 @@ Reglas:
       .join('\n')}`;
   }
 
+  private componerGuiaTipoComida(
+    tipoComida: TipoComida,
+    alimentosDisponibles: string[],
+  ): string {
+    const guia = GUIA_ALIMENTOS_POR_TIPO_COMIDA[tipoComida];
+    if (!guia) return '';
+
+    const apropiadosDisponibles = guia.apropiados.filter((nombre) =>
+      alimentosDisponibles.some((disp) =>
+        disp.toLowerCase().includes(nombre.toLowerCase()),
+      ),
+    );
+    const inapropiadosDisponibles = guia.inapropiados.filter((nombre) =>
+      alimentosDisponibles.some((disp) =>
+        disp.toLowerCase().includes(nombre.toLowerCase()),
+      ),
+    );
+
+    const lineas: string[] = [
+      `Alimentos apropiados para ${this.formatearTipoComida(tipoComida).toLowerCase()}: ${
+        apropiadosDisponibles.length
+          ? apropiadosDisponibles.join(', ')
+          : guia.apropiados.join(', ')
+      }.`,
+    ];
+
+    if (inapropiadosDisponibles.length > 0) {
+      lineas.push(
+        `Los siguientes alimentos del catálogo NO son apropiados para ${this.formatearTipoComida(tipoComida).toLowerCase()} y no deben usarse: ${inapropiadosDisponibles.join(', ')}.`,
+      );
+    }
+
+    return `Coherencia con el tipo de comida:\n${lineas.join('\n')}`;
+  }
+
   private formatearDia(dia: DiaSemana): string {
     return {
       [DiaSemana.LUNES]: 'Lunes',
@@ -104,3 +145,119 @@ Reglas:
     return tipo.charAt(0) + tipo.slice(1).toLowerCase();
   }
 }
+
+interface GuiaTipoComida {
+  apropiados: string[];
+  inapropiados: string[];
+}
+
+const GUIA_ALIMENTOS_POR_TIPO_COMIDA: Record<TipoComida, GuiaTipoComida> = {
+  [TipoComida.DESAYUNO]: {
+    apropiados: [
+      'Avena',
+      'Yogur',
+      'Leche',
+      'Huevo',
+      'Pan',
+      'Banana',
+      'Manzana',
+      'Frutas',
+      'Granola',
+      'Cereal',
+      'Café',
+      'Té',
+    ],
+    inapropiados: [
+      'Pechuga de pollo',
+      'Carne',
+      'Merluza',
+      'Arroz',
+      'Lentejas',
+      'Garbanzos',
+      'Papa',
+      'Batata',
+      'Pasta',
+      'Milanesas',
+    ],
+  },
+  [TipoComida.MERIENDA]: {
+    apropiados: [
+      'Yogur',
+      'Leche',
+      'Pan',
+      'Frutas',
+      'Granola',
+      'Cereal',
+      'Vainillas',
+      'Galletitas',
+      'Té',
+      'Café',
+    ],
+    inapropiados: [
+      'Pechuga de pollo',
+      'Carne',
+      'Merluza',
+      'Arroz',
+      'Lentejas',
+      'Garbanzos',
+      'Papa',
+      'Pasta',
+      'Milanesas',
+    ],
+  },
+  [TipoComida.ALMUERZO]: {
+    apropiados: [
+      'Pechuga de pollo',
+      'Carne',
+      'Merluza',
+      'Arroz',
+      'Lentejas',
+      'Garbanzos',
+      'Papa',
+      'Ensalada',
+      'Lechuga',
+      'Tomate',
+      'Zanahoria',
+      'Pan',
+    ],
+    inapropiados: ['Avena', 'Yogur', 'Granola', 'Café', 'Té'],
+  },
+  [TipoComida.CENA]: {
+    apropiados: [
+      'Pechuga de pollo',
+      'Carne',
+      'Merluza',
+      'Arroz',
+      'Lentejas',
+      'Garbanzos',
+      'Papa',
+      'Ensalada',
+      'Lechuga',
+      'Tomate',
+      'Zanahoria',
+      'Huevo',
+    ],
+    inapropiados: ['Avena', 'Yogur', 'Granola', 'Café', 'Té'],
+  },
+  [TipoComida.COLACION]: {
+    apropiados: [
+      'Frutas',
+      'Yogur',
+      'Manzana',
+      'Banana',
+      'Nueces',
+      'Maní',
+      'Almendras',
+      'Galletitas',
+      'Barra',
+    ],
+    inapropiados: [
+      'Pechuga de pollo',
+      'Carne',
+      'Merluza',
+      'Arroz',
+      'Pasta',
+      'Milanesas',
+    ],
+  },
+};

@@ -76,4 +76,30 @@ describe('PromptIdeasComidaBuilder.build', () => {
     expect(texto).toContain('desayuno 1');
     expect(texto).toContain('alternativa 2');
   });
+
+  it('guia al LLM con alimentos propios de desayuno y prohibe alimentos de almuerzo/cena', () => {
+    const prompt = sut.build({
+      ficha: {} as never,
+      slot: { dia: DiaSemana.LUNES, tipoComida: TipoComida.DESAYUNO },
+      cantidad: 3,
+      alimentosDisponibles: ['Avena', 'Banana', 'Huevo', 'Pechuga de pollo'],
+    });
+    const texto = `${prompt.system}\n${prompt.user}`.toLowerCase();
+
+    expect(texto).toContain('alimentos apropiados para desayuno');
+    expect(texto).toContain('pechuga de pollo');
+    expect(texto).toContain('no son apropiados');
+  });
+
+  it('guia al LLM con alimentos propios de almuerzo', () => {
+    const prompt = sut.build({
+      ficha: {} as never,
+      slot: { dia: DiaSemana.LUNES, tipoComida: TipoComida.ALMUERZO },
+      cantidad: 3,
+      alimentosDisponibles: ['Pechuga de pollo', 'Arroz blanco cocido'],
+    });
+    const texto = `${prompt.system}\n${prompt.user}`.toLowerCase();
+
+    expect(texto).toContain('alimentos apropiados para almuerzo');
+  });
 });
