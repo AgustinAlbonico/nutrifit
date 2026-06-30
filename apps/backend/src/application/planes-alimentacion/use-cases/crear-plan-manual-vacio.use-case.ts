@@ -112,7 +112,7 @@ export class CrearPlanManualVacioUseCase implements BaseUseCase {
     } else {
       nutricionista = await this.nutricionistaRepo.findOne({
         where: {
-          idPersona: nutricionistaUserId,
+          usuario: { idUsuario: nutricionistaUserId },
           gimnasioId: this.tenantContext.gimnasioId,
         },
       });

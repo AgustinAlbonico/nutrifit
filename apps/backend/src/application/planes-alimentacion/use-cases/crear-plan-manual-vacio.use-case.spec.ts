@@ -91,6 +91,7 @@ describe('CrearPlanManualVacioUseCase', () => {
       createdBy: 5,
     };
     planVersionRepo.obtenerActiva.mockResolvedValue(versionExistente);
+    planVersionRepo.listarPorPlan.mockResolvedValue([versionExistente]);
 
     const resultado = await sut.execute(5, 273);
 

@@ -54,7 +54,7 @@ export class VaciarContenidoPlanUseCase implements BaseUseCase {
         idPlanAlimentacion: payload.planId,
         socio: { gimnasioId: this.tenantContext.gimnasioId },
       },
-      relations: { nutricionista: true, dias: true },
+      relations: { nutricionista: { usuario: true }, dias: true },
     });
 
     if (!plan || !plan.activo) {
@@ -72,7 +72,8 @@ export class VaciarContenidoPlanUseCase implements BaseUseCase {
 
     // Solo el nutricionista dueño o ADMIN puede vaciar
     if (usuario.rol !== Rol.ADMIN) {
-      if (plan.nutricionista.idPersona !== nutricionistaUserId) {
+      const ownerId = plan.nutricionista.usuario?.idUsuario ?? plan.nutricionista.idPersona;
+      if (ownerId !== nutricionistaUserId) {
         throw new ForbiddenError(
           'Solo el nutricionista responsable del plan puede vaciarlo.',
         );

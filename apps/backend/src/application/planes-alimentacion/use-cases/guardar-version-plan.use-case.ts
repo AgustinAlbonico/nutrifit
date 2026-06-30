@@ -70,7 +70,7 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
     // 1) Cargar plan
     const plan = await this.planRepo.findOne({
       where: { idPlanAlimentacion: planAlimentacionId },
-      relations: { socio: true, nutricionista: true, dias: { opcionesComida: { items: true } } },
+      relations: { socio: true, nutricionista: { usuario: true }, dias: { opcionesComida: { items: true } } },
     });
     if (!plan) {
       throw new NotFoundError('Plan de alimentación', String(planAlimentacionId));
@@ -93,10 +93,8 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
     }
 
     // 4) NUT dueño
-    if (
-      (plan.nutricionista as unknown as { idPersona: number | null })
-        .idPersona !== nutricionistaUserId
-    ) {
+    const ownerId = plan.nutricionista.usuario?.idUsuario ?? plan.nutricionista.idPersona;
+    if (ownerId !== nutricionistaUserId) {
       throw new ForbiddenError(
         'Solo el nutricionista responsable del plan puede guardar versiones.',
       );

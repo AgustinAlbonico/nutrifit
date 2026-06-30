@@ -104,7 +104,7 @@ export class ActivarPlanAlimentacionUseCase implements BaseUseCase {
     // 1) Cargar plan
     const plan = await this.planRepo.findOne({
       where: { idPlanAlimentacion: solicitud.planAlimentacionId },
-      relations: { socio: true, nutricionista: true },
+      relations: { socio: true, nutricionista: { usuario: true } },
     });
     if (!plan) {
       throw new NotFoundError(
@@ -130,10 +130,8 @@ export class ActivarPlanAlimentacionUseCase implements BaseUseCase {
     }
 
     // 4) NUT dueño
-    if (
-      (plan.nutricionista as unknown as { idPersona: number | null })
-        .idPersona !== solicitud.nutricionistaUserId
-    ) {
+    const ownerId = plan.nutricionista.usuario?.idUsuario ?? plan.nutricionista.idPersona;
+    if (ownerId !== solicitud.nutricionistaUserId) {
       throw new ForbiddenError(
         'Solo el nutricionista dueño del plan puede activarlo',
       );

@@ -79,7 +79,7 @@ export class EditarPlanAlimentacionUseCase implements BaseUseCase {
           socio: { gimnasioId: this.tenantContext.gimnasioId },
         },
         relations: {
-          nutricionista: true,
+          nutricionista: { usuario: true },
           socio: { fichaSalud: true, usuario: true },
           dias: { opcionesComida: { items: { alimento: true } } },
         },
@@ -98,9 +98,6 @@ export class EditarPlanAlimentacionUseCase implements BaseUseCase {
         throw new ForbiddenError('Usuario no encontrado.');
       }
 
-      const nutricionistaPlan = plan.nutricionista as unknown as {
-        idPersona: number | null;
-      };
       const socioPlan = plan.socio as unknown as {
         idPersona: number | null;
       };
@@ -112,7 +109,8 @@ export class EditarPlanAlimentacionUseCase implements BaseUseCase {
 
       // Solo el nutricionista dueño o ADMIN puede editar
       if (usuario.rol !== Rol.ADMIN) {
-        if (nutricionistaPlan.idPersona !== nutricionistaUserId) {
+        const ownerId = plan.nutricionista.usuario?.idUsuario ?? plan.nutricionista.idPersona;
+        if (ownerId !== nutricionistaUserId) {
           throw new ForbiddenError(
             'Solo el nutricionista responsable del plan puede editarlo.',
           );

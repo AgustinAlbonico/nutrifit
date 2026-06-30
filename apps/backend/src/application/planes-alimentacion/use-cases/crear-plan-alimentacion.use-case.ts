@@ -100,7 +100,7 @@ export class CrearPlanAlimentacionUseCase implements BaseUseCase {
       // Para NUTRICIONISTA, validar que sea nutricionista válido
       nutricionista = await this.nutricionistaRepo.findOne({
         where: {
-          idPersona: nutricionistaUserId,
+          usuario: { idUsuario: nutricionistaUserId },
           gimnasioId: this.tenantContext.gimnasioId,
         },
       });
