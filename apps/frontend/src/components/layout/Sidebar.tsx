@@ -19,6 +19,7 @@ import {
   Building2,
   X,
   UserCog,
+  Apple,
 } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -123,6 +124,12 @@ export function Sidebar() {
       label: 'Planes de Alimentacion',
       icon: Utensils,
       roles: ['NUTRICIONISTA'],
+    },
+    {
+      to: '/alimentos',
+      label: 'Alimentos',
+      icon: Apple,
+      roles: ['ADMIN', 'NUTRICIONISTA'],
     },
     {
       to: '/profesional/mi-perfil',
