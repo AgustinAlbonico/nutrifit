@@ -11,7 +11,6 @@ import {
   Droplet,
   Circle,
   Activity,
-  Sparkles,
   BookOpen,
   Scale,
   Database,
@@ -40,7 +39,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
   DialogContent,
@@ -93,8 +91,6 @@ export function GestionAlimentosPage() {
   const [dialogoAbierto, setDialogoAbierto] = useState(false);
   const [alimentoEditando, setAlimentoEditando] = useState<Alimento | null>(null);
   const [alimentoAEliminar, setAlimentoAEliminar] = useState<number | null>(null);
-  const [tabActiva, setTabActiva] = useState<'alimentos' | 'suplementos'>('alimentos');
-  const [fuenteFiltro, setFuenteFiltro] = useState<'todos' | 'mis-alimentos' | 'smae'>('todos');
   
   const [formulario, setFormulario] = useState<FormularioAlimento>({
     nombre: '',
@@ -259,27 +255,7 @@ export function GestionAlimentosPage() {
     }
   };
 
-  // Filtrado local según la tab y la fuente
-  const alimentosFiltrados = (alimentos || []).filter((alimento) => {
-    // 1. Filtrado por Pestaña
-    const esSuplemento = alimento.grupoAlimenticio?.descripcion
-      ?.toLowerCase()
-      .includes('suplemento');
-
-    if (tabActiva === 'suplementos' && !esSuplemento) return false;
-    if (tabActiva === 'alimentos' && esSuplemento) return false;
-
-    // 2. Filtrado por Fuente
-    if (fuenteFiltro === 'mis-alimentos') {
-      // Simulado o condicionado
-      return true; // En nuestra base de datos simple todos califican
-    }
-    if (fuenteFiltro === 'smae') {
-      return alimento.nombre.toLowerCase().includes('smae') || alimento.grupoAlimenticio?.descripcion?.toLowerCase().includes('smae');
-    }
-
-    return true;
-  });
+  const alimentosFiltrados = alimentos || [];
 
   return (
     <div className="space-y-6 pb-10">
@@ -291,7 +267,7 @@ export function GestionAlimentosPage() {
             Bases de datos de alimentos
           </h1>
           <p className="text-sm text-muted-foreground">
-            Consultá o agregá alimentos y suplementos con sus macronutrientes para los planes alimentarios.
+            Consultá o agregá alimentos con sus macronutrientes para los planes alimentarios.
           </p>
         </div>
         <Button onClick={abrirDialogoCrear} className="bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl gap-2 shadow">
@@ -302,7 +278,7 @@ export function GestionAlimentosPage() {
 
       {/* Panel Superior de Controles y Búsqueda */}
       <Card className="rounded-2xl border-border/50 bg-card/60 backdrop-blur-sm shadow-sm">
-        <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <CardContent className="p-4 flex items-center justify-between gap-4">
           <div className="relative w-full sm:w-80">
             <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -312,244 +288,123 @@ export function GestionAlimentosPage() {
               className="pl-10 h-10 bg-white/50 border-border/50 focus:border-green-400 focus:ring-green-400 rounded-xl"
             />
           </div>
-
-          <div className="flex w-full sm:w-auto items-center gap-3">
-            <Label className="text-xs text-muted-foreground whitespace-nowrap hidden sm:inline">Ordenar por:</Label>
-            <Select value={fuenteFiltro} onValueChange={(v) => setFuenteFiltro(v as never)}>
-              <SelectTrigger className="w-full sm:w-48 h-10 border-border/50 rounded-xl bg-white/50 text-xs">
-                <SelectValue placeholder="Todas las bases..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todas las bases de datos</SelectItem>
-                <SelectItem value="mis-alimentos">Mis alimentos</SelectItem>
-                <SelectItem value="smae">Bases de datos SMAE</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </CardContent>
       </Card>
 
-      {/* Tabs: Alimentos y Suplementos */}
-      <Tabs value={tabActiva} onValueChange={(v) => setTabActiva(v as never)} className="w-full">
-        <TabsList className="mb-4 bg-muted/50 p-1 rounded-xl h-11 border border-border/30">
-          <TabsTrigger value="alimentos" className="rounded-lg text-xs font-semibold px-4 h-9 gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <Apple className="size-4 text-green-500" />
-            Alimentos
-          </TabsTrigger>
-          <TabsTrigger value="suplementos" className="rounded-lg text-xs font-semibold px-4 h-9 gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <Sparkles className="size-4 text-fuchsia-500" />
-            Suplementos
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="alimentos" className="space-y-3 mt-0">
-          {pagination.isLoading ? (
-            Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl border border-border/50 bg-card/60">
-                <div className="flex items-center gap-3 w-full sm:w-1/3">
-                  <Skeleton className="h-10 w-10 rounded-xl" />
-                  <div className="space-y-1.5 w-full">
-                    <Skeleton className="h-4 w-28" />
-                    <Skeleton className="h-3 w-16" />
-                  </div>
-                </div>
-                <div className="flex gap-4 w-full sm:w-auto justify-end sm:ml-auto">
-                  <Skeleton className="h-8 w-16" />
-                  <Skeleton className="h-8 w-16" />
-                  <Skeleton className="h-8 w-16" />
+      {/* Listado Directo de Alimentos */}
+      <div className="space-y-3 mt-4">
+        {pagination.isLoading ? (
+          Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl border border-border/50 bg-card/60">
+              <div className="flex items-center gap-3 w-full sm:w-1/3">
+                <Skeleton className="h-10 w-10 rounded-xl" />
+                <div className="space-y-1.5 w-full">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-3 w-16" />
                 </div>
               </div>
-            ))
-          ) : alimentosFiltrados.length > 0 ? (
-            alimentosFiltrados.map((alimento) => (
-              <div
-                key={alimento.idAlimento}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm hover:bg-card hover:shadow-md transition-all duration-200"
-              >
-                {/* Nombre e info básica */}
-                <div className="flex items-center gap-3.5">
-                  <div className="p-2.5 rounded-xl bg-green-500/10 text-green-600 dark:text-green-400">
-                    <Apple className="size-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-sm text-foreground">{alimento.nombre}</h3>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-xs text-muted-foreground capitalize font-medium">
-                        {alimento.cantidad} {alimento.unidadMedida === 'gramo' ? 'g' : alimento.unidadMedida === 'mililitro' ? 'ml' : alimento.unidadMedida}
-                      </span>
-                      {alimento.grupoAlimenticio && (
-                        <>
-                          <span className="text-muted-foreground/30 text-[10px]">•</span>
-                          <span className="inline-flex items-center text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                            {alimento.grupoAlimenticio.descripcion}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </div>
+              <div className="flex gap-4 w-full sm:w-auto justify-end sm:ml-auto">
+                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-8 w-16" />
+              </div>
+            </div>
+          ))
+        ) : alimentosFiltrados.length > 0 ? (
+          alimentosFiltrados.map((alimento) => (
+            <div
+              key={alimento.idAlimento}
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm hover:bg-card hover:shadow-md transition-all duration-200"
+            >
+              {/* Nombre e info básica */}
+              <div className="flex items-center gap-3.5">
+                <div className="p-2.5 rounded-xl bg-green-500/10 text-green-600 dark:text-green-400">
+                  <Apple className="size-5" />
                 </div>
-
-                {/* Macronutrientes estilo Nutrium */}
-                <div className="flex flex-wrap items-center gap-6 text-xs sm:ml-auto">
-                  <div className="flex flex-col items-end min-w-[70px]">
-                    <span className="text-muted-foreground font-normal text-[10px] uppercase tracking-wider">Energía</span>
-                    <span className="flex items-center gap-1 text-orange-600 dark:text-orange-400 font-bold text-sm mt-0.5">
-                      <Flame className="size-3.5" />
-                      {alimento.calorias ?? 0} <span className="text-[10px] font-normal text-muted-foreground">kcal</span>
+                <div>
+                  <h3 className="font-semibold text-sm text-foreground">{alimento.nombre}</h3>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xs text-muted-foreground capitalize font-medium">
+                      {alimento.cantidad} {alimento.unidadMedida === 'gramo' ? 'g' : alimento.unidadMedida === 'mililitro' ? 'ml' : alimento.unidadMedida}
                     </span>
+                    {alimento.grupoAlimenticio && (
+                      <>
+                        <span className="text-muted-foreground/30 text-[10px]">•</span>
+                        <span className="inline-flex items-center text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                          {alimento.grupoAlimenticio.descripcion}
+                        </span>
+                      </>
+                    )}
                   </div>
-
-                  <div className="flex flex-col items-end min-w-[70px]">
-                    <span className="text-muted-foreground font-normal text-[10px] uppercase tracking-wider">Grasa</span>
-                    <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold text-sm mt-0.5">
-                      <Droplet className="size-3.5" />
-                      {alimento.grasas ?? 0} <span className="text-[10px] font-normal text-muted-foreground">g</span>
-                    </span>
-                  </div>
-
-                  <div className="flex flex-col items-end min-w-[70px]">
-                    <span className="text-muted-foreground font-normal text-[10px] uppercase tracking-wider">H. Carbono</span>
-                    <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400 font-bold text-sm mt-0.5">
-                      <Circle className="size-3.5" />
-                      {alimento.carbohidratos ?? 0} <span className="text-[10px] font-normal text-muted-foreground">g</span>
-                    </span>
-                  </div>
-
-                  <div className="flex flex-col items-end min-w-[70px]">
-                    <span className="text-muted-foreground font-normal text-[10px] uppercase tracking-wider">Proteína</span>
-                    <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold text-sm mt-0.5">
-                      <Activity className="size-3.5" />
-                      {alimento.proteinas ?? 0} <span className="text-[10px] font-normal text-muted-foreground">g</span>
-                    </span>
-                  </div>
-                </div>
-
-                {/* Acciones */}
-                <div className="flex items-center gap-1.5 self-end sm:self-center border-t sm:border-t-0 pt-2 sm:pt-0 w-full sm:w-auto justify-end">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => abrirDialogoEditar(alimento)}
-                    className="size-8 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg"
-                  >
-                    <Pencil className="size-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setAlimentoAEliminar(alimento.idAlimento)}
-                    className="size-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
                 </div>
               </div>
-            ))
-          ) : (
-            <Card className="rounded-2xl border-dashed border-border/50 py-12 text-center">
-              <Apple className="mx-auto h-12 w-12 text-muted-foreground/30 animate-pulse" />
-              <h3 className="mt-4 font-semibold text-lg">No hay alimentos</h3>
-              <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
-                {busqueda ? 'No se encontraron resultados de búsqueda' : 'Agregá el primer alimento al catálogo usando el botón superior.'}
-              </p>
-            </Card>
-          )}
-        </TabsContent>
 
-        <TabsContent value="suplementos" className="space-y-3 mt-0">
-          {alimentosFiltrados.length > 0 ? (
-            alimentosFiltrados.map((alimento) => (
-              <div
-                key={alimento.idAlimento}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm hover:bg-card hover:shadow-md transition-all duration-200"
-              >
-                <div className="flex items-center gap-3.5">
-                  <div className="p-2.5 rounded-xl bg-fuchsia-500/10 text-fuchsia-600 dark:text-fuchsia-400">
-                    <Sparkles className="size-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-sm text-foreground">{alimento.nombre}</h3>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-xs text-muted-foreground capitalize font-medium">
-                        {alimento.cantidad} {alimento.unidadMedida === 'gramo' ? 'g' : alimento.unidadMedida === 'mililitro' ? 'ml' : alimento.unidadMedida}
-                      </span>
-                      {alimento.grupoAlimenticio && (
-                        <>
-                          <span className="text-muted-foreground/30 text-[10px]">•</span>
-                          <span className="inline-flex items-center text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-fuchsia-500/10 text-fuchsia-600 dark:text-fuchsia-400">
-                            {alimento.grupoAlimenticio.descripcion}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </div>
+              {/* Macronutrientes estilo Nutrium */}
+              <div className="flex flex-wrap items-center gap-6 text-xs sm:ml-auto">
+                <div className="flex flex-col items-end min-w-[70px]">
+                  <span className="text-muted-foreground font-normal text-[10px] uppercase tracking-wider">Energía</span>
+                  <span className="flex items-center gap-1 text-orange-600 dark:text-orange-400 font-bold text-sm mt-0.5">
+                    <Flame className="size-3.5" />
+                    {alimento.calorias ?? 0} <span className="text-[10px] font-normal text-muted-foreground">kcal</span>
+                  </span>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-6 text-xs sm:ml-auto">
-                  <div className="flex flex-col items-end min-w-[70px]">
-                    <span className="text-muted-foreground font-normal text-[10px] uppercase tracking-wider">Energía</span>
-                    <span className="flex items-center gap-1 text-orange-600 dark:text-orange-400 font-bold text-sm mt-0.5">
-                      <Flame className="size-3.5" />
-                      {alimento.calorias ?? 0} <span className="text-[10px] font-normal text-muted-foreground">kcal</span>
-                    </span>
-                  </div>
-
-                  <div className="flex flex-col items-end min-w-[70px]">
-                    <span className="text-muted-foreground font-normal text-[10px] uppercase tracking-wider">Grasa</span>
-                    <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold text-sm mt-0.5">
-                      <Droplet className="size-3.5" />
-                      {alimento.grasas ?? 0} <span className="text-[10px] font-normal text-muted-foreground">g</span>
-                    </span>
-                  </div>
-
-                  <div className="flex flex-col items-end min-w-[70px]">
-                    <span className="text-muted-foreground font-normal text-[10px] uppercase tracking-wider">H. Carbono</span>
-                    <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400 font-bold text-sm mt-0.5">
-                      <Circle className="size-3.5" />
-                      {alimento.carbohidratos ?? 0} <span className="text-[10px] font-normal text-muted-foreground">g</span>
-                    </span>
-                  </div>
-
-                  <div className="flex flex-col items-end min-w-[70px]">
-                    <span className="text-muted-foreground font-normal text-[10px] uppercase tracking-wider">Proteína</span>
-                    <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold text-sm mt-0.5">
-                      <Activity className="size-3.5" />
-                      {alimento.proteinas ?? 0} <span className="text-[10px] font-normal text-muted-foreground">g</span>
-                    </span>
-                  </div>
+                <div className="flex flex-col items-end min-w-[70px]">
+                  <span className="text-muted-foreground font-normal text-[10px] uppercase tracking-wider">Grasa</span>
+                  <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold text-sm mt-0.5">
+                    <Droplet className="size-3.5" />
+                    {alimento.grasas ?? 0} <span className="text-[10px] font-normal text-muted-foreground">g</span>
+                  </span>
                 </div>
 
-                <div className="flex items-center gap-1.5 self-end sm:self-center border-t sm:border-t-0 pt-2 sm:pt-0 w-full sm:w-auto justify-end">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => abrirDialogoEditar(alimento)}
-                    className="size-8 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg"
-                  >
-                    <Pencil className="size-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setAlimentoAEliminar(alimento.idAlimento)}
-                    className="size-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
+                <div className="flex flex-col items-end min-w-[70px]">
+                  <span className="text-muted-foreground font-normal text-[10px] uppercase tracking-wider">H. Carbono</span>
+                  <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400 font-bold text-sm mt-0.5">
+                    <Circle className="size-3.5" />
+                    {alimento.carbohidratos ?? 0} <span className="text-[10px] font-normal text-muted-foreground">g</span>
+                  </span>
+                </div>
+
+                <div className="flex flex-col items-end min-w-[70px]">
+                  <span className="text-muted-foreground font-normal text-[10px] uppercase tracking-wider">Proteína</span>
+                  <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold text-sm mt-0.5">
+                    <Activity className="size-3.5" />
+                    {alimento.proteinas ?? 0} <span className="text-[10px] font-normal text-muted-foreground">g</span>
+                  </span>
                 </div>
               </div>
-            ))
-          ) : (
-            <Card className="rounded-2xl border-dashed border-border/50 py-12 text-center">
-              <Sparkles className="mx-auto h-12 w-12 text-muted-foreground/30" />
-              <h3 className="mt-4 font-semibold text-lg">No hay suplementos</h3>
-              <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
-                Los suplementos alimenticios se filtran de forma inteligente a partir del grupo alimenticio. Podés agregar suplementos con su respectiva categoría.
-              </p>
-            </Card>
-          )}
-        </TabsContent>
-      </Tabs>
+
+              {/* Acciones */}
+              <div className="flex items-center gap-1.5 self-end sm:self-center border-t sm:border-t-0 pt-2 sm:pt-0 w-full sm:w-auto justify-end">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => abrirDialogoEditar(alimento)}
+                  className="size-8 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg"
+                >
+                  <Pencil className="size-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setAlimentoAEliminar(alimento.idAlimento)}
+                  className="size-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              </div>
+            </div>
+          ))
+        ) : (
+          <Card className="rounded-2xl border-dashed border-border/50 py-12 text-center">
+            <Apple className="mx-auto h-12 w-12 text-muted-foreground/30 animate-pulse" />
+            <h3 className="mt-4 font-semibold text-lg">No hay alimentos</h3>
+            <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
+              {busqueda ? 'No se encontraron resultados de búsqueda' : 'Agregá el primer alimento al catálogo usando el botón superior.'}
+            </p>
+          </Card>
+        )}
+      </div>
 
       {/* Paginación */}
       {!pagination.isLoading && alimentosFiltrados.length > 0 && (
@@ -580,30 +435,16 @@ export function GestionAlimentosPage() {
           </DialogHeader>
 
           <div className="space-y-6">
-            {/* Grid 1: Nombre y Fuente */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="grid gap-1.5">
-                <Label htmlFor="nombre" className="text-xs font-semibold text-muted-foreground">Nombre</Label>
-                <Input
-                  id="nombre"
-                  value={formulario.nombre}
-                  onChange={(e) => setFormulario({ ...formulario, nombre: e.target.value })}
-                  placeholder="Ej: Aceite de oliva"
-                  className="rounded-xl border-border/50 h-10"
-                />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="fuente" className="text-xs font-semibold text-muted-foreground">Fuente</Label>
-                <Select defaultValue="mis-alimentos">
-                  <SelectTrigger className="rounded-xl border-border/50 h-10">
-                    <SelectValue placeholder="Seleccionar fuente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="mis-alimentos">Mis alimentos</SelectItem>
-                    <SelectItem value="smae">Bases de datos SMAE</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Grid 1: Nombre */}
+            <div className="grid gap-1.5">
+              <Label htmlFor="nombre" className="text-xs font-semibold text-muted-foreground">Nombre del alimento *</Label>
+              <Input
+                id="nombre"
+                value={formulario.nombre}
+                onChange={(e) => setFormulario({ ...formulario, nombre: e.target.value })}
+                placeholder="Ej: Aceite de oliva"
+                className="rounded-xl border-border/50 h-10 w-full"
+              />
             </div>
 
             {/* Grid 2: Grupo Alimenticio y Cantidad */}
