@@ -46,4 +46,20 @@ describe('PromptIdeasComidaBuilder.build', () => {
     expect(texto.toLowerCase()).toContain('desayuno');
     expect(texto.toLowerCase()).toContain('5 alternativa');
   });
+
+  it('incluye el catalogo disponible y exige usar nombres exactos', () => {
+    const prompt = sut.build({
+      ficha: {} as never,
+      slot: { dia: DiaSemana.MIERCOLES, tipoComida: TipoComida.DESAYUNO },
+      cantidad: 3,
+      alimentosDisponibles: ['Avena', 'Banana', 'Huevo'],
+    });
+    const texto = `${prompt.system}\n${prompt.user}`;
+
+    expect(texto).toContain('Catálogo de alimentos disponible');
+    expect(texto).toContain('Avena');
+    expect(texto).toContain('Banana');
+    expect(texto).toContain('Huevo');
+    expect(texto.toLowerCase()).toContain('nombres exactos');
+  });
 });

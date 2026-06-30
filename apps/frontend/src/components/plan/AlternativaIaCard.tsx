@@ -7,9 +7,11 @@ import type { ItemComidaIaFE } from '@/types/ia';
 export function AlternativaIaCard({
   idea,
   onAdd,
+  textoAccion = 'Agregar al slot',
 }: {
   idea: ItemComidaIaFE;
   onAdd: (i: ItemComidaIaFE) => void;
+  textoAccion?: string;
 }) {
   const { setNodeRef, attributes, listeners, transform } = useIdeaDraggable(idea);
   const style = transform
@@ -26,6 +28,7 @@ export function AlternativaIaCard({
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-1.5">
           <button
+            type="button"
             {...attributes}
             {...listeners}
             aria-label="Arrastrar idea"
@@ -51,26 +54,26 @@ export function AlternativaIaCard({
           </div>
         </div>
         <Button
+          type="button"
           size="sm"
           variant="outline"
           onClick={() => onAdd(idea)}
           data-testid="boton-agregar-idea"
         >
-          <Plus className="size-3" aria-hidden="true" /> Agregar al slot
+          <Plus className="size-3" aria-hidden="true" /> {textoAccion}
         </Button>
       </div>
       {idea.warnings.length > 0 && (
-        <div
-          role="status"
+        <output
           className="mt-2 flex items-start gap-1.5 rounded-md border border-amber-300/60 bg-amber-50/80 px-2 py-1.5 text-xs text-amber-900 dark:border-amber-600/40 dark:bg-amber-900/20 dark:text-amber-200"
         >
           <AlertTriangle className="size-3 shrink-0" aria-hidden="true" />
           <ul className="space-y-0.5">
-            {idea.warnings.map((w, i) => (
-              <li key={i}>{w}</li>
+            {idea.warnings.map((w) => (
+              <li key={w}>{w}</li>
             ))}
           </ul>
-        </div>
+        </output>
       )}
     </div>
   );

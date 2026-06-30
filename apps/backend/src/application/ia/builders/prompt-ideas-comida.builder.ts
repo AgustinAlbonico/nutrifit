@@ -14,16 +14,24 @@ interface ArgsPromptIdeasComida {
   ficha: FichaSaludInput;
   slot: { dia: DiaSemana; tipoComida: TipoComida };
   cantidad: number;
+  alimentosDisponibles?: string[];
 }
 
 @Injectable()
 export class PromptIdeasComidaBuilder {
-  build({ ficha, slot, cantidad }: ArgsPromptIdeasComida): {
+  build({
+    ficha,
+    slot,
+    cantidad,
+    alimentosDisponibles,
+  }: ArgsPromptIdeasComida): {
     system: string;
     user: string;
   } {
     const restriccionesTexto = this.componerContextoRestricciones(ficha);
-    const slotTexto = `${this.formatearDia(slot.dia)} ${this.formatearTipoComida(slot.tipoComida)}`.toLowerCase();
+    const catalogoTexto = this.componerCatalogoAlimentos(alimentosDisponibles);
+    const slotTexto =
+      `${this.formatearDia(slot.dia)} ${this.formatearTipoComida(slot.tipoComida)}`.toLowerCase();
     const cantidadTexto = `${cantidad} alternativa${cantidad === 1 ? '' : 's'}`;
 
     const system = `Sos un asistente de nutrición. Tu tarea es sugerir ${cantidadTexto} para ${slotTexto}.
@@ -31,8 +39,11 @@ Todas las sugerencias deben cumplir ESTRICTAMENTE las restricciones del paciente
 
 ${restriccionesTexto}
 
+${catalogoTexto}
+
 Reglas:
 - Devuelve EXACTAMENTE ${cantidad} alternativas distintas.
+- Usá exclusivamente alimentos del catálogo disponible y copiá sus nombres exactos en alimentoNombre.
 - Cada alternativa debe tener nombre, alimentos con cantidades en gramos o mililitros.
 - Incluye calorías, proteínas, carbohidratos y grasas estimadas.
 - Si no podés cumplir todas las restricciones, devolvé menos alternativas y agregá un campo "advertencias" explicando el motivo.`;
@@ -48,7 +59,9 @@ Reglas:
       lineas.push(`- Alergias: ${ficha.alergias.join(', ')}`);
     }
     if (ficha.restriccionesAlimentarias) {
-      lineas.push(`- Restricciones alimentarias: ${ficha.restriccionesAlimentarias}`);
+      lineas.push(
+        `- Restricciones alimentarias: ${ficha.restriccionesAlimentarias}`,
+      );
     }
     if (ficha.patologias?.length) {
       lineas.push(`- Patologías: ${ficha.patologias.join(', ')}`);
@@ -62,6 +75,16 @@ Reglas:
     return lineas.length
       ? `Restricciones del paciente:\n${lineas.join('\n')}`
       : 'El paciente no tiene restricciones alimentarias registradas.';
+  }
+
+  private componerCatalogoAlimentos(alimentosDisponibles?: string[]): string {
+    if (!alimentosDisponibles?.length) {
+      return 'Catálogo de alimentos disponible: no informado.';
+    }
+
+    return `Catálogo de alimentos disponible (usar nombres exactos):\n${alimentosDisponibles
+      .map((nombre) => `- ${nombre}`)
+      .join('\n')}`;
   }
 
   private formatearDia(dia: DiaSemana): string {

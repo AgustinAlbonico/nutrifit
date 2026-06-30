@@ -18,11 +18,11 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { Sparkles } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { GrillaManualSlots } from '@/components/plan/GrillaManualSlots';
 import { DialogGenerarIdeasIa } from '@/components/plan/DialogGenerarIdeasIa';
+import { estructuraTieneContenido } from '@/components/plan/estructuraPlan.utils';
 
 import { apiRequest } from '@/lib/api';
 import { desenvolverRespuestaApi } from '@/lib/api-response';
@@ -141,7 +141,10 @@ export function EditorManualPlan({ planId, pacienteNombre }: Props) {
   const [estructura, setEstructura] = useState<EstructuraDiaFE[]>(crearEstructuraInicial);
   const [guardando, setGuardando] = useState(false);
   const [ultimoGuardado, setUltimoGuardado] = useState<Date | null>(null);
-  const [dialogoAbierto, setDialogoAbierto] = useState(false);
+  const [slotIdeasIa, setSlotIdeasIa] = useState<{
+    dia: DiaSemana;
+    tipoComida: TipoComidaPlan;
+  } | null>(null);
   const haSidoModificadoRef = useRef(false);
   const isMountedRef = useRef(true);
 
@@ -247,15 +250,15 @@ export function EditorManualPlan({ planId, pacienteNombre }: Props) {
     [planId],
   );
 
-  const tieneContenido = estructura.some((dia) =>
-    dia.comidas.some((c) => c.alternativas.length > 0),
-  );
-
   useEffect(() => {
-    if (debouncedEstructura && haSidoModificadoRef.current && tieneContenido) {
+    if (
+      debouncedEstructura &&
+      haSidoModificadoRef.current &&
+      estructuraTieneContenido(debouncedEstructura)
+    ) {
       persistirSilencioso(debouncedEstructura);
     }
-  }, [debouncedEstructura, tieneContenido, persistirSilencioso]);
+  }, [debouncedEstructura, persistirSilencioso]);
 
   // Guardado manual (botón "Guardar borrador")
   const guardarBorrador = async () => {
@@ -292,21 +295,24 @@ export function EditorManualPlan({ planId, pacienteNombre }: Props) {
               Guardado {ultimoGuardado.toLocaleTimeString()}
             </p>
           )}
-          <Button variant="outline" onClick={() => setDialogoAbierto(true)}>
-            <Sparkles className="mr-1.5 size-4" aria-hidden="true" />
-            Sugerencias IA
-          </Button>
         </div>
       </div>
 
       {/* Grilla de slots manuales */}
-      <GrillaManualSlots estructura={estructura} onChange={handleEstructuraChange} />
+      <GrillaManualSlots
+        estructura={estructura}
+        onChange={handleEstructuraChange}
+        onSelectSlot={(dia, tipoComida) => setSlotIdeasIa({ dia, tipoComida })}
+      />
 
       {/* Diálogo de generación de ideas IA */}
       <DialogGenerarIdeasIa
-        open={dialogoAbierto}
-        onOpenChange={setDialogoAbierto}
+        open={slotIdeasIa !== null}
+        onOpenChange={(open) => {
+          if (!open) setSlotIdeasIa(null);
+        }}
         planId={planId}
+        slot={slotIdeasIa}
         onAddIdea={handleAddIdea}
       />
 

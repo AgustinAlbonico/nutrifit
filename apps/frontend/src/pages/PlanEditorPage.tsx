@@ -72,8 +72,9 @@ import { VersionHistory } from '@/components/plan/VersionHistory';
 import { RazonamientoCumplimiento } from '@/components/plan/RazonamientoCumplimiento';
 import { RestriccionesEditablesCard } from '@/components/plan/RestriccionesEditablesCard';
 import { GrillaManualSlots } from '@/components/plan/GrillaManualSlots';
-import { PanelIdeasIa } from '@/components/plan/PanelIdeasIa';
+import { DialogGenerarIdeasIa } from '@/components/plan/DialogGenerarIdeasIa';
 import { DialogPreferenciasIa } from '@/components/plan/DialogPreferenciasIa';
+import { estructuraTieneContenido } from '@/components/plan/estructuraPlan.utils';
 
 import { apiRequest } from '@/lib/api';
 import { desenvolverRespuestaApi } from '@/lib/api-response';
@@ -284,9 +285,11 @@ export function PlanEditorPage() {
   const [cargandoEstructura, setCargandoEstructura] = useState(false);
   const haSidoModificadoRef = useRef(false);
 
-  // Estados de sugerencias IA por slot
-  const [diaSeleccionado, setDiaSeleccionado] = useState<DiaSemana>('LUNES');
-  const [comidaSeleccionada, setComidaSeleccionada] = useState<TipoComidaPlan>('DESAYUNO');
+  // Estado de sugerencias IA contextual por slot
+  const [slotIdeasIa, setSlotIdeasIa] = useState<{
+    dia: DiaSemana;
+    tipoComida: TipoComidaPlan;
+  } | null>(null);
 
   // Ficha de salud del paciente
   const {
@@ -477,10 +480,6 @@ export function PlanEditorPage() {
   // Auto-save debounced (800ms)
   const debouncedEstructura = useDebounce(estructura, 800);
 
-  const tieneContenido = estructura.some((dia) =>
-    dia.comidas.some((c) => c.alternativas.length > 0),
-  );
-
   const persistirSilencioso = useCallback(
     async (estructuraParaGuardar: EstructuraDiaFE[]) => {
       if (!planIdActual) return;
@@ -504,10 +503,14 @@ export function PlanEditorPage() {
   );
 
   useEffect(() => {
-    if (debouncedEstructura && haSidoModificadoRef.current && tieneContenido) {
+    if (
+      debouncedEstructura &&
+      haSidoModificadoRef.current &&
+      estructuraTieneContenido(debouncedEstructura)
+    ) {
       persistirSilencioso(debouncedEstructura);
     }
-  }, [debouncedEstructura, tieneContenido, persistirSilencioso]);
+  }, [debouncedEstructura, persistirSilencioso]);
 
   // Guardar versión explicitamente (V1, V2, etc.)
   const guardarVersionExplicita = async () => {
@@ -640,8 +643,7 @@ export function PlanEditorPage() {
   );
 
   const handleSelectSlotForIa = useCallback((dia: DiaSemana, tipoComida: TipoComidaPlan) => {
-    setDiaSeleccionado(dia);
-    setComidaSeleccionada(tipoComida);
+    setSlotIdeasIa({ dia, tipoComida });
   }, []);
 
 
@@ -756,7 +758,7 @@ export function PlanEditorPage() {
                 data-testid="plan-editor-layout"
               >
                 {/* Fila superior: Controles horizontales responsivos */}
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-6 md:grid-cols-2">
                   {/* Columna 1: Estado del Plan y Publicación */}
                   <Card className="rounded-2xl border-border/50 bg-card/60 backdrop-blur-sm shadow-md flex flex-col justify-between">
                     <CardHeader className="pb-2">
@@ -795,16 +797,7 @@ export function PlanEditorPage() {
                     </CardContent>
                   </Card>
 
-                  {/* Columna 2: Sugerencias por Slot (PanelIdeasIa) */}
-                  <PanelIdeasIa
-                    planId={planIdEditorManual}
-                    diaSeleccionado={diaSeleccionado}
-                    comidaSeleccionada={comidaSeleccionada}
-                    onSelectSlot={handleSelectSlotForIa}
-                    onAddIdea={handleAddIdea}
-                  />
-
-                  {/* Columna 3: Botón para abrir generador IA en modal */}
+                  {/* Columna 2: Botón para abrir generador IA en modal */}
                   <Card className="rounded-2xl border-border/50 bg-card/60 backdrop-blur-sm shadow-md flex flex-col justify-between">
                     <CardHeader className="pb-2">
                       <CardTitle className="flex items-center gap-2 text-sm font-semibold">
@@ -830,6 +823,16 @@ export function PlanEditorPage() {
                     </CardContent>
                   </Card>
                 </div>
+
+                <DialogGenerarIdeasIa
+                  open={slotIdeasIa !== null}
+                  onOpenChange={(open) => {
+                    if (!open) setSlotIdeasIa(null);
+                  }}
+                  planId={planIdEditorManual}
+                  slot={slotIdeasIa}
+                  onAddIdea={handleAddIdea}
+                />
 
                 {/* Dialog modal para GeneradorPlanSemanal */}
                 <Dialog open={generadorIaAbierto} onOpenChange={setGeneradorIaAbierto}>
@@ -920,8 +923,8 @@ export function PlanEditorPage() {
                         Advertencias ({respuesta.advertencias.length})
                       </h3>
                       <ul className="space-y-1 text-sm text-amber-800 dark:text-amber-300">
-                        {respuesta.advertencias.map((adv, idx) => (
-                          <li key={idx}>• {adv}</li>
+                        {respuesta.advertencias.map((adv) => (
+                          <li key={adv}>• {adv}</li>
                         ))}
                       </ul>
                     </section>
@@ -1019,7 +1022,7 @@ export function PlanEditorPage() {
                           },
                         );
                         haSidoModificadoRef.current = false;
-                      } catch (err) {
+                      } catch {
                         toast.error('Error al cargar la versión');
                       }
                     }}
