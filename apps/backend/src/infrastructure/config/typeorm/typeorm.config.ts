@@ -42,6 +42,8 @@ import { SugerenciaIAOrmEntity } from 'src/infrastructure/persistence/typeorm/en
 import { TurnoConfirmacionTokenOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/turno-confirmacion-token.entity';
 import { ExcepcionDisponibilidadOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/excepcion-disponibilidad.entity';
 import { PoliticaOperativaOrmEntity } from 'src/infrastructure/politicas/politica-operativa.entity';
+import { PreparacionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/preparacion.entity';
+import { PreparacionItemOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/preparacion-item.entity';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { EnvironmentConfigService } from '../environment-config/environment-config.service';
 
@@ -100,6 +102,8 @@ export const AppDataSource = (
     UsuarioGrupoPermisoOrmEntity,
     ExcepcionDisponibilidadOrmEntity,
     PoliticaOperativaOrmEntity,
+    PreparacionOrmEntity,
+    PreparacionItemOrmEntity,
   ],
   //BORRAR ESTO CUANDO SAQUE LA APP A PRODUCCION
   synchronize: true,
