@@ -513,14 +513,14 @@ export function GestionAlimentosPage() {
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-muted-foreground shrink-0">Filtrar:</span>
           <Select
-            value={filtroGrupoId !== null ? String(filtroGrupoId) : ''}
-            onValueChange={(v) => setFiltroGrupoId(v ? Number(v) : null)}
+            value={filtroGrupoId !== null ? String(filtroGrupoId) : 'todos'}
+            onValueChange={(v) => setFiltroGrupoId(v === 'todos' ? null : Number(v))}
           >
             <SelectTrigger className="w-[220px] h-9 rounded-xl border-border/50 text-xs">
               <SelectValue placeholder="Todos los grupos" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos los grupos</SelectItem>
+              <SelectItem value="todos">Todos los grupos</SelectItem>
               {grupos.map((g) => (
                 <SelectItem key={g.idGrupoAlimenticio} value={String(g.idGrupoAlimenticio)}>
                   {g.descripcion}
