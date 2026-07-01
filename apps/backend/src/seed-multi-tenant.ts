@@ -1374,7 +1374,18 @@ async function runSeedMultiTenant() {
         const resAlimento = await dataSource.query(
           `INSERT INTO alimento (nombre, cantidad, calorias, proteinas, carbohidratos, grasas, hidratos_de_carbono, unidad_medida, azucares, fibra_alimentaria, grasas_saturadas, sodio)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-           ON DUPLICATE KEY UPDATE nombre = VALUES(nombre)`,
+           ON DUPLICATE KEY UPDATE
+             cantidad = VALUES(cantidad),
+             calorias = VALUES(calorias),
+             proteinas = VALUES(proteinas),
+             carbohidratos = VALUES(carbohidratos),
+             grasas = VALUES(grasas),
+             hidratos_de_carbono = VALUES(hidratos_de_carbono),
+             unidad_medida = VALUES(unidad_medida),
+             azucares = VALUES(azucares),
+             fibra_alimentaria = VALUES(fibra_alimentaria),
+             grasas_saturadas = VALUES(grasas_saturadas),
+             sodio = VALUES(sodio)`,
           [a.nombre, a.cantidad, a.calorias, a.proteinas, a.carbohidratos, a.grasas, a.carbohidratos, a.unidadMedida,
            a.azucares, a.fibraAlimentaria, a.grasasSaturadas, a.sodio]
         );

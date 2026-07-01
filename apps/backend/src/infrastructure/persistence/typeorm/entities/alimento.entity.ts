@@ -4,6 +4,7 @@ import {
   JoinTable,
   ManyToMany,
   PrimaryGeneratedColumn,
+  Unique,
   ValueTransformer,
 } from 'typeorm';
 import { UnidadMedida } from 'src/domain/entities/Alimento/UnidadMedida';
@@ -20,6 +21,7 @@ const decimalTransformer: ValueTransformer = {
 };
 
 @Entity('alimento')
+@Unique('uq_alimento_nombre', ['nombre'])
 export class AlimentoOrmEntity extends AuditableOrmEntity {
   @PrimaryGeneratedColumn({ name: 'id_alimento' })
   idAlimento: number;
