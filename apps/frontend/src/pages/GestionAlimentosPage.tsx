@@ -115,6 +115,7 @@ const UNIDADES_MEDIDA = [
   { valor: 'taza', etiqueta: 'tazas' },
   { valor: 'cucharada', etiqueta: 'cucharadas' },
   { valor: 'cucharadita', etiqueta: 'cucharaditas' },
+  { valor: 'unidad', etiqueta: 'unidades' },
 ];
 
 // ── Componente Principal ────────────────────────────────────────────────
@@ -125,6 +126,10 @@ export function GestionAlimentosPage() {
   const [busqueda, setBusqueda] = useState('');
   const busquedaRef = useRef(busqueda);
   busquedaRef.current = busqueda;
+  const [filtroGrupoId, setFiltroGrupoId] = useState<number | null>(null);
+  const filtroGrupoIdRef = useRef(filtroGrupoId);
+  filtroGrupoIdRef.current = filtroGrupoId;
+  const [searchTrigger, setSearchTrigger] = useState(0);
   const [dialogoAbierto, setDialogoAbierto] = useState(false);
   const [alimentoEditando, setAlimentoEditando] = useState<Alimento | null>(null);
   const [alimentoAEliminar, setAlimentoAEliminar] = useState<number | null>(null);
@@ -186,9 +191,11 @@ export function GestionAlimentosPage() {
         page,
         limit,
         search: busquedaRef.current || undefined,
+        grupoId: filtroGrupoIdRef.current ?? undefined,
       });
     },
-    [token],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [token, searchTrigger],
   );
 
   const {
@@ -211,10 +218,19 @@ export function GestionAlimentosPage() {
     if (!token) return;
     const timer = setTimeout(() => {
       setPagina(1);
+      setSearchTrigger((v) => v + 1);
     }, 350);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [busqueda, token]);
+
+  // Recargar cuando cambia el filtro de grupo
+  useEffect(() => {
+    if (!token) return;
+    setPagina(1);
+    setSearchTrigger((v) => v + 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtroGrupoId, token]);
 
   // Función para cerrar diálogo
   const cerrarDialogo = () => {
@@ -476,6 +492,37 @@ export function GestionAlimentosPage() {
         </CardContent>
       </Card>
 
+      {/* Filtros por Grupo Alimenticio */}
+      {grupos && grupos.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setFiltroGrupoId(null)}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
+              filtroGrupoId === null
+                ? 'bg-green-600 text-white shadow-sm'
+                : 'bg-muted/50 text-muted-foreground hover:bg-muted border border-border/40'
+            }`}
+          >
+            Todos
+          </button>
+          {grupos.map((grupo) => (
+            <button
+              key={grupo.idGrupoAlimenticio}
+              type="button"
+              onClick={() => setFiltroGrupoId(grupo.idGrupoAlimenticio)}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
+                filtroGrupoId === grupo.idGrupoAlimenticio
+                  ? 'bg-green-600 text-white shadow-sm'
+                  : 'bg-muted/50 text-muted-foreground hover:bg-muted border border-border/40'
+              }`}
+            >
+              {grupo.descripcion}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Listado Directo de Alimentos */}
       <div className="space-y-3 mt-4">
         {pagination.isLoading ? (
@@ -510,7 +557,7 @@ export function GestionAlimentosPage() {
                   <h3 className="font-semibold text-sm text-foreground">{alimento.nombre}</h3>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-xs text-muted-foreground capitalize font-medium">
-                      {alimento.cantidad} {alimento.unidadMedida === 'gramo' ? 'g' : alimento.unidadMedida === 'mililitro' ? 'ml' : alimento.unidadMedida}
+                      {alimento.cantidad} {alimento.unidadMedida === 'gramo' ? 'g' : alimento.unidadMedida === 'mililitro' ? 'ml' : alimento.unidadMedida === 'unidad' ? 'u.' : alimento.unidadMedida}
                     </span>
                     {alimento.grupoAlimenticio && (
                       <>
@@ -643,7 +690,7 @@ export function GestionAlimentosPage() {
                   <SelectTrigger className="rounded-xl border-border/50 h-10">
                     <SelectValue placeholder="Selecciona el grupo del alimento" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" className="z-[100]">
                     {grupos?.map((grupo) => (
                       <SelectItem key={grupo.idGrupoAlimenticio} value={grupo.idGrupoAlimenticio.toString()}>
                         {grupo.descripcion}
@@ -689,7 +736,7 @@ export function GestionAlimentosPage() {
                 type="button"
                 className="text-xs font-semibold px-4 py-2 border-b-2 border-green-600 text-green-600 transition-all"
               >
-                Valor nutricional por {formulario.cantidad || '100'} {formulario.unidadMedida === 'gramo' ? 'g' : formulario.unidadMedida === 'mililitro' ? 'ml' : formulario.unidadMedida}
+                Valor nutricional por {formulario.cantidad || '100'} {formulario.unidadMedida === 'gramo' ? 'g' : formulario.unidadMedida === 'mililitro' ? 'ml' : formulario.unidadMedida === 'unidad' ? 'u.' : formulario.unidadMedida}
               </button>
               <button
                 type="button"
@@ -787,8 +834,8 @@ export function GestionAlimentosPage() {
                 <Badge variant="outline" className="text-[9px] font-normal border-border/50 text-muted-foreground bg-green-50/50 dark:bg-green-950/20 text-green-700 dark:text-green-400">Totalmente Interactivos</Badge>
               </div>
 
-              {/* Contenedor Scrollable para evitar que el diálogo sea excesivamente alto */}
-              <div className="max-h-[250px] overflow-y-auto pr-1.5 border border-border/30 p-4 rounded-2xl bg-muted/10 text-xs space-y-4">
+              {/* Composición Detallada — scroll manejado por el diálogo */}
+              <div className="border border-border/30 p-4 rounded-2xl bg-muted/10 text-xs space-y-4">
                 
                 {/* Categoría: Grasas Específicas */}
                 <div>
@@ -1347,7 +1394,7 @@ export function GestionAlimentosPage() {
 
               <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/80 bg-green-500/5 p-2.5 rounded-xl border border-green-500/10">
                 <Info className="size-4 text-green-600 shrink-0" />
-                <span>Nota: Los valores guardados se consideran por cada {formulario.cantidad || '100'} {formulario.unidadMedida === 'gramo' ? 'g' : formulario.unidadMedida === 'mililitro' ? 'ml' : formulario.unidadMedida} de alimento.</span>
+                <span>Nota: Los valores guardados se consideran por cada {formulario.cantidad || '100'} {formulario.unidadMedida === 'gramo' ? 'g' : formulario.unidadMedida === 'mililitro' ? 'ml' : formulario.unidadMedida === 'unidad' ? 'u.' : formulario.unidadMedida} de alimento.</span>
               </div>
             </div>
           </div>

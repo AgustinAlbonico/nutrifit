@@ -129,12 +129,13 @@ export async function listarAlimentos(token: string, search?: string, limit = 10
 
 export async function listarAlimentosPaginado(
   token: string,
-  params: { page: number; limit: number; search?: string },
+  params: { page: number; limit: number; search?: string; grupoId?: number },
 ): Promise<PaginatedData<Alimento>> {
   const queryParams = new URLSearchParams();
   queryParams.set('page', String(params.page));
   queryParams.set('limit', String(params.limit));
   if (params.search) queryParams.set('search', params.search);
+  if (params.grupoId) queryParams.set('grupoId', String(params.grupoId));
 
   const respuesta = await apiRequest<
     PaginatedData<Alimento> | ApiResponse<PaginatedData<Alimento>>
