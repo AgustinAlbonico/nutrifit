@@ -16,6 +16,8 @@ import {
   Database,
   Info,
   HeartPulse,
+  Check,
+  ChevronsUpDown,
 } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -55,6 +57,20 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import { cn } from '@/lib/utils';
 
 // ── Tipos ───────────────────────────────────────────────────────────────
 
@@ -492,34 +508,26 @@ export function GestionAlimentosPage() {
         </CardContent>
       </Card>
 
-      {/* Filtros por Grupo Alimenticio */}
+      {/* Filtro compacto por Grupo */}
       {grupos && grupos.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setFiltroGrupoId(null)}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
-              filtroGrupoId === null
-                ? 'bg-green-600 text-white shadow-sm'
-                : 'bg-muted/50 text-muted-foreground hover:bg-muted border border-border/40'
-            }`}
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-muted-foreground shrink-0">Filtrar:</span>
+          <Select
+            value={filtroGrupoId !== null ? String(filtroGrupoId) : ''}
+            onValueChange={(v) => setFiltroGrupoId(v ? Number(v) : null)}
           >
-            Todos
-          </button>
-          {grupos.map((grupo) => (
-            <button
-              key={grupo.idGrupoAlimenticio}
-              type="button"
-              onClick={() => setFiltroGrupoId(grupo.idGrupoAlimenticio)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
-                filtroGrupoId === grupo.idGrupoAlimenticio
-                  ? 'bg-green-600 text-white shadow-sm'
-                  : 'bg-muted/50 text-muted-foreground hover:bg-muted border border-border/40'
-              }`}
-            >
-              {grupo.descripcion}
-            </button>
-          ))}
+            <SelectTrigger className="w-[220px] h-9 rounded-xl border-border/50 text-xs">
+              <SelectValue placeholder="Todos los grupos" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Todos los grupos</SelectItem>
+              {grupos.map((g) => (
+                <SelectItem key={g.idGrupoAlimenticio} value={String(g.idGrupoAlimenticio)}>
+                  {g.descripcion}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       )}
 
@@ -683,21 +691,49 @@ export function GestionAlimentosPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="grid gap-1.5">
                 <Label htmlFor="grupo" className="text-xs font-semibold text-muted-foreground">Grupo</Label>
-                <Select
-                  value={formulario.grupoAlimenticioId}
-                  onValueChange={(value) => setFormulario({ ...formulario, grupoAlimenticioId: value })}
-                >
-                  <SelectTrigger className="rounded-xl border-border/50 h-10">
-                    <SelectValue placeholder="Selecciona el grupo del alimento" />
-                  </SelectTrigger>
-                  <SelectContent position="popper" className="z-[100]">
-                    {grupos?.map((grupo) => (
-                      <SelectItem key={grupo.idGrupoAlimenticio} value={grupo.idGrupoAlimenticio.toString()}>
-                        {grupo.descripcion}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="justify-between rounded-xl border-border/50 h-10 font-normal text-sm"
+                    >
+                      {formulario.grupoAlimenticioId
+                        ? grupos?.find((g) => g.idGrupoAlimenticio.toString() === formulario.grupoAlimenticioId)?.descripcion
+                        : 'Selecciona el grupo del alimento'}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 rounded-xl" align="start">
+                    <Command>
+                      <CommandInput placeholder="Buscar grupo..." />
+                      <CommandList>
+                        <CommandEmpty>Sin resultados</CommandEmpty>
+                        <CommandGroup>
+                          {grupos?.map((grupo) => (
+                            <CommandItem
+                              key={grupo.idGrupoAlimenticio}
+                              value={grupo.descripcion}
+                              onSelect={() => {
+                                setFormulario({ ...formulario, grupoAlimenticioId: grupo.idGrupoAlimenticio.toString() });
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  'mr-2 h-4 w-4',
+                                  formulario.grupoAlimenticioId === grupo.idGrupoAlimenticio.toString()
+                                    ? 'opacity-100'
+                                    : 'opacity-0',
+                                )}
+                              />
+                              {grupo.descripcion}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div className="grid gap-1.5">
