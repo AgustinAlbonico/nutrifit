@@ -13,6 +13,7 @@ import {
 
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRequest } from '@/lib/api';
+import type { ApiResponse } from '@/types/api';
 import { usePaginacion } from '@/hooks/usePaginacion';
 import { ControlesPaginacion } from '@/components/ui/ControlesPaginacion';
 import { Button } from '@/components/ui/button';
@@ -94,10 +95,11 @@ export function AdminAuditoriaPage() {
     params.set('page', String(page));
     params.set('limit', String(limit));
 
-    return apiRequest<PaginatedData<RegistroAuditoria>>(
+    const res = await apiRequest<ApiResponse<PaginatedData<RegistroAuditoria>>>(
       `/admin/auditoria?${params.toString()}`,
       { token },
     );
+    return res.data;
   }, [token, busquedaKey]);
 
   const {
