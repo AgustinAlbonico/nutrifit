@@ -43,6 +43,23 @@ const GRUPOS_PERMISOS = gruposPermisosData.GRUPOS_PERMISOS;
 const getGrupoBasePorRol = gruposPermisosData.getGrupoBasePorRol;
 const TODAS_LAS_ACCIONES = shared.TODAS_LAS_ACCIONES;
 
+const { ALIMENTOS_CATALOG } = require('./seed-data/seed-alimentos-catalog') as {
+  ALIMENTOS_CATALOG: Array<{
+    nombre: string;
+    cantidad: number;
+    calorias: number;
+    proteinas: number;
+    carbohidratos: number;
+    grasas: number;
+    unidadMedida: string;
+    grupoId: number;
+    azucares?: number;
+    fibraAlimentaria?: number;
+    grasasSaturadas?: number;
+    sodio?: number;
+  }>;
+};
+
 interface GimnasioData {
   nombre: string;
   direccion: string;
@@ -1255,35 +1272,111 @@ async function runSeedMultiTenant() {
       return grupoAlimenticioIds;
     };
 
-    const crearAlimentosSeed = async (): Promise<void> => {
-      console.log('Seeding alimentos...');
-      const catalog = [
-        { nombre: 'Leche entera', cantidad: 100, calorias: 61, proteinas: 3, carbohidratos: 5, grasas: 3, unidadMedida: 'mililitro', grupoId: 1 },
-        { nombre: 'Yogur natural', cantidad: 100, calorias: 63, proteinas: 4, carbohidratos: 5, grasas: 3, unidadMedida: 'gramo', grupoId: 1 },
-        { nombre: 'Huevo', cantidad: 1, calorias: 78, proteinas: 6.5, carbohidratos: 0.6, grasas: 5, unidadMedida: 'unidad', grupoId: 1 },
-        { nombre: 'Pechuga de pollo', cantidad: 100, calorias: 165, proteinas: 31, carbohidratos: 0, grasas: 4, unidadMedida: 'gramo', grupoId: 5 },
-        { nombre: 'Carne vacuna magra', cantidad: 100, calorias: 187, proteinas: 27, carbohidratos: 0, grasas: 8, unidadMedida: 'gramo', grupoId: 13 },
-        { nombre: 'Carne de cuadril', cantidad: 100, calorias: 200, proteinas: 20, carbohidratos: 0, grasas: 12, unidadMedida: 'gramo', grupoId: 13 },
-        { nombre: 'Merluza', cantidad: 100, calorias: 90, proteinas: 19, carbohidratos: 0, grasas: 1, unidadMedida: 'gramo', grupoId: 15 },
-        { nombre: 'Arroz blanco cocido', cantidad: 100, calorias: 130, proteinas: 3, carbohidratos: 28, grasas: 0, unidadMedida: 'gramo', grupoId: 20 },
-        { nombre: 'Pan frances', cantidad: 100, calorias: 272, proteinas: 8, carbohidratos: 57, grasas: 1, unidadMedida: 'gramo', grupoId: 18 },
-        { nombre: 'Avena', cantidad: 100, calorias: 389, proteinas: 17, carbohidratos: 66, grasas: 7, unidadMedida: 'gramo', grupoId: 20 },
-        { nombre: 'Lentejas cocidas', cantidad: 100, calorias: 116, proteinas: 9, carbohidratos: 20, grasas: 0, unidadMedida: 'gramo', grupoId: 16 },
-        { nombre: 'Papa', cantidad: 100, calorias: 77, proteinas: 2, carbohidratos: 17, grasas: 0, unidadMedida: 'gramo', grupoId: 11 },
-        { nombre: 'Zanahoria', cantidad: 100, calorias: 41, proteinas: 1, carbohidratos: 10, grasas: 0, unidadMedida: 'gramo', grupoId: 11 },
-        { nombre: 'Manzana', cantidad: 1, calorias: 95, proteinas: 0.5, carbohidratos: 25, grasas: 0.3, unidadMedida: 'unidad', grupoId: 9 },
-        { nombre: 'Banana', cantidad: 1, calorias: 105, proteinas: 1.3, carbohidratos: 27, grasas: 0.4, unidadMedida: 'unidad', grupoId: 9 },
-        { nombre: 'Masitas de agua', cantidad: 100, calorias: 420, proteinas: 9, carbohidratos: 72, grasas: 10, unidadMedida: 'gramo', grupoId: 18 },
-        { nombre: 'Aceite de oliva', cantidad: 100, calorias: 884, proteinas: 0, carbohidratos: 0, grasas: 100, unidadMedida: 'mililitro', grupoId: 4 },
-        { nombre: 'Azucar', cantidad: 100, calorias: 387, proteinas: 0, carbohidratos: 100, grasas: 0, unidadMedida: 'gramo', grupoId: 19 }
-      ];
+    /** Estimar perfil nutricional secundario según grupo alimenticio y macros conocidos */
+    const completarPerfil = (item: typeof ALIMENTOS_CATALOG[number]): typeof ALIMENTOS_CATALOG[number] => {
+      const p: typeof ALIMENTOS_CATALOG[number] = { ...item };
 
-      for (const a of catalog) {
+      // --- AZÚCARES ---
+      if (p.azucares === undefined) {
+        if ([9, 19].includes(p.grupoId)) {
+          // Frutas (~80% de carbohidratos) y dulces (~70%)
+          p.azucares = +(p.carbohidratos * (p.grupoId === 9 ? 0.8 : 0.7)).toFixed(1);
+        } else if ([1, 3, 8].includes(p.grupoId)) {
+          // Lácteos e infantiles (~50%), cereales desayuno (~25%)
+          p.azucares = +(p.carbohidratos * (p.grupoId === 8 ? 0.25 : 0.5)).toFixed(1);
+        } else if ([18, 23].includes(p.grupoId)) {
+          // Galletitas y snacks (~30%)
+          p.azucares = +(p.carbohidratos * 0.3).toFixed(1);
+        } else if ([14].includes(p.grupoId) && p.carbohidratos > 2) {
+          // Bebidas azucaradas (~100% de carbohidratos son azúcares)
+          p.azucares = +(p.carbohidratos).toFixed(1);
+        } else {
+          // Carnes, pescados, huevos, aceites, verduras saladas -> ~0
+          p.azucares = 0;
+        }
+      }
+
+      // --- FIBRA ALIMENTARIA ---
+      if (p.fibraAlimentaria === undefined) {
+        if ([11, 9].includes(p.grupoId)) {
+          // Verduras (~30% de carbohidratos), frutas (~10%)
+          p.fibraAlimentaria = +(p.carbohidratos * (p.grupoId === 11 ? 0.3 : 0.1)).toFixed(1);
+        } else if ([16, 20].includes(p.grupoId)) {
+          // Legumbres (~25%), cereales integrales (~10%)
+          p.fibraAlimentaria = +(p.carbohidratos * (p.grupoId === 16 ? 0.25 : 0.08)).toFixed(1);
+        } else if ([12].includes(p.grupoId)) {
+          // Frutos secos (~30% de carbohidratos)
+          p.fibraAlimentaria = +(p.carbohidratos * 0.3).toFixed(1);
+        } else if ([18, 8, 23].includes(p.grupoId)) {
+          // Panificados y snacks integrales (~5%)
+          p.fibraAlimentaria = 0; // no asumir fibra en productos procesados
+        } else {
+          p.fibraAlimentaria = 0;
+        }
+      }
+
+      // --- GRASAS SATURADAS ---
+      if (p.grasasSaturadas === undefined) {
+        if ([1].includes(p.grupoId)) {
+          // Lácteos (~65% de las grasas son saturadas)
+          p.grasasSaturadas = +(p.grasas * 0.65).toFixed(1);
+        } else if ([5, 7, 10, 13, 17].includes(p.grupoId)) {
+          // Carnes rojas y procesadas (~40%)
+          p.grasasSaturadas = +(p.grasas * 0.4).toFixed(1);
+        } else if ([15].includes(p.grupoId)) {
+          // Pescados (~25%)
+          p.grasasSaturadas = +(p.grasas * 0.25).toFixed(1);
+        } else if ([4].includes(p.grupoId)) {
+          // Aceites vegetales (~15%)
+          p.grasasSaturadas = +(p.grasas * 0.15).toFixed(1);
+        } else if ([12].includes(p.grupoId)) {
+          // Frutos secos (~15%)
+          p.grasasSaturadas = +(p.grasas * 0.15).toFixed(1);
+        } else if ([21, 22, 23, 25].includes(p.grupoId)) {
+          // Comidas procesadas (~35%)
+          p.grasasSaturadas = +(p.grasas * 0.35).toFixed(1);
+        } else {
+          p.grasasSaturadas = +(p.grasas * 0.3).toFixed(1);
+        }
+      }
+
+      // --- SODIO ---
+      if (p.sodio === undefined) {
+        if ([7].includes(p.grupoId)) {
+          // Fiambres y embutidos (alto sodio)
+          p.sodio = 800;
+        } else if ([6, 21, 22, 23, 25].includes(p.grupoId)) {
+          // Sopas, rápida, elaborados, snacks
+          p.sodio = 600;
+        } else if ([2, 4].includes(p.grupoId)) {
+          // Condimentos y aderezos
+          p.sodio = 400;
+        } else if ([5, 10, 13, 15, 17].includes(p.grupoId)) {
+          // Carnes frescas (bajo sodio natural)
+          p.sodio = 60;
+        } else if ([1, 9, 11, 16, 20].includes(p.grupoId)) {
+          // Naturales sin procesar
+          p.sodio = 15;
+        } else {
+          p.sodio = 100;
+        }
+      }
+
+      return p;
+    };
+
+    const crearAlimentosSeed = async (): Promise<void> => {
+      console.log(`Seeding alimentos... (${ALIMENTOS_CATALOG.length} alimentos en catálogo)`);
+      const catalog = ALIMENTOS_CATALOG;
+
+      for (const raw of catalog) {
+        const a = completarPerfil(raw);
         const resAlimento = await dataSource.query(
-          `INSERT INTO alimento (nombre, cantidad, calorias, proteinas, carbohidratos, grasas, hidratos_de_carbono, unidad_medida)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          `INSERT INTO alimento (nombre, cantidad, calorias, proteinas, carbohidratos, grasas, hidratos_de_carbono, unidad_medida, azucares, fibra_alimentaria, grasas_saturadas, sodio)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
            ON DUPLICATE KEY UPDATE nombre = VALUES(nombre)`,
-          [a.nombre, a.cantidad, a.calorias, a.proteinas, a.carbohidratos, a.grasas, a.carbohidratos, a.unidadMedida]
+          [a.nombre, a.cantidad, a.calorias, a.proteinas, a.carbohidratos, a.grasas, a.carbohidratos, a.unidadMedida,
+           a.azucares, a.fibraAlimentaria, a.grasasSaturadas, a.sodio]
         );
 
         let idAlimento: number;
