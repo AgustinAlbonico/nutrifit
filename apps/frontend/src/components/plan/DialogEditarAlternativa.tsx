@@ -14,6 +14,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { apiRequest } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import {
+  buscarAlimentos,
+  obtenerGruposAlimenticios,
+  obtenerAlimento,
+  crearAlimento,
+  type Alimento as AlimentoCatalogo,
+  type GrupoAlimenticio,
+  type CrearAlimentoDto,
+} from '@/lib/api/alimentos';
 import type { AlternativaSlot } from './SlotComidaManual';
 
 interface Props {
@@ -58,17 +67,6 @@ interface PreparacionResponse {
   totalGrasas: number;
 }
 
-interface AlimentoResponseDto {
-  idAlimento: number;
-  nombre: string;
-  cantidad: number;
-  calorias: number | null;
-  proteinas: number | null;
-  carbohidratos: number | null;
-  grasas: number | null;
-  unidadMedida: string;
-}
-
 export function DialogEditarAlternativa({
   open,
   onOpenChange,
@@ -87,8 +85,10 @@ export function DialogEditarAlternativa({
 
   // Buscador de alimentos
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<AlimentoResponseDto[]>([]);
+  const [searchResults, setSearchResults] = useState<AlimentoCatalogo[]>([]);
   const [searching, setSearching] = useState(false);
+  const [filtroGrupoId, setFiltroGrupoId] = useState<number | null>(null);
+  const [grupos, setGrupos] = useState<GrupoAlimenticio[]>([]);
 
   // Buscador de preparaciones reutilizables
   const [prepSearchQuery, setPrepSearchQuery] = useState('');
@@ -144,10 +144,23 @@ export function DialogEditarAlternativa({
       }
       setSearchQuery('');
       setSearchResults([]);
+      setFiltroGrupoId(null);
       setPrepSearchQuery('');
       setPrepSearchResults([]);
       setGuardarComoPreparacion(false);
       setMostrandoCrearAlimento(false);
+
+      // Cargar grupos alimenticios para el filtro (solo la primera vez)
+      if (grupos.length === 0) {
+        void (async () => {
+          try {
+            const g = await obtenerGruposAlimenticios(token!);
+            setGrupos(g);
+          } catch {
+            // Silencioso: el filtro es opcional
+          }
+        })();
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, alternativaInicial]);
@@ -160,10 +173,7 @@ export function DialogEditarAlternativa({
       const actualizados = [...mapeados];
       for (let i = 0; i < alimentosOriginales.length; i++) {
         const item = alimentosOriginales[i];
-        const res = await apiRequest<AlimentoResponseDto | null>(
-          `/alimentos/${item.alimentoId}`,
-          { token }
-        );
+        const res = await obtenerAlimento(token!, item.alimentoId);
         if (res) {
           actualizados[i] = {
             ...actualizados[i],
@@ -181,9 +191,9 @@ export function DialogEditarAlternativa({
     }
   };
 
-  // Buscar alimentos al cambiar la query (debounce de 400ms)
+  // Buscar alimentos al cambiar la query o el filtro de grupo (debounce 400ms)
   useEffect(() => {
-    if (!searchQuery.trim()) {
+    if (!searchQuery.trim() && !filtroGrupoId) {
       setSearchResults([]);
       return;
     }
@@ -191,12 +201,13 @@ export function DialogEditarAlternativa({
     const timer = setTimeout(async () => {
       setSearching(true);
       try {
-        const res = await apiRequest<{ data: AlimentoResponseDto[] }>(
-          `/alimentos?search=${encodeURIComponent(searchQuery)}&limit=8`,
-          { token }
-        );
-        setSearchResults(res.data || []);
-      } catch (err) {
+        const resultados = await buscarAlimentos(token!, {
+          search: searchQuery.trim() || undefined,
+          grupoId: filtroGrupoId,
+          limit: 8,
+        });
+        setSearchResults(resultados);
+      } catch {
         toast.error('Error al buscar alimentos');
       } finally {
         setSearching(false);
@@ -204,7 +215,7 @@ export function DialogEditarAlternativa({
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, token]);
+  }, [searchQuery, filtroGrupoId, token]);
 
   // Recalcular macros acumulados a partir de los alimentos
   const recalcularMacros = (listaAlimentos: AlimentoSeleccionado[]) => {
@@ -227,7 +238,7 @@ export function DialogEditarAlternativa({
     setGrasas(Math.round(fats * 10) / 10);
   };
 
-  const agregarAlimento = (a: AlimentoResponseDto) => {
+  const agregarAlimento = (a: AlimentoCatalogo) => {
     // Evitar duplicados en el listado
     if (alimentos.some((item) => item.alimentoId === a.idAlimento)) {
       toast.info(`${a.nombre} ya fue agregado.`);
@@ -286,25 +297,18 @@ export function DialogEditarAlternativa({
 
     setCreandoAlimento(true);
     try {
-      const res = await apiRequest<AlimentoResponseDto>(
-        '/alimentos',
-        {
-          method: 'POST',
-          body: {
-            nombre: nuevoAlimentoNombre.trim(),
-            cantidad: nuevoAlimentoCantidad,
-            unidadMedida: nuevoAlimentoUnidad,
-            calorias: nuevoAlimentoCalorias,
-            proteinas: nuevoAlimentoProteinas,
-            carbohidratos: nuevoAlimentoCarbohidratos,
-            grasas: nuevoAlimentoGrasas,
-            hidratosDeCarbono: nuevoAlimentoCarbohidratos,
-          },
-          token,
-        }
-      );
+      const dto: CrearAlimentoDto = {
+        nombre: nuevoAlimentoNombre.trim(),
+        cantidad: nuevoAlimentoCantidad,
+        unidadMedida: nuevoAlimentoUnidad,
+        calorias: nuevoAlimentoCalorias,
+        proteinas: nuevoAlimentoProteinas,
+        carbohidratos: nuevoAlimentoCarbohidratos,
+        grasas: nuevoAlimentoGrasas,
+      };
+      const res = await crearAlimento(token!, dto);
       toast.success('Alimento creado en la base de datos');
-      
+
       // Auto-agregar a la preparación
       agregarAlimento(res);
       setMostrandoCrearAlimento(false);
@@ -325,11 +329,12 @@ export function DialogEditarAlternativa({
     const timer = setTimeout(async () => {
       setSearchingPreps(true);
       try {
-        const res = await apiRequest<{ data: PreparacionResponse[] }>(
+        const res = await apiRequest<PreparacionResponse[] | { data: PreparacionResponse[] }>(
           `/preparaciones?search=${encodeURIComponent(prepSearchQuery)}&limit=8`,
           { token }
         );
-        setPrepSearchResults(res.data || []);
+        const lista = Array.isArray(res) ? res : (res?.data ?? []);
+        setPrepSearchResults(lista);
       } catch {
         toast.error('Error al buscar preparaciones');
       } finally {
@@ -603,13 +608,30 @@ export function DialogEditarAlternativa({
 
             {/* Buscador de Alimentos */}
             <div className="space-y-2 relative">
-              <Label className="text-sm font-semibold">Agregar ingredientes sueltos</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-semibold">Agregar ingredientes sueltos</Label>
+                {grupos.length > 0 && (
+                  <select
+                    value={filtroGrupoId ?? ''}
+                    onChange={(e) => setFiltroGrupoId(e.target.value ? Number(e.target.value) : null)}
+                    className="text-[10px] font-medium rounded-lg border border-input bg-background px-2 py-1 h-7 max-w-[180px] focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    data-testid="filtro-categoria-alimento"
+                  >
+                    <option value="">Todas las categorías</option>
+                    {grupos.map((g) => (
+                      <option key={g.idGrupoAlimenticio} value={g.idGrupoAlimenticio}>
+                        {g.descripcion}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
               <div className="relative">
                 <Search className="absolute left-3 top-3 size-4 text-muted-foreground" />
                 <Input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Buscar ingrediente (ej: pechuga de pollo, arroz)..."
+                  placeholder={filtroGrupoId ? "Buscar dentro de la categoría..." : "Buscar por nombre o dejá vacío para ver la categoría..."}
                   className="pl-9 rounded-xl h-10"
                   data-testid="search-alimentos-input"
                 />
@@ -646,8 +668,13 @@ export function DialogEditarAlternativa({
                       <div>
                         <p className="font-semibold text-xs text-foreground">{a.nombre}</p>
                         <p className="text-[10px] text-muted-foreground">
-                          Base: {a.cantidad} {a.unidadMedida === 'gramo' ? 'g' : a.unidadMedida === 'mililitro' ? 'ml' : a.unidadMedida === 'unidad' ? 'un' : a.unidadMedida} · {a.calorias} kcal · P {a.proteinas}g · C {a.carbohidratos}g · G {a.grasas}g
+                          Base: {a.cantidad} {a.unidadMedida === 'gramo' ? 'g' : a.unidadMedida === 'mililitro' ? 'ml' : a.unidadMedida === 'unidad' ? 'un' : a.unidadMedida} · {a.calorias ?? 0} kcal · P {a.proteinas ?? 0}g · C {a.carbohidratos ?? 0}g · G {a.grasas ?? 0}g
                         </p>
+                        {a.grupoAlimenticio && (
+                          <span className="inline-block mt-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                            {a.grupoAlimenticio.descripcion}
+                          </span>
+                        )}
                       </div>
                       <Plus className="size-4 text-emerald-500 shrink-0" />
                     </button>

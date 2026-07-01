@@ -97,6 +97,18 @@ export async function obtenerGruposAlimenticios(token: string): Promise<GrupoAli
   return extraerDatos(respuesta);
 }
 
+export async function buscarAlimentos(
+  token: string,
+  { search, grupoId, limit = 8 }: { search?: string; grupoId?: number | null; limit?: number },
+): Promise<Alimento[]> {
+  const params = new URLSearchParams();
+  if (search) params.append('search', search);
+  if (grupoId) params.append('grupoId', String(grupoId));
+  params.append('limit', String(limit));
+  const respuesta = await apiRequest<unknown>(`/alimentos?${params.toString()}`, { token });
+  return extraerArrayPaginado<Alimento>(respuesta);
+}
+
 export async function buscarAlimentosPorGrupo(token: string, grupoId: number, limite = 50): Promise<Alimento[]> {
   const respuesta = await apiRequest<unknown>(
     `/alimentos?grupoId=${grupoId}&limit=${limite}`,
