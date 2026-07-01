@@ -142,12 +142,13 @@ export class AlimentosController {
     const queryBuilder = this.alimentoRepo
       .createQueryBuilder('alimento')
       .orderBy('alimento.nombre', 'ASC')
-      .leftJoinAndSelect(
-        'alimento.grupoAlimenticio',
-        'grupoAlimenticio',
-        grupoId ? 'grupoAlimenticio.idGrupoAlimenticio = :grupoId' : '1=1',
-        grupoId ? { grupoId: parseInt(grupoId, 10) } : {},
-      );
+      .leftJoinAndSelect('alimento.grupoAlimenticio', 'grupoAlimenticio');
+
+    if (grupoId) {
+      queryBuilder.andWhere('grupoAlimenticio.idGrupoAlimenticio = :grupoId', {
+        grupoId: parseInt(grupoId, 10),
+      });
+    }
 
     if (search) {
       const termino = `%${normalizarTexto(search)}%`;
