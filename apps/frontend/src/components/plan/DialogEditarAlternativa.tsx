@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Loader2, ArrowLeft, Save, BookOpen, ChevronDown, ChevronRight, Flame, Droplet, Circle, Activity, X } from 'lucide-react';
+import { Plus, Search, Loader2, ArrowLeft, Save, BookOpen, ChevronDown, ChevronRight, Flame, Droplet, Circle, Activity, X, ChevronsUpDown, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
@@ -13,12 +13,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import { cn } from '@/lib/utils';
 import { apiRequest } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -596,24 +603,60 @@ export function DialogEditarAlternativa({
                     )}
                   </div>
 
-                  {/* Filtro de categoría — shadcn Select */}
+                  {/* Filtro de categoría — combobox buscable */}
                   {grupos.length > 0 && (
-                    <Select
-                      value={filtroGrupoId?.toString() ?? 'todos'}
-                      onValueChange={(v) => setFiltroGrupoId(v === 'todos' ? null : Number(v))}
-                    >
-                      <SelectTrigger className="w-[170px] h-10 rounded-xl bg-card/60 border-border/50 text-xs font-medium" data-testid="filtro-categoria-alimento">
-                        <SelectValue placeholder="Todas" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="todos">Todas las categorías</SelectItem>
-                        {grupos.map((g) => (
-                          <SelectItem key={g.idGrupoAlimenticio} value={g.idGrupoAlimenticio.toString()}>
-                            {g.descripcion}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className="w-[200px] h-10 rounded-xl bg-card/60 border-border/50 text-xs font-medium justify-between shrink-0"
+                          data-testid="filtro-categoria-alimento"
+                        >
+                          {filtroGrupoId
+                            ? grupos.find((g) => g.idGrupoAlimenticio === filtroGrupoId)?.descripcion
+                            : 'Todas las categorías'}
+                          <ChevronsUpDown className="ml-1 h-3.5 w-3.5 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[220px] p-0 rounded-xl" align="end">
+                        <Command>
+                          <CommandInput placeholder="Buscar categoría..." />
+                          <CommandList>
+                            <CommandEmpty>Sin resultados</CommandEmpty>
+                            <CommandGroup>
+                              <CommandItem
+                                value="todas las categorias"
+                                onSelect={() => setFiltroGrupoId(null)}
+                              >
+                                <Check
+                                  className={cn(
+                                    'mr-2 h-4 w-4',
+                                    filtroGrupoId === null ? 'opacity-100' : 'opacity-0',
+                                  )}
+                                />
+                                Todas las categorías
+                              </CommandItem>
+                              {grupos.map((g) => (
+                                <CommandItem
+                                  key={g.idGrupoAlimenticio}
+                                  value={g.descripcion}
+                                  onSelect={() => setFiltroGrupoId(g.idGrupoAlimenticio)}
+                                >
+                                  <Check
+                                    className={cn(
+                                      'mr-2 h-4 w-4',
+                                      filtroGrupoId === g.idGrupoAlimenticio ? 'opacity-100' : 'opacity-0',
+                                    )}
+                                  />
+                                  {g.descripcion}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                   )}
                 </div>
 
