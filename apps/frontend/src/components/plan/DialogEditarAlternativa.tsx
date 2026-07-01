@@ -355,11 +355,17 @@ export function DialogEditarAlternativa({
     const timer = setTimeout(async () => {
       setSearchingPreps(true);
       try {
-        const res = await apiRequest<PreparacionResponse[] | { data: PreparacionResponse[] }>(
+        const res = await apiRequest<unknown>(
           `/preparaciones?search=${encodeURIComponent(prepSearchQuery)}&limit=8`,
           { token }
         );
-        const lista = Array.isArray(res) ? res : (res?.data ?? []);
+        // Response puede ser ApiResponse<PaginatedData<Preparacion>> = { data: { data: [...], pagination } }
+        const nivel1 = (res as { data?: unknown })?.data ?? res;
+        const lista = Array.isArray(nivel1)
+          ? nivel1
+          : Array.isArray((nivel1 as { data?: unknown[] })?.data)
+            ? (nivel1 as { data: PreparacionResponse[] }).data
+            : [];
         setPrepSearchResults(lista);
       } catch {
         toast.error('Error al buscar preparaciones');
