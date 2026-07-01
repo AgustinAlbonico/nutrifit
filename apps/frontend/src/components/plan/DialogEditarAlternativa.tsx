@@ -27,6 +27,15 @@ import {
 } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { apiRequest } from '@/lib/api';
+
+const quitarAcentos = (s: string): string =>
+  s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+const filtroSinAcentos = (value: string, search: string): number => {
+  const v = quitarAcentos(value.toLowerCase());
+  const s = quitarAcentos(search.toLowerCase());
+  return v.includes(s) ? 1 : 0;
+};
 import { useAuth } from '@/contexts/AuthContext';
 import {
   buscarAlimentos,
@@ -620,7 +629,7 @@ export function DialogEditarAlternativa({
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-[220px] p-0 rounded-xl" align="end">
-                        <Command>
+                        <Command filter={filtroSinAcentos}>
                           <CommandInput placeholder="Buscar categoría..." />
                           <CommandList>
                             <CommandEmpty>Sin resultados</CommandEmpty>
@@ -696,13 +705,16 @@ export function DialogEditarAlternativa({
                   </div>
                 )}
 
-                {/* Link sutil para crear alimento */}
-                {!searching && searchQuery.trim().length > 1 && searchResults.length === 0 && (
+                {/* Link para crear alimento si no existe */}
+                {!searching && searchQuery.trim().length > 1 && (
                   <button
                     onClick={abrirCrearAlimento}
-                    className="text-xs text-emerald-600 hover:text-emerald-700 hover:underline underline-offset-2 transition-colors"
+                    className="flex items-center gap-1.5 text-xs text-emerald-600 hover:text-emerald-700 hover:underline underline-offset-2 transition-colors mt-1"
                   >
-                    ¿No encontrás &ldquo;{searchQuery}&rdquo;? Crear alimento nuevo
+                    <Plus className="size-3" />
+                    {searchResults.length === 0
+                      ? `Crear "${searchQuery.trim()}" como alimento nuevo`
+                      : 'No está en la lista? Crear alimento nuevo'}
                   </button>
                 )}
               </div>
