@@ -219,7 +219,6 @@ export function GestionAlimentosPage() {
     pagination,
     setPagina,
     setLimite,
-    recargar,
   } = usePaginacion<Alimento>(fetcherAlimentos, { defaultLimit: 20, enabled: !!token });
 
   // Query para obtener grupos alimenticios
@@ -259,7 +258,8 @@ export function GestionAlimentosPage() {
     mutationFn: (data: CrearAlimentoDto) => crearAlimento(token!, data),
     onSuccess: () => {
       toast.success('Alimento creado correctamente');
-      recargar();
+      setPagina(1);
+      setSearchTrigger((v) => v + 1);
       cerrarDialogo();
     },
     onError: (error) => {
@@ -273,7 +273,7 @@ export function GestionAlimentosPage() {
       actualizarAlimento(token!, id, data),
     onSuccess: () => {
       toast.success('Alimento actualizado correctamente');
-      recargar();
+      setSearchTrigger((v) => v + 1);
       cerrarDialogo();
     },
     onError: (error) => {
@@ -286,7 +286,7 @@ export function GestionAlimentosPage() {
     mutationFn: (id: number) => eliminarAlimento(token!, id),
     onSuccess: () => {
       toast.success('Alimento eliminado correctamente');
-      recargar();
+      setSearchTrigger((v) => v + 1);
       setAlimentoAEliminar(null);
     },
     onError: (error) => {
