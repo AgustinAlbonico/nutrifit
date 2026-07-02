@@ -169,10 +169,52 @@ Este archivo resume las credenciales cargadas por `apps/backend/src/seed-multi-t
 - Comparador de fotos de progreso (subir fotos en distintos turnos para ver el comparador).
 - Vista de ficha del paciente (`/profesional/paciente/:id/ficha`) con historial de consultas, turnos y galería.
 
+---
+
+## Gimnasio El Cid (seed independiente)
+
+Creado por `apps/backend/src/seed-el-cid.ts`. Se corre por separado del seed principal:
+
+```bash
+npm run db:seed:el-cid
+```
+
+### Nutricionistas
+
+| Gimnasio | Email | Matrícula |
+|---|---|---|
+| El Cid | `nutri-cid1@nutrifit.com` | `MN-6001` |
+| El Cid | `nutri-cid2@nutrifit.com` | `MN-6002` |
+| El Cid | `nutri-cid3@nutrifit.com` | `MN-6003` |
+
+### Socios (3 por nutricionista)
+
+| Nutricionista | Email | DNI | ¿Tiene plan? |
+|---|---|---|---|
+| nutri-cid1 | `socio-cid-a@nutrifit.com` | `60001001` | ✅ Sí |
+| nutri-cid1 | `socio-cid-b@nutrifit.com` | `60001002` | ❌ No |
+| nutri-cid1 | `socio-cid-c@nutrifit.com` | `60001003` | ❌ No |
+| nutri-cid2 | `socio-cid-d@nutrifit.com` | `60002001` | ✅ Sí |
+| nutri-cid2 | `socio-cid-e@nutrifit.com` | `60002002` | ❌ No |
+| nutri-cid2 | `socio-cid-f@nutrifit.com` | `60002003` | ❌ No |
+| nutri-cid3 | `socio-cid-g@nutrifit.com` | `60003001` | ✅ Sí |
+| nutri-cid3 | `socio-cid-h@nutrifit.com` | `60003002` | ❌ No |
+| nutri-cid3 | `socio-cid-i@nutrifit.com` | `60003003` | ❌ No |
+
+Cada socio tiene **3 turnos REALIZADOS** + **1 turno CONFIRMADO** futuro con su nutricionista asignado.
+
+---
+
 ## Siguiente paso
 
 Si querés re-sembrar la base, corré:
 
 ```bash
 npm run db:seed
+```
+
+Para el gimnasio El Cid (independiente):
+
+```bash
+npm run db:seed:el-cid
 ```

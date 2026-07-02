@@ -24,6 +24,7 @@
     "migration:run": "npm run build && npm run migration:repair-history && node ../../node_modules/typeorm/cli.js migration:run -d dist/infrastructure/config/typeorm/migration.schema.js",
     "migration:revert": "npm run build && node ../../node_modules/typeorm/cli.js migration:revert -d dist/infrastructure/config/typeorm/migration.schema.js",
     "seed:multi-tenant": "ts-node -r tsconfig-paths/register src/seed-multi-tenant.ts",
+    "seed:el-cid": "ts-node -r tsconfig-paths/register src/seed-el-cid.ts",
     "seed:martin-fotos": "ts-node -r tsconfig-paths/register src/scripts/seed-martin-evolucion-fotos.ts"
   },
   "dependencies": {
