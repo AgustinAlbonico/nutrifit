@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PreparacionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/preparacion.entity';
 import { PreparacionItemOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/preparacion-item.entity';
+import { UnidadMedida } from 'src/domain/entities/Alimento/UnidadMedida';
 import { coincidenciaFuzzy } from './util-matching-ia';
 
 export interface AlternativaParaPreparacion {
@@ -102,8 +103,7 @@ export class CreadorPreparacionesIA {
       item.preparacionId = guardada.idPreparacion;
       item.alimentoId = a.alimentoId;
       item.cantidadDefault = a.cantidad ?? 100;
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      item.unidadDefault = a.unidad as any;
+      item.unidadDefault = mapearUnidad(a.unidad);
       return item;
     });
 
@@ -120,4 +120,35 @@ export class CreadorPreparacionesIA {
       .trim()
       .replace(/\s+/g, ' ');
   }
+}
+
+const MAPA_UNIDADES: Record<string, UnidadMedida> = {
+  g: UnidadMedida.GRAMO,
+  gramo: UnidadMedida.GRAMO,
+  gramos: UnidadMedida.GRAMO,
+  ml: UnidadMedida.MILILITRO,
+  mililitro: UnidadMedida.MILILITRO,
+  mililitros: UnidadMedida.MILILITRO,
+  l: UnidadMedida.LITRO,
+  litro: UnidadMedida.LITRO,
+  litros: UnidadMedida.LITRO,
+  kg: UnidadMedida.KILOGRAMO,
+  kilogramo: UnidadMedida.KILOGRAMO,
+  kilogramos: UnidadMedida.KILOGRAMO,
+  mg: UnidadMedida.MILIGRAMO,
+  miligramo: UnidadMedida.MILIGRAMO,
+  miligramos: UnidadMedida.MILIGRAMO,
+  taza: UnidadMedida.TAZA,
+  tazas: UnidadMedida.TAZA,
+  cucharada: UnidadMedida.CUCHARADA,
+  cucharadas: UnidadMedida.CUCHARADA,
+  cucharadita: UnidadMedida.CUCHARADITA,
+  cucharaditas: UnidadMedida.CUCHARADITA,
+  un: UnidadMedida.UNIDAD,
+  unidad: UnidadMedida.UNIDAD,
+  unidades: UnidadMedida.UNIDAD,
+};
+
+function mapearUnidad(unidad: string): UnidadMedida {
+  return MAPA_UNIDADES[unidad.toLowerCase()] ?? UnidadMedida.GRAMO;
 }
