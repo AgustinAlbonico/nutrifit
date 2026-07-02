@@ -3,8 +3,8 @@ export interface AlimentoNuevoDto {
   categoriaNombre: string;
   cantidadBase: number;
   unidadBase: string;
-  calorias: number;
-  proteinas: number;
-  carbohidratos: number;
-  grasas: number;
+  calorias: number | null;
+  proteinas: number | null;
+  carbohidratos: number | null;
+  grasas: number | null;
 }

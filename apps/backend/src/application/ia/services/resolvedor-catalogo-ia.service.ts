@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AlimentoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/alimento.entity';
 import { GrupoAlimenticioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/grupo-alimenticio.entity';
-import { BadRequestError } from 'src/domain/exceptions/custom-exceptions';
 import {
   normalizarTexto,
   obtenerClavesBusquedaAlimento,
@@ -95,9 +94,29 @@ export class ResolvedorCatalogoIA {
       );
 
       if (!declaracion) {
-        throw new BadRequestError(
-          `Alimento no declarado en el catálogo ni en alimentosNuevos: "${nombreOriginal}". La IA debe declararlo en el campo alimentosNuevos.`,
+        const declaracionFallback: AlimentoNuevoDto = {
+          nombre: nombreOriginal,
+          categoriaNombre: '',
+          cantidadBase: 100,
+          unidadBase: 'g',
+          calorias: null,
+          proteinas: null,
+          carbohidratos: null,
+          grasas: null,
+        };
+        const idCategoriaFallback = this.resolverCategoria(
+          '',
+          categoriasExistentes,
+          categoriasPorDescripcion,
         );
+        const nuevo = await this.crearAlimento(declaracionFallback, idCategoriaFallback);
+        mapa.set(nombreOriginal, nuevo.idAlimento);
+        creados.push({
+          nombre: nombreOriginal,
+          idAlimento: nuevo.idAlimento,
+          categoria: '(auto-creado sin declaración)',
+        });
+        continue;
       }
 
       const idCategoria = this.resolverCategoria(

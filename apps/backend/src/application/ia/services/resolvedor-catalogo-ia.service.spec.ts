@@ -4,7 +4,6 @@ import { Repository } from 'typeorm';
 import { ResolvedorCatalogoIA } from './resolvedor-catalogo-ia.service';
 import { AlimentoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/alimento.entity';
 import { GrupoAlimenticioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/grupo-alimenticio.entity';
-import { BadRequestError } from 'src/domain/exceptions/custom-exceptions';
 
 describe('ResolvedorCatalogoIA', () => {
   let service: ResolvedorCatalogoIA;
@@ -106,15 +105,15 @@ describe('ResolvedorCatalogoIA', () => {
       expect(resultado.creados.some((c) => c.nombre === 'Quinoa')).toBe(true);
     });
 
-    it('debe lanzar BadRequestError si alimento no existe ni está declarado', async () => {
-      await expect(
-        service.resolver(
-          ['AlimentoInventado'],
-          [],
-          catalogoExistente,
-          categoriasExistentes,
-        ),
-      ).rejects.toThrow(BadRequestError);
+    it('debe crear alimento con macros null si no existe ni está declarado (silent fallback)', async () => {
+      const resultado = await service.resolver(
+        ['AlimentoInventado'],
+        [],
+        catalogoExistente,
+        categoriasExistentes,
+      );
+      expect(resultado.mapa.get('AlimentoInventado')).toBeDefined();
+      expect(resultado.creados.some((c) => c.nombre === 'AlimentoInventado')).toBe(true);
     });
 
     it('debe reutilizar alimento existente aunque esté también en alimentosNuevos', async () => {
