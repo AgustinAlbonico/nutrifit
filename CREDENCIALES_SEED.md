@@ -1,21 +1,22 @@
 # Credenciales seed de NutriFit
 
-Este archivo resume las credenciales cargadas por `apps/backend/src/seed-multi-tenant.ts` para que puedas probar autenticación, roles y aislamiento por gimnasio rápido.
+Este archivo resume todas las credenciales de usuarios de prueba del sistema NutriFit.
 
-## Acceso rápido
+Contraseña universal de todos los usuarios seed: **`123456`**
 
-1. Levantá backend y frontend.
-2. Iniciá sesión con cualquiera de los usuarios de abajo.
-3. Verificá rol, permisos y datos por gimnasio según la cuenta usada.
+---
 
-## Regla general
+## Seed principal — `seed-multi-tenant.ts`
 
-- **Contraseña de todos los usuarios seed:** `123456`
-- **Archivo fuente:** `apps/backend/src/seed-multi-tenant.ts`
-- **Gimnasios creados:** Gym Central, Gym Norte, Gym Sur
-- **Recepcionistas:** 1 por gimnasio.
+Creado por `apps/backend/src/seed-multi-tenant.ts`. Siembra 3 gimnasios con administradores, recepcionistas, nutricionistas y socios.
 
-## Gimnasios seed
+Para re-sembrar la base completa:
+
+```bash
+npm run db:seed
+```
+
+### Gimnasios
 
 | Gimnasio | Email | Teléfono | Dirección |
 |---|---|---|---|
@@ -23,31 +24,29 @@ Este archivo resume las credenciales cargadas por `apps/backend/src/seed-multi-t
 | Gym Norte | `norte@gym.com` | `341-555-0002` | `Av. Norte 5678` |
 | Gym Sur | `sur@gym.com` | `341-555-0003` | `Av. Sur 9012` |
 
-## Usuarios seed
+### SUPERADMIN (global)
 
-### SUPERADMIN
-
-| Rol | Gimnasio | Email | Contraseña |
-|---|---|---|---|
-| SUPERADMIN | Global | `superadmin@nutrifit.com` | `123456` |
+| Email | Contraseña |
+|---|---|
+| `superadmin@nutrifit.com` | `123456` |
 
 ### ADMIN
 
-| Rol | Gimnasio | Email | Contraseña |
-|---|---|---|---|
-| ADMIN | Gym Central | `admin-central@nutrifit.com` | `123456` |
-| ADMIN | Gym Norte | `admin-norte@nutrifit.com` | `123456` |
-| ADMIN | Gym Sur | `admin-sur@nutrifit.com` | `123456` |
+| Gimnasio | Email |
+|---|---|
+| Gym Central | `admin-central@nutrifit.com` |
+| Gym Norte | `admin-norte@nutrifit.com` |
+| Gym Sur | `admin-sur@nutrifit.com` |
 
 ### RECEPCIONISTA
 
-| Rol | Gimnasio | Email | Contraseña |
-|---|---|---|---|
-| RECEPCIONISTA | Gym Central | `recepcion-central@nutrifit.com` | `123456` |
-| RECEPCIONISTA | Gym Norte | `recepcion-norte@nutrifit.com` | `123456` |
-| RECEPCIONISTA | Gym Sur | `recepcion-sur@nutrifit.com` | `123456` |
+| Gimnasio | Email |
+|---|---|
+| Gym Central | `recepcion-central@nutrifit.com` |
+| Gym Norte | `recepcion-norte@nutrifit.com` |
+| Gym Sur | `recepcion-sur@nutrifit.com` |
 
-### NUTRICIONISTA originales
+### NUTRICIONISTA originales (1 por gimnasio)
 
 | Gimnasio | Email | Matrícula |
 |---|---|---|
@@ -90,7 +89,7 @@ Este archivo resume las credenciales cargadas por `apps/backend/src/seed-multi-t
 | Gym Sur | `nutri.demo.f28@gymsur.com` | `MN-5028` |
 | Gym Sur | `nutri.demo.m29@gymsur.com` | `MN-5029` |
 
-### SOCIOS originales
+### SOCIOS originales (3 por gimnasio)
 
 | Gimnasio | Email | DNI |
 |---|---|---|
@@ -131,21 +130,21 @@ Este archivo resume las credenciales cargadas por `apps/backend/src/seed-multi-t
 | Gym Sur | `socio.m20@gymsur.com` | `51001020` |
 | Gym Sur | `socio.f21@gymsur.com` | `51001021` |
 | Gym Sur | `socio.m22@gymsur.com` | `51001022` |
-| Gym Sur | `socio.f23@gymsur.com` | `51001023` |
-| Gym Sur | `socio.m24@gymsur.com` | `51001024` |
-| Gym Sur | `socio.f25@gymsur.com` | `51001025` |
-| Gym Sur | `socio.m26@gymsur.com` | `51001026` |
+| Gym Sur | `socio.m23@gymsur.com` | `51001023` |
+| Gym Sur | `socio.f24@gymsur.com` | `51001024` |
+| Gym Sur | `socio.m25@gymsur.com` | `51001025` |
+| Gym Sur | `socio.f26@gymsur.com` | `51001026` |
 | Gym Sur | `socio.f27@gymsur.com` | `51001027` |
 | Gym Sur | `socio.m28@gymsur.com` | `51001028` |
 | Gym Sur | `socio.f29@gymsur.com` | `51001029` |
 
-### SOCIOS adicionales (fuera del seed principal)
+### SOCIOS adicionales
 
-| Gimnasio | Email | DNI |
-|---|---|---|
-| Gym Central | `agusalbo2024@gmail.com` | `12312312` |
-| Gym Central | `test-socio@nutrifit.com` | `41234567` |
-| Gym Central | `socio-test-e2e@nutrifit.com` | `77777001` |
+| Gimnasio | Email | DNI | Nota |
+|---|---|---|---|
+| Gym Central | `agusalbo2024@gmail.com` | `12312312` | Creado manualmente |
+| Gym Central | `test-socio@nutrifit.com` | `41234567` | Para pruebas |
+| Gym Central | `socio-test-e2e@nutrifit.com` | `77777001` | Para tests E2E |
 
 ### NUTRICIONISTA con historial evolutivo
 
@@ -153,30 +152,112 @@ Este archivo resume las credenciales cargadas por `apps/backend/src/seed-multi-t
 |---|---|---|
 | Gym Central | `nutri-evolucion@nutrifit.com` | `MN-3001` |
 
-### SOCIO con historial evolutivo (caso de uso longitudinal)
+Atiende al socio `martin-evolucion@nutrifit.com` con 11 turnos REALIZADOS con mediciones completas.
+
+### SOCIO con historial evolutivo
 
 | Gimnasio | Email | DNI | Género | Altura |
 |---|---|---|---|---|
 | Gym Central | `martin-evolucion@nutrifit.com` | `50004001` | MASCULINO | 175 cm |
 
-**Para qué sirve:** este socio tiene **11 turnos REALIZADOS** entre `2026-01-12` y `2026-06-01` (uno cada ~2 semanas) con observaciones clínicas, sugerencias, hábitos y mediciones completas (peso, perímetros de cintura/cadera/brazo/muslo/pecho, pliegues, %grasa, masa magra, tensión arterial, frecuencia cardíaca). Está atendido por `nutri-evolucion@nutrifit.com`.
+**Datos:** 11 turnos REALIZADOS entre `2026-01-12` y `2026-06-01` (uno cada ~2 semanas) con observaciones clínicas, sugerencias, hábitos y mediciones completas (peso, perímetros de cintura/cadera/brazo/muslo/pecho, pliegues, %grasa, masa magra, tensión arterial, frecuencia cardíaca). Atendido por `nutri-evolucion@nutrifit.com`.
 
 **Ideal para probar:**
-
-- Pantalla de progreso longitudinal del paciente (`/profesional/paciente/:id/progreso`) con curva real de 5 meses, KPIs, deltas y Riesgo Cardiovascular bajando de Moderado a Bajo.
+- Progreso longitudinal (`/profesional/paciente/:id/progreso`) con curva real de 5 meses, KPIs, deltas y Riesgo Cardiovascular bajando de Moderado a Bajo.
 - Gráficos de evolución (peso, perímetros, composición corporal) con datos para todos los puntos del eje X.
 - Tabla de evolución con columna Pecho incluida.
-- Comparador de fotos de progreso (subir fotos en distintos turnos para ver el comparador).
-- Vista de ficha del paciente (`/profesional/paciente/:id/ficha`) con historial de consultas, turnos y galería.
+- Comparador de fotos de progreso.
+- Ficha del paciente (`/profesional/paciente/:id/ficha`) con historial de consultas y galería.
 
 ---
 
-## Gimnasio El Cid (seed independiente)
+## Seed El Cid — `seed-el-cid.ts`
 
-Creado por `apps/backend/src/seed-el-cid.ts`. Se corre por separado del seed principal:
+Seed **independiente** para el gimnasio "El Cid". Creado por `apps/backend/src/seed-el-cid.ts`.
+
+No modifica los gimnasios del seed principal. Se puede correr en cualquier momento:
 
 ```bash
 npm run db:seed:el-cid
+```
+
+> **Idempotencia:** el gimnasio, nutricionistas y socios se upsertan (no duplican si se corre varias veces). Los turnos sí se acumulan en cada ejecución.
+
+### Gimnasio
+
+| Nombre | Dirección | Teléfono | Email | Ciudad |
+|---|---|---|---|---|
+| El Cid | `Av. Pellegrini 1800` | `341-555-7000` | `contacto@elcidgym.com` | Rosario |
+
+### Nutricionistas
+
+| # | Nombre | Apellido | Email | Matrícula | Especialidad | Agenda |
+|---|---|---|---|---|---|---|
+| 1 | **Martín** | Giménez | `nutri-cid1@nutrifit.com` | `MN-6001` | Nutrición deportiva, rendimiento y recomposición corporal | Lu–Vie 09–13 (turnos 60 min) |
+| 2 | **Carolina** | Vega | `nutri-cid2@nutrifit.com` | `MN-6002` | Nutrición clínica, patologías crónicas y control de peso | Lu–Mi–Vie 14–19 (turnos 45 min) |
+| 3 | **Federico** | Linares | `nutri-cid3@nutrifit.com` | `MN-6003` | Salud digestiva, planes personalizados y alimentación deportiva | Ma–Jue 08–12, Sáb 09–13 (turnos 30 min) |
+
+### Socios por nutricionista
+
+#### Grupo de **Martín Giménez** (nutri-cid1)
+
+| # | Nombre | Apellido | Email | DNI | Género | Teléfono | Dirección | ¿Tiene plan? |
+|---|---|---|---|---|---|---|---|---|
+| A | Lucas | Mendoza | `socio-cid-a@nutrifit.com` | `60001001` | MASCULINO | `341-555-7101` | San Juan 850 | ✅ Sí |
+| B | Florencia | Rivas | `socio-cid-b@nutrifit.com` | `60001002` | FEMENINO | `341-555-7102` | Córdoba 1234 | ❌ No |
+| C | Tomás | Sosa | `socio-cid-c@nutrifit.com` | `60001003` | MASCULINO | `341-555-7103` | Mitre 567 | ❌ No |
+
+#### Grupo de **Carolina Vega** (nutri-cid2)
+
+| # | Nombre | Apellido | Email | DNI | Género | Teléfono | Dirección | ¿Tiene plan? |
+|---|---|---|---|---|---|---|---|---|
+| D | Sofía | Peralta | `socio-cid-d@nutrifit.com` | `60002001` | FEMENINO | `341-555-7201` | Santa Fe 980 | ✅ Sí |
+| E | Gabriel | Álvarez | `socio-cid-e@nutrifit.com` | `60002002` | MASCULINO | `341-555-7202` | Rioja 345 | ❌ No |
+| F | Valentina | Castillo | `socio-cid-f@nutrifit.com` | `60002003` | FEMENINO | `341-555-7203` | Entre Ríos 210 | ❌ No |
+
+#### Grupo de **Federico Linares** (nutri-cid3)
+
+| # | Nombre | Apellido | Email | DNI | Género | Teléfono | Dirección | ¿Tiene plan? |
+|---|---|---|---|---|---|---|---|---|
+| G | Mateo | Delgado | `socio-cid-g@nutrifit.com` | `60003001` | MASCULINO | `341-555-7301` | Buenos Aires 1500 | ✅ Sí |
+| H | Camila | Navarro | `socio-cid-h@nutrifit.com` | `60003002` | FEMENINO | `341-555-7302` | San Martín 780 | ❌ No |
+| I | Sebastián | Moreno | `socio-cid-i@nutrifit.com` | `60003003` | MASCULINO | `341-555-7303` | Belgrano 420 | ❌ No |
+
+### Turnos por socio
+
+Cada uno de los 9 socios tiene **4 turnos** con su nutricionista asignado:
+
+| Estado | Cantidad | Época |
+|---|---|---|
+| `REALIZADO` | 3 por socio | Pasados (marzo–mayo 2026, aprox.) |
+| `CONFIRMADO` | 1 por socio | Futuros (junio 2026, aprox.) |
+
+**Total:** 36 turnos (27 REALIZADOS + 9 CONFIRMADOS).
+
+### Planes de alimentación (3 total, uno por grupo)
+
+| Nutricionista | Socio | Objetivo del plan |
+|---|---|---|
+| Martín Giménez | Lucas Mendoza (`socio-cid-a`) | Reducir peso corporal y disminuir porcentaje de grasa manteniendo masa muscular |
+| Carolina Vega | Sofía Peralta (`socio-cid-d`) | Plan de recomposición corporal con aumento de proteínas y control de hidratos |
+| Federico Linares | Mateo Delgado (`socio-cid-g`) | Plan de mantenimiento con enfoque en alimentación intuitiva y hábitos sostenibles |
+
+Cada plan tiene 7 días (lunes a domingo) con 4 comidas cada día (desayuno, almuerzo, merienda, cena).
+
+### Para qué sirve este seed
+
+- **Módulo de turnos:** probar visualización de historial de turnos REALIZADOS y CONFIRMADOS, filtros por estado, cancelación, y creación de nuevos turnos.
+- **Módulo de planes de alimentación:** probar visualización de plan activo por socio, estructura de días y comidas, y diferenciación entre socios con plan y sin plan.
+- **Multi-gimnasio:** al ser un gimnasio nuevo separado de Gym Central/Norte/Sur, verificás que el aislamiento por gimnasio funciona correctamente (un admin de Gym Central no ve datos de El Cid ni viceversa).
+
+---
+
+## Seed historial evolutivo — `scripts/seed-martin-evolucion-fotos.ts`
+
+Corre sobre los datos del socio `martin-evolucion@nutrifit.com` en Gym Central. No es parte del seed principal.
+
+```bash
+npm run seed:martin-fotos
 ```
 
 ### Nutricionistas
