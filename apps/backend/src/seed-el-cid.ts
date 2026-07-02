@@ -140,6 +140,22 @@ const OBJETIVOS_PLANES = [
 ];
 
 // ──────────────────────────────────────────────
+// Configuración de Socios (para evolución y ficha de salud)
+// ──────────────────────────────────────────────
+
+const SOCIOS_CONFIG: Record<string, { altura: number; peso: number; actividad: string; objetivo: string }> = {
+  'socio-cid-a@nutrifit.com': { altura: 180, peso: 90.0, actividad: 'MODERADO', objetivo: 'Reducir peso corporal y disminuir porcentaje de grasa manteniendo masa muscular' },
+  'socio-cid-b@nutrifit.com': { altura: 165, peso: 68.0, actividad: 'LIGERO', objetivo: 'Mejorar hábitos alimentarios y aumentar energía' },
+  'socio-cid-c@nutrifit.com': { altura: 175, peso: 82.0, actividad: 'SEDENTARIO', objetivo: 'Controlar colesterol y mejorar alimentación' },
+  'socio-cid-d@nutrifit.com': { altura: 160, peso: 64.0, actividad: 'MODERADO', objetivo: 'Plan de recomposición corporal con aumento de proteínas y control de hidratos' },
+  'socio-cid-e@nutrifit.com': { altura: 185, peso: 95.0, actividad: 'INTENSO', objetivo: 'Ganar masa muscular y fuerza general' },
+  'socio-cid-f@nutrifit.com': { altura: 170, peso: 72.0, actividad: 'INTENSO', objetivo: 'Mejorar rendimiento en running y resistencia' },
+  'socio-cid-g@nutrifit.com': { altura: 178, peso: 78.0, actividad: 'LIGERO', objetivo: 'Plan de mantenimiento con enfoque en alimentación intuitiva y hábitos sostenibles' },
+  'socio-cid-h@nutrifit.com': { altura: 162, peso: 58.0, actividad: 'MODERADO', objetivo: 'Aumentar masa magra y tonificar' },
+  'socio-cid-i@nutrifit.com': { altura: 182, peso: 88.0, actividad: 'LIGERO', objetivo: 'Bajar de peso y regular tránsito intestinal' },
+};
+
+// ──────────────────────────────────────────────
 // Seed
 // ──────────────────────────────────────────────
 
@@ -317,20 +333,118 @@ async function runSeedElCid() {
         if (filaExistente.length > 0) {
           idPersona = filaExistente[0].id_persona;
           console.log(`Socio ${socio.email} ya existía (ID persona: ${idPersona}).`);
+
+          // Robustez: verificar si el socio existente tiene ficha de salud
+          const personaFicha: unknown = await dataSource.query(
+            `SELECT id_ficha_salud FROM persona WHERE id_persona = ? LIMIT 1`,
+            [idPersona],
+          );
+          const tieneFicha = (personaFicha as { id_ficha_salud: number | null }[])[0]?.id_ficha_salud;
+
+          if (!tieneFicha) {
+            console.log(`  Socio ${socio.email} no tiene ficha de salud. Creando...`);
+            const configSocio = SOCIOS_CONFIG[socio.email] || { altura: 170, peso: 70, actividad: 'LIGERO', objetivo: 'Bienestar general' };
+
+            const resultFicha: unknown = await dataSource.query(
+              `INSERT INTO ficha_salud (altura, peso, objetivo_personal, nivel_actividad_fisica, medicacion_actual, frecuencia_comidas, consumo_agua_diario, consumo_alcohol, fuma_tabaco, horas_sueno, contacto_emergencia_nombre, contacto_emergencia_telefono, completada, consent_at, completada_at, actualizada_at)
+               VALUES (?, ?, ?, ?, 'Ninguna', '4-5 comidas', 2.0, 'Ocasional', FALSE, 7, 'Contacto de Emergencia', '341-555-0000', TRUE, NOW(), NOW(), NOW())`,
+              [configSocio.altura, configSocio.peso, configSocio.objetivo, configSocio.actividad],
+            );
+            const idFichaSalud = (resultFicha as { insertId: number }).insertId;
+
+            await dataSource.query(
+              `UPDATE persona SET id_ficha_salud = ? WHERE id_persona = ?`,
+              [idFichaSalud, idPersona],
+            );
+
+            const snapshotInicial = JSON.stringify({
+              altura: configSocio.altura,
+              peso: configSocio.peso,
+              objetivo_personal: configSocio.objetivo,
+              nivel_actividad_fisica: configSocio.actividad,
+              medicacion_actual: 'Ninguna',
+              frecuencia_comidas: '4-5 comidas',
+              consumo_agua_diario: 2.0,
+              consumo_alcohol: 'Ocasional',
+              fuma_tabaco: false,
+              horas_sueno: 7,
+              contacto_emergencia_nombre: 'Contacto de Emergencia',
+              contacto_emergencia_telefono: '341-555-0000',
+              alergias: [],
+              patologias: [],
+            });
+
+            const resultVersion: unknown = await dataSource.query(
+              `INSERT INTO ficha_salud_version (id_ficha_salud, id_socio, version, datos_json, created_at, created_by)
+               VALUES (?, ?, 1, ?, NOW(), NULL)`,
+              [idFichaSalud, idPersona, snapshotInicial],
+            );
+            const idVersion = (resultVersion as { insertId: number }).insertId;
+
+            await dataSource.query(
+              `UPDATE ficha_salud SET version_actual_id = ? WHERE id_ficha_salud = ?`,
+              [idVersion, idFichaSalud],
+            );
+            console.log(`  Ficha de salud creada y asociada para socio existente ${socio.email}.`);
+          }
         } else {
+          // Obtener configuración del socio
+          const configSocio = SOCIOS_CONFIG[socio.email] || { altura: 170, peso: 70, actividad: 'LIGERO', objetivo: 'Bienestar general' };
+
+          // Crear ficha de salud
+          const resultFicha: unknown = await dataSource.query(
+            `INSERT INTO ficha_salud (altura, peso, objetivo_personal, nivel_actividad_fisica, medicacion_actual, frecuencia_comidas, consumo_agua_diario, consumo_alcohol, fuma_tabaco, horas_sueno, contacto_emergencia_nombre, contacto_emergencia_telefono, completada, consent_at, completada_at, actualizada_at)
+             VALUES (?, ?, ?, ?, 'Ninguna', '4-5 comidas', 2.0, 'Ocasional', FALSE, 7, 'Contacto de Emergencia', '341-555-0000', TRUE, NOW(), NOW(), NOW())`,
+            [configSocio.altura, configSocio.peso, configSocio.objetivo, configSocio.actividad],
+          );
+          const idFichaSalud = (resultFicha as { insertId: number }).insertId;
+
+          // Crear persona
           const rp: unknown = await dataSource.query(
-            `INSERT INTO persona (nombre, apellido, fecha_nacimiento, genero, telefono, direccion, ciudad, provincia, id_gimnasio, dni, fecha_alta, tipo_persona)
-             VALUES (?, ?, '1995-07-20', ?, ?, ?, 'Rosario', 'Santa Fe', ?, ?, NOW(), 'SocioOrmEntity')
+            `INSERT INTO persona (nombre, apellido, fecha_nacimiento, genero, telefono, direccion, ciudad, provincia, id_gimnasio, dni, fecha_alta, id_ficha_salud, tipo_persona)
+             VALUES (?, ?, '1995-07-20', ?, ?, ?, 'Rosario', 'Santa Fe', ?, ?, NOW(), ?, 'SocioOrmEntity')
              ON DUPLICATE KEY UPDATE id_persona = LAST_INSERT_ID(id_persona)`,
-            [socio.nombre, socio.apellido, socio.genero, socio.telefono, socio.direccion, idGimnasio, socio.dni],
+            [socio.nombre, socio.apellido, socio.genero, socio.telefono, socio.direccion, idGimnasio, socio.dni, idFichaSalud],
           );
           idPersona = (rp as { insertId: number }).insertId;
 
+          // Crear usuario
           await dataSource.query(
             `INSERT INTO usuario (email, contrasenia, rol, id_persona)
              VALUES (?, ?, 'SOCIO', ?)
              ON DUPLICATE KEY UPDATE id_usuario = LAST_INSERT_ID(id_usuario)`,
             [socio.email, contraseniaHash, idPersona],
+          );
+
+          // Crear versión de ficha de salud
+          const snapshotInicial = JSON.stringify({
+            altura: configSocio.altura,
+            peso: configSocio.peso,
+            objetivo_personal: configSocio.objetivo,
+            nivel_actividad_fisica: configSocio.actividad,
+            medicacion_actual: 'Ninguna',
+            frecuencia_comidas: '4-5 comidas',
+            consumo_agua_diario: 2.0,
+            consumo_alcohol: 'Ocasional',
+            fuma_tabaco: false,
+            horas_sueno: 7,
+            contacto_emergencia_nombre: 'Contacto de Emergencia',
+            contacto_emergencia_telefono: '341-555-0000',
+            alergias: [],
+            patologias: [],
+          });
+
+          const resultVersion: unknown = await dataSource.query(
+            `INSERT INTO ficha_salud_version (id_ficha_salud, id_socio, version, datos_json, created_at, created_by)
+             VALUES (?, ?, 1, ?, NOW(), NULL)`,
+            [idFichaSalud, idPersona, snapshotInicial],
+          );
+          const idVersion = (resultVersion as { insertId: number }).insertId;
+
+          // Actualizar versión actual en ficha_salud
+          await dataSource.query(
+            `UPDATE ficha_salud SET version_actual_id = ? WHERE id_ficha_salud = ?`,
+            [idVersion, idFichaSalud],
           );
 
           // Asignar grupo SOCIO
@@ -362,11 +476,14 @@ async function runSeedElCid() {
     }
 
     // ── 4. Crear turnos (historial) ──
-    // A cada socio le asignamos 3-4 turnos con su nutricionista
-    // - 2-3 turnos pasados (REALIZADO) con diferentes fechas
-    // - 1 turno futuro (CONFIRMADO) para probar agenda
     const hoy = new Date(2026, 5, 8); // 8 Junio 2026
     let totalTurnos = 0;
+
+    const addMinutes = (hora: string, mins: number): string => {
+      const [h, m] = hora.split(':').map(Number);
+      const total = h * 60 + m + mins;
+      return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+    };
 
     for (const rel of socioNutriMap) {
       const diasPasados = [ -60, -40, -20 ]; // ~2 meses atras, ~40 dias, ~20 dias
@@ -377,17 +494,89 @@ async function runSeedElCid() {
         ['09:00', '10:00'],
       ];
 
+      // Obtener email del socio
+      const socioEmailRow: unknown = await dataSource.query(
+        `SELECT email FROM usuario WHERE id_persona = ? LIMIT 1`,
+        [rel.idSocio]
+      );
+      const emailSocio = (socioEmailRow as { email: string }[])[0]?.email;
+      const configSocio = SOCIOS_CONFIG[emailSocio] || { altura: 170, peso: 70, actividad: 'LIGERO', objetivo: 'Bienestar general' };
+
       // 3 turnos REALIZADO en el pasado
       for (let t = 0; t < 3; t++) {
         const fechaTurno = addDays(hoy, diasPasados[t] + Math.floor(Math.random() * 5));
+        const fechaStr = formatDate(fechaTurno);
         const horaIdx = (t + rel.idSocio) % horasDia.length;
         const hora = horasDia[horaIdx][0];
 
-        await dataSource.query(
-          `INSERT INTO turno (fecha, hora_turno, estado, creado_por, id_socio, id_nutricionista, id_gimnasio)
-           VALUES (?, ?, 'REALIZADO', 'SOCIO', ?, ?, ?)`,
-          [formatDate(fechaTurno), hora, rel.idSocio, rel.idNutri, idGimnasio],
+        const checkInStr = `${fechaStr} ${hora}:00`;
+        const inicioStr = `${fechaStr} ${addMinutes(hora, 5)}:00`;
+        const finStr = `${fechaStr} ${addMinutes(hora, 55)}:00`;
+
+        // El peso evoluciona según el objetivo
+        let pesoTurno = configSocio.peso;
+        let diffGrasa = 0;
+        if (configSocio.objetivo.toLowerCase().includes('reducir') || configSocio.objetivo.toLowerCase().includes('bajar')) {
+          pesoTurno = configSocio.peso - (t * 1.2);
+          diffGrasa = - (t * 0.6);
+        } else if (configSocio.objetivo.toLowerCase().includes('ganar') || configSocio.objetivo.toLowerCase().includes('aumentar')) {
+          pesoTurno = configSocio.peso + (t * 0.6);
+          diffGrasa = - (t * 0.2);
+        }
+        
+        const imcTurno = Number((pesoTurno / Math.pow(configSocio.altura / 100, 2)).toFixed(2));
+
+        const resultTurno: unknown = await dataSource.query(
+          `INSERT INTO turno (fecha, hora_turno, estado, creado_por, id_socio, id_nutricionista, id_gimnasio, check_in_at, consulta_iniciada_at, consulta_finalizada_at)
+           VALUES (?, ?, 'REALIZADO', 'SOCIO', ?, ?, ?, ?, ?, ?)`,
+          [fechaStr, hora, rel.idSocio, rel.idNutri, idGimnasio, checkInStr, inicioStr, finStr],
         );
+        const idTurno = (resultTurno as { insertId: number }).insertId;
+
+        // Observaciones y sugerencias evolutivas
+        const comentarios = [
+          'Primera consulta. Se realiza evaluacion antropometrica inicial. Reporta desorden en las comidas principales y consumo excesivo de ultraprocesados.',
+          'Segunda consulta. El paciente muestra buena adherencia al plan. Se observa descenso en pliegues y perímetros. Refiere mayor energía.',
+          'Tercera consulta. Progreso constante y adherencia consolidada. Refiere sentirse muy a gusto con las porciones y las opciones sugeridas.'
+        ];
+        const sugerencias = [
+          'Estructurar las 4 comidas principales. Aumentar el consumo de vegetales y agua. Reducir azúcares libres.',
+          'Mantener la estructura de comidas. Incorporar entrenamiento de fuerza 2-3 veces por semana.',
+          'Ajustar porciones según el nivel de actividad física actual. Continuar con el entrenamiento regular.'
+        ];
+        const habitos = [
+          'Sedentario, consume poca agua.',
+          'Agregó caminatas diarias de 20 minutos, mejoró la hidratación.',
+          'Realiza actividad física estructurada 3 veces por semana.'
+        ];
+
+        const resultObs: unknown = await dataSource.query(
+          `INSERT INTO observacion_clinica (comentario, peso, altura, imc, sugerencias, habitos_socio, objetivos_socio, version, es_publica)
+           VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1)`,
+          [comentarios[t], pesoTurno, configSocio.altura, imcTurno, sugerencias[t], habitos[t], configSocio.objetivo],
+        );
+        const idObs = (resultObs as { insertId: number }).insertId;
+
+        await dataSource.query(
+          `UPDATE turno SET id_observacion = ? WHERE id_turno = ?`,
+          [idObs, idTurno],
+        );
+
+        // Mediciones coherentes
+        const cintura = 100 - (t * 1.2);
+        const cadera = 105 - (t * 0.8);
+        const brazo = 35 + (t * 0.1);
+        const muslo = 58 - (t * 0.4);
+        const pecho = 102 - (t * 0.6);
+        const porcentajeGrasa = Number((28 + diffGrasa).toFixed(2));
+        const masaMagra = Number((pesoTurno * (1 - porcentajeGrasa / 100)).toFixed(2));
+
+        await dataSource.query(
+          `INSERT INTO medicion (peso, altura, imc, perimetro_cintura, perimetro_cadera, perimetro_brazo, perimetro_muslo, perimetro_pecho, pliegue_triceps, pliegue_abdominal, porcentaje_grasa, masa_magra, frecuencia_cardiaca, tension_sistolica, tension_diastolica, notas_medicion, id_turno, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 75, 120, 80, ?, ?, ?)`,
+          [pesoTurno, configSocio.altura, imcTurno, cintura, cadera, brazo, muslo, pecho, 15 - t, 20 - (t * 1.5), porcentajeGrasa, masaMagra, `Medición en turno del ${fechaStr}`, idTurno, checkInStr],
+        );
+
         totalTurnos++;
       }
 
