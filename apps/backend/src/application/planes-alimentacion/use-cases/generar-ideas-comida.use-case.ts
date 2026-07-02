@@ -8,8 +8,10 @@ import {
 import {
   AlimentoOrmEntity,
   FichaSaludOrmEntity,
+  GrupoAlimenticioOrmEntity,
   PlanAlimentacionOrmEntity,
   SocioOrmEntity,
+  PreparacionOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
 import { NUTRICIONISTA_REPOSITORY } from 'src/domain/entities/Persona/Nutricionista/nutricionista.repository';
 import type { NutricionistaRepository } from 'src/domain/entities/Persona/Nutricionista/nutricionista.repository';
@@ -37,6 +39,9 @@ import {
 import { DiaSemana } from 'src/domain/entities/DiaPlan/DiaSemana';
 import { TipoComida } from 'src/domain/entities/OpcionComida/TipoComida';
 import { normalizarTexto } from 'src/common/utils/text.util';
+import { ResolvedorCatalogoIA } from 'src/application/ia/services/resolvedor-catalogo-ia.service';
+import { CreadorPreparacionesIA } from 'src/application/ia/services/creador-preparaciones-ia.service';
+import type { AlimentoNuevoDto } from 'src/application/ai/dto/alimento-nuevo.dto';
 
 export interface AlternativaGenerada {
   idTemp: string;
@@ -48,6 +53,7 @@ export interface AlternativaGenerada {
     alimentoNombre: string;
     nombre: string;
   }>;
+  preparacionId?: number;
   calorias: number;
   proteinas: number;
   carbohidratos: number;
@@ -76,6 +82,17 @@ interface AlternativaRaw {
   grasas?: number;
 }
 
+interface AlimentoNuevoRaw {
+  nombre: string;
+  categoriaNombre: string;
+  cantidadBase: number;
+  unidadBase: string;
+  calorias: number;
+  proteinas: number;
+  carbohidratos: number;
+  grasas: number;
+}
+
 const MAX_REINTENTOS_IA = 3;
 const MAX_TOKENS_IDEAS_COMIDA = 4096;
 
@@ -83,6 +100,7 @@ interface RespuestaRawIdeasComida {
   ideas?: AlternativaRaw[];
   alternativas?: AlternativaRaw[];
   advertencias?: string[];
+  alimentosNuevos?: AlimentoNuevoRaw[];
 }
 
 const RESPUESTA_IDEAS_COMIDA_SCHEMA = {
@@ -126,6 +144,32 @@ const RESPUESTA_IDEAS_COMIDA_SCHEMA = {
       type: 'array',
       items: { type: 'string' },
     },
+    alimentosNuevos: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          nombre: { type: 'string' },
+          categoriaNombre: { type: 'string' },
+          cantidadBase: { type: 'number' },
+          unidadBase: { type: 'string' },
+          calorias: { type: 'number' },
+          proteinas: { type: 'number' },
+          carbohidratos: { type: 'number' },
+          grasas: { type: 'number' },
+        },
+        required: [
+          'nombre',
+          'categoriaNombre',
+          'cantidadBase',
+          'unidadBase',
+          'calorias',
+          'proteinas',
+          'carbohidratos',
+          'grasas',
+        ],
+      },
+    },
   },
   required: ['alternativas'],
 };
@@ -145,6 +189,10 @@ export class GenerarIdeasComidaUseCase {
     private readonly socioRepo: Repository<SocioOrmEntity>,
     @InjectRepository(AlimentoOrmEntity)
     private readonly alimentoRepo: Repository<AlimentoOrmEntity>,
+    @InjectRepository(GrupoAlimenticioOrmEntity)
+    private readonly grupoAlimenticioRepo: Repository<GrupoAlimenticioOrmEntity>,
+    @InjectRepository(PreparacionOrmEntity)
+    private readonly preparacionRepo: Repository<PreparacionOrmEntity>,
     @Inject(NUTRICIONISTA_REPOSITORY)
     private readonly nutricionistaRepo: NutricionistaRepository,
     @Inject(SOCIO_REPOSITORY)
@@ -153,6 +201,8 @@ export class GenerarIdeasComidaUseCase {
     private readonly _planVersionRepo: PlanAlimentacionVersionRepository,
     private readonly tenantContext: TenantContextService,
     private readonly restriccionesValidator: RestriccionesValidator,
+    private readonly resolvedorCatalogoIA: ResolvedorCatalogoIA,
+    private readonly creadorPreparacionesIA: CreadorPreparacionesIA,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
   ) {}
@@ -218,6 +268,11 @@ export class GenerarIdeasComidaUseCase {
     let intento = 0;
     let ultimoPrompt = '';
 
+    // Cargar categorías una sola vez al inicio
+    const categoriasExistentes = await this.grupoAlimenticioRepo.find({
+      select: { idGrupoAlimenticio: true, descripcion: true },
+    });
+
     while (
       alternativasValidadas.length < cantidad &&
       intento < MAX_REINTENTOS_IA
@@ -228,6 +283,9 @@ export class GenerarIdeasComidaUseCase {
         ficha,
         dto,
         cantidad,
+        categoriasExistentes,
+        user.gimnasioId,
+        plan.nutricionista?.idPersona ?? user.personaId,
       );
       ultimoPrompt = alternativasRaw.prompt;
 
@@ -268,6 +326,9 @@ export class GenerarIdeasComidaUseCase {
     ficha: FichaSaludOrmEntity,
     dto: { dia: DiaSemana; tipoComida: TipoComida },
     cantidad: number,
+    categoriasExistentes: { idGrupoAlimenticio: number; descripcion: string }[],
+    gimnasioId: number,
+    nutricionistaId: number,
   ): Promise<{
     prompt: string;
     alternativas: Omit<AlternativaGenerada, 'idTemp' | 'warnings'>[];
@@ -281,10 +342,14 @@ export class GenerarIdeasComidaUseCase {
       medicacionActual: ficha.medicacionActual ?? null,
       suplementosActuales: ficha.suplementosActuales ?? null,
     };
+
+    // Recargar catálogo en cada iteración para ver alimentos creados en iteraciones previas
     const catalogoAlimentos = await this.alimentoRepo.find({
       select: { idAlimento: true, nombre: true },
       order: { nombre: 'ASC' },
     });
+
+    const categoriasNombres = categoriasExistentes.map((c) => c.descripcion);
 
     const { system, user } = this.promptBuilder.build({
       ficha: fichaInput,
@@ -293,6 +358,7 @@ export class GenerarIdeasComidaUseCase {
       alimentosDisponibles: catalogoAlimentos.map(
         (alimento) => alimento.nombre,
       ),
+      categoriasGruposAlimenticios: categoriasNombres,
     });
 
     const promptCompleto = `${system}\n\n---\n\n${user}`;
@@ -313,69 +379,69 @@ export class GenerarIdeasComidaUseCase {
     } catch (error) {
       const mensaje = error instanceof Error ? error.message : String(error);
       this.logger.warn(`AI provider error en generarUnaPasada: ${mensaje}`);
-      // No lanzar — devolvemos vacío y el loop seguirá
       return { prompt: promptCompleto, alternativas: [] };
     }
 
     const alternativasRaw = resultado.alternativas ?? resultado.ideas ?? [];
-    const alimentosPorNombre = new Map(
-      catalogoAlimentos.map((alimento) => [
-        normalizarTexto(alimento.nombre),
-        alimento,
-      ]),
-    );
-    const alimentosPorId = new Map(
-      catalogoAlimentos.map((alimento) => [alimento.idAlimento, alimento]),
+    const alimentosNuevosRaw = resultado.alimentosNuevos ?? [];
+
+    // Extraer todos los nombres de alimentos usados
+    const nombresUsados = alternativasRaw.flatMap((idea) =>
+      (idea.alimentos ?? []).map((a) => a.alimentoNombre ?? a.nombre ?? ''),
     );
 
+    let mapaNombresAIds: Map<string, number>;
+
+    try {
+      const resultadoResolucion = await this.resolvedorCatalogoIA.resolver(
+        nombresUsados,
+        alimentosNuevosRaw as AlimentoNuevoDto[],
+        catalogoAlimentos,
+        categoriasExistentes,
+      );
+      mapaNombresAIds = resultadoResolucion.mapa;
+      if (resultadoResolucion.creados.length > 0) {
+        this.logger.log(
+          `Alimentos creados por IA en ideas-comida: ${resultadoResolucion.creados.map((c) => c.nombre).join(', ')}`,
+        );
+      }
+    } catch (error) {
+      const mensaje = error instanceof Error ? error.message : String(error);
+      this.logger.warn(
+        `ResolvedorCatalogoIA falló en ideas-comida: ${mensaje}. Descartando alternativas de esta iteración.`,
+      );
+      return { prompt: promptCompleto, alternativas: [] };
+    }
+
+    // Construir mapa por nombre original para reescribir
     const alternativas: Omit<AlternativaGenerada, 'idTemp' | 'warnings'>[] =
       alternativasRaw.flatMap((idea) => {
-        const alimentos = (idea.alimentos ?? []).map((a) => {
-          const alimentoNombre = a.alimentoNombre ?? a.nombre ?? '';
-          const clavesBusqueda =
-            this.obtenerClavesBusquedaAlimento(alimentoNombre);
-          const alimentoCatalogoPorNombre = clavesBusqueda.reduce<
-            AlimentoOrmEntity | undefined
-          >(
-            (encontrado, clave) => encontrado ?? alimentosPorNombre.get(clave),
-            undefined,
-          );
-          const alimentoCatalogo =
-            clavesBusqueda.length > 0
-              ? alimentoCatalogoPorNombre
-              : typeof a.alimentoId === 'number'
-                ? alimentosPorId.get(a.alimentoId)
-                : undefined;
-          const alimentoId = alimentoCatalogo?.idAlimento ?? 0;
-          const nombreResuelto = alimentoCatalogo?.nombre ?? alimentoNombre;
-
+        const alimentosResueltos = (idea.alimentos ?? []).map((a) => {
+          const nombreOriginal = a.alimentoNombre ?? a.nombre ?? '';
+          const alimentoId = mapaNombresAIds.get(nombreOriginal) ?? 0;
           return {
             alimentoId,
             cantidad: a.cantidad ?? 0,
             unidad: a.unidad ?? 'g',
-            alimentoNombre: nombreResuelto,
-            nombre: nombreResuelto,
+            alimentoNombre: nombreOriginal,
+            nombre: nombreOriginal,
           };
         });
 
-        const tieneAlimentosSinCatalogo = alimentos.some(
-          (alimento) => alimento.alimentoId <= 0,
-        );
-        if (alimentos.length === 0 || tieneAlimentosSinCatalogo) {
-          this.logger.warn(
-            `Idea descartada porque no se pudieron resolver alimentos del catalogo: ${idea.nombre ?? 'Sin nombre'}`,
-          );
+        if (alimentosResueltos.length === 0) {
           return [];
         }
 
+        const nombreResolved = this.resolverNombreAlternativa(
+          idea.nombre,
+          alimentosResueltos,
+          dto.tipoComida,
+        );
+
         return [
           {
-            nombre: this.resolverNombreAlternativa(
-              idea.nombre,
-              alimentos,
-              dto.tipoComida,
-            ),
-            alimentos,
+            nombre: nombreResolved,
+            alimentos: alimentosResueltos,
             calorias: idea.calorias ?? 0,
             proteinas: idea.proteinas ?? 0,
             carbohidratos: idea.carbohidratos ?? 0,
@@ -385,24 +451,39 @@ export class GenerarIdeasComidaUseCase {
         ];
       });
 
+    // Crear Preparaciones para alternativas con 2+ alimentos
+    if (alternativas.length > 0 && gimnasioId && nutricionistaId) {
+      const alternativasParaPreparacion = alternativas.map((alt) => ({
+        nombre: alt.nombre,
+        alimentos: alt.alimentos.map((a) => ({
+          alimentoId: a.alimentoId,
+          cantidad: a.cantidad,
+          unidad: a.unidad,
+        })),
+      }));
+
+      try {
+        const resultadosPrep = await this.creadorPreparacionesIA.obtenerOCrear(
+          alternativasParaPreparacion,
+          gimnasioId,
+          nutricionistaId,
+        );
+
+        for (const alt of alternativas) {
+          const resultadoPrep = resultadosPrep.get(alt.nombre);
+          if (resultadoPrep) {
+            alt.preparacionId = resultadoPrep.preparacionId;
+          }
+        }
+      } catch (error) {
+        const mensaje = error instanceof Error ? error.message : String(error);
+        this.logger.warn(
+          `CreadorPreparacionesIA falló en ideas-comida: ${mensaje}. Continuando sin preparaciones.`,
+        );
+      }
+    }
+
     return { prompt: promptCompleto, alternativas };
-  }
-
-  private obtenerClavesBusquedaAlimento(nombre: string): string[] {
-    const normalizado = normalizarTexto(nombre);
-    if (!normalizado) return [];
-
-    const sinonimos: Record<string, string> = {
-      platano: 'banana',
-      platanos: 'banana',
-    };
-    const claves = [normalizado];
-    const sinonimo = sinonimos[normalizado];
-    if (sinonimo) claves.push(sinonimo);
-    if (normalizado.endsWith('es')) claves.push(normalizado.slice(0, -2));
-    if (normalizado.endsWith('s')) claves.push(normalizado.slice(0, -1));
-
-    return [...new Set(claves)];
   }
 
   private resolverNombreAlternativa(

@@ -15,6 +15,7 @@ interface ArgsPromptIdeasComida {
   slot: { dia: DiaSemana; tipoComida: TipoComida };
   cantidad: number;
   alimentosDisponibles?: string[];
+  categoriasGruposAlimenticios?: string[];
 }
 
 @Injectable()
@@ -24,6 +25,7 @@ export class PromptIdeasComidaBuilder {
     slot,
     cantidad,
     alimentosDisponibles,
+    categoriasGruposAlimenticios,
   }: ArgsPromptIdeasComida): {
     system: string;
     user: string;
@@ -34,6 +36,9 @@ export class PromptIdeasComidaBuilder {
       slot.tipoComida,
       alimentosDisponibles ?? [],
     );
+    const categoriasTexto = categoriasGruposAlimenticios?.length
+      ? `Categorías válidas para alimentos nuevos: ${categoriasGruposAlimenticios.join(', ')}.`
+      : '';
     const slotTexto =
       `${this.formatearDia(slot.dia)} ${this.formatearTipoComida(slot.tipoComida)}`.toLowerCase();
     const cantidadTexto = `${cantidad} alternativa${cantidad === 1 ? '' : 's'}`;
@@ -52,8 +57,9 @@ Reglas:
 - Usá exclusivamente alimentos del catálogo disponible y copiá sus nombres exactos en alimentoNombre.
 - El nombre de cada alternativa debe describir el plato con sus alimentos principales. No uses nombres genéricos como "Desayuno 1", "Alternativa 2" u "Opción 3".
 - Cada alternativa debe tener nombre, alimentos con cantidades en gramos o mililitros.
-- Incluye calorías, proteínas, carbohidratos y grasas estimadas.
-- Si no podés cumplir todas las restricciones, devolvé menos alternativas y agregá un campo "advertencias" explicando el motivo.`;
+- Incluí calorías, proteínas, carbohidratos y grasas estimadas.
+- Si no podés cumplir todas las restricciones, devolvé menos alternativas y agregá un campo "advertencias" explicando el motivo.
+- Si usás un alimento que no está en el catálogo, declaralo en alimentosNuevos con sus macros por porción base y su categoría.${categoriasTexto ? `\n${categoriasTexto}` : ''}`;
 
     const user = `Generá ${cantidadTexto} para ${slotTexto} del paciente.`;
 

@@ -4,9 +4,11 @@ import {
   AlimentoOrmEntity,
   DiaPlanOrmEntity,
   FichaSaludOrmEntity,
+  GrupoAlimenticioOrmEntity,
   NutricionistaOrmEntity,
   OpcionComidaOrmEntity,
   PlanAlimentacionOrmEntity,
+  PreparacionOrmEntity,
   SocioOrmEntity,
   NotificacionOrmEntity,
   UsuarioOrmEntity,
@@ -37,6 +39,7 @@ import { RestriccionesModule } from 'src/application/restricciones/restricciones
 import { RepositoriesModule } from 'src/infrastructure/persistence/typeorm/repositories/repositories.module';
 import { AppLoggerModule } from 'src/infrastructure/common/logger/app-logger.module';
 import { GroqModule } from 'src/infrastructure/services/groq/groq.module';
+import { AiModule } from 'src/application/ai/ai.module';
 
 @Module({
   imports: [
@@ -50,12 +53,15 @@ import { GroqModule } from 'src/infrastructure/services/groq/groq.module';
       FichaSaludOrmEntity,
       UsuarioOrmEntity,
       NotificacionOrmEntity,
+      GrupoAlimenticioOrmEntity,
+      PreparacionOrmEntity,
     ]),
     AuditoriaModule,
     RestriccionesModule,
     RepositoriesModule,
     AppLoggerModule,
     GroqModule,
+    AiModule,
   ],
   providers: [
     CrearPlanAlimentacionUseCase,
