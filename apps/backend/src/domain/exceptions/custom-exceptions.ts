@@ -90,8 +90,8 @@ export class BadGatewayError extends AppError {
 
 /**
  * 503 Service Unavailable — el servicio upstream (ej: Groq) no está
- * disponible temporalmente (timeout, red caída, etc.). Mapea a HTTP
- * 503 vía `AppErrorFilter`.
+ * disponible temporalmente (timeout, red caída, etc.). Mapea a HTTP 503
+ * vía `AppErrorFilter`.
  *
  * Hotfix Packet 8 (plan-alimentacion-ia-v2): usado por
  * `GenerarPlanSemanalUseCase` y `RegenerarPlanSemanalUseCase` cuando
@@ -100,5 +100,16 @@ export class BadGatewayError extends AppError {
 export class ServiceUnavailableError extends AppError {
   constructor(message?: string, context?: Record<string, unknown>) {
     super(ErrorCode.SERVICE_UNAVAILABLE, message, context);
+  }
+}
+
+/**
+ * 429 Too Many Requests — el proveedor de IA (Groq) rechazó la request
+ * por haber alcanzado el límite diario de tokens o requests. El `context`
+ * puede incluir `retryAfterSegundos` con el tiempo estimado de espera.
+ */
+export class AIRateLimitError extends AppError {
+  constructor(message?: string, context?: Record<string, unknown>) {
+    super(ErrorCode.AI_RATE_LIMIT, message, context);
   }
 }

@@ -32,6 +32,13 @@ const PATRONES: PatronError[] = [
     },
   },
   {
+    coincidencias: ['ai_rate_limit', 'rate limit', '429', 'límite de uso'],
+    mensaje: {
+      titulo: 'Se alcanzó el límite diario de uso de la IA',
+      descripcion: 'Groq limita la cantidad de generaciones por día. Esperá unos minutos y reintentá, o probá mañana.',
+    },
+  },
+  {
     coincidencias: ['groq_invalid_json', 'json inválido', 'json malformed'],
     mensaje: {
       titulo: 'La IA devolvió un formato inesperado',

@@ -4,6 +4,7 @@ import type {
   IAiProviderService,
 } from '../../../domain/services/ai-provider.service';
 import { EnvironmentConfigService } from '../../../infrastructure/config/environment-config/environment-config.service';
+import { AIRateLimitError } from 'src/domain/exceptions/custom-exceptions';
 import OpenAI from 'openai';
 
 const TEMPERATURA_DEFAULT = 0.7;
@@ -75,6 +76,17 @@ export class GroqService implements IAiProviderService {
     } catch (error) {
       const detalle = error instanceof Error ? error.message : String(error);
       this.logger.error(`Error en GroqService: ${detalle}`);
+
+      const status = (error as { status?: number })?.status;
+      if (status === 429) {
+        const mensajeGroq = (error as { error?: { message?: string } })?.error?.message ?? detalle;
+        const retryMatch = mensajeGroq.match(/try again in\s+([0-9hms.]+)/i);
+        const retryTexto = retryMatch?.[1]?.trim();
+        throw new AIRateLimitError(mensajeGroq, {
+          retryTexto,
+          proveedor: 'groq',
+        });
+      }
 
       throw new Error(`No se pudo generar la recomendación: ${detalle}`);
     }

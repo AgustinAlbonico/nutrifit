@@ -16,4 +16,9 @@ export enum ErrorCode {
    * (ej: Groq timeout tras reintentos).
    */
   SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE',
+  /**
+   * 429 Too Many Requests — el proveedor de IA rechazó la request por
+   * límite de tokens/requests por día. Indica reintento diferido.
+   */
+  AI_RATE_LIMIT = 'AI_RATE_LIMIT',
 }

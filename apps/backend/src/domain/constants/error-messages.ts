@@ -41,4 +41,8 @@ export const ErrorMessages: Record<
     message: 'Servicio no disponible',
     statusCode: 503,
   },
+  [ErrorCode.AI_RATE_LIMIT]: {
+    message: 'Límite de uso de IA alcanzado',
+    statusCode: 429,
+  },
 };
