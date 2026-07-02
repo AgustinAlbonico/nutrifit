@@ -7,6 +7,9 @@ import {
   SugerenciaIAOrmEntity,
   FichaSaludOrmEntity,
   NotificacionOrmEntity,
+  AlimentoOrmEntity,
+  GrupoAlimenticioOrmEntity,
+  PreparacionOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
 import { NUTRICIONISTA_REPOSITORY } from 'src/domain/entities/Persona/Nutricionista/nutricionista.repository';
 import { NutricionistaRepositoryImplementation } from 'src/infrastructure/persistence/typeorm/repositories/nutricionista.repository';
@@ -29,6 +32,8 @@ import { PromptPlanSemanalBuilder } from './builders/prompt-plan-semanal.builder
 import { PromptRegeneracionBuilder } from './builders/prompt-regeneracion.builder';
 import { IaMemoriaModule } from '../ia-memoria/ia-memoria.module';
 import { TenantContextModule } from 'src/infrastructure/auth/tenant-context.module';
+import { ResolvedorCatalogoIA } from '../ia/services/resolvedor-catalogo-ia.service';
+import { CreadorPreparacionesIA } from '../ia/services/creador-preparaciones-ia.service';
 
 @Module({
   imports: [
@@ -39,6 +44,9 @@ import { TenantContextModule } from 'src/infrastructure/auth/tenant-context.modu
       SugerenciaIAOrmEntity,
       FichaSaludOrmEntity,
       NotificacionOrmEntity,
+      AlimentoOrmEntity,
+      GrupoAlimenticioOrmEntity,
+      PreparacionOrmEntity,
     ]),
     AppLoggerModule,
     GroqModule,
@@ -59,6 +67,8 @@ import { TenantContextModule } from 'src/infrastructure/auth/tenant-context.modu
     PromptPlanSemanalBuilder,
     PromptRegeneracionBuilder,
     NotificacionesService,
+    ResolvedorCatalogoIA,
+    CreadorPreparacionesIA,
     {
       provide: NUTRICIONISTA_REPOSITORY,
       useClass: NutricionistaRepositoryImplementation,
@@ -75,6 +85,8 @@ import { TenantContextModule } from 'src/infrastructure/auth/tenant-context.modu
     PromptPlanSemanalBuilder,
     PromptRegeneracionBuilder,
     NotificacionesService,
+    ResolvedorCatalogoIA,
+    CreadorPreparacionesIA,
   ],
 })
 export class AiModule {}

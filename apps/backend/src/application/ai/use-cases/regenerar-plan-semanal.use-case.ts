@@ -97,6 +97,19 @@ import { AccionAuditoria } from 'src/infrastructure/persistence/typeorm/entities
 import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
 import { SeleccionarEjemplosMemoriaUseCase } from 'src/application/ia-memoria/use-cases/seleccionar-ejemplos-memoria.use-case';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
+import { ResolvedorCatalogoIA } from 'src/application/ia/services/resolvedor-catalogo-ia.service';
+import { CreadorPreparacionesIA } from 'src/application/ia/services/creador-preparaciones-ia.service';
+import type { AlimentoNuevoDto } from 'src/application/ai/dto/alimento-nuevo.dto';
+import { AlimentoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/alimento.entity';
+import { GrupoAlimenticioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/grupo-alimenticio.entity';
+import { PreparacionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/preparacion.entity';
+
+/** Versión cruda del JSON de IA con campos adicionales (alimentoNombre, alimentosNuevos). */
+interface PlanSemanalRawJson extends PlanAlimentacionDatosJson {
+  alimentosNuevos?: AlimentoNuevoDto[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  alimentos?: any[];
+}
 
 export interface SolicitudRegenerarPlan {
   planAlimentacionVersionId: number;
@@ -122,6 +135,7 @@ export interface RespuestaRegenerarPlan {
 }
 
 const MAX_REINTENTOS_GROQ = 2;
+const MAX_REINTENTOS_CATALOGO = 2;
 const TIMEOUT_BACKOFF_MS = 5000;
 const TEMPERATURE_REGENERACION = 0.7;
 const MAX_TOKENS_REGENERACION = 2048;
@@ -135,6 +149,12 @@ export class RegenerarPlanSemanalUseCase implements BaseUseCase {
     private readonly planRepo: Repository<PlanAlimentacionOrmEntity>,
     @InjectRepository(NutricionistaOrmEntity)
     private readonly nutricionistaOrmRepo: Repository<NutricionistaOrmEntity>,
+    @InjectRepository(AlimentoOrmEntity)
+    private readonly alimentoRepo: Repository<AlimentoOrmEntity>,
+    @InjectRepository(GrupoAlimenticioOrmEntity)
+    private readonly grupoAlimenticioRepo: Repository<GrupoAlimenticioOrmEntity>,
+    @InjectRepository(PreparacionOrmEntity)
+    private readonly preparacionRepo: Repository<PreparacionOrmEntity>,
     @Inject(NUTRICIONISTA_REPOSITORY)
     private readonly nutricionistaRepo: NutricionistaRepository,
     @Inject(PLAN_ALIMENTACION_VERSION_REPOSITORY)
@@ -148,6 +168,8 @@ export class RegenerarPlanSemanalUseCase implements BaseUseCase {
     private readonly notificacionesService: NotificacionesService,
     private readonly auditoriaService: AuditoriaService,
     private readonly tenantContext: TenantContextService,
+    private readonly resolvedorCatalogoIA: ResolvedorCatalogoIA,
+    private readonly creadorPreparacionesIA: CreadorPreparacionesIA,
     private readonly dataSource: DataSource,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
@@ -307,7 +329,15 @@ export class RegenerarPlanSemanalUseCase implements BaseUseCase {
     }));
 
     // 13) Construir sub-prompt
-    const { systemPrompt, userPrompt } = this.promptBuilder.construir({
+    const catalogoExistente = await this.alimentoRepo.find({
+      select: { idAlimento: true, nombre: true },
+    });
+    const categoriasExistentes = await this.grupoAlimenticioRepo.find({
+      select: { idGrupoAlimenticio: true, descripcion: true },
+    });
+    const categoriasNombres = categoriasExistentes.map((c) => c.descripcion);
+
+    const promptActual = this.promptBuilder.construir({
       fichaClinica: {
         alergias: fichaClinica.alergias,
         restriccionesAlimentarias: fichaClinica.restriccionesAlimentarias,
@@ -324,70 +354,108 @@ export class RegenerarPlanSemanalUseCase implements BaseUseCase {
       dia: solicitud.dia,
       comidaSlot: solicitud.comidaSlot,
       alternativaIndex: solicitud.alternativaIndex,
+      categoriasGruposAlimenticios: categoriasNombres,
     });
+    let systemPromptActual = `${promptActual.systemPrompt}\n\n---\n\n${promptActual.userPrompt}`;
 
-    // 14) Llamar Groq con reintentos
     let planJsonGenerado: PlanAlimentacionDatosJson | null = null;
     let intentoGroq = 0;
+    let tentativaResolucion = 0;
 
-    while (intentoGroq < MAX_REINTENTOS_GROQ) {
-      intentoGroq++;
+    while (tentativaResolucion < MAX_REINTENTOS_CATALOGO) {
+      tentativaResolucion++;
+      while (intentoGroq < MAX_REINTENTOS_GROQ) {
+        intentoGroq++;
+        try {
+          planJsonGenerado =
+            await this.aiProvider.generarRecomendacion<PlanAlimentacionDatosJson>(
+              systemPromptActual,
+              {
+                temperature: TEMPERATURE_REGENERACION,
+                max_tokens: MAX_TOKENS_REGENERACION,
+              },
+            );
+          break;
+        } catch (error) {
+          const mensaje =
+            error instanceof Error ? error.message : String(error);
+          if (this.esTimeout(mensaje)) {
+            this.logger.warn(
+              `Groq timeout en regeneración (intento ${intentoGroq}/${MAX_REINTENTOS_GROQ}): ${mensaje}`,
+            );
+            if (intentoGroq < MAX_REINTENTOS_GROQ) {
+              await this.sleep(TIMEOUT_BACKOFF_MS);
+              continue;
+            }
+            throw new ServiceUnavailableError(`GROQ_TIMEOUT: ${mensaje}`, {
+              codigo: 'GROQ_TIMEOUT',
+              versionId: solicitud.planAlimentacionVersionId,
+            });
+          }
+          if (this.esJsonInvalido(mensaje)) {
+            this.logger.warn(
+              `Groq JSON inválido en regeneración (intento ${intentoGroq}/${MAX_REINTENTOS_GROQ}): ${mensaje}`,
+            );
+            if (intentoGroq < MAX_REINTENTOS_GROQ) {
+              continue;
+            }
+            throw new BadGatewayError(`GROQ_INVALID_JSON: ${mensaje}`, {
+              codigo: 'GROQ_INVALID_JSON',
+              versionId: solicitud.planAlimentacionVersionId,
+            });
+          }
+          throw error;
+        }
+      }
+
+      if (!planJsonGenerado) {
+        throw new BadRequestError('No se pudo regenerar el plan con la IA');
+      }
+
+      if (!this.esEstructuraValida(planJsonGenerado)) {
+        throw new BadRequestError(
+          'PLAN_ESTRUCTURA_INVALIDA: el JSON regenerado no tiene la estructura esperada',
+          {
+            codigo: 'PLAN_ESTRUCTURA_INVALIDA',
+            versionId: solicitud.planAlimentacionVersionId,
+          },
+        );
+      }
+
+      // Intentar resolver catálogo
       try {
-        planJsonGenerado =
-          await this.aiProvider.generarRecomendacion<PlanAlimentacionDatosJson>(
-            `${systemPrompt}\n\n---\n\n${userPrompt}`,
-            {
-              temperature: TEMPERATURE_REGENERACION,
-              max_tokens: MAX_TOKENS_REGENERACION,
-            },
+        const nombresUsados = this.extraerNombresAlimentos(planJsonGenerado);
+        const alimentosNuevosRaw =
+          (planJsonGenerado as PlanSemanalRawJson).alimentosNuevos ?? [];
+        const resultado = await this.resolvedorCatalogoIA.resolver(
+          nombresUsados,
+          alimentosNuevosRaw,
+          catalogoExistente,
+          categoriasExistentes,
+        );
+        planJsonGenerado = this.reescribirSnapshotConIds(
+          planJsonGenerado,
+          resultado.mapa,
+        );
+        if (resultado.creados.length > 0) {
+          this.logger.log(
+            `Alimentos creados por IA: ${resultado.creados.map((c) => c.nombre).join(', ')}`,
           );
+        }
         break;
       } catch (error) {
-        const mensaje = error instanceof Error ? error.message : String(error);
-        if (this.esTimeout(mensaje)) {
-          this.logger.warn(
-            `Groq timeout en regeneración (intento ${intentoGroq}/${MAX_REINTENTOS_GROQ}): ${mensaje}`,
-          );
-          if (intentoGroq < MAX_REINTENTOS_GROQ) {
-            await this.sleep(TIMEOUT_BACKOFF_MS);
-            continue;
-          }
-          // Hotfix Packet 8: GROQ_TIMEOUT debe mapear a HTTP 503 (no 400).
-          throw new ServiceUnavailableError(`GROQ_TIMEOUT: ${mensaje}`, {
-            codigo: 'GROQ_TIMEOUT',
-            versionId: solicitud.planAlimentacionVersionId,
-          });
+        if (!(error instanceof BadRequestError)) throw error;
+        if (tentativaResolucion >= MAX_REINTENTOS_CATALOGO) {
+          throw error;
         }
-        if (this.esJsonInvalido(mensaje)) {
-          this.logger.warn(
-            `Groq JSON inválido en regeneración (intento ${intentoGroq}/${MAX_REINTENTOS_GROQ}): ${mensaje}`,
-          );
-          if (intentoGroq < MAX_REINTENTOS_GROQ) {
-            continue;
-          }
-          // Hotfix Packet 8: GROQ_INVALID_JSON debe mapear a HTTP 502 (no 400).
-          throw new BadGatewayError(`GROQ_INVALID_JSON: ${mensaje}`, {
-            codigo: 'GROQ_INVALID_JSON',
-            versionId: solicitud.planAlimentacionVersionId,
-          });
-        }
-        throw error;
+        const instruccionCorrectiva = `El alimento "${error.message}" no fue declarado en el catálogo ni en el campo alimentosNuevos. DECLARÁ todos los alimentos nuevos en el array alimentosNuevos con sus macros y categoría antes de devolver el plan.`;
+        systemPromptActual = `${systemPromptActual}\n\nCORRECCIÓN OBLIGATORIA: ${instruccionCorrectiva}`;
+        intentoGroq = 0;
       }
     }
 
     if (!planJsonGenerado) {
       throw new BadRequestError('No se pudo regenerar el plan con la IA');
-    }
-
-    // 15) Validar estructura mínima del JSON
-    if (!this.esEstructuraValida(planJsonGenerado)) {
-      throw new BadRequestError(
-        'PLAN_ESTRUCTURA_INVALIDA: el JSON regenerado no tiene la estructura esperada',
-        {
-          codigo: 'PLAN_ESTRUCTURA_INVALIDA',
-          versionId: solicitud.planAlimentacionVersionId,
-        },
-      );
     }
 
     // 16) Merge quirúrgico en el plan actual
@@ -424,7 +492,6 @@ export class RegenerarPlanSemanalUseCase implements BaseUseCase {
 
     // 19) Persistir nueva versión (transacción para garantizar consistencia)
     const motivoCambio = this.mapearMotivoCambio(solicitud.scope);
-    const numeroVersionNuevo = 0;
 
     const versionNueva = await this.dataSource.transaction(async (manager) => {
       const versionRepo = manager.getRepository(
@@ -781,5 +848,54 @@ export class RegenerarPlanSemanalUseCase implements BaseUseCase {
 
   private sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private extraerNombresAlimentos(plan: PlanAlimentacionDatosJson): string[] {
+    const nombres = new Set<string>();
+    for (const dia of plan.estructura) {
+      for (const comida of dia.comidas) {
+        for (const alternativa of comida.alternativas) {
+          for (const alimento of alternativa.alimentos) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            const nombre = (alimento as any).alimentoNombre as
+              | string
+              | undefined;
+            if (nombre) {
+              nombres.add(nombre);
+            }
+          }
+        }
+      }
+    }
+    return [...nombres];
+  }
+
+  private reescribirSnapshotConIds(
+    plan: PlanAlimentacionDatosJson,
+    mapa: Map<string, number>,
+  ): PlanAlimentacionDatosJson {
+    return {
+      ...plan,
+      estructura: plan.estructura.map((dia) => ({
+        ...dia,
+        comidas: dia.comidas.map((comida) => ({
+          ...comida,
+          alternativas: comida.alternativas.map((alt) => ({
+            ...alt,
+            alimentos: alt.alimentos.map((al) => {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+              const alimentoNombre = (al as any).alimentoNombre as
+                | string
+                | undefined;
+              return {
+                ...al,
+                alimentoId: mapa.get(alimentoNombre ?? '') ?? al.alimentoId,
+                nombre: alimentoNombre ?? al.nombre,
+              };
+            }),
+          })),
+        })),
+      })),
+    };
   }
 }

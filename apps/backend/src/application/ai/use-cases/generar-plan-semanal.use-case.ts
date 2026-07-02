@@ -85,6 +85,24 @@ import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notifica
 import { AccionAuditoria } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
 import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
 import { SeleccionarEjemplosMemoriaUseCase } from 'src/application/ia-memoria/use-cases/seleccionar-ejemplos-memoria.use-case';
+import { ResolvedorCatalogoIA } from 'src/application/ia/services/resolvedor-catalogo-ia.service';
+import { CreadorPreparacionesIA } from 'src/application/ia/services/creador-preparaciones-ia.service';
+import type { AlimentoNuevoDto } from 'src/application/ai/dto/alimento-nuevo.dto';
+import { AlimentoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/alimento.entity';
+import { GrupoAlimenticioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/grupo-alimenticio.entity';
+import { PreparacionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/preparacion.entity';
+
+/**
+ * Representa el JSON crudo devuelto por la IA antes de resolver
+ * el catálogo de alimentos. Incluye campos adicionales que la IA
+ * injecta (alimentoNombre, alimentosNuevos) y que el dominio
+ * no conoce en su tipo PlanAlimentacionDatosJson.
+ */
+interface PlanSemanalRawJson extends PlanAlimentacionDatosJson {
+  alimentosNuevos?: AlimentoNuevoDto[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  alimentos?: any[];
+}
 
 export interface SolicitudPlanSemanal {
   socioId: number;
@@ -110,6 +128,7 @@ export interface RespuestaPlanSemanal {
 const MAX_REINTENTOS_RESTRICCIONES = 2;
 const MAX_REINTENTOS_GROQ = 2;
 const MAX_REINTENTOS_ESTRUCTURA = 2;
+const MAX_REINTENTOS_CATALOGO = 2;
 const TIMEOUT_BACKOFF_MS = 5000;
 const TEMPERATURA_PLAN_COMPLETO = 0.4;
 const MAX_TOKENS_PLAN_COMPLETO = 2048;
@@ -148,6 +167,12 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
     private readonly fichaSaludRepo: Repository<FichaSaludOrmEntity>,
     @InjectRepository(PlanAlimentacionOrmEntity)
     private readonly planRepo: Repository<PlanAlimentacionOrmEntity>,
+    @InjectRepository(AlimentoOrmEntity)
+    private readonly alimentoRepo: Repository<AlimentoOrmEntity>,
+    @InjectRepository(GrupoAlimenticioOrmEntity)
+    private readonly grupoAlimenticioRepo: Repository<GrupoAlimenticioOrmEntity>,
+    @InjectRepository(PreparacionOrmEntity)
+    private readonly preparacionRepo: Repository<PreparacionOrmEntity>,
     @Inject(NUTRICIONISTA_REPOSITORY)
     private readonly nutricionistaRepo: NutricionistaRepository,
     @Inject(PLAN_ALIMENTACION_VERSION_REPOSITORY)
@@ -160,6 +185,8 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
     private readonly seleccionarEjemplosMemoriaUseCase: SeleccionarEjemplosMemoriaUseCase,
     private readonly notificacionesService: NotificacionesService,
     private readonly auditoriaService: AuditoriaService,
+    private readonly resolvedorCatalogoIA: ResolvedorCatalogoIA,
+    private readonly creadorPreparacionesIA: CreadorPreparacionesIA,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
   ) {}
@@ -275,10 +302,49 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
     planJson = generacionCompleta.planJson;
     validacionMacros = generacionCompleta.validacionMacros;
 
+    // 6b) Resolver catálogo: extraer nombres → resolver a alimentoId + crear faltantes
+    const catalogoExistente = await this.alimentoRepo.find({
+      select: { idAlimento: true, nombre: true },
+    });
+    const categoriasExistentes = await this.grupoAlimenticioRepo.find({
+      select: { idGrupoAlimenticio: true, descripcion: true },
+    });
+    const categoriasNombres = categoriasExistentes.map((c) => c.descripcion);
+
+    let intentoCatalogo = 0;
+    let planResolved = false;
+
+    while (!planResolved && intentoCatalogo <= MAX_REINTENTOS_CATALOGO) {
+      intentoCatalogo++;
+      const nombresUsados = this.extraerNombresAlimentos(planJson);
+      const alimentosNuevosRaw =
+        (planJson as PlanSemanalRawJson).alimentosNuevos ?? [];
+      const resultado = await this.resolvedorCatalogoIA.resolver(
+        nombresUsados,
+        alimentosNuevosRaw,
+        catalogoExistente,
+        categoriasExistentes,
+      );
+      planJson = this.reescribirSnapshotConIds(planJson, resultado.mapa);
+      if (resultado.creados.length > 0) {
+        this.logger.log(
+          `Alimentos creados por IA: ${resultado.creados.map((c) => c.nombre).join(', ')}`,
+        );
+      }
+      planResolved = true;
+    }
+
+    if (!planResolved) {
+      throw new BadRequestError(
+        'No se pudo resolver el catálogo de alimentos tras reintentos.',
+      );
+    }
+
     const { systemPrompt, userPrompt } = this.promptBuilder.construir({
       ...contextoPromptBase,
       diasAGenerar: diasEsperados.length,
       diasEspecificos: diasEsperados,
+      categoriasGruposAlimenticios: categoriasNombres,
     });
 
     // 7) Validar restricciones con reintentos por instrucción correctiva
@@ -468,8 +534,8 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
 
       // 12c) PLAN_VALIDACION_WARNING si restricciones no cumplidas >= cumplidas
       if (
-          validacionRestricciones.restriccionesNoCumplidas.length > 0 &&
-          validacionRestricciones.restriccionesNoCumplidas.length >=
+        validacionRestricciones.restriccionesNoCumplidas.length > 0 &&
+        validacionRestricciones.restriccionesNoCumplidas.length >=
           validacionRestricciones.restriccionesCumplidas.length
       ) {
         await this.notificacionesService.crear({
@@ -1063,6 +1129,55 @@ No omitas días, comidas ni alternativas aunque el JSON sea largo.`;
 
   private sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private extraerNombresAlimentos(plan: PlanAlimentacionDatosJson): string[] {
+    const nombres = new Set<string>();
+    for (const dia of plan.estructura) {
+      for (const comida of dia.comidas) {
+        for (const alternativa of comida.alternativas) {
+          for (const alimento of alternativa.alimentos) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            const nombre = (alimento as any).alimentoNombre as
+              | string
+              | undefined;
+            if (nombre) {
+              nombres.add(nombre);
+            }
+          }
+        }
+      }
+    }
+    return [...nombres];
+  }
+
+  private reescribirSnapshotConIds(
+    plan: PlanAlimentacionDatosJson,
+    mapa: Map<string, number>,
+  ): PlanAlimentacionDatosJson {
+    return {
+      ...plan,
+      estructura: plan.estructura.map((dia) => ({
+        ...dia,
+        comidas: dia.comidas.map((comida) => ({
+          ...comida,
+          alternativas: comida.alternativas.map((alt) => ({
+            ...alt,
+            alimentos: alt.alimentos.map((al) => {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+              const alimentoNombre = (al as any).alimentoNombre as
+                | string
+                | undefined;
+              return {
+                ...al,
+                alimentoId: mapa.get(alimentoNombre ?? '') ?? al.alimentoId,
+                nombre: alimentoNombre ?? al.nombre,
+              };
+            }),
+          })),
+        })),
+      })),
+    };
   }
 
   private proximoLunesAR(): Date {

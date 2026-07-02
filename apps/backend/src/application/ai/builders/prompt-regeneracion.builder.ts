@@ -61,6 +61,8 @@ export interface ContextoPromptRegeneracion {
   comidaSlot?: TipoComida;
   /** Índice de la alternativa a regenerar (requerido si scope=ALTERNATIVA) */
   alternativaIndex?: number;
+  /** Nombres de las 26 categorías de grupo alimenticio (para que la IA elija categoriaNombre válido). */
+  categoriasGruposAlimenticios?: string[];
 }
 
 export interface PromptRegeneracionResultado {
@@ -127,6 +129,9 @@ export class PromptRegeneracionBuilder {
     );
     lineas.push(
       '5. Mantené los macronutrientes aproximadamente similares al target diario (±10%).',
+    );
+    lineas.push(
+      '6. Si un alimento no existe en el catálogo, declarálo en el array alimentosNuevos con macros aproximados y categoría correcta.',
     );
     lineas.push('');
 
@@ -258,11 +263,7 @@ export class PromptRegeneracionBuilder {
             continue;
           }
           // Misma comida: mostrar las alternativas que NO se regeneran
-          for (
-            let idx = 0;
-            idx < comida.alternativas.length;
-            idx++
-          ) {
+          for (let idx = 0; idx < comida.alternativas.length; idx++) {
             if (idx === ctx.alternativaIndex) continue;
             const alt = comida.alternativas[idx];
             lineas.push(
@@ -278,7 +279,10 @@ export class PromptRegeneracionBuilder {
   }
 
   private construirEsquemaJson(ctx: ContextoPromptRegeneracion): string {
-    // Para regeneración siempre devolvemos estructura/macrosPorDia/razonamiento
+    const categoriasTexto = ctx.categoriasGruposAlimenticios
+      ? `\nCategorías válidas para alimentos nuevos: ${ctx.categoriasGruposAlimenticios.join(', ')}.\n`
+      : '';
+
     return `{
   "estructura": [
     {
@@ -291,7 +295,7 @@ export class PromptRegeneracionBuilder {
               "nombre": "string (ej: 'Pollo grillado con quinoa')",
               "alimentos": [
                 {
-                  "alimentoId": 0,
+                  "alimentoNombre": "string (nombre exacto del alimento en español)",
                   "cantidad": 0,
                   "unidad": "string (ej: 'g', 'ml', 'unidad')"
                 }
@@ -304,6 +308,18 @@ export class PromptRegeneracionBuilder {
           ]
         }
       ]
+    }
+  ],
+  "alimentosNuevos": [
+    {
+      "nombre": "string (nombre del alimento nuevo, ej: 'Quinoa')",
+      "categoriaNombre": "string (una de las categorías válidas listadas abajo)",
+      "cantidadBase": 100,
+      "unidadBase": "g",
+      "calorias": 0,
+      "proteinas": 0,
+      "carbohidratos": 0,
+      "grasas": 0
     }
   ],
   "macrosPorDia": {
@@ -328,7 +344,8 @@ export class PromptRegeneracionBuilder {
       }
     ]
   }
-}`;
+}
+${categoriasTexto}Si inventás un alimento que no existe en el catálogo, declarálo en alimentosNuevos con sus macros aproximados y la categoría correcta.`;
   }
 
   private consolidarNotas(

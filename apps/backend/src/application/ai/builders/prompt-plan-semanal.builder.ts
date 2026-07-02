@@ -50,6 +50,8 @@ export interface ContextoPromptPlanSemanal {
   comidasPorDia: number;
   alternativasPorComida: number;
   fechaInicio: Date;
+  /** Nombres de las 26 categorías de grupo alimenticio (para que la IA elija categoriaNombre válido). */
+  categoriasGruposAlimenticios?: string[];
 }
 
 export interface PromptResultado {
@@ -100,6 +102,9 @@ export class PromptPlanSemanalBuilder {
     );
     lineas.push(
       '9. Los alimentos deben estar referenciados por su nombre común en español.',
+    );
+    lineas.push(
+      '10. Si un alimento no existe en el catálogo, declarálo en el array alimentosNuevos con macros aproximados y categoría correcta.',
     );
     lineas.push('');
     lineas.push('ESTRUCTURA DEL JSON DE SALIDA:');
@@ -180,12 +185,13 @@ export class PromptPlanSemanalBuilder {
   }
 
   private construirEsquemaJson(ctx: ContextoPromptPlanSemanal): string {
-    // Lista de días esperados
     const diasEsperados = this.obtenerDiasSolicitados(ctx);
     const tiposEsperados = TODOS_TIPOS_COMIDA.slice(0, ctx.comidasPorDia);
-
     const ejemploDia = diasEsperados[0];
     const ejemploTipo = tiposEsperados[0];
+    const categoriasTexto = ctx.categoriasGruposAlimenticios
+      ? `\nCategorías válidas para alimentos nuevos: ${ctx.categoriasGruposAlimenticios.join(', ')}.\n`
+      : '';
 
     return `{
   "estructura": [
@@ -199,7 +205,7 @@ export class PromptPlanSemanalBuilder {
               "nombre": "string (ej: 'Pollo grillado con quinoa')",
               "alimentos": [
                 {
-                  "alimentoId": 0,
+                  "alimentoNombre": "string (nombre exacto del alimento en español)",
                   "cantidad": 0,
                   "unidad": "string (ej: 'g', 'ml', 'unidad')"
                 }
@@ -212,6 +218,18 @@ export class PromptPlanSemanalBuilder {
           ]
         }
       ]
+    }
+  ],
+  "alimentosNuevos": [
+    {
+      "nombre": "string (nombre del alimento nuevo, ej: 'Quinoa')",
+      "categoriaNombre": "string (una de las categorías válidas listadas abajo)",
+      "cantidadBase": 100,
+      "unidadBase": "g",
+      "calorias": 0,
+      "proteinas": 0,
+      "carbohidratos": 0,
+      "grasas": 0
     }
   ],
   "macrosPorDia": {
@@ -237,9 +255,9 @@ export class PromptPlanSemanalBuilder {
     ]
   }
 }
-
-Los días deben ser exactamente: ${diasEsperados.join(', ')}.
-Las comidas deben ser exactamente: ${tiposEsperados.join(', ')}.`;
+${categoriasTexto}Los días deben ser exactamente: ${diasEsperados.join(', ')}.
+Las comidas deben ser exactamente: ${tiposEsperados.join(', ')}.
+Si inventás un alimento que no existe en el catálogo, declarálo en alimentosNuevos con sus macros aproximados y la categoría correcta.`;
   }
 
   private obtenerDiasSolicitados(ctx: ContextoPromptPlanSemanal): DiaSemana[] {
