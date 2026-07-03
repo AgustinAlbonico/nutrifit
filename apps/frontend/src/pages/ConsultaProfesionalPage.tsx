@@ -120,6 +120,9 @@ interface AdjuntoClinico {
 }
 
 type FormularioMediciones = ValoresFormularioMedicionesConsulta;
+type SeccionMediciones = 'perimetros' | 'pliegues' | 'composicion' | 'signosVitales';
+type EstadoSeccionesMediciones = Record<SeccionMediciones, boolean>;
+type CampoMedicionPrecargado = Exclude<keyof FormularioMediciones, 'notasMedicion'>;
 
 interface FormularioObservaciones {
   comentario: string;
@@ -127,6 +130,12 @@ interface FormularioObservaciones {
   habitosSocio: string;
   objetivosSocio: string;
   esPublica: boolean;
+}
+
+interface RespuestaGuardarMedicionesConsulta {
+  success: boolean;
+  imc: number | null;
+  idMedicion: number;
 }
 
 const FORMULARIO_INICIAL: FormularioMediciones = {
@@ -154,6 +163,51 @@ const FORMULARIO_OBSERVACIONES_INICIAL: FormularioObservaciones = {
   objetivosSocio: '',
   esPublica: false,
 };
+
+const CLAVE_SECCIONES_MEDICIONES = 'nutrifit.consulta.mediciones.secciones';
+
+const SECCIONES_MEDICIONES_INICIALES: EstadoSeccionesMediciones = {
+  perimetros: false,
+  pliegues: false,
+  composicion: false,
+  signosVitales: false,
+};
+
+function esEstadoSeccionesMediciones(valor: unknown): valor is EstadoSeccionesMediciones {
+  if (typeof valor !== 'object' || valor === null) {
+    return false;
+  }
+
+  const registro = valor as Partial<Record<SeccionMediciones, unknown>>;
+  return (
+    typeof registro.perimetros === 'boolean' &&
+    typeof registro.pliegues === 'boolean' &&
+    typeof registro.composicion === 'boolean' &&
+    typeof registro.signosVitales === 'boolean'
+  );
+}
+
+function leerSeccionesMediciones(): EstadoSeccionesMediciones {
+  const crudo = localStorage.getItem(CLAVE_SECCIONES_MEDICIONES);
+  if (!crudo) {
+    return SECCIONES_MEDICIONES_INICIALES;
+  }
+
+  try {
+    const valor: unknown = JSON.parse(crudo);
+    if (esEstadoSeccionesMediciones(valor)) {
+      return valor;
+    }
+  } catch {
+    localStorage.removeItem(CLAVE_SECCIONES_MEDICIONES);
+  }
+
+  return SECCIONES_MEDICIONES_INICIALES;
+}
+
+function guardarSeccionesMediciones(secciones: EstadoSeccionesMediciones) {
+  localStorage.setItem(CLAVE_SECCIONES_MEDICIONES, JSON.stringify(secciones));
+}
 
 // Componente para secciones colapsables
 function SeccionColapsable({
@@ -189,6 +243,14 @@ function SeccionColapsable({
       </button>
       {expandida && <div className="border-t p-4">{children}</div>}
     </div>
+  );
+}
+
+function IndicadorValorPrevio() {
+  return (
+    <span className="inline-flex w-fit rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">
+      valor previo
+    </span>
   );
 }
 
@@ -332,16 +394,19 @@ export function ConsultaProfesionalPage() {
   const [eliminandoAdjuntoId, setEliminandoAdjuntoId] = useState<number | null>(null);
 
   // Estado para secciones colapsables
-  const [secciones, setSecciones] = useState({
-    perimetros: false,
-    pliegues: false,
-    composicion: false,
-    signosVitales: false,
-  });
+  const [secciones, setSecciones] = useState<EstadoSeccionesMediciones>(() => leerSeccionesMediciones());
+  const [medicionActualId, setMedicionActualId] = useState<number | null>(null);
+  const [camposPrecargados, setCamposPrecargados] = useState<CampoMedicionPrecargado[]>([]);
 
-  const toggleSeccion = (seccion: keyof typeof secciones) => {
-    setSecciones((prev) => ({ ...prev, [seccion]: !prev[seccion] }));
+  const toggleSeccion = (seccion: SeccionMediciones) => {
+    setSecciones((prev) => {
+      const siguiente = { ...prev, [seccion]: !prev[seccion] };
+      guardarSeccionesMediciones(siguiente);
+      return siguiente;
+    });
   };
+
+  const campoPrecargado = (campo: CampoMedicionPrecargado) => camposPrecargados.includes(campo);
 
   const esNutricionista = rol === 'NUTRICIONISTA';
 
@@ -512,24 +577,36 @@ export function ConsultaProfesionalPage() {
       return;
     }
 
-    const numeroATexto = (valor: number | null | undefined) =>
-      valor == null ? '' : String(valor);
+    const valoresPrecargados: Partial<FormularioMediciones> = {};
+    const camposDesdeHistorial: CampoMedicionPrecargado[] = [];
+    const registrarValorPrevio = (campo: CampoMedicionPrecargado, valor: number | null | undefined) => {
+      if (valor == null) {
+        return;
+      }
 
+      valoresPrecargados[campo] = String(valor);
+      camposDesdeHistorial.push(campo);
+    };
+
+    registrarValorPrevio('peso', ultima.peso);
+    registrarValorPrevio('perimetroCintura', ultima.perimetroCintura);
+    registrarValorPrevio('perimetroCadera', ultima.perimetroCadera);
+    registrarValorPrevio('perimetroBrazo', ultima.perimetroBrazo);
+    registrarValorPrevio('perimetroMuslo', ultima.perimetroMuslo);
+    registrarValorPrevio('perimetroPecho', ultima.perimetroPecho);
+    registrarValorPrevio('pliegueTriceps', ultima.pliegueTriceps);
+    registrarValorPrevio('pliegueAbdominal', ultima.pliegueAbdominal);
+    registrarValorPrevio('pliegueMuslo', ultima.pliegueMuslo);
+    registrarValorPrevio('porcentajeGrasa', ultima.porcentajeGrasa);
+    registrarValorPrevio('frecuenciaCardiaca', ultima.frecuenciaCardiaca);
+    registrarValorPrevio('tensionSistolica', ultima.tensionSistolica);
+    registrarValorPrevio('tensionDiastolica', ultima.tensionDiastolica);
+
+    setMedicionActualId(ultima.idMedicion);
+    setCamposPrecargados(camposDesdeHistorial);
     reset({
       ...previo,
-      peso: numeroATexto(ultima.peso),
-      perimetroCintura: numeroATexto(ultima.perimetroCintura),
-      perimetroCadera: numeroATexto(ultima.perimetroCadera),
-      perimetroBrazo: numeroATexto(ultima.perimetroBrazo),
-      perimetroMuslo: numeroATexto(ultima.perimetroMuslo),
-      perimetroPecho: numeroATexto(ultima.perimetroPecho),
-      pliegueTriceps: numeroATexto(ultima.pliegueTriceps),
-      pliegueAbdominal: numeroATexto(ultima.pliegueAbdominal),
-      pliegueMuslo: numeroATexto(ultima.pliegueMuslo),
-      porcentajeGrasa: numeroATexto(ultima.porcentajeGrasa),
-      frecuenciaCardiaca: numeroATexto(ultima.frecuenciaCardiaca),
-      tensionSistolica: numeroATexto(ultima.tensionSistolica),
-      tensionDiastolica: numeroATexto(ultima.tensionDiastolica),
+      ...valoresPrecargados,
     });
   }, [getValues, historialMediciones, reset]);
 
@@ -699,15 +776,26 @@ export function ConsultaProfesionalPage() {
       setError(null);
       setMensajeExito(null);
 
-      await apiRequest(`/turnos/${turnoId}/mediciones`, {
-        method: 'POST',
+      const actualizandoMedicion = medicionActualId !== null;
+      const rutaMediciones = actualizandoMedicion
+        ? `/turnos/${turnoId}/mediciones/${medicionActualId}`
+        : `/turnos/${turnoId}/mediciones`;
+
+      const respuesta = await apiRequest<ApiResponse<RespuestaGuardarMedicionesConsulta>>(rutaMediciones, {
+        method: actualizandoMedicion ? 'PUT' : 'POST',
         token,
         body: convertirMedicionesConsultaPayload(valores),
       });
 
-      setMensajeExito('Mediciones guardadas correctamente');
+      setMedicionActualId(respuesta.data.idMedicion);
+      setCamposPrecargados([]);
+      setMensajeExito(
+        actualizandoMedicion
+          ? 'Mediciones actualizadas correctamente'
+          : 'Mediciones guardadas correctamente',
+      );
       await cargarResumenClinicoPaciente();
-      toast.success('Mediciones guardadas');
+      toast.success(actualizandoMedicion ? 'Mediciones actualizadas' : 'Mediciones guardadas');
     } catch (requestError) {
       const mensaje =
         requestError instanceof Error
@@ -1383,12 +1471,21 @@ export function ConsultaProfesionalPage() {
                     <p className="font-medium">{mensajeEstadoConsulta}</p>
                   </div>
                 )}
+                {medicionActualId !== null && consultaEditable && (
+                  <div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50/60 p-4 text-sm text-blue-900">
+                    <Edit className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+                    <p className="font-medium">
+                      Esta medición ya está guardada; los cambios actualizarán el registro existente.
+                    </p>
+                  </div>
+                )}
                 {/* Datos básicos - siempre visible */}
                 <div className="grid gap-6 md:grid-cols-3">
                   <div className="space-y-2">
                     <Label htmlFor="peso" required className="text-muted-foreground">
                       Peso (kg)
                     </Label>
+                    {campoPrecargado('peso') && <IndicadorValorPrevio />}
                     <Input
                       id="peso"
                       type="number"
@@ -1412,6 +1509,7 @@ export function ConsultaProfesionalPage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="altura" className="text-muted-foreground">Altura (cm)</Label>
+                    {campoPrecargado('altura') && <IndicadorValorPrevio />}
                     <Input
                       id="altura"
                       type="number"

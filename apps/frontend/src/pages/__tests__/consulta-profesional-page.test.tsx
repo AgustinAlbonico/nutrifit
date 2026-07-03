@@ -293,6 +293,8 @@ const handlerHistorialConsultasVacio = http.get('/turnos/profesional/:nutricioni
   });
 });
 
+const CLAVE_SECCIONES_MEDICIONES = 'nutrifit.consulta.mediciones.secciones';
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers de render
 // ─────────────────────────────────────────────────────────────────────────────
@@ -331,6 +333,7 @@ describe('ConsultaProfesionalPage - Post-Cierre UI Blocking (TDD 4.4)', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
     // Resetear router config a默认值
     configurarTurnoId('1');
     // Reset handlers y configurar por defecto (turno abierto)
@@ -347,6 +350,7 @@ describe('ConsultaProfesionalPage - Post-Cierre UI Blocking (TDD 4.4)', () => {
   afterEach(() => {
     server.resetHandlers();
     configurarTurnoId('1'); // cleanup
+    localStorage.clear();
   });
 
   // ── RED ─────────────────────────────────────────────────────────────────────
@@ -558,6 +562,119 @@ describe('ConsultaProfesionalPage - Post-Cierre UI Blocking (TDD 4.4)', () => {
 
       const pesoInput = (await screen.findByLabelText(/peso \(kg\)/i)) as HTMLInputElement;
       expect(pesoInput.value).toBe('');
+    });
+
+    it('actualiza la medición precargada con PUT para no duplicar registros', async () => {
+      server.use(handlerHistorialMedicionesConUltima);
+      configurarTurnoId('1');
+
+      let metodoPutRecibido = false;
+      let metodoPostRecibido = false;
+
+      server.use(
+        http.put('/turnos/1/mediciones/7', async ({ request }) => {
+          metodoPutRecibido = true;
+          const cuerpo = await request.json();
+          expect(cuerpo).toMatchObject({ peso: 84, altura: 175 });
+
+          return HttpResponse.json({
+            success: true,
+            message: 'Medición actualizada',
+            data: { success: true, imc: 26.5, idMedicion: 7 },
+            timestamp: '2026-05-02T09:00:00Z',
+          });
+        }),
+        http.post('/turnos/1/mediciones', () => {
+          metodoPostRecibido = true;
+          return HttpResponse.json({}, { status: 500 });
+        }),
+      );
+
+      render(crearProveedorQuery(<ConsultaProfesionalPage />));
+
+      await esperarConsultaCargada();
+      await abrirEtapa(/mediciones/i);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole('button', { name: /guardar mediciones/i }));
+
+      await waitFor(() => expect(metodoPutRecibido).toBe(true));
+      expect(metodoPostRecibido).toBe(false);
+      expect(await screen.findByText(/mediciones actualizadas correctamente/i)).toBeInTheDocument();
+    });
+
+    it('crea una medición con POST cuando no hay medición previa precargada', async () => {
+      configurarTurnoId('1');
+
+      let metodoPostRecibido = false;
+
+      server.use(
+        http.post('/turnos/1/mediciones', async ({ request }) => {
+          metodoPostRecibido = true;
+          const cuerpo = await request.json();
+          expect(cuerpo).toMatchObject({ peso: 82, altura: 175 });
+
+          return HttpResponse.json({
+            success: true,
+            message: 'Medición guardada',
+            data: { success: true, imc: 26.78, idMedicion: 12 },
+            timestamp: '2026-05-02T09:00:00Z',
+          });
+        }),
+      );
+
+      render(crearProveedorQuery(<ConsultaProfesionalPage />));
+
+      await esperarConsultaCargada();
+      await abrirEtapa(/mediciones/i);
+
+      const user = userEvent.setup();
+      await user.type(await screen.findByLabelText(/peso \(kg\)/i), '82');
+      await user.click(screen.getByRole('button', { name: /guardar mediciones/i }));
+
+      await waitFor(() => expect(metodoPostRecibido).toBe(true));
+      expect(await screen.findByText(/mediciones guardadas correctamente/i)).toBeInTheDocument();
+    });
+
+    it('marca los campos precargados como valor previo', async () => {
+      server.use(handlerHistorialMedicionesConUltima);
+      configurarTurnoId('1');
+
+      render(crearProveedorQuery(<ConsultaProfesionalPage />));
+
+      await esperarConsultaCargada();
+      await abrirEtapa(/mediciones/i);
+
+      expect(await screen.findAllByText(/valor previo/i)).not.toHaveLength(0);
+    });
+
+    it('restaura y persiste secciones de mediciones desde localStorage', async () => {
+      localStorage.setItem(
+        CLAVE_SECCIONES_MEDICIONES,
+        JSON.stringify({
+          perimetros: true,
+          pliegues: false,
+          composicion: false,
+          signosVitales: false,
+        }),
+      );
+
+      configurarTurnoId('1');
+      render(crearProveedorQuery(<ConsultaProfesionalPage />));
+
+      await esperarConsultaCargada();
+      await abrirEtapa(/mediciones/i);
+
+      expect(await screen.findByText(/cintura \(cm\)/i)).toBeInTheDocument();
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole('button', { name: /perímetros corporales/i }));
+
+      await waitFor(() => {
+        expect(JSON.parse(localStorage.getItem(CLAVE_SECCIONES_MEDICIONES) ?? '{}')).toMatchObject({
+          perimetros: false,
+        });
+      });
     });
   });
 
