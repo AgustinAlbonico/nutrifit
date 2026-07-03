@@ -186,6 +186,13 @@ export const ACCIONES_METADATA: Record<string, AccionDescripcion> = {
     categoria: 'Pacientes',
   },
 
+  // Progreso
+  'progreso.editar': {
+    codigo: 'progreso.editar',
+    descripcion: 'Permite gestionar el progreso fotográfico y objetivos de los pacientes',
+    categoria: 'Progreso',
+  },
+
   // Reportes
   'reportes.generar': {
     codigo: 'reportes.generar',
@@ -274,6 +281,9 @@ export const ACCIONES = {
 
   // Pacientes
   PACIENTES_VER: 'pacientes.ver',
+
+  // Progreso
+  PROGRESO_EDITAR: 'progreso.editar',
 
   // Reportes
   REPORTES_GENERAR: 'reportes.generar',

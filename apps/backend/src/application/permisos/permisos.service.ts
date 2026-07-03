@@ -92,6 +92,7 @@ export class PermisosService {
       'planes.ver',
       'mis-planes.ver',
       'pacientes.ver',
+      'progreso.editar',
       'reportes.generar',
       'reportes.ver',
       'gimnasios.crear',
