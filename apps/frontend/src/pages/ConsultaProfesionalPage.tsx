@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
 import { useParams, useNavigate, Link } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import {
@@ -41,6 +43,12 @@ import { FotosSesionConsulta } from '@/components/consulta/FotosSesionConsulta';
 import { RevisionFinalConsulta } from '@/components/consulta/RevisionFinalConsulta';
 import { useFotosProgreso } from '@/components/progreso/useFotosProgreso';
 import { obtenerEtapasConsulta, puedeCerrarConsulta } from '@/lib/consulta/estadoEtapas';
+import {
+  convertirMedicionesConsultaPayload,
+  medicionesConsultaSchema,
+  type ValoresFormularioMedicionesConsulta,
+  type ValoresMedicionesConsulta,
+} from '@/schemas/mediciones-consulta.schema';
 import type { HistorialMediciones } from '@/components/progreso/types';
 import type { HistorialConsultaPaciente, IdEtapaConsulta } from '@/types/consulta';
 
@@ -111,29 +119,7 @@ interface AdjuntoClinico {
   createdAt: string;
 }
 
-interface FormularioMediciones {
-  // Datos básicos
-  peso: string;
-  altura: string;
-  // Perímetros
-  perimetroCintura: string;
-  perimetroCadera: string;
-  perimetroBrazo: string;
-  perimetroMuslo: string;
-  perimetroPecho: string;
-  // Pliegues cutáneos
-  pliegueTriceps: string;
-  pliegueAbdominal: string;
-  pliegueMuslo: string;
-  // Composición corporal
-  porcentajeGrasa: string;
-  // Signos vitales
-  frecuenciaCardiaca: string;
-  tensionSistolica: string;
-  tensionDiastolica: string;
-  // Notas
-  notasMedicion: string;
-}
+type FormularioMediciones = ValoresFormularioMedicionesConsulta;
 
 interface FormularioObservaciones {
   comentario: string;
@@ -305,7 +291,21 @@ export function ConsultaProfesionalPage() {
   const navigate = useNavigate();
 
   const [datosTurno, setDatosTurno] = useState<DatosTurno | null>(null);
-  const [formulario, setFormulario] = useState<FormularioMediciones>(FORMULARIO_INICIAL);
+  const formularioMediciones = useForm<FormularioMediciones, unknown, ValoresMedicionesConsulta>({
+    resolver: zodResolver(medicionesConsultaSchema),
+    defaultValues: FORMULARIO_INICIAL,
+    mode: 'onBlur',
+  });
+  const {
+    register,
+    handleSubmit,
+    reset,
+    getValues,
+    watch,
+    setError: establecerErrorMediciones,
+    formState: { errors },
+  } = formularioMediciones;
+  const formulario = watch();
   const [formularioObservaciones, setFormularioObservaciones] = useState<FormularioObservaciones>(
     FORMULARIO_OBSERVACIONES_INICIAL,
   );
@@ -445,10 +445,10 @@ export function ConsultaProfesionalPage() {
 
       // Pre-cargar altura desde ficha de salud si existe
       if (response.data.fichaSalud) {
-        setFormulario((prev) => ({
-          ...prev,
+        reset({
+          ...getValues(),
           altura: String(response.data.fichaSalud?.altura ?? ''),
-        }));
+        });
       }
 
       setFormularioObservaciones({
@@ -468,7 +468,7 @@ export function ConsultaProfesionalPage() {
     } finally {
       setCargando(false);
     }
-  }, [token, turnoId]);
+  }, [getValues, reset, token, turnoId]);
 
   // === Funciones de Adjuntos Clínicos ===
 
@@ -507,30 +507,31 @@ export function ConsultaProfesionalPage() {
     const ultima = historialMediciones.mediciones[0];
     if (!ultima) return;
 
-    setFormulario((previo) => {
-      if (previo.peso || previo.perimetroCintura) {
-        return previo;
-      }
-      const numeroATexto = (valor: number | null | undefined) =>
-        valor == null ? '' : String(valor);
-      return {
-        ...previo,
-        peso: numeroATexto(ultima.peso),
-        perimetroCintura: numeroATexto(ultima.perimetroCintura),
-        perimetroCadera: numeroATexto(ultima.perimetroCadera),
-        perimetroBrazo: numeroATexto(ultima.perimetroBrazo),
-        perimetroMuslo: numeroATexto(ultima.perimetroMuslo),
-        perimetroPecho: numeroATexto(ultima.perimetroPecho),
-        pliegueTriceps: numeroATexto(ultima.pliegueTriceps),
-        pliegueAbdominal: numeroATexto(ultima.pliegueAbdominal),
-        pliegueMuslo: numeroATexto(ultima.pliegueMuslo),
-        porcentajeGrasa: numeroATexto(ultima.porcentajeGrasa),
-        frecuenciaCardiaca: numeroATexto(ultima.frecuenciaCardiaca),
-        tensionSistolica: numeroATexto(ultima.tensionSistolica),
-        tensionDiastolica: numeroATexto(ultima.tensionDiastolica),
-      };
+    const previo = getValues();
+    if (previo.peso || previo.perimetroCintura) {
+      return;
+    }
+
+    const numeroATexto = (valor: number | null | undefined) =>
+      valor == null ? '' : String(valor);
+
+    reset({
+      ...previo,
+      peso: numeroATexto(ultima.peso),
+      perimetroCintura: numeroATexto(ultima.perimetroCintura),
+      perimetroCadera: numeroATexto(ultima.perimetroCadera),
+      perimetroBrazo: numeroATexto(ultima.perimetroBrazo),
+      perimetroMuslo: numeroATexto(ultima.perimetroMuslo),
+      perimetroPecho: numeroATexto(ultima.perimetroPecho),
+      pliegueTriceps: numeroATexto(ultima.pliegueTriceps),
+      pliegueAbdominal: numeroATexto(ultima.pliegueAbdominal),
+      pliegueMuslo: numeroATexto(ultima.pliegueMuslo),
+      porcentajeGrasa: numeroATexto(ultima.porcentajeGrasa),
+      frecuenciaCardiaca: numeroATexto(ultima.frecuenciaCardiaca),
+      tensionSistolica: numeroATexto(ultima.tensionSistolica),
+      tensionDiastolica: numeroATexto(ultima.tensionDiastolica),
     });
-  }, [historialMediciones]);
+  }, [getValues, historialMediciones, reset]);
 
   const imc = useMemo(() => {
     const pesoNum = Number(formulario.peso);
@@ -688,8 +689,7 @@ export function ConsultaProfesionalPage() {
     void iniciarConsulta(true);
   }, [consultaCerrada, datosTurno, iniciarConsulta, turnoId]);
 
-  const guardarMediciones = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const guardarMediciones = handleSubmit(async (valores) => {
     if (!token || !turnoId) {
       return;
     }
@@ -699,52 +699,10 @@ export function ConsultaProfesionalPage() {
       setError(null);
       setMensajeExito(null);
 
-      const payload = {
-        peso: Number(formulario.peso),
-        altura: formulario.altura ? Number(formulario.altura) : undefined,
-        perimetroCintura: formulario.perimetroCintura
-          ? Number(formulario.perimetroCintura)
-          : undefined,
-        perimetroCadera: formulario.perimetroCadera
-          ? Number(formulario.perimetroCadera)
-          : undefined,
-        perimetroBrazo: formulario.perimetroBrazo
-          ? Number(formulario.perimetroBrazo)
-          : undefined,
-        perimetroMuslo: formulario.perimetroMuslo
-          ? Number(formulario.perimetroMuslo)
-          : undefined,
-        perimetroPecho: formulario.perimetroPecho
-          ? Number(formulario.perimetroPecho)
-          : undefined,
-        pliegueTriceps: formulario.pliegueTriceps
-          ? Number(formulario.pliegueTriceps)
-          : undefined,
-        pliegueAbdominal: formulario.pliegueAbdominal
-          ? Number(formulario.pliegueAbdominal)
-          : undefined,
-        pliegueMuslo: formulario.pliegueMuslo
-          ? Number(formulario.pliegueMuslo)
-          : undefined,
-        porcentajeGrasa: formulario.porcentajeGrasa
-          ? Number(formulario.porcentajeGrasa)
-          : undefined,
-        frecuenciaCardiaca: formulario.frecuenciaCardiaca
-          ? Number(formulario.frecuenciaCardiaca)
-          : undefined,
-        tensionSistolica: formulario.tensionSistolica
-          ? Number(formulario.tensionSistolica)
-          : undefined,
-        tensionDiastolica: formulario.tensionDiastolica
-          ? Number(formulario.tensionDiastolica)
-          : undefined,
-        notasMedicion: formulario.notasMedicion.trim() || undefined,
-      };
-
       await apiRequest(`/turnos/${turnoId}/mediciones`, {
         method: 'POST',
         token,
-        body: payload,
+        body: convertirMedicionesConsultaPayload(valores),
       });
 
       setMensajeExito('Mediciones guardadas correctamente');
@@ -755,12 +713,13 @@ export function ConsultaProfesionalPage() {
         requestError instanceof Error
           ? requestError.message
           : 'No se pudieron guardar las mediciones.';
+      establecerErrorMediciones('root', { message: mensaje });
       setError(mensaje);
       toast.error(mensaje);
     } finally {
       setGuardandoMediciones(false);
     }
-  };
+  });
 
   const guardarObservaciones = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -1436,32 +1395,40 @@ export function ConsultaProfesionalPage() {
                       min={20}
                       max={500}
                       step="0.1"
-                      value={formulario.peso}
-                      onChange={(event) =>
-                        setFormulario((previo) => ({ ...previo, peso: event.target.value }))
-                      }
+                      {...register('peso')}
+                      aria-invalid={errors.peso ? 'true' : 'false'}
+                      aria-describedby={errors.peso ? 'peso-error' : undefined}
                       required
                       placeholder="Ej: 75.5"
                       disabled={!consultaEditable}
                       className="text-lg transition-all focus:ring-2 focus:ring-primary/20 h-12"
                     />
+                    {errors.peso && (
+                      <p id="peso-error" role="alert" className="text-sm text-destructive">
+                        {errors.peso.message}
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="altura" className="text-muted-foreground">Altura (cm)</Label>
                     <Input
-                        id="altura"
-                        type="number"
-                        min={100}
-                        max={250}
-                        value={formulario.altura}
-                        onChange={(event) =>
-                          setFormulario((previo) => ({ ...previo, altura: event.target.value }))
-                        }
-                        placeholder="Pre-cargado de ficha"
-                        disabled={!consultaEditable}
-                        className="text-lg transition-all focus:ring-2 focus:ring-primary/20 h-12"
-                      />
+                      id="altura"
+                      type="number"
+                      min={100}
+                      max={250}
+                      {...register('altura')}
+                      aria-invalid={errors.altura ? 'true' : 'false'}
+                      aria-describedby={errors.altura ? 'altura-error' : undefined}
+                      placeholder="Pre-cargado de ficha"
+                      disabled={!consultaEditable}
+                      className="text-lg transition-all focus:ring-2 focus:ring-primary/20 h-12"
+                    />
+                    {errors.altura && (
+                      <p id="altura-error" role="alert" className="text-sm text-destructive">
+                        {errors.altura.message}
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground/60">Se usa la última registrada</p>
                   </div>
 
@@ -1514,10 +1481,7 @@ export function ConsultaProfesionalPage() {
                             min={0}
                             max={300}
                             step="0.1"
-                            value={formulario.perimetroCintura}
-                            onChange={(e) =>
-                              setFormulario((p) => ({ ...p, perimetroCintura: e.target.value }))
-                            }
+                            {...register('perimetroCintura')}
                             placeholder="Ej: 85"
                             disabled={!consultaEditable}
                             className="bg-transparent border-t-0 border-x-0 border-b-2 rounded-none px-1 focus-visible:ring-0 focus-visible:border-primary transition-colors"
@@ -1530,10 +1494,7 @@ export function ConsultaProfesionalPage() {
                             min={0}
                             max={300}
                             step="0.1"
-                            value={formulario.perimetroCadera}
-                            onChange={(e) =>
-                              setFormulario((p) => ({ ...p, perimetroCadera: e.target.value }))
-                            }
+                            {...register('perimetroCadera')}
                             placeholder="Ej: 100"
                             disabled={!consultaEditable}
                             className="bg-transparent border-t-0 border-x-0 border-b-2 rounded-none px-1 focus-visible:ring-0 focus-visible:border-primary transition-colors"
@@ -1546,10 +1507,7 @@ export function ConsultaProfesionalPage() {
                             min={0}
                             max={100}
                             step="0.1"
-                            value={formulario.perimetroBrazo}
-                            onChange={(e) =>
-                              setFormulario((p) => ({ ...p, perimetroBrazo: e.target.value }))
-                            }
+                            {...register('perimetroBrazo')}
                             placeholder="Ej: 32"
                             disabled={!consultaEditable}
                             className="bg-transparent border-t-0 border-x-0 border-b-2 rounded-none px-1 focus-visible:ring-0 focus-visible:border-primary transition-colors"
@@ -1562,10 +1520,7 @@ export function ConsultaProfesionalPage() {
                             min={0}
                             max={150}
                             step="0.1"
-                            value={formulario.perimetroMuslo}
-                            onChange={(e) =>
-                              setFormulario((p) => ({ ...p, perimetroMuslo: e.target.value }))
-                            }
+                            {...register('perimetroMuslo')}
                             placeholder="Ej: 55"
                             disabled={!consultaEditable}
                             className="bg-transparent border-t-0 border-x-0 border-b-2 rounded-none px-1 focus-visible:ring-0 focus-visible:border-primary transition-colors"
@@ -1578,10 +1533,7 @@ export function ConsultaProfesionalPage() {
                             min={0}
                             max={200}
                             step="0.1"
-                            value={formulario.perimetroPecho}
-                            onChange={(e) =>
-                              setFormulario((p) => ({ ...p, perimetroPecho: e.target.value }))
-                            }
+                            {...register('perimetroPecho')}
                             placeholder="Ej: 95"
                             disabled={!consultaEditable}
                             className="bg-transparent border-t-0 border-x-0 border-b-2 rounded-none px-1 focus-visible:ring-0 focus-visible:border-primary transition-colors"
@@ -1606,10 +1558,7 @@ export function ConsultaProfesionalPage() {
                           min={0}
                           max={100}
                           step="0.1"
-                          value={formulario.pliegueTriceps}
-                          onChange={(e) =>
-                            setFormulario((p) => ({ ...p, pliegueTriceps: e.target.value }))
-                          }
+                          {...register('pliegueTriceps')}
                           placeholder="Ej: 15"
                           disabled={!consultaEditable}
                           className="bg-transparent border-t-0 border-x-0 border-b-2 rounded-none px-1 focus-visible:ring-0 focus-visible:border-primary transition-colors"
@@ -1622,10 +1571,7 @@ export function ConsultaProfesionalPage() {
                           min={0}
                           max={100}
                           step="0.1"
-                          value={formulario.pliegueAbdominal}
-                          onChange={(e) =>
-                            setFormulario((p) => ({ ...p, pliegueAbdominal: e.target.value }))
-                          }
+                          {...register('pliegueAbdominal')}
                           placeholder="Ej: 20"
                           disabled={!consultaEditable}
                           className="bg-transparent border-t-0 border-x-0 border-b-2 rounded-none px-1 focus-visible:ring-0 focus-visible:border-primary transition-colors"
@@ -1638,10 +1584,7 @@ export function ConsultaProfesionalPage() {
                           min={0}
                           max={100}
                           step="0.1"
-                          value={formulario.pliegueMuslo}
-                          onChange={(e) =>
-                            setFormulario((p) => ({ ...p, pliegueMuslo: e.target.value }))
-                          }
+                          {...register('pliegueMuslo')}
                           placeholder="Ej: 18"
                           disabled={!consultaEditable}
                           className="bg-transparent border-t-0 border-x-0 border-b-2 rounded-none px-1 focus-visible:ring-0 focus-visible:border-primary transition-colors"
@@ -1664,12 +1607,9 @@ export function ConsultaProfesionalPage() {
                           <Input
                             type="number"
                             min={0}
-                            max={100}
+                            max={70}
                             step="0.1"
-                            value={formulario.porcentajeGrasa}
-                            onChange={(e) =>
-                              setFormulario((p) => ({ ...p, porcentajeGrasa: e.target.value }))
-                            }
+                            {...register('porcentajeGrasa')}
                             placeholder="Ej: 22.5"
                             disabled={!consultaEditable}
                             className="bg-transparent border-t-0 border-x-0 border-b-2 rounded-none px-1 focus-visible:ring-0 focus-visible:border-primary transition-colors"
@@ -1701,44 +1641,45 @@ export function ConsultaProfesionalPage() {
                             type="number"
                             min={30}
                             max={220}
-                            value={formulario.frecuenciaCardiaca}
-                            onChange={(e) =>
-                              setFormulario((p) => ({ ...p, frecuenciaCardiaca: e.target.value }))
-                            }
+                            {...register('frecuenciaCardiaca')}
                             placeholder="Ej: 72"
                             disabled={!consultaEditable}
                             className="bg-transparent border-t-0 border-x-0 border-b-2 rounded-none px-1 focus-visible:ring-0 focus-visible:border-primary transition-colors"
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label className="text-muted-foreground text-xs uppercase tracking-wider">Sistólica (mmHg)</Label>
+                          <Label htmlFor="tensionSistolica" className="text-muted-foreground text-xs uppercase tracking-wider">Sistólica (mmHg)</Label>
                           <Input
+                            id="tensionSistolica"
                             type="number"
                             min={60}
                             max={250}
-                            value={formulario.tensionSistolica}
-                            onChange={(e) =>
-                              setFormulario((p) => ({ ...p, tensionSistolica: e.target.value }))
-                            }
+                            {...register('tensionSistolica')}
+                            aria-invalid={errors.tensionSistolica ? 'true' : 'false'}
                             placeholder="Ej: 120"
                             disabled={!consultaEditable}
                             className="bg-transparent border-t-0 border-x-0 border-b-2 rounded-none px-1 focus-visible:ring-0 focus-visible:border-primary transition-colors"
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label className="text-muted-foreground text-xs uppercase tracking-wider">Diastólica (mmHg)</Label>
+                          <Label htmlFor="tensionDiastolica" className="text-muted-foreground text-xs uppercase tracking-wider">Diastólica (mmHg)</Label>
                           <Input
+                            id="tensionDiastolica"
                             type="number"
                             min={40}
                             max={150}
-                            value={formulario.tensionDiastolica}
-                            onChange={(e) =>
-                              setFormulario((p) => ({ ...p, tensionDiastolica: e.target.value }))
-                            }
+                            {...register('tensionDiastolica')}
+                            aria-invalid={errors.tensionDiastolica ? 'true' : 'false'}
+                            aria-describedby={errors.tensionDiastolica ? 'tensionDiastolica-error' : undefined}
                             placeholder="Ej: 80"
                             disabled={!consultaEditable}
                             className="bg-transparent border-t-0 border-x-0 border-b-2 rounded-none px-1 focus-visible:ring-0 focus-visible:border-primary transition-colors"
                           />
+                          {errors.tensionDiastolica && (
+                            <p id="tensionDiastolica-error" role="alert" className="text-sm normal-case tracking-normal text-destructive">
+                              {errors.tensionDiastolica.message}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </SeccionColapsable>
@@ -1752,13 +1693,7 @@ export function ConsultaProfesionalPage() {
                   <Label htmlFor="notasMedicion" className="text-muted-foreground">Notas de la medición</Label>
                   <Textarea
                     id="notasMedicion"
-                    value={formulario.notasMedicion}
-                    onChange={(event) =>
-                      setFormulario((previo) => ({
-                        ...previo,
-                        notasMedicion: event.target.value,
-                      }))
-                    }
+                    {...register('notasMedicion')}
                     placeholder="Observaciones relevantes sobre las mediciones tomadas, condiciones, herramientas utilizadas..."
                     rows={3}
                     disabled={!consultaEditable}

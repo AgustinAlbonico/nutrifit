@@ -83,6 +83,7 @@ export const medicionesConsultaSchema = z
   });
 
 export type ValoresMedicionesConsulta = z.infer<typeof medicionesConsultaSchema>;
+export type ValoresFormularioMedicionesConsulta = z.input<typeof medicionesConsultaSchema>;
 
 export function convertirMedicionesConsultaPayload(valores: ValoresMedicionesConsulta) {
   return {

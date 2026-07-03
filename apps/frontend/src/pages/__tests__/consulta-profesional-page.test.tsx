@@ -511,7 +511,28 @@ describe('ConsultaProfesionalPage - Post-Cierre UI Blocking (TDD 4.4)', () => {
       expect(screen.getByText(/consumo de agua/i)).toBeInTheDocument();
       expect(screen.getByText(/2000 ml/i)).toBeInTheDocument();
     });
-  });
+
+    it('muestra error inline cuando la tensión arterial está incompleta', async () => {
+      configurarTurnoId('1');
+      render(crearProveedorQuery(<ConsultaProfesionalPage />));
+
+      await esperarConsultaCargada();
+      await abrirEtapa(/mediciones/i);
+
+      const user = userEvent.setup();
+
+      await user.type(await screen.findByLabelText(/peso \(kg\)/i), '80');
+      await user.click(screen.getByRole('button', { name: /signos vitales/i }));
+      await user.type(await screen.findByPlaceholderText('Ej: 120'), '140');
+      await user.click(screen.getByRole('button', { name: /guardar mediciones/i }));
+
+      expect(
+        await screen.findByText(
+          'Para registrar la tensión arterial debes informar el valor sistólico y el diastólico.',
+        ),
+      ).toBeInTheDocument();
+    });
+	  });
 
   describe('PREFILL - Última medición como punto de partida', () => {
     it('TDD-4.4-PREFILL: precarga el peso con la última medición cuando hay historial', async () => {
