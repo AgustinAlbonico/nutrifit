@@ -400,6 +400,8 @@ export function ConsultaProfesionalPage() {
   const [cargandoAdjuntos, setCargandoAdjuntos] = useState(false);
   const [subiendoAdjunto, setSubiendoAdjunto] = useState(false);
   const [eliminandoAdjuntoId, setEliminandoAdjuntoId] = useState<number | null>(null);
+  const [arrastrandoArchivo, setArrastrandoArchivo] = useState(false);
+  const [colaArchivos, setColaArchivos] = useState<File[]>([]);
 
   // Estado para secciones colapsables
 const [secciones, setSecciones] = useState<EstadoSeccionesMediciones>(() => leerSeccionesMediciones());
@@ -693,20 +695,26 @@ const camposPrecargados = estadoMedicionPrecargada.camposPrecargados;
 
   // === Funciones de Adjuntos Clínicos (continuación) ===
 
-  const subirAdjunto = async (archivo: File) => {
-    if (!token || !turnoId) return;
-
-    // Validar tamaño (10MB)
+  const validarArchivoAdjunto = (archivo: File): string | null => {
     if (archivo.size > 10 * 1024 * 1024) {
-      toast.error('El archivo excede el límite de 10MB.');
-      return;
+      return `${archivo.name}: excede el límite de 10MB.`;
     }
 
-    // Validar tipo MIME
     const tiposPermitidos = ['image/jpeg', 'image/png', 'application/pdf'];
     if (!tiposPermitidos.includes(archivo.type)) {
-      toast.error('Tipo de archivo no permitido. Solo se aceptan: JPG, PNG, PDF.');
-      return;
+      return `${archivo.name}: tipo no permitido (solo JPG, PNG, PDF).`;
+    }
+
+    return null;
+  };
+
+  const subirAdjuntoIndividual = async (archivo: File): Promise<boolean> => {
+    if (!token || !turnoId) return false;
+
+    const errorValidacion = validarArchivoAdjunto(archivo);
+    if (errorValidacion) {
+      toast.error(errorValidacion);
+      return false;
     }
 
     try {
@@ -725,16 +733,70 @@ const camposPrecargados = estadoMedicionPrecargada.camposPrecargados;
       );
 
       setAdjuntos((prev) => [response.data, ...prev]);
-      toast.success('Archivo subido correctamente.');
+      return true;
     } catch (requestError) {
       const mensaje =
         requestError instanceof Error
           ? requestError.message
-          : 'No se pudo subir el archivo.';
+          : `No se pudo subir ${archivo.name}.`;
       toast.error(mensaje);
+      return false;
     } finally {
       setSubiendoAdjunto(false);
     }
+  };
+
+  const subirColaAdjuntos = async (archivos: File[]) => {
+    if (archivos.length === 0) return;
+
+    setColaArchivos(archivos);
+    let exitos = 0;
+
+    for (const archivo of archivos) {
+      const ok = await subirAdjuntoIndividual(archivo);
+      if (ok) exitos += 1;
+    }
+
+    if (exitos > 0) {
+      toast.success(
+        exitos === 1
+          ? 'Archivo subido correctamente.'
+          : `${exitos} archivos subidos correctamente.`,
+      );
+    }
+
+    setColaArchivos([]);
+  };
+
+  const manejarSeleccionArchivos = (archivos: FileList | null) => {
+    if (!archivos || archivos.length === 0) return;
+    const lista = Array.from(archivos);
+    void subirColaAdjuntos(lista);
+  };
+
+  const manejarDropArchivos = (evento: React.DragEvent<HTMLDivElement>) => {
+    evento.preventDefault();
+    evento.stopPropagation();
+    setArrastrandoArchivo(false);
+    manejarSeleccionArchivos(evento.dataTransfer.files);
+  };
+
+  const manejarDragOverArchivos = (evento: React.DragEvent<HTMLDivElement>) => {
+    evento.preventDefault();
+    evento.stopPropagation();
+    if (!arrastrandoArchivo) setArrastrandoArchivo(true);
+  };
+
+  const manejarDragLeaveArchivos = (evento: React.DragEvent<HTMLDivElement>) => {
+    evento.preventDefault();
+    evento.stopPropagation();
+    if (evento.currentTarget === evento.target) {
+      setArrastrandoArchivo(false);
+    }
+  };
+
+  const subirAdjunto = async (archivo: File) => {
+    await subirAdjuntoIndividual(archivo);
   };
 
   const eliminarAdjunto = async (adjuntoId: number) => {
@@ -2083,37 +2145,75 @@ const camposPrecargados = estadoMedicionPrecargada.camposPrecargados;
 
               {/* Upload area */}
               {!consultaCerrada && (
-                <div className="flex flex-col md:flex-row items-start md:items-center gap-6 p-4 rounded-xl border border-dashed border-border bg-muted/10">
+                <div
+                  onDragOver={manejarDragOverArchivos}
+                  onDragEnter={manejarDragOverArchivos}
+                  onDragLeave={manejarDragLeaveArchivos}
+                  onDrop={manejarDropArchivos}
+                  data-testid="adjuntos-dropzone"
+                  className={
+                    `flex flex-col md:flex-row items-start md:items-center gap-6 p-4 rounded-xl border-2 border-dashed transition-colors ` +
+                    (arrastrandoArchivo
+                      ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
+                      : 'border-border bg-muted/10')
+                  }
+                >
                   <label
+                    data-testid="adjuntos-label"
                     className={
                       `flex flex-col items-center justify-center rounded-xl p-8 cursor-pointer transition-all w-full md:w-64 min-h-[160px] ` +
                       (subiendoAdjunto
                         ? 'border-border bg-muted/50 cursor-not-allowed opacity-60'
-                        : 'border border-primary/20 bg-primary/5 hover:border-primary/50 hover:bg-primary/10 shadow-sm')
+                        : arrastrandoArchivo
+                          ? 'border-2 border-primary bg-primary/15 shadow-md'
+                          : 'border border-primary/20 bg-primary/5 hover:border-primary/50 hover:bg-primary/10 shadow-sm')
                     }
                   >
                     <Upload className={`h-10 w-10 mb-3 ${subiendoAdjunto ? 'text-muted-foreground animate-pulse' : 'text-primary'}`} />
                     <span className={`font-medium ${subiendoAdjunto ? 'text-muted-foreground' : 'text-primary'}`}>
-                      {subiendoAdjunto ? 'Subiendo...' : 'Seleccionar archivo'}
+                      {arrastrandoArchivo
+                        ? 'Soltá el archivo acá'
+                        : subiendoAdjunto
+                          ? 'Subiendo...'
+                          : 'Seleccionar archivo(s)'}
                     </span>
                     <input
                       type="file"
                       accept="image/jpeg,image/png,application/pdf"
+                      multiple
                       className="hidden"
                       disabled={subiendoAdjunto}
                       onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) void subirAdjunto(file);
+                        manejarSeleccionArchivos(e.target.files);
+                        e.target.value = '';
                       }}
                     />
                   </label>
                   <div className="space-y-2 text-sm text-muted-foreground flex-1">
                     <h4 className="font-medium text-foreground">Sube estudios, análisis o fotos</h4>
                     <ul className="list-disc pl-5 space-y-1 marker:text-primary/50">
+                      <li>Podés <strong>arrastrar y soltar</strong> varios archivos a la vez</li>
                       <li>Formatos soportados: <strong>JPG, PNG, PDF</strong></li>
                       <li>Tamaño máximo: <strong>10MB por archivo</strong></li>
                       <li>Los archivos quedan asociados de forma permanente a esta consulta</li>
                     </ul>
+                    {colaArchivos.length > 0 && (
+                      <div
+                        data-testid="adjuntos-cola"
+                        className="mt-3 rounded-lg border border-primary/30 bg-primary/5 p-3"
+                      >
+                        <p className="text-xs font-medium text-foreground">
+                          Subiendo {colaArchivos.length} archivo{colaArchivos.length === 1 ? '' : 's'}...
+                        </p>
+                        <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                          {colaArchivos.map((archivo, idx) => (
+                            <li key={`${archivo.name}-${idx}`} className="truncate">
+                              · {archivo.name}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
