@@ -56,12 +56,14 @@ interface PropiedadesDashboardProgreso {
   nutricionistaId?: number;
   esVistaNutricionista?: boolean;
   nombrePaciente?: string;
+  backTo?: string;
 }
 export function DashboardProgreso({
   socioId,
   nutricionistaId,
   esVistaNutricionista = false,
   nombrePaciente,
+  backTo,
 }: PropiedadesDashboardProgreso) {
   const { token, rol } = useAuth();
   const [tabActivo, setTabActivo] = useState<TabActivo>('resumen');
@@ -153,10 +155,10 @@ export function DashboardProgreso({
     return (
       <div className="space-y-6">
         {esVistaNutricionista && (
-          <Link to="/turnos-profesional">
+          <Link to={backTo || "/turnos-profesional"}>
             <Button variant="ghost" size="sm">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Volver a turnos
+              Volver
             </Button>
           </Link>
         )}
@@ -241,7 +243,7 @@ export function DashboardProgreso({
         acciones={
           <>
             {esVistaNutricionista && (
-              <Link to="/turnos-profesional">
+              <Link to={backTo || "/turnos-profesional"}>
                 <Button variant="ghost" size="sm" className="rounded-full bg-white/70">
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Volver

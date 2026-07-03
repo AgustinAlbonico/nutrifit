@@ -10,6 +10,10 @@ export function ProgresoPacientePage() {
   });
   const socioId = Number(socioIdParam);
 
+  const searchParams = new URLSearchParams(window.location.search);
+  const consultaId = searchParams.get('consulta');
+  const volverA = consultaId ? `/profesional/consulta/${consultaId}` : undefined;
+
   if (!socioId) {
     return (
       <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
@@ -25,6 +29,7 @@ export function ProgresoPacientePage() {
       socioId={socioId}
       nutricionistaId={personaId ?? undefined}
       esVistaNutricionista={true}
+      backTo={volverA}
     />
   );
 }

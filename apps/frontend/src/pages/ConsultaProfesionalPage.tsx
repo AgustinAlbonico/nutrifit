@@ -1490,6 +1490,7 @@ const camposPrecargados = estadoMedicionPrecargada.camposPrecargados;
               <Link
                 to="/profesional/paciente/$socioId/progreso"
                 params={{ socioId: socio.idPersona.toString() }}
+                search={{ consulta: idTurnoNumerico }}
               >
                 <Button variant="outline">
                   <TrendingUp className="mr-2 h-4 w-4" />
