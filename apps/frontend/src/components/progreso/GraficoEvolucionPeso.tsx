@@ -17,9 +17,10 @@ import type { HistorialMediciones, ResumenProgreso, DatoGraficoPeso } from './ty
 interface GraficoEvolucionPesoProps {
   historial: HistorialMediciones | undefined;
   resumen: ResumenProgreso | undefined;
+  objetivoPeso?: number | null;
 }
 
-export function GraficoEvolucionPeso({ historial, resumen }: GraficoEvolucionPesoProps) {
+export function GraficoEvolucionPeso({ historial, resumen, objetivoPeso }: GraficoEvolucionPesoProps) {
   const datos: DatoGraficoPeso[] = useMemo(() => {
     if (!historial?.mediciones || historial.mediciones.length === 0) {
       return [];
@@ -35,10 +36,11 @@ export function GraficoEvolucionPeso({ historial, resumen }: GraficoEvolucionPes
       fechaFormateada: format(parseISO(m.fecha), 'dd MMM', { locale: es }),
       peso: m.peso,
       imc: m.imc,
+      objetivo: objetivoPeso ?? undefined,
       pesoMinimoSaludable: resumen?.rangoSaludable.pesoMinimo ?? undefined,
       pesoMaximoSaludable: resumen?.rangoSaludable.pesoMaximo ?? undefined,
     }));
-  }, [historial, resumen]);
+  }, [historial, objetivoPeso, resumen]);
 
   if (datos.length === 0) {
     return (
@@ -48,14 +50,20 @@ export function GraficoEvolucionPeso({ historial, resumen }: GraficoEvolucionPes
     );
   }
 
-  const pesoMinimo = Math.min(...datos.map((d) => d.peso)) - 2;
-  const pesoMaximo = Math.max(...datos.map((d) => d.peso)) + 2;
+  const valoresPeso = datos.flatMap((d) => (d.objetivo == null ? [d.peso] : [d.peso, d.objetivo]));
+  const pesoMinimo = Math.min(...valoresPeso) - 2;
+  const pesoMaximo = Math.max(...valoresPeso) + 2;
 
   return (
     <div className="rounded-lg border bg-white p-4">
       <h3 className="mb-4 text-lg font-semibold text-gray-900">
         Evolución de Peso
       </h3>
+      {objetivoPeso != null && (
+        <p className="mb-3 rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
+          Objetivo de peso: {objetivoPeso} kg
+        </p>
+      )}
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={datos} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -120,6 +128,18 @@ export function GraficoEvolucionPeso({ historial, resumen }: GraficoEvolucionPes
             activeDot={{ r: 6 }}
             name="peso"
           />
+          {objetivoPeso != null && (
+            <Line
+              yAxisId="peso"
+              type="monotone"
+              dataKey="objetivo"
+              stroke="#2563eb"
+              strokeWidth={2}
+              strokeDasharray="8 4"
+              dot={false}
+              name="objetivo"
+            />
+          )}
           <Line
             yAxisId="imc"
             type="monotone"

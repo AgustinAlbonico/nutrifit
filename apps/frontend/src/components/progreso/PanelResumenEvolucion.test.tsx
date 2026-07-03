@@ -25,6 +25,20 @@ describe('PanelResumenEvolucion', () => {
             unidad: 'cm',
             tendenciaTexto: 'vs linea base',
           },
+          grasaCorporalActual: {
+            valor: 26,
+            deltaLineaBase: -4,
+            deltaPorcentual: -13.33,
+            unidad: '%',
+            tendenciaTexto: 'vs linea base',
+          },
+          masaMagraActual: {
+            valor: 62.2,
+            deltaLineaBase: 1.8,
+            deltaPorcentual: 2.98,
+            unidad: 'kg',
+            tendenciaTexto: 'vs linea base',
+          },
         }}
       />,
     );
@@ -36,6 +50,10 @@ describe('PanelResumenEvolucion', () => {
     expect(screen.getByText('75 kg')).toBeInTheDocument();
     expect(screen.getByText('Cintura actual')).toBeInTheDocument();
     expect(screen.getByText('86 cm')).toBeInTheDocument();
+    expect(screen.getByText('Grasa corporal')).toBeInTheDocument();
+    expect(screen.getByText('26 %')).toBeInTheDocument();
+    expect(screen.getByText('Masa magra')).toBeInTheDocument();
+    expect(screen.getByText('62.2 kg')).toBeInTheDocument();
   });
 
   it('muestra la relacion cintura-cadera y la categoria de riesgo cuando hay dato', () => {

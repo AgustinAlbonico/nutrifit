@@ -16,6 +16,8 @@ interface PropiedadesPanelResumenEvolucion {
   kpis: {
     pesoActual?: KpiEvolucion;
     cinturaActual?: KpiEvolucion;
+    grasaCorporalActual?: KpiEvolucion;
+    masaMagraActual?: KpiEvolucion;
   };
   riesgoCardiovascular?: {
     relacion: number | null;
@@ -117,9 +119,11 @@ export function PanelResumenEvolucion({
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 xl:max-w-4xl">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           <TarjetaKpi titulo="Peso actual" kpi={kpis.pesoActual} />
           <TarjetaKpi titulo="Cintura actual" kpi={kpis.cinturaActual} />
+          <TarjetaKpi titulo="Grasa corporal" kpi={kpis.grasaCorporalActual} />
+          <TarjetaKpi titulo="Masa magra" kpi={kpis.masaMagraActual} />
           {riesgoCardiovascular ? (
             <div className="rounded-[1.75rem] border border-orange-950/10 bg-white/80 p-5 shadow-sm backdrop-blur-sm">
               <p className="text-xs font-medium uppercase tracking-[0.22em] text-slate-500">Riesgo cardiovascular</p>

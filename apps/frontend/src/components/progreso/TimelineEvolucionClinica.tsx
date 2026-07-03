@@ -15,6 +15,9 @@ interface PropiedadesTimelineEvolucionClinica {
 export function TimelineEvolucionClinica({ eventos }: PropiedadesTimelineEvolucionClinica) {
   const [paginaActual, setPaginaActual] = useState(1);
   const [limitePorPagina, setLimitePorPagina] = useState(10);
+  const [eventoSeleccionadoId, setEventoSeleccionadoId] = useState<string | null>(
+    eventos[0]?.id ?? null,
+  );
 
   const totalPaginas = Math.max(1, Math.ceil(eventos.length / limitePorPagina));
   const inicio = (paginaActual - 1) * limitePorPagina;
@@ -45,8 +48,16 @@ export function TimelineEvolucionClinica({ eventos }: PropiedadesTimelineEvoluci
             className="rounded-[1.5rem] border border-slate-200 bg-[linear-gradient(135deg,rgba(255,247,237,0.92),rgba(255,255,255,0.98))] p-4"
           >
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-orange-700">{evento.fecha}</p>
-            <h3 className="mt-2 text-lg font-bold tracking-tight text-slate-950">{evento.titulo}</h3>
-            <p className="mt-2 text-sm text-slate-600">{evento.descripcion}</p>
+            <button
+              type="button"
+              className="mt-2 text-left text-lg font-bold tracking-tight text-slate-950 transition hover:text-orange-700"
+              onClick={() => setEventoSeleccionadoId(evento.id)}
+            >
+              {evento.titulo}
+            </button>
+            {eventoSeleccionadoId === evento.id && (
+              <p className="mt-2 text-sm text-slate-600">{evento.descripcion}</p>
+            )}
           </article>
         ))}
       </div>

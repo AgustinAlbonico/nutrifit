@@ -30,6 +30,7 @@ interface PropiedadesGraficoPrincipalEvolucion {
   onCambiarModo: (modo: ModoGraficoPrincipal) => void;
   historial: HistorialMediciones | undefined;
   resumen: ResumenProgreso | undefined;
+  objetivoPeso?: number | null;
 }
 
 const MODOS: Array<{ id: ModoGraficoPrincipal; label: string }> = [
@@ -124,6 +125,7 @@ export function GraficoPrincipalEvolucion({
   onCambiarModo,
   historial,
   resumen,
+  objetivoPeso,
 }: PropiedadesGraficoPrincipalEvolucion) {
   const datos = useDatosOrdenados(historial);
 
@@ -152,7 +154,9 @@ export function GraficoPrincipalEvolucion({
         </div>
       </div>
 
-      {modo === 'peso' && <GraficoEvolucionPeso historial={historial} resumen={resumen} />}
+      {modo === 'peso' && (
+        <GraficoEvolucionPeso historial={historial} resumen={resumen} objetivoPeso={objetivoPeso} />
+      )}
       {modo === 'pliegues' && <PanelPlieguesEvolucion historial={historial} />}
       {modo === 'imc' && (
         <GraficoLineaSimple

@@ -47,7 +47,8 @@ const resumenBase: ResumenProgreso = {
   rangoSaludable: { pesoMinimo: 50.36, pesoMaximo: 67.81 },
   totalMediciones: 1,
   primeraMedicion: '2026-04-10T10:00:00.000Z',
-  ultimaMedicion: '2026-04-10T10:00:00.000Z',
+      ultimaMedicion: '2026-04-10T10:00:00.000Z',
+      alertasClinicas: [],
 };
 
 describe('GraficoPrincipalEvolucion', () => {
@@ -63,5 +64,19 @@ describe('GraficoPrincipalEvolucion', () => {
 
     expect(screen.getByRole('button', { name: /pliegues/i })).toBeInTheDocument();
     expect(screen.getAllByText('Pliegues cutaneos').length).toBeGreaterThan(0);
+  });
+
+  it('muestra la referencia del objetivo de peso cuando existe', () => {
+    render(
+      <GraficoPrincipalEvolucion
+        modo="peso"
+        onCambiarModo={() => {}}
+        historial={historialBase}
+        resumen={resumenBase}
+        objetivoPeso={72}
+      />,
+    );
+
+    expect(screen.getByText('Objetivo de peso: 72 kg')).toBeInTheDocument();
   });
 });
