@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 
@@ -78,6 +78,15 @@ const handlerResumen = http.get(
         totalMediciones: 4,
         primeraMedicion: '2026-01-10T10:00:00.000Z',
         ultimaMedicion: '2026-06-15T10:00:00.000Z',
+        alertasClinicas: [
+          {
+            severidad: 'critica',
+            titulo: 'Riesgo cardiovascular alto',
+            mensaje: 'La relacion cintura/cadera actual indica riesgo cardiovascular alto.',
+            metrica: 'relacion_cintura_cadera',
+            valor: 1.02,
+          },
+        ],
       },
     }),
 );
@@ -93,6 +102,28 @@ const handlerMediciones = http.get(
         apellidoSocio: 'Central',
         altura: 190,
         mediciones: [
+          {
+            idMedicion: 0,
+            fecha: '2026-01-10T10:00:00.000Z',
+            peso: 92,
+            altura: 190,
+            imc: 25.5,
+            perimetroCintura: 96,
+            perimetroCadera: 108,
+            perimetroBrazo: 33,
+            perimetroMuslo: 60,
+            perimetroPecho: 100,
+            pliegueTriceps: 16,
+            pliegueAbdominal: 20,
+            pliegueMuslo: 22,
+            porcentajeGrasa: 28,
+            masaMagra: 66.2,
+            frecuenciaCardiaca: 74,
+            tensionSistolica: 122,
+            tensionDiastolica: 80,
+            notasMedicion: 'Linea base',
+            profesional: { id: 5, nombre: 'Nutri', apellido: 'Central' },
+          },
           {
             idMedicion: 1,
             fecha: '2026-06-15T10:00:00.000Z',
@@ -143,5 +174,26 @@ describe('DashboardProgreso', () => {
 
     expect(screen.queryByText(/Rango saludable/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('tab', { name: /graficos/i })).not.toBeInTheDocument();
+  });
+
+  it('muestra alertas clinicas, comparador y exportacion CSV', async () => {
+    render(
+      <QueryClientProvider client={buildQueryClient()}>
+        <DashboardProgreso socioId={9} nutricionistaId={5} esVistaNutricionista />
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Progreso de Socio2 Central')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Riesgo cardiovascular alto')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Exportar CSV/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Comparador/i }));
+
+    expect(screen.getByText('Comparador de mediciones')).toBeInTheDocument();
+    expect(screen.getAllByText(/Medicion inicial/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Medicion actual/i).length).toBeGreaterThan(0);
   });
 });

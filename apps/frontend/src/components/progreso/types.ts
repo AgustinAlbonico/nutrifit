@@ -3,6 +3,20 @@
 export type Tendencia = 'subiendo' | 'bajando' | 'estable';
 export type CategoriaIMC = 'bajo_peso' | 'normal' | 'sobrepeso' | 'obesidad';
 export type RiesgoCardiovascular = 'bajo' | 'moderado' | 'alto';
+export type SeveridadAlertaClinica = 'informativa' | 'importante' | 'critica';
+export type MetricaAlertaClinica =
+  | 'relacion_cintura_cadera'
+  | 'imc'
+  | 'peso'
+  | 'tension_arterial';
+
+export interface AlertaClinicaProgreso {
+  severidad: SeveridadAlertaClinica;
+  titulo: string;
+  mensaje: string;
+  metrica: MetricaAlertaClinica;
+  valor: number;
+}
 
 export interface MedicionHistorial {
   idMedicion: number;
@@ -69,6 +83,7 @@ export interface ResumenProgreso {
   totalMediciones: number;
   primeraMedicion: string | null;
   ultimaMedicion: string | null;
+  alertasClinicas: AlertaClinicaProgreso[];
 }
 
 export interface HistorialMediciones {

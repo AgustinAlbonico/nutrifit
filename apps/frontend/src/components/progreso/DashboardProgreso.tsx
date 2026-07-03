@@ -7,6 +7,7 @@ import {
   Camera,
   Target,
   Plus,
+  Scale,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -22,12 +23,15 @@ import { PanelPlieguesEvolucion } from '@/components/progreso/PanelPlieguesEvolu
 import { PanelResumenEvolucion } from '@/components/progreso/PanelResumenEvolucion';
 import { TablaEvolucionPaciente } from '@/components/progreso/TablaEvolucionPaciente';
 import { TimelineEvolucionClinica } from '@/components/progreso/TimelineEvolucionClinica';
+import { AlertasClinicasProgreso } from '@/components/progreso/AlertasClinicasProgreso';
+import { ComparadorMediciones } from '@/components/progreso/ComparadorMediciones';
 import { useProgresoData } from '@/components/progreso/useProgresoData';
 import { derivarSeriesEvolucion } from '@/components/progreso/useSeriesEvolucion';
 import { RangoSaludableBadge } from '@/components/progreso/IndicadoresProgreso';
 
 // PDF Export
 import { ExportProgresoPDFButton } from '@/components/progreso/ExportProgresoPDFButton';
+import { ExportProgresoCSVButton } from '@/components/progreso/ExportProgresoCSVButton';
 
 // Photo components
 import { GaleriaFotos } from '@/components/progreso/GaleriaFotos';
@@ -45,7 +49,7 @@ import {
 } from '@/components/progreso/useObjetivos';
 import type { RangoTemporalEvolucion } from '@/components/progreso/types';
 
-type TabActivo = 'resumen' | 'fotos' | 'objetivos' | 'historial';
+type TabActivo = 'resumen' | 'historial' | 'comparador' | 'fotos' | 'objetivos';
 
 interface PropiedadesDashboardProgreso {
   socioId: number;
@@ -94,6 +98,9 @@ export function DashboardProgreso({
 
   const puedeEditar = rol === 'SOCIO' || rol === 'NUTRICIONISTA';
   const seriesEvolucion = derivarSeriesEvolucion(historial, rangoTemporal);
+  const objetivoPesoActivo = listaObjetivos?.activos.find(
+    (objetivo) => objetivo.tipoMetrica === 'PESO',
+  )?.valorObjetivo ?? null;
   const historialFiltrado = historial
     ? { ...historial, mediciones: seriesEvolucion.mediciones }
     : undefined;
@@ -211,6 +218,7 @@ export function DashboardProgreso({
   const tabs = [
     { id: 'resumen' as TabActivo, label: 'Resumen', icon: TrendingUp },
     { id: 'historial' as TabActivo, label: 'Historial', icon: History },
+    { id: 'comparador' as TabActivo, label: 'Comparador', icon: Scale },
     { id: 'fotos' as TabActivo, label: 'Fotos', icon: Camera },
     { id: 'objetivos' as TabActivo, label: 'Objetivos', icon: Target },
   ];
@@ -246,6 +254,10 @@ export function DashboardProgreso({
               objetivos={listaObjetivos?.activos ?? []}
               galeria={galeriaFotos}
               nombreSocio={esVistaNutricionista ? (nombrePaciente || 'Paciente') : `${historial?.nombreSocio || ''} ${historial?.apellidoSocio || ''}`.trim() || 'Yo'}
+              socioId={socioId}
+            />
+            <ExportProgresoCSVButton
+              mediciones={historial?.mediciones ?? []}
               socioId={socioId}
             />
           </>
@@ -285,12 +297,15 @@ export function DashboardProgreso({
       {/* Contenido de tabs */}
       {tabActivo === 'resumen' && (
         <div className="space-y-6">
+          <AlertasClinicasProgreso alertas={resumen?.alertasClinicas ?? []} />
+
           <Suspense fallback={<Skeleton className="h-80" />}>
             <GraficoPrincipalEvolucion
               modo={modoGraficoPrincipal}
               onCambiarModo={setModoGraficoPrincipal}
               historial={historialFiltrado}
               resumen={resumen}
+              objetivoPeso={objetivoPesoActivo}
             />
           </Suspense>
 
@@ -435,7 +450,15 @@ export function DashboardProgreso({
             peso: `${medicion.peso} kg`,
             imc: medicion.imc.toFixed(1),
             cintura: medicion.perimetroCintura ? `${medicion.perimetroCintura} cm` : '-',
+            cadera: medicion.perimetroCadera ? `${medicion.perimetroCadera} cm` : '-',
             pecho: medicion.perimetroPecho ? `${medicion.perimetroPecho} cm` : '-',
+            grasaCorporal: medicion.porcentajeGrasa ? `${medicion.porcentajeGrasa} %` : '-',
+            masaMagra: medicion.masaMagra ? `${medicion.masaMagra} kg` : '-',
+            frecuenciaCardiaca: medicion.frecuenciaCardiaca ? `${medicion.frecuenciaCardiaca} lpm` : '-',
+            tensionArterial:
+              medicion.tensionSistolica && medicion.tensionDiastolica
+                ? `${medicion.tensionSistolica}/${medicion.tensionDiastolica}`
+                : '-',
             deltaPeso:
               indice === 0
                 ? '-'
@@ -443,6 +466,10 @@ export function DashboardProgreso({
             detalle: medicion.notasMedicion ?? 'Sin notas de medicion',
           }))}
         />
+      )}
+
+      {tabActivo === 'comparador' && (
+        <ComparadorMediciones mediciones={seriesEvolucion.mediciones} />
       )}
     </div>
   );

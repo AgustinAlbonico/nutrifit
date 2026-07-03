@@ -1,13 +1,14 @@
+import { useParams } from '@tanstack/react-router';
+
 import { DashboardProgreso } from '@/components/progreso/DashboardProgreso';
 import { useAuth } from '@/contexts/AuthContext';
 
 export function ProgresoPacientePage() {
   const { personaId } = useAuth();
-  
-  // Obtener socioId de la URL
-  const pathParts = window.location.pathname.split('/');
-  const socioIdIndex = pathParts.indexOf('paciente') + 1;
-  const socioId = pathParts[socioIdIndex] ? Number(pathParts[socioIdIndex]) : 0;
+  const { socioId: socioIdParam } = useParams({
+    from: '/auth/profesional/paciente/$socioId/progreso',
+  });
+  const socioId = Number(socioIdParam);
 
   if (!socioId) {
     return (
