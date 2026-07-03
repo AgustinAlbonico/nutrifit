@@ -87,7 +87,7 @@ export function Sidebar() {
       to: '/socios',
       label: 'Socios',
       icon: User,
-      roles: ['ADMIN'],
+      roles: ['ADMIN', 'RECEPCIONISTA'],
     },
     {
       to: '/permisos',
