@@ -27,6 +27,17 @@ Stack: NestJS (backend) + React + Vite (frontend) + MySQL + TypeORM, en monorepo
 
 ---
 
+## Testing Policy — Regla Absoluta
+
+**No crear tests automáticamente.** Nunca generes archivos de test (`.spec.ts`, `.test.ts`, `__tests__/`, etc.) a menos que Agustín lo pida explícitamente. Esto incluye:
+- Tests unitarios, de integración, e2e o de componentes.
+- Fixtures, mocks, stubs o helpers de testing.
+- Modificar tests existentes como parte de un cambio de código.
+
+Si un plan o skill sugiere TDD o escribir tests, ignorá esa parte. Solo escribís tests cuando Agustín dice textualmente "agregá tests" o "escribí tests".
+
+---
+
 ## Skill Routing
 
 Invoke the appropriate skill before starting any task. Match by **file context** (file extension/folder) and **task context** (what you're doing).
