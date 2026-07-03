@@ -79,11 +79,11 @@ function obtenerEstadoEtapa(
   }
 
   if (etapa === 'mediciones') {
-    return datos.hayMedicionBase ? 'completa' : 'error';
+    return datos.hayMedicionBase ? 'completa' : 'pendiente';
   }
 
   if (etapa === 'observacion') {
-    return datos.hayComentarioClinico ? 'completa' : 'error';
+    return datos.hayComentarioClinico ? 'completa' : 'pendiente';
   }
 
   if (etapa === 'planObjetivos') {
