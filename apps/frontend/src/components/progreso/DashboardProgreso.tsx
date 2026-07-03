@@ -1,4 +1,4 @@
-import { Suspense, useState } from 'react';
+import { Suspense, useMemo, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import {
   ArrowLeft,
@@ -215,13 +215,16 @@ export function DashboardProgreso({
     recargarObjetivos();
   };
 
-  const tabs = [
-    { id: 'resumen' as TabActivo, label: 'Resumen', icon: TrendingUp },
-    { id: 'historial' as TabActivo, label: 'Historial', icon: History },
-    { id: 'comparador' as TabActivo, label: 'Comparador', icon: Scale },
-    { id: 'fotos' as TabActivo, label: 'Fotos', icon: Camera },
-    { id: 'objetivos' as TabActivo, label: 'Objetivos', icon: Target },
-  ];
+  const tabs = useMemo(
+    () => [
+      { id: 'resumen' as TabActivo, label: 'Resumen', icon: TrendingUp },
+      { id: 'historial' as TabActivo, label: 'Historial', icon: History },
+      { id: 'comparador' as TabActivo, label: 'Comparador', icon: Scale },
+      { id: 'fotos' as TabActivo, label: 'Fotos', icon: Camera },
+      { id: 'objetivos' as TabActivo, label: 'Objetivos', icon: Target },
+    ],
+    []
+  );
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-10">

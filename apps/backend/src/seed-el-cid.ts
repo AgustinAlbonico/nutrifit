@@ -3,7 +3,7 @@
 // Seed para crear el gimnasio "El Cid" con:
 //   - 3 nutricionistas (c/u con agenda)
 //   - 3 socios por nutricionista (9 total)
-//   - Historial de turnos (3-4 por socio, algunos REALIZADO y 1 CONFIRMADO)
+//   - Historial de turnos (4 por socio, todos REALIZADO)
 //   - 1 plan de alimentación por nutricionista (3 total, para 1 socio cada uno)
 //
 // Uso: npx ts-node -r tsconfig-paths/register src/seed-el-cid.ts
@@ -580,17 +580,17 @@ async function runSeedElCid() {
         totalTurnos++;
       }
 
-      // 1 turno CONFIRMADO en el futuro cercano
+      // 1 turno REALIZADO extra (todos los turnos seed son realizados)
       const fechaFutura = addDays(hoy, 7 + Math.floor(Math.random() * 14));
       const horaFutura = horasDia[3][0];
       await dataSource.query(
         `INSERT INTO turno (fecha, hora_turno, estado, creado_por, id_socio, id_nutricionista, id_gimnasio)
-         VALUES (?, ?, 'CONFIRMADO', 'SOCIO', ?, ?, ?)`,
+         VALUES (?, ?, 'REALIZADO', 'SOCIO', ?, ?, ?)`,
         [formatDate(fechaFutura), horaFutura, rel.idSocio, rel.idNutri, idGimnasio],
       );
       totalTurnos++;
     }
-    console.log(`Turnos creados: ${totalTurnos} (3 REALIZADO + 1 CONFIRMADO por socio).`);
+    console.log(`Turnos creados: ${totalTurnos} (4 REALIZADO por socio).`);
 
     // ── 5. Crear planes de alimentación ──
     // 1 plan por nutricionista, para el primer socio de su grupo

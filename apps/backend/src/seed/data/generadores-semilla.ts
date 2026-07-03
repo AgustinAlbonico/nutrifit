@@ -539,7 +539,7 @@ export function generarTurnosSemilla(
       idNutricionista: idNutri,
       fecha: fechaStrVal,
       hora: horaStr,
-      estado: esPasado ? 'REALIZADO' : 'CONFIRMADO',
+      estado: 'REALIZADO',
       idGimnasio: idGym,
     });
   }

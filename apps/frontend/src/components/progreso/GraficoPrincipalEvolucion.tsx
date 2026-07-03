@@ -1,14 +1,4 @@
-import { useMemo } from 'react';
-import {
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import { Suspense, lazy, useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -55,10 +45,63 @@ function formatearFecha(fecha: string) {
   return format(parseISO(fecha), 'dd MMM', { locale: es });
 }
 
+interface SerieGrafico {
+  key: string;
+  nombre: string;
+  color: string;
+}
+
+const ContenedorGraficoLinea = lazy(async () => {
+  const Recharts = await import('recharts');
+  return {
+    default: function ContenedorGraficoLinea(props: {
+      datos: Array<Record<string, number | string | null>>;
+      series: SerieGrafico[];
+      unidad?: string;
+    }) {
+      const { datos, series, unidad } = props;
+      return (
+        <div className="h-80">
+          <Recharts.ResponsiveContainer width="100%" height="100%">
+            <Recharts.LineChart data={datos} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+              <Recharts.CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <Recharts.XAxis dataKey="fecha" stroke="#64748b" tick={{ fontSize: 12 }} />
+              <Recharts.YAxis
+                stroke="#64748b"
+                tick={{ fontSize: 12 }}
+                label={
+                  unidad
+                    ? { value: unidad, angle: -90, position: 'insideLeft', style: { fontSize: 12, fill: '#6b7280' } }
+                    : undefined
+                }
+              />
+              <Recharts.Tooltip />
+              <Recharts.Legend />
+              {series.map((s) => (
+                <Recharts.Line
+                  key={s.key}
+                  type="monotone"
+                  dataKey={s.key}
+                  name={s.nombre}
+                  stroke={s.color}
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  connectNulls
+                />
+              ))}
+            </Recharts.LineChart>
+          </Recharts.ResponsiveContainer>
+        </div>
+      );
+    },
+  };
+});
+
 function useDatosOrdenados(historial: HistorialMediciones | undefined) {
   return useMemo(() => {
     if (!historial) return [];
-    return [...historial.mediciones]
+    return historial.mediciones
+      .slice()
       .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
       .map((medicion) => ({
         fecha: formatearFecha(medicion.fecha),
@@ -77,16 +120,12 @@ function useDatosOrdenados(historial: HistorialMediciones | undefined) {
   }, [historial]);
 }
 
-function GraficoLineaSimple({
-  datos,
-  series,
-  unidad,
-}: {
+function GraficoLineaSimple(props: {
   datos: Array<Record<string, number | string | null>>;
-  series: Array<{ key: string; nombre: string; color: string; unidad?: string }>;
+  series: SerieGrafico[];
   unidad?: string;
 }) {
-  if (datos.length === 0) {
+  if (props.datos.length === 0) {
     return (
       <div className="flex h-72 items-center justify-center rounded-2xl border border-dashed bg-slate-50 text-sm text-slate-500">
         Sin datos para graficar.
@@ -94,29 +133,15 @@ function GraficoLineaSimple({
     );
   }
   return (
-    <div className="h-80">
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={datos} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-          <XAxis dataKey="fecha" stroke="#64748b" tick={{ fontSize: 12 }} />
-          <YAxis stroke="#64748b" tick={{ fontSize: 12 }} label={unidad ? { value: unidad, angle: -90, position: 'insideLeft', style: { fontSize: 12, fill: '#6b7280' } } : undefined} />
-          <Tooltip />
-          <Legend />
-          {series.map((s) => (
-            <Line
-              key={s.key}
-              type="monotone"
-              dataKey={s.key}
-              name={s.nombre}
-              stroke={s.color}
-              strokeWidth={2}
-              dot={{ r: 3 }}
-              connectNulls
-            />
-          ))}
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
+    <Suspense
+      fallback={
+        <div className="flex h-72 items-center justify-center rounded-2xl border bg-slate-50 text-sm text-slate-500">
+          Cargando gráfico…
+        </div>
+      }
+    >
+      <ContenedorGraficoLinea datos={props.datos} series={props.series} unidad={props.unidad} />
+    </Suspense>
   );
 }
 

@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+  type FormEvent,
+} from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { useParams, useNavigate, Link } from '@tanstack/react-router';
@@ -394,9 +402,44 @@ export function ConsultaProfesionalPage() {
   const [eliminandoAdjuntoId, setEliminandoAdjuntoId] = useState<number | null>(null);
 
   // Estado para secciones colapsables
-  const [secciones, setSecciones] = useState<EstadoSeccionesMediciones>(() => leerSeccionesMediciones());
-  const [medicionActualId, setMedicionActualId] = useState<number | null>(null);
-  const [camposPrecargados, setCamposPrecargados] = useState<CampoMedicionPrecargado[]>([]);
+const [secciones, setSecciones] = useState<EstadoSeccionesMediciones>(() => leerSeccionesMediciones());
+
+interface EstadoMedicionPrecargada {
+  medicionActualId: number | null;
+  camposPrecargados: CampoMedicionPrecargado[];
+}
+
+type AccionMedicionPrecargada =
+  | { tipo: 'precargar'; idMedicion: number; campos: CampoMedicionPrecargado[] }
+  | { tipo: 'actualizarId'; idMedicion: number }
+  | { tipo: 'limpiar' };
+
+const estadoMedicionInicial: EstadoMedicionPrecargada = {
+  medicionActualId: null,
+  camposPrecargados: [],
+};
+
+function reducerMedicionPrecargada(
+  estado: EstadoMedicionPrecargada,
+  accion: AccionMedicionPrecargada
+): EstadoMedicionPrecargada {
+  switch (accion.tipo) {
+    case 'precargar':
+      return { medicionActualId: accion.idMedicion, camposPrecargados: accion.campos };
+    case 'actualizarId':
+      return { ...estado, medicionActualId: accion.idMedicion };
+    case 'limpiar':
+      return estadoMedicionInicial;
+  }
+}
+
+const [estadoMedicionPrecargada, despacharMedicionPrecargada] = useReducer(
+  reducerMedicionPrecargada,
+  estadoMedicionInicial
+);
+
+const medicionActualId = estadoMedicionPrecargada.medicionActualId;
+const camposPrecargados = estadoMedicionPrecargada.camposPrecargados;
 
   const toggleSeccion = (seccion: SeccionMediciones) => {
     setSecciones((prev) => {
@@ -602,8 +645,11 @@ export function ConsultaProfesionalPage() {
     registrarValorPrevio('tensionSistolica', ultima.tensionSistolica);
     registrarValorPrevio('tensionDiastolica', ultima.tensionDiastolica);
 
-    setMedicionActualId(ultima.idMedicion);
-    setCamposPrecargados(camposDesdeHistorial);
+    despacharMedicionPrecargada({
+      tipo: 'precargar',
+      idMedicion: ultima.idMedicion,
+      campos: camposDesdeHistorial,
+    });
     reset({
       ...previo,
       ...valoresPrecargados,
@@ -787,8 +833,8 @@ export function ConsultaProfesionalPage() {
         body: convertirMedicionesConsultaPayload(valores),
       });
 
-      setMedicionActualId(respuesta.data.idMedicion);
-      setCamposPrecargados([]);
+      despacharMedicionPrecargada({ tipo: 'actualizarId', idMedicion: respuesta.data.idMedicion });
+      despacharMedicionPrecargada({ tipo: 'limpiar' });
       setMensajeExito(
         actualizandoMedicion
           ? 'Mediciones actualizadas correctamente'
