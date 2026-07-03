@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 import type { MedicionHistorial } from './types';
 
 interface PropiedadesComparadorMediciones {
@@ -37,7 +39,20 @@ function fechaMedicion(medicion: MedicionHistorial): string {
 }
 
 export function ComparadorMediciones({ mediciones }: PropiedadesComparadorMediciones) {
-  if (mediciones.length < 2) {
+  const medicionesOrdenadas = [...mediciones].sort(
+    (a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime(),
+  );
+
+  const [idInicialSeleccionado, setIdInicialSeleccionado] = useState<string>(
+    medicionesOrdenadas.length > 0 ? String(medicionesOrdenadas[0].idMedicion) : '',
+  );
+  const [idActualSeleccionado, setIdActualSeleccionado] = useState<string>(
+    medicionesOrdenadas.length > 0
+      ? String(medicionesOrdenadas[medicionesOrdenadas.length - 1].idMedicion)
+      : '',
+  );
+
+  if (medicionesOrdenadas.length < 2) {
     return (
       <section className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
         <h2 className="text-lg font-semibold text-slate-950">Comparador de mediciones</h2>
@@ -48,11 +63,12 @@ export function ComparadorMediciones({ mediciones }: PropiedadesComparadorMedici
     );
   }
 
-  const medicionesOrdenadas = [...mediciones].sort(
-    (a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime(),
-  );
-  const medicionInicial = medicionesOrdenadas[0];
-  const medicionActual = medicionesOrdenadas[medicionesOrdenadas.length - 1];
+  const medicionInicial =
+    medicionesOrdenadas.find((m) => String(m.idMedicion) === idInicialSeleccionado) ??
+    medicionesOrdenadas[0];
+  const medicionActual =
+    medicionesOrdenadas.find((m) => String(m.idMedicion) === idActualSeleccionado) ??
+    medicionesOrdenadas[medicionesOrdenadas.length - 1];
 
   const metricas: MetricaComparada[] = [
     { etiqueta: 'Peso', unidad: 'kg', inicial: medicionInicial.peso, actual: medicionActual.peso },
@@ -93,14 +109,34 @@ export function ComparadorMediciones({ mediciones }: PropiedadesComparadorMedici
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-xl bg-slate-50 p-4">
+        <label className="rounded-xl bg-slate-50 p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Medicion inicial</p>
-          <p className="mt-1 text-lg font-bold text-slate-950">{fechaMedicion(medicionInicial)}</p>
-        </div>
-        <div className="rounded-xl bg-orange-50 p-4">
+          <select
+            className="mt-2 w-full rounded-md border border-slate-200 bg-white p-2 text-sm text-slate-950 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
+            value={idInicialSeleccionado}
+            onChange={(evento) => setIdInicialSeleccionado(evento.target.value)}
+          >
+            {medicionesOrdenadas.map((medicion) => (
+              <option key={medicion.idMedicion} value={String(medicion.idMedicion)}>
+                {fechaMedicion(medicion)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="rounded-xl bg-orange-50 p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-orange-700">Medicion actual</p>
-          <p className="mt-1 text-lg font-bold text-slate-950">{fechaMedicion(medicionActual)}</p>
-        </div>
+          <select
+            className="mt-2 w-full rounded-md border border-orange-200 bg-white p-2 text-sm text-slate-950 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
+            value={idActualSeleccionado}
+            onChange={(evento) => setIdActualSeleccionado(evento.target.value)}
+          >
+            {medicionesOrdenadas.map((medicion) => (
+              <option key={medicion.idMedicion} value={String(medicion.idMedicion)}>
+                {fechaMedicion(medicion)}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       <div className="overflow-x-auto">
