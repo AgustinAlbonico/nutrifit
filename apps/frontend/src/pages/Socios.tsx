@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect, useCallback, useMemo, type FormEvent } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { AlertCircle, Search, Users, XIcon } from 'lucide-react';
 import { format as formatearFechaIso } from 'date-fns';
@@ -181,6 +181,7 @@ export function Socios() {
       );
       return response.data ?? null;
     },
+    placeholderData: keepPreviousData,
     enabled: !!token,
   });
 

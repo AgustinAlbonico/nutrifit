@@ -1,7 +1,7 @@
 import type { EstadoTurno } from '@nutrifit/shared';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from '@tanstack/react-router';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CalendarDays, CalendarPlus, Clock } from 'lucide-react';
 import { addHours, format as formatearFechaIso, isToday } from 'date-fns';
 import { toast } from 'sonner';
@@ -88,6 +88,7 @@ export function Turnos() {
         { token },
       );
     },
+    placeholderData: keepPreviousData,
     enabled: !!token && rol === 'SOCIO' && fichaCargada !== false && !cargandoFicha,
   });
 

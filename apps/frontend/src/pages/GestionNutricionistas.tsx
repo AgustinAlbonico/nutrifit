@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect, useCallback, useMemo, useRef, type FormEvent, type ReactNode } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { AlertCircle, ChevronDown, Search, Trash2, Upload, Users, XIcon } from 'lucide-react';
 import { format as formatearFechaIso } from 'date-fns';
@@ -259,6 +259,7 @@ export function GestionNutricionistas() {
       );
       return response.data ?? null;
     },
+    placeholderData: keepPreviousData,
     enabled: !!token,
   });
 
