@@ -1,4 +1,5 @@
 export * from './abrir-ficha-desde-turno.use-case';
+export * from './actualizar-medicion.use-case';
 export * from './finalizar-consulta-por-inactividad.use-case';
 export * from './reabrir-consulta-cerrada-auto.use-case';
 export * from './asignar-turno-manual.use-case';

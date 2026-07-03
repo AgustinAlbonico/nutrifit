@@ -20,6 +20,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   AgendaSlotDto,
+  ActualizarMedicionDto,
   AsignarTurnoManualDto,
   AvisoLlegadaTardeDto,
   BloquearTurnoDto,
@@ -58,6 +59,7 @@ import {
 import type { PaginatedData } from '@nutrifit/shared';
 import {
   AbrirFichaDesdeTurnoUseCase,
+  ActualizarMedicionUseCase,
   AsignarTurnoManualUseCase,
   AvisoLlegadaTardeUseCase,
   BloquearTurnoUseCase,
@@ -149,6 +151,7 @@ export class TurnosController {
     private readonly getResumenProgresoUseCase: GetResumenProgresoUseCase,
     private readonly getTurnoByIdUseCase: GetTurnoByIdUseCase,
     private readonly getTurnoSocioByIdUseCase: GetTurnoSocioByIdUseCase,
+    private readonly actualizarMedicionUseCase: ActualizarMedicionUseCase,
     private readonly guardarMedicionesUseCase: GuardarMedicionesUseCase,
     private readonly guardarObservacionesUseCase: GuardarObservacionesUseCase,
     private readonly iniciarConsultaUseCase: IniciarConsultaUseCase,
@@ -846,6 +849,21 @@ export class TurnosController {
     this.logger.log(`Guardando mediciones para turno ${turnoId}.`);
 
     return this.guardarMedicionesUseCase.execute(turnoId, payload);
+  }
+
+  @Put(':id/mediciones/:medicionId')
+  @Rol(RolEnum.NUTRICIONISTA)
+  @UseGuards(TurnoNutricionistaAccessGuard)
+  async actualizarMedicion(
+    @Param('id', ParseIntPipe) turnoId: number,
+    @Param('medicionId', ParseIntPipe) medicionId: number,
+    @Body() payload: ActualizarMedicionDto,
+  ): Promise<{ success: boolean; imc: number; idMedicion: number }> {
+    this.logger.log(
+      `Actualizando medición ${medicionId} para turno ${turnoId}.`,
+    );
+
+    return this.actualizarMedicionUseCase.execute(turnoId, medicionId, payload);
   }
 
   @Post(':id/observaciones')

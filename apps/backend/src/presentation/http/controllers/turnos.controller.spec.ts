@@ -1,11 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ExecutionContext } from '@nestjs/common';
+import { ExecutionContext, RequestMethod } from '@nestjs/common';
+import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
 import { Reflector } from '@nestjs/core';
 import { TurnosController } from './turnos.controller';
 import { JwtAuthGuard } from 'src/infrastructure/auth/guards/auth.guard';
 import { RolesGuard } from 'src/infrastructure/auth/guards/roles.guard';
 import { NutricionistaOwnershipGuard } from 'src/infrastructure/auth/guards/nutricionista-ownership.guard';
 import { Rol } from 'src/domain/entities/Usuario/Rol';
+import { ActualizarMedicionDto } from 'src/application/turnos/dtos';
 
 /**
  * Spec de RB16 para los endpoints de ficha de salud en TurnosController.
@@ -188,3 +190,36 @@ describe('TurnosController — RB16 (RECEPCIONISTA no ve ficha-salud)', () => {
 // en la cadena de autorización de los endpoints de ficha-salud.
 void JwtAuthGuard;
 void NutricionistaOwnershipGuard;
+
+describe('TurnosController — mediciones editables', () => {
+  it('expone PUT /turnos/:id/mediciones/:medicionId', () => {
+    const handler = TurnosController.prototype.actualizarMedicion;
+
+    expect(Reflect.getMetadata(PATH_METADATA, handler)).toBe(
+      ':id/mediciones/:medicionId',
+    );
+    expect(Reflect.getMetadata(METHOD_METADATA, handler)).toBe(
+      RequestMethod.PUT,
+    );
+  });
+
+  it('delega PUT /turnos/:id/mediciones/:medicionId al caso de uso de actualización', async () => {
+    const payload: ActualizarMedicionDto = { peso: 72, altura: 180 };
+    const actualizarMedicionUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        success: true,
+        imc: 22.22,
+        idMedicion: 5,
+      }),
+    };
+    const controller = Object.assign(Object.create(TurnosController.prototype), {
+      actualizarMedicionUseCase,
+      logger: { log: jest.fn() },
+    }) as Pick<TurnosController, 'actualizarMedicion'>;
+
+    const resultado = await controller.actualizarMedicion(1, 5, payload);
+
+    expect(actualizarMedicionUseCase.execute).toHaveBeenCalledWith(1, 5, payload);
+    expect(resultado).toEqual({ success: true, imc: 22.22, idMedicion: 5 });
+  });
+});

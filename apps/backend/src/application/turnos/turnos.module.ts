@@ -19,6 +19,7 @@ import {
 import { RepositoriesModule } from 'src/infrastructure/persistence/typeorm/repositories/repositories.module';
 import {
   AbrirFichaDesdeTurnoUseCase,
+  ActualizarMedicionUseCase,
   AsignarTurnoManualUseCase,
   AvisoLlegadaTardeUseCase,
   BloquearTurnoUseCase,
@@ -94,6 +95,7 @@ import { EmailModule } from 'src/application/email/email.module';
   ],
   providers: [
     AbrirFichaDesdeTurnoUseCase,
+    ActualizarMedicionUseCase,
     AsignarTurnoManualUseCase,
     AvisoLlegadaTardeUseCase,
     BloquearTurnoUseCase,
@@ -140,6 +142,7 @@ import { EmailModule } from 'src/application/email/email.module';
   ],
   exports: [
     AbrirFichaDesdeTurnoUseCase,
+    ActualizarMedicionUseCase,
     AsignarTurnoManualUseCase,
     AvisoLlegadaTardeUseCase,
     BloquearTurnoUseCase,
