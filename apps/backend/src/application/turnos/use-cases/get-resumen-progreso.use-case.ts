@@ -10,6 +10,20 @@ import { Genero } from 'src/domain/entities/Persona/Genero';
 export type Tendencia = 'subiendo' | 'bajando' | 'estable';
 export type CategoriaIMC = 'bajo_peso' | 'normal' | 'sobrepeso' | 'obesidad';
 export type RiesgoCardiovascular = 'bajo' | 'moderado' | 'alto';
+export type SeveridadAlertaClinica = 'informativa' | 'importante' | 'critica';
+export type MetricaAlertaClinica =
+  | 'relacion_cintura_cadera'
+  | 'imc'
+  | 'peso'
+  | 'tension_arterial';
+
+export interface AlertaClinicaProgreso {
+  severidad: SeveridadAlertaClinica;
+  titulo: string;
+  mensaje: string;
+  metrica: MetricaAlertaClinica;
+  valor: number;
+}
 
 export interface ProgresoMetrica {
   inicial: number | null;
@@ -49,6 +63,7 @@ export interface ResumenProgresoResponse {
   totalMediciones: number;
   primeraMedicion: Date | null;
   ultimaMedicion: Date | null;
+  alertasClinicas: AlertaClinicaProgreso[];
 }
 
 @Injectable()
@@ -146,6 +161,7 @@ export class GetResumenProgresoUseCase {
         mediciones.length > 0
           ? mediciones[mediciones.length - 1].createdAt
           : null,
+      alertasClinicas: [],
     };
 
     if (mediciones.length === 0) {
@@ -209,6 +225,15 @@ export class GetResumenProgresoUseCase {
     const riesgoCardiovascular = relacionActual
       ? this.evaluarRiesgoCardiovascular(relacionActual, socio.genero)
       : null;
+    const medicionAnterior =
+      mediciones.length > 1 ? mediciones[mediciones.length - 2] : null;
+    const alertasClinicas = this.calcularAlertasClinicas({
+      ultimaMedicion,
+      medicionAnterior,
+      relacionActual,
+      riesgoCardiovascular,
+      categoriaIMC,
+    });
 
     return {
       peso: {
@@ -241,7 +266,81 @@ export class GetResumenProgresoUseCase {
       totalMediciones: mediciones.length,
       primeraMedicion: primeraMedicion.createdAt,
       ultimaMedicion: ultimaMedicion.createdAt,
+      alertasClinicas,
     };
+  }
+
+  private calcularAlertasClinicas({
+    ultimaMedicion,
+    medicionAnterior,
+    relacionActual,
+    riesgoCardiovascular,
+    categoriaIMC,
+  }: {
+    ultimaMedicion: MedicionOrmEntity;
+    medicionAnterior: MedicionOrmEntity | null;
+    relacionActual: number | null;
+    riesgoCardiovascular: RiesgoCardiovascular | null;
+    categoriaIMC: CategoriaIMC;
+  }): AlertaClinicaProgreso[] {
+    const alertas: AlertaClinicaProgreso[] = [];
+
+    if (riesgoCardiovascular === 'alto' && relacionActual !== null) {
+      alertas.push({
+        severidad: 'critica',
+        titulo: 'Riesgo cardiovascular alto',
+        mensaje:
+          'La relacion cintura/cadera actual indica riesgo cardiovascular alto.',
+        metrica: 'relacion_cintura_cadera',
+        valor: relacionActual,
+      });
+    }
+
+    const imcActual = Number(ultimaMedicion.imc);
+    if (categoriaIMC === 'obesidad') {
+      alertas.push({
+        severidad: 'importante',
+        titulo: 'IMC en rango de obesidad',
+        mensaje:
+          'El IMC actual esta en rango de obesidad y requiere seguimiento clinico.',
+        metrica: 'imc',
+        valor: imcActual,
+      });
+    }
+
+    if (medicionAnterior) {
+      const cambioPeso = parseFloat(
+        (Number(ultimaMedicion.peso) - Number(medicionAnterior.peso)).toFixed(2),
+      );
+
+      if (Math.abs(cambioPeso) >= 5) {
+        alertas.push({
+          severidad: 'informativa',
+          titulo: 'Cambio de peso acelerado',
+          mensaje: `El peso cambio ${Math.abs(cambioPeso)} kg respecto de la medicion anterior.`,
+          metrica: 'peso',
+          valor: cambioPeso,
+        });
+      }
+    }
+
+    const tensionSistolica = ultimaMedicion.tensionSistolica;
+    const tensionDiastolica = ultimaMedicion.tensionDiastolica;
+    if (
+      tensionSistolica !== null &&
+      tensionDiastolica !== null &&
+      (tensionSistolica >= 140 || tensionDiastolica >= 90)
+    ) {
+      alertas.push({
+        severidad: 'critica',
+        titulo: 'Tension arterial elevada',
+        mensaje: `La ultima medicion registra ${tensionSistolica}/${tensionDiastolica} mmHg.`,
+        metrica: 'tension_arterial',
+        valor: tensionSistolica,
+      });
+    }
+
+    return alertas;
   }
 
   private calcularTendencia(valores: number[]): Tendencia {
