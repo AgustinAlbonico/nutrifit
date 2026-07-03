@@ -673,7 +673,7 @@ export class TurnosController {
   }
 
   @Post(':id/check-in')
-  @Rol(RolEnum.RECEPCIONISTA, RolEnum.ADMIN)
+  @Rol(RolEnum.RECEPCIONISTA, RolEnum.ADMIN, RolEnum.NUTRICIONISTA)
   @UseGuards(TurnoNutricionistaAccessGuard)
   async checkInTurno(@Param('id', ParseIntPipe) turnoId: number): Promise<{
     success: boolean;

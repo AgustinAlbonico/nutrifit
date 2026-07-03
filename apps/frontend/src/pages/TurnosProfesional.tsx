@@ -57,6 +57,7 @@ export function TurnosProfesional() {
   const [fechaReferencia] = useState<Date>(() => new Date());
   const [turnos, setTurnos] = useState<TurnoDelDia[]>([]);
   const [cargando, setCargando] = useState(false);
+  const [checkeandoTurnoId, setCheckeandoTurnoId] = useState<number | null>(null);
 
   // Estado para el modal de revertir ausente
   const [modalRevertirOpen, setModalRevertirOpen] = useState(false);
@@ -90,6 +91,27 @@ export function TurnosProfesional() {
   useEffect(() => {
     void cargarAgenda();
   }, [cargarAgenda]);
+
+  const handleCheckInYNavegar = useCallback(async (turnoId: number) => {
+    if (!token) return;
+
+    try {
+      setCheckeandoTurnoId(turnoId);
+      await apiRequest(`/turnos/${turnoId}/check-in`, {
+        method: 'POST',
+        token,
+      });
+      navigate({ to: `/profesional/consulta/${turnoId}` });
+    } catch (requestError) {
+      const mensaje =
+        requestError instanceof Error
+          ? requestError.message
+          : 'Error al registrar check-in';
+      toast.error(mensaje);
+    } finally {
+      setCheckeandoTurnoId(null);
+    }
+  }, [token, navigate]);
 
   const getEstadoBadge = (estado: EstadoTurno) => {
     return (
@@ -269,10 +291,24 @@ export function TurnosProfesional() {
                     {/* Botones contextuales por estado (TASK-1.16). */}
                     <div className="mt-auto flex flex-col gap-2">
                       {estado === 'CONFIRMADO' && (
-                        <div className="flex items-center justify-center gap-2 rounded-md border border-sky-200 bg-sky-50 p-2 text-xs text-sky-700">
-                          <Clock className="h-3 w-3" />
-                          <span>Esperando check-in de recepción</span>
-                        </div>
+                        <Button
+                          size="sm"
+                          className="w-full bg-gradient-to-r from-orange-500 to-rose-500 text-white shadow-sm hover:from-orange-600 hover:to-rose-600"
+                          disabled={checkeandoTurnoId === turno.idTurno}
+                          onClick={() => void handleCheckInYNavegar(turno.idTurno)}
+                        >
+                          {checkeandoTurnoId === turno.idTurno ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Registrando...
+                            </>
+                          ) : (
+                            <>
+                              <PlayCircle className="mr-2 h-4 w-4" />
+                              Iniciar consulta
+                            </>
+                          )}
+                        </Button>
                       )}
 
                       {estado === 'PRESENTE' && (
