@@ -426,7 +426,11 @@ export function PlanEditorPage() {
   }, [puedeEditarPlanes, token, personaId, socioIdNumero, manejarCrearPlanManual]);
 
   const volverAlPlan = () => {
-    if (socioIdNumero) {
+    const turnoId = new URLSearchParams(window.location.search).get('turnoId');
+
+    if (turnoId) {
+      void navigate({ to: `/profesional/consulta/${turnoId}` });
+    } else if (socioIdNumero) {
       void navigate({ to: `/profesional/plan/${socioIdNumero}` });
     } else {
       void navigate({ to: '/dashboard' });

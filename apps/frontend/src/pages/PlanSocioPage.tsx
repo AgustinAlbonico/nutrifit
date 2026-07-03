@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
-import { CheckCircle, Plus, Trash2, Utensils } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Plus, Trash2, Utensils } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -57,6 +57,16 @@ export function PlanSocioPage() {
   const [estado, establecerEstado] = useState<EstadoPlan>('CARGANDO');
   const [error, setError] = useState<string | null>(null);
   const [planActivo, establecerPlanActivo] = useState<PlanAlimentacion | null>(null);
+
+  const turnoId = new URLSearchParams(window.location.search).get('turnoId');
+
+  const volver = () => {
+    if (turnoId) {
+      void navigate({ to: `/profesional/consulta/${turnoId}` });
+    } else {
+      window.history.back();
+    }
+  };
 
   useEffect(() => {
     if (!token || !socioId) {
@@ -115,6 +125,18 @@ export function PlanSocioPage() {
         <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-rose-500/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
         <div className="relative z-10">
+          <div className="flex items-center gap-2 mb-4">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={volver}
+              className="text-muted-foreground hover:text-foreground -ml-2"
+              aria-label="Volver"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </div>
           <div className="flex items-center gap-3 mb-2">
             <Utensils className="h-8 w-8 text-orange-500" />
             <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-rose-600 bg-clip-text text-transparent">
