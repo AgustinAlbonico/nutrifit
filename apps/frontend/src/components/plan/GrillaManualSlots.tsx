@@ -23,6 +23,7 @@ interface Props {
   estructura: EstructuraDiaFE[];
   onChange: (estructura: EstructuraDiaFE[]) => void;
   onSelectSlot?: (dia: any, tipoComida: any) => void;
+  deshabilitado?: boolean;
 }
 
 /**
@@ -51,7 +52,12 @@ function convertirAAlternativaSlot(
   };
 }
 
-export function GrillaManualSlots({ estructura, onChange, onSelectSlot }: Props) {
+export function GrillaManualSlots({
+  estructura,
+  onChange,
+  onSelectSlot,
+  deshabilitado = false,
+}: Props) {
   // ------------------------------------------------------------------
   // Helper: encuentra la comida de un slot en la estructura, creando
   // una entrada vacía si no existe.
@@ -93,6 +99,8 @@ export function GrillaManualSlots({ estructura, onChange, onSelectSlot }: Props)
             grasas: number;
           }>,
         ) => {
+          if (deshabilitado) return;
+
           const diaIdx = estructura.findIndex((d) => d.dia === dia);
           if (diaIdx === -1) return;
           const comidaIdx = estructura[diaIdx].comidas.findIndex((c) => c.tipo === tipoComida);
@@ -145,7 +153,7 @@ export function GrillaManualSlots({ estructura, onChange, onSelectSlot }: Props)
 
       return { dia, celdas };
     });
-  }, [estructura, obtenerComidaDelSlot, onChange]);
+  }, [deshabilitado, estructura, obtenerComidaDelSlot, onChange]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -198,7 +206,10 @@ export function GrillaManualSlots({ estructura, onChange, onSelectSlot }: Props)
                       tipoComida={tipoComida}
                       alternativas={alternativas}
                       onChange={handleSlotChange}
-                      onSelectForIa={() => onSelectSlot?.(celdaDia, tipoComida)}
+                      onSelectForIa={
+                        deshabilitado ? undefined : () => onSelectSlot?.(celdaDia, tipoComida)
+                      }
+                      deshabilitado={deshabilitado}
                     />
                   ))}
                 </div>
@@ -222,6 +233,7 @@ function CeldaSlot({
   alternativas,
   onChange,
   onSelectForIa,
+  deshabilitado,
 }: {
   slotKey: string;
   dia: (typeof DIAS)[number];
@@ -229,6 +241,7 @@ function CeldaSlot({
   alternativas: AlternativaSlot[];
   onChange: (alternativas: AlternativaSlot[]) => void;
   onSelectForIa?: () => void;
+  deshabilitado?: boolean;
 }) {
   return (
     <SlotComidaManual
@@ -238,6 +251,7 @@ function CeldaSlot({
       alternativas={alternativas}
       onChange={onChange}
       onSelectForIa={onSelectForIa}
+      deshabilitado={deshabilitado}
     />
   );
 }

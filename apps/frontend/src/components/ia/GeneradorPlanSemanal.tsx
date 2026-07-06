@@ -49,6 +49,7 @@ import {
   solicitudPlanSemanalSchema,
 } from '@/schemas/ia-plan-semanal.schema';
 import type {
+  GeneracionPlanIaFE,
   PlanSemanalIA,
   RespuestaPlanSemanalV2FE,
   SolicitudPlanSemanalV2FE,
@@ -70,6 +71,9 @@ interface PropiedadesGeneradorPlanSemanal {
   /** Si false, deshabilita el botón de generar (ej: socio sin ficha de salud). */
   fichaDisponible?: boolean;
   onSuccess?: (respuesta: RespuestaPlanSemanalV2FE) => void;
+  modoBackground?: boolean;
+  generacionBloqueada?: boolean;
+  onGeneracionIniciada?: (generacion: GeneracionPlanIaFE) => void;
 
   // ─── DEPRECATED props (legacy V1 API, conservados para no romper
   // PlanEditorPage mientras se refactoriza en Packet 5b) ──────────────
@@ -94,6 +98,9 @@ export function GeneradorPlanSemanal({
   socioIdPreseleccionado,
   fichaDisponible = true,
   onSuccess,
+  modoBackground = false,
+  generacionBloqueada = false,
+  onGeneracionIniciada,
   // Deprecated props — ignorados en V2 (no rompen typecheck de PlanEditorPage)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   socioId: _socioIdLegacy,
@@ -107,7 +114,7 @@ export function GeneradorPlanSemanal({
   const [enviando, setEnviando] = useState(false);
   const [mostrarAvanzado, setMostrarAvanzado] = useState(false);
 
-  const { generarPlanSemanalV2 } = useIa();
+  const { generarPlanSemanalV2, iniciarGeneracionPlanSemanal } = useIa();
 
   // Estados para alimentos preferidos interactivos
   const [alimentosPreferidos, setAlimentosPreferidos] = useState<string[]>([]);
@@ -241,15 +248,21 @@ export function GeneradorPlanSemanal({
   };
 
   const notasActuales = watch('notasGeneracion') ?? '';
+  const operacionPendiente =
+    enviando ||
+    generarPlanSemanalV2.isPending ||
+    iniciarGeneracionPlanSemanal.isPending;
+  const formularioBloqueado = operacionPendiente || generacionBloqueada;
 
   const onSubmit: SubmitHandler<FormOutput> = async (valores) => {
-    if (enviando || generarPlanSemanalV2.isPending) return;
+    if (formularioBloqueado) return;
 
     setEnviando(true);
     try {
       // Construir payload limpio: enviar solo lo definido (Zod ya validó rangos)
       const payload: SolicitudPlanSemanalV2FE = {
         socioId: valores.socioId,
+        ...(planAlimentacionId !== undefined ? { planAlimentacionId } : {}),
         diasAGenerar: valores.diasAGenerar,
         comidasPorDia: valores.comidasPorDia,
         alternativasPorComida: valores.alternativasPorComida,
@@ -269,6 +282,15 @@ export function GeneradorPlanSemanal({
           : {}),
       };
 
+      if (modoBackground) {
+        const generacion = await iniciarGeneracionPlanSemanal.mutateAsync(payload);
+        toast.success('Generación iniciada en segundo plano', {
+          description: 'Podés seguir usando el sistema; el plan queda bloqueado hasta que termine.',
+        });
+        onGeneracionIniciada?.(generacion);
+        return;
+      }
+
       const respuesta = await generarPlanSemanalV2.mutateAsync(payload);
 
       toast.success('Plan generado correctamente', {
@@ -286,11 +308,10 @@ export function GeneradorPlanSemanal({
     }
   };
 
-  const submitDeshabilitado =
-    enviando ||
-    generarPlanSemanalV2.isPending ||
-    !isValid ||
-    !fichaDisponible;
+  const submitDeshabilitado = formularioBloqueado || !isValid || !fichaDisponible;
+  const errorGeneracion = modoBackground
+    ? iniciarGeneracionPlanSemanal.error
+    : generarPlanSemanalV2.error;
 
   return (
     <form
@@ -337,7 +358,7 @@ export function GeneradorPlanSemanal({
             min={1}
             max={14}
             inputMode="numeric"
-            disabled={enviando || generarPlanSemanalV2.isPending}
+            disabled={formularioBloqueado}
             aria-invalid={errors.diasAGenerar ? 'true' : 'false'}
             aria-describedby={
               errors.diasAGenerar ? 'diasAGenerar-error' : undefined
@@ -366,7 +387,7 @@ export function GeneradorPlanSemanal({
               <Select
                 value={String(field.value)}
                 onValueChange={(valor) => field.onChange(Number(valor))}
-                disabled={enviando || generarPlanSemanalV2.isPending}
+                disabled={formularioBloqueado}
               >
                 <SelectTrigger
                   id="comidasPorDia"
@@ -407,7 +428,7 @@ export function GeneradorPlanSemanal({
             min={1}
             max={5}
             inputMode="numeric"
-            disabled={enviando || generarPlanSemanalV2.isPending}
+            disabled={formularioBloqueado}
             aria-invalid={errors.alternativasPorComida ? 'true' : 'false'}
             aria-describedby={
               errors.alternativasPorComida
@@ -439,7 +460,7 @@ export function GeneradorPlanSemanal({
             <Input
               id="fechaInicio"
               type="date"
-              disabled={enviando || generarPlanSemanalV2.isPending}
+              disabled={formularioBloqueado}
               aria-invalid={errors.fechaInicio ? 'true' : 'false'}
               aria-describedby={
                 errors.fechaInicio ? 'fechaInicio-error' : 'fechaInicio-help'
@@ -493,7 +514,7 @@ export function GeneradorPlanSemanal({
               min={500}
               max={10000}
               placeholder="Ej: 2000"
-              disabled={enviando || generarPlanSemanalV2.isPending}
+              disabled={formularioBloqueado}
               aria-invalid={errors.caloriasLimite ? 'true' : 'false'}
               aria-describedby={errors.caloriasLimite ? 'caloriasLimite-error' : undefined}
               {...register('caloriasLimite', { valueAsNumber: true })}
@@ -514,7 +535,7 @@ export function GeneradorPlanSemanal({
               min={10}
               max={500}
               placeholder="Ej: 140"
-              disabled={enviando || generarPlanSemanalV2.isPending}
+              disabled={formularioBloqueado}
               aria-invalid={errors.proteinasEstimadas ? 'true' : 'false'}
               aria-describedby={errors.proteinasEstimadas ? 'proteinasEstimadas-error' : undefined}
               {...register('proteinasEstimadas', { valueAsNumber: true })}
@@ -535,7 +556,7 @@ export function GeneradorPlanSemanal({
               min={10}
               max={1000}
               placeholder="Ej: 220"
-              disabled={enviando || generarPlanSemanalV2.isPending}
+              disabled={formularioBloqueado}
               aria-invalid={errors.carbohidratosEstimados ? 'true' : 'false'}
               aria-describedby={errors.carbohidratosEstimados ? 'carbohidratosEstimados-error' : undefined}
               {...register('carbohidratosEstimados', { valueAsNumber: true })}
@@ -583,7 +604,7 @@ export function GeneradorPlanSemanal({
                   <button
                     type="button"
                     onClick={() => eliminarPreferido(alimento)}
-                    disabled={enviando || generarPlanSemanalV2.isPending}
+                    disabled={formularioBloqueado}
                     className="text-muted-foreground hover:text-foreground hover:bg-muted p-0.5 rounded-full transition-all"
                   >
                     <X className="h-3 w-3" />
@@ -615,12 +636,12 @@ export function GeneradorPlanSemanal({
                   }
                 }}
                 placeholder="Buscar o escribir ingrediente a priorizar..."
-                disabled={enviando || generarPlanSemanalV2.isPending}
+                disabled={formularioBloqueado}
               />
               <Button
                 type="button"
                 variant="outline"
-                disabled={enviando || generarPlanSemanalV2.isPending || !busquedaPref.trim()}
+                disabled={formularioBloqueado || !busquedaPref.trim()}
                 onClick={() => agregarPreferido(busquedaPref.trim())}
               >
                 Agregar
@@ -689,7 +710,7 @@ export function GeneradorPlanSemanal({
                   <button
                     type="button"
                     onClick={() => eliminarEvitado(alimento)}
-                    disabled={enviando || generarPlanSemanalV2.isPending}
+                    disabled={formularioBloqueado}
                     className="text-muted-foreground hover:text-foreground hover:bg-muted p-0.5 rounded-full transition-all"
                   >
                     <X className="h-3 w-3" />
@@ -721,12 +742,12 @@ export function GeneradorPlanSemanal({
                   }
                 }}
                 placeholder="Buscar o escribir ingrediente a evitar..."
-                disabled={enviando || generarPlanSemanalV2.isPending}
+                disabled={formularioBloqueado}
               />
               <Button
                 type="button"
                 variant="outline"
-                disabled={enviando || generarPlanSemanalV2.isPending || !busquedaEvit.trim()}
+                disabled={formularioBloqueado || !busquedaEvit.trim()}
                 onClick={() => agregarEvitado(busquedaEvit.trim())}
               >
                 Agregar
@@ -807,7 +828,7 @@ export function GeneradorPlanSemanal({
           placeholder="Ej: Semana de transición, evitar ultraprocesados, priorizar fibra."
           rows={3}
           maxLength={MAX_CARACTERES_NOTAS}
-          disabled={enviando || generarPlanSemanalV2.isPending}
+          disabled={formularioBloqueado}
           aria-invalid={errors.notasGeneracion ? 'true' : 'false'}
           aria-describedby={
             errors.notasGeneracion ? 'notasGeneracion-error' : undefined
@@ -843,9 +864,9 @@ export function GeneradorPlanSemanal({
       )}
 
       {/* Error global del mutation con mensaje semántico en español. */}
-      {generarPlanSemanalV2.isError && (
+      {errorGeneracion && (
         <ErrorGlobal
-          error={generarPlanSemanalV2.error}
+          error={errorGeneracion}
         />
       )}
 
@@ -853,7 +874,7 @@ export function GeneradorPlanSemanal({
         <Button
           type="button"
           variant="ghost"
-          disabled={enviando || generarPlanSemanalV2.isPending}
+          disabled={formularioBloqueado}
           onClick={() => reset()}
           data-testid="reset-form-button"
         >
@@ -862,19 +883,19 @@ export function GeneradorPlanSemanal({
         <Button
           type="submit"
           disabled={submitDeshabilitado}
-          aria-busy={enviando || generarPlanSemanalV2.isPending}
+          aria-busy={operacionPendiente}
           data-testid="generar-plan-button"
           className="min-w-[160px]"
         >
-          {enviando || generarPlanSemanalV2.isPending ? (
+          {operacionPendiente ? (
             <>
               <Loader2 className="animate-spin" aria-hidden="true" />
-              Generando…
+              {modoBackground ? 'Iniciando…' : 'Generando…'}
             </>
           ) : (
             <>
               <Sparkles aria-hidden="true" />
-              Generar plan
+              {modoBackground ? 'Generar en segundo plano' : 'Generar plan'}
             </>
           )}
         </Button>

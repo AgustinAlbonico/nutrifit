@@ -29,6 +29,7 @@ export interface SlotComidaManualProps {
   alternativas: AlternativaSlot[];
   onChange: (alternativas: AlternativaSlot[]) => void;
   onSelectForIa?: () => void;
+  deshabilitado?: boolean;
 }
 
 export function SlotComidaManual({
@@ -38,16 +39,19 @@ export function SlotComidaManual({
   alternativas,
   onChange,
   onSelectForIa,
+  deshabilitado = false,
 }: SlotComidaManualProps) {
   const { setNodeRef, isOver } = useSlotDroppable(slotKey);
   const [dialogoEdicionAbierto, setDialogoEdicionAbierto] = useState(false);
   const [alternativaEnEdicion, setAlternativaEnEdicion] = useState<AlternativaSlot | null>(null);
 
   const eliminarAlternativa = (id: string) => {
+    if (deshabilitado) return;
     onChange(alternativas.filter((a) => a.id !== id));
   };
 
   const duplicarAlternativa = (alternativa: AlternativaSlot) => {
+    if (deshabilitado) return;
     const dup: AlternativaSlot = {
       ...alternativa,
       id: `tmp-${Date.now()}`,
@@ -57,16 +61,19 @@ export function SlotComidaManual({
   };
 
   const abrirEdicionNueva = () => {
+    if (deshabilitado) return;
     setAlternativaEnEdicion(null);
     setDialogoEdicionAbierto(true);
   };
 
   const abrirEdicionExistente = (alt: AlternativaSlot) => {
+    if (deshabilitado) return;
     setAlternativaEnEdicion(alt);
     setDialogoEdicionAbierto(true);
   };
 
   const alGuardarAlternativa = (alt: AlternativaSlot) => {
+    if (deshabilitado) return;
     if (alternativaEnEdicion) {
       // Editando existente
       onChange(
@@ -83,11 +90,13 @@ export function SlotComidaManual({
       ref={setNodeRef}
       className={[
         'rounded-lg border p-2.5 transition-all duration-200 group/slot min-h-[110px] flex flex-col',
+        deshabilitado ? 'opacity-60' : '',
         isOver
           ? 'border-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/20'
           : 'border-border/60 bg-card/50 hover:bg-card/90 hover:border-border',
       ].join(' ')}
       data-testid={`slot-comida-${slotKey}`}
+      aria-disabled={deshabilitado}
     >
       <div className="mb-2 flex items-center justify-between">
         <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
@@ -99,6 +108,7 @@ export function SlotComidaManual({
             variant="ghost"
             className="size-5 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/10 rounded-md"
             onClick={abrirEdicionNueva}
+            disabled={deshabilitado}
             aria-label={`Agregar comida manual en ${dia} ${tipoComida}`}
             data-testid={`add-manual-${slotKey}`}
           >
@@ -110,6 +120,7 @@ export function SlotComidaManual({
               variant="ghost"
               className="size-5 text-fuchsia-500 hover:text-fuchsia-600 hover:bg-fuchsia-500/10 rounded-md"
               onClick={onSelectForIa}
+              disabled={deshabilitado}
               aria-label={`Generar sugerencias para ${dia} ${tipoComida}`}
               data-testid={`select-ia-${slotKey}`}
             >
@@ -133,6 +144,7 @@ export function SlotComidaManual({
                 onDelete={eliminarAlternativa}
                 onDuplicate={duplicarAlternativa}
                 onEdit={abrirEdicionExistente}
+                deshabilitado={deshabilitado}
               />
             ))}
           </div>
@@ -141,8 +153,8 @@ export function SlotComidaManual({
 
       {/* Modal Dialog para añadir/editar alternativa */}
       <DialogEditarAlternativa
-        open={dialogoEdicionAbierto}
-        onOpenChange={setDialogoEdicionAbierto}
+        open={dialogoEdicionAbierto && !deshabilitado}
+        onOpenChange={(open) => setDialogoEdicionAbierto(deshabilitado ? false : open)}
         alternativaInicial={alternativaEnEdicion}
         onSave={alGuardarAlternativa}
       />
@@ -155,11 +167,13 @@ function SlotAlternativaItem({
   onDelete,
   onDuplicate,
   onEdit,
+  deshabilitado,
 }: {
   alternativa: AlternativaSlot;
   onDelete: (id: string) => void;
   onDuplicate: (alt: AlternativaSlot) => void;
   onEdit: (alt: AlternativaSlot) => void;
+  deshabilitado?: boolean;
 }) {
   return (
     <div
@@ -184,6 +198,7 @@ function SlotAlternativaItem({
             size="icon"
             variant="ghost"
             onClick={() => onEdit(alternativa)}
+            disabled={deshabilitado}
             aria-label="Editar comida"
             className="size-5 rounded-md hover:bg-background"
             data-testid="btn-editar"
@@ -194,6 +209,7 @@ function SlotAlternativaItem({
             size="icon"
             variant="ghost"
             onClick={() => onDuplicate(alternativa)}
+            disabled={deshabilitado}
             aria-label="Duplicar comida"
             className="size-5 rounded-md hover:bg-background"
             data-testid="btn-duplicar"
@@ -204,6 +220,7 @@ function SlotAlternativaItem({
             size="icon"
             variant="ghost"
             onClick={() => onDelete(alternativa.id)}
+            disabled={deshabilitado}
             aria-label="Eliminar comida"
             className="size-5 rounded-md hover:bg-destructive/10 text-destructive"
             data-testid="btn-eliminar"

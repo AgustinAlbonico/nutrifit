@@ -19,8 +19,10 @@
 
 import {
   useMutation,
+  useQuery,
   useQueryClient,
   type UseMutationResult,
+  type UseQueryResult,
 } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/api';
 import { desenvolverRespuestaApi } from '@/lib/api-response';
@@ -41,11 +43,29 @@ import type {
   RespuestaIdeasComida,
   SolicitudPlanSemanalV2FE,
   RespuestaPlanSemanalV2FE,
+  GeneracionPlanIaFE,
   SolicitudRegeneracionFE,
   RespuestaRegeneracionFE,
   GenerarIdeasComidaArgs,
   GenerarIdeasComidaRespuesta,
 } from '@/types/ia';
+
+interface UseGeneracionPlanIaActivaOptions {
+  socioId: number | null | undefined;
+  planAlimentacionId?: number | null;
+  habilitado?: boolean;
+}
+
+interface UseGeneracionPlanIaOptions {
+  generacionId: number | null | undefined;
+  habilitado?: boolean;
+}
+
+export function esGeneracionPlanIaActiva(
+  generacion: GeneracionPlanIaFE | null | undefined,
+): boolean {
+  return generacion?.estado === 'PENDIENTE' || generacion?.estado === 'GENERANDO';
+}
 
 interface UseIaOptions {
   token: string | null;
@@ -207,6 +227,30 @@ export function useIa() {
     },
   });
 
+  const iniciarGeneracionPlanSemanal: UseMutationResult<
+    GeneracionPlanIaFE,
+    Error,
+    SolicitudPlanSemanalV2FE
+  > = useMutation({
+    mutationFn: async (solicitud: SolicitudPlanSemanalV2FE) => {
+      const respuesta = await apiRequest<
+        GeneracionPlanIaFE | ApiResponse<GeneracionPlanIaFE>
+      >('/ia/plan-semanal/generaciones', {
+        method: 'POST',
+        body: solicitud,
+      });
+      return desenvolverRespuestaApi(respuesta);
+    },
+    onSuccess: (generacion) => {
+      queryClient.invalidateQueries({
+        queryKey: ['generacion-plan-ia-activa', generacion.socioId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['generacion-plan-ia', generacion.id],
+      });
+    },
+  });
+
   const generarIdeasComida: UseMutationResult<
     GenerarIdeasComidaRespuesta,
     Error,
@@ -232,7 +276,48 @@ export function useIa() {
 
   return {
     generarPlanSemanalV2,
+    iniciarGeneracionPlanSemanal,
     regenerarPlanSemanal,
     generarIdeasComida,
   };
+}
+
+export function useGeneracionPlanIaActiva({
+  socioId,
+  planAlimentacionId,
+  habilitado = true,
+}: UseGeneracionPlanIaActivaOptions): UseQueryResult<GeneracionPlanIaFE | null, Error> {
+  return useQuery({
+    queryKey: ['generacion-plan-ia-activa', socioId, planAlimentacionId ?? null],
+    enabled: habilitado && typeof socioId === 'number' && Number.isFinite(socioId),
+    refetchInterval: 5_000,
+    queryFn: async () => {
+      const params = new URLSearchParams({ socioId: String(socioId) });
+      if (typeof planAlimentacionId === 'number' && Number.isFinite(planAlimentacionId)) {
+        params.set('planAlimentacionId', String(planAlimentacionId));
+      }
+
+      const respuesta = await apiRequest<
+        GeneracionPlanIaFE | null | ApiResponse<GeneracionPlanIaFE | null>
+      >(`/ia/plan-semanal/generaciones/activa?${params.toString()}`);
+      return desenvolverRespuestaApi(respuesta);
+    },
+  });
+}
+
+export function useGeneracionPlanIa({
+  generacionId,
+  habilitado = true,
+}: UseGeneracionPlanIaOptions): UseQueryResult<GeneracionPlanIaFE | null, Error> {
+  return useQuery({
+    queryKey: ['generacion-plan-ia', generacionId ?? null],
+    enabled: habilitado && typeof generacionId === 'number' && Number.isFinite(generacionId),
+    refetchInterval: (query) => (esGeneracionPlanIaActiva(query.state.data) ? 2_500 : false),
+    queryFn: async () => {
+      const respuesta = await apiRequest<GeneracionPlanIaFE | ApiResponse<GeneracionPlanIaFE>>(
+        `/ia/plan-semanal/generaciones/${generacionId}`,
+      );
+      return desenvolverRespuestaApi(respuesta);
+    },
+  });
 }

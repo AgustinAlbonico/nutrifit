@@ -251,6 +251,7 @@ export interface ResultadoValidacionMacrosFE {
 /** Solicitud para generar plan semanal (payload FE, espejo del DTO backend). */
 export interface SolicitudPlanSemanalV2FE {
   socioId: number;
+  planAlimentacionId?: number;
   diasAGenerar?: number;
   comidasPorDia?: number;
   alternativasPorComida?: number;
@@ -273,6 +274,29 @@ export interface RespuestaPlanSemanalV2FE {
   validacion: ResultadoValidacionRestriccionesFE;
   macros: ResultadoValidacionMacrosFE;
   advertencias: string[];
+}
+
+export type EstadoGeneracionPlanIaFE =
+  | 'PENDIENTE'
+  | 'GENERANDO'
+  | 'COMPLETADO'
+  | 'ERROR';
+
+export interface GeneracionPlanIaFE {
+  id: number;
+  socioId: number;
+  nutricionistaId: number;
+  gimnasioId: number;
+  planAlimentacionId: number | null;
+  estado: EstadoGeneracionPlanIaFE;
+  proveedorActual: string | null;
+  mensajeEstado: string | null;
+  errorMensaje: string | null;
+  respuestaJson: RespuestaPlanSemanalV2FE | null;
+  creadoEn: string;
+  actualizadoEn: string;
+  iniciadoEn: string | null;
+  finalizadoEn: string | null;
 }
 
 /** Solicitud para regenerar plan (con scope granular). */

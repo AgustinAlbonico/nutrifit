@@ -67,6 +67,7 @@ import {
 } from '@/components/ui/dialog';
 
 import { GeneradorPlanSemanal } from '@/components/ia/GeneradorPlanSemanal';
+import { BadgeGeneracionPlanIa } from '@/components/ia/BadgeGeneracionPlanIa';
 import { FeedbackModal } from '@/components/ia/FeedbackModal';
 import { VersionHistory } from '@/components/plan/VersionHistory';
 import { RazonamientoCumplimiento } from '@/components/plan/RazonamientoCumplimiento';
@@ -81,6 +82,11 @@ import { desenvolverRespuestaApi } from '@/lib/api-response';
 import { useObtenerFichaNutricionista } from '@/hooks/useObtenerFichaNutricionista';
 import { useEditarFichaPaciente } from '@/hooks/useEditarFichaPaciente';
 import { useDebounce } from '@/hooks/useDebounce';
+import {
+  esGeneracionPlanIaActiva,
+  useGeneracionPlanIa,
+  useGeneracionPlanIaActiva,
+} from '@/hooks/useIa';
 import { normalizarVersionesPlan } from '@/hooks/useVersionesPlan';
 import type { PaginatedData } from '@nutrifit/shared';
 import type { ApiResponse } from '@/types/api';
@@ -91,6 +97,7 @@ import type {
   DiaSemana,
   TipoComidaPlan,
   IdeaComidaIa,
+  GeneracionPlanIaFE,
 } from '@/types/ia';
 import type { FichaSaludSocio } from '@/types/ficha-salud';
 
@@ -290,6 +297,9 @@ export function PlanEditorPage() {
     dia: DiaSemana;
     tipoComida: TipoComidaPlan;
   } | null>(null);
+  const [generacionPlanIaId, setGeneracionPlanIaId] = useState<number | null>(null);
+  const generacionCerradaRef = useRef<number | null>(null);
+  const planBloqueadoPorIaRef = useRef(false);
 
   // Ficha de salud del paciente
   const {
@@ -367,7 +377,7 @@ export function PlanEditorPage() {
   const [cargandoPlanManual, setCargandoPlanManual] = useState(false);
 
   const manejarCrearPlanManual = useCallback(async () => {
-    if (!socioIdNumero) return;
+    if (!socioIdNumero || planBloqueadoPorIaRef.current) return;
     setCargandoPlanManual(true);
     try {
       const res = await apiRequest<
@@ -439,6 +449,74 @@ export function PlanEditorPage() {
 
   const planIdActual = respuesta?.planAlimentacionId ?? planManualExistenteId;
 
+  const { data: generacionActiva } = useGeneracionPlanIaActiva({
+    socioId: socioIdNumero,
+    planAlimentacionId: planIdActual,
+    habilitado: puedeEditarPlanes && !!socioIdNumero,
+  });
+  const { data: generacionPlanIa } = useGeneracionPlanIa({
+    generacionId: generacionPlanIaId,
+    habilitado: puedeEditarPlanes && generacionPlanIaId !== null,
+  });
+  const generacionVisible = generacionPlanIa ?? generacionActiva ?? null;
+  const planBloqueadoPorIa = esGeneracionPlanIaActiva(generacionVisible);
+  planBloqueadoPorIaRef.current = planBloqueadoPorIa;
+
+  const registrarGeneracionIniciada = useCallback((generacion: GeneracionPlanIaFE) => {
+    generacionCerradaRef.current = null;
+    setGeneracionPlanIaId(generacion.id);
+    setGeneradorIaAbierto(false);
+  }, []);
+
+  useEffect(() => {
+    if (!generacionActiva?.id || generacionActiva.id === generacionPlanIaId) return;
+    generacionCerradaRef.current = null;
+    setGeneracionPlanIaId(generacionActiva.id);
+  }, [generacionActiva?.id, generacionPlanIaId]);
+
+  useEffect(() => {
+    if (!planBloqueadoPorIa) return;
+    setSlotIdeasIa(null);
+    setGeneradorIaAbierto(false);
+  }, [planBloqueadoPorIa]);
+
+  useEffect(() => {
+    if (!generacionPlanIa?.id) return;
+    if (generacionCerradaRef.current === generacionPlanIa.id) return;
+
+    const { id, estado, respuestaJson, errorMensaje } = generacionPlanIa;
+
+    if (estado === 'COMPLETADO') {
+      generacionCerradaRef.current = id;
+      if (respuestaJson) {
+        const respuestaNormalizada = normalizarRespuestaConMacros(respuestaJson);
+        setRespuesta(respuestaNormalizada);
+        setPlanManualExistenteId(respuestaNormalizada.planAlimentacionId);
+        setEstructura(completarEstructuraManual(respuestaNormalizada.plan.estructura));
+        setVersionSeleccionadaId(respuestaNormalizada.versionId);
+        haSidoModificadoRef.current = false;
+      }
+      setGeneracionPlanIaId(null);
+      toast.success('Plan generado correctamente', {
+        description: 'El editor se actualizó con la nueva versión del plan.',
+      });
+      return;
+    }
+
+    if (estado === 'ERROR') {
+      generacionCerradaRef.current = id;
+      setGeneracionPlanIaId(null);
+      toast.error('La generación con IA falló', {
+        description: errorMensaje ?? 'El editor vuelve a estar disponible.',
+      });
+    }
+  }, [
+    generacionPlanIa?.id,
+    generacionPlanIa?.estado,
+    generacionPlanIa?.respuestaJson,
+    generacionPlanIa?.errorMensaje,
+  ]);
+
   // Carga el borrador o versión activa al montar o cambiar de plan
   useEffect(() => {
     if (!planIdActual) return;
@@ -491,7 +569,7 @@ export function PlanEditorPage() {
 
   const persistirSilencioso = useCallback(
     async (estructuraParaGuardar: EstructuraDiaFE[]) => {
-      if (!planIdActual) return;
+      if (!planIdActual || planBloqueadoPorIa) return;
       setGuardandoBorrador(true);
       try {
         await apiRequest(
@@ -508,22 +586,29 @@ export function PlanEditorPage() {
         setGuardandoBorrador(false);
       }
     },
-    [planIdActual],
+    [planBloqueadoPorIa, planIdActual],
   );
 
   useEffect(() => {
     if (
       debouncedEstructura &&
       haSidoModificadoRef.current &&
-      estructuraTieneContenido(debouncedEstructura)
+      estructuraTieneContenido(debouncedEstructura) &&
+      !planBloqueadoPorIa
     ) {
       persistirSilencioso(debouncedEstructura);
     }
-  }, [debouncedEstructura, persistirSilencioso]);
+  }, [debouncedEstructura, persistirSilencioso, planBloqueadoPorIa]);
 
   // Guardar versión explicitamente (V1, V2, etc.)
   const guardarVersionExplicita = async () => {
     if (!planIdActual) return;
+    if (planBloqueadoPorIa) {
+      toast.info('El plan está bloqueado por generación IA', {
+        description: 'Esperá a que termine la generación para guardar una versión definitiva.',
+      });
+      return;
+    }
     setGuardandoBorrador(true);
     try {
       const res = await apiRequest<RespuestaPlanSemanalV2FE | ApiResponse<RespuestaPlanSemanalV2FE>>(
@@ -558,6 +643,7 @@ export function PlanEditorPage() {
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
+      if (planBloqueadoPorIa) return;
       const { active, over } = event;
       if (!over) return;
 
@@ -607,16 +693,18 @@ export function PlanEditorPage() {
       );
       haSidoModificadoRef.current = true;
     },
-    [estructura],
+    [estructura, planBloqueadoPorIa],
   );
 
   const handleEstructuraChange = useCallback((nueva: EstructuraDiaFE[]) => {
+    if (planBloqueadoPorIa) return;
     setEstructura(nueva);
     haSidoModificadoRef.current = true;
-  }, []);
+  }, [planBloqueadoPorIa]);
 
   const handleAddIdea = useCallback(
     (dia: DiaSemana, tipoComida: TipoComidaPlan, idea: IdeaComidaIa) => {
+      if (planBloqueadoPorIa) return;
       setEstructura((prev) =>
         prev.map((d) => {
           if (d.dia !== dia) return d;
@@ -648,12 +736,13 @@ export function PlanEditorPage() {
       );
       haSidoModificadoRef.current = true;
     },
-    [],
+    [planBloqueadoPorIa],
   );
 
   const handleSelectSlotForIa = useCallback((dia: DiaSemana, tipoComida: TipoComidaPlan) => {
+    if (planBloqueadoPorIa) return;
     setSlotIdeasIa({ dia, tipoComida });
-  }, []);
+  }, [planBloqueadoPorIa]);
 
 
 
@@ -683,6 +772,8 @@ export function PlanEditorPage() {
 
   return (
     <div className="flex flex-col gap-6 pb-24">
+      <BadgeGeneracionPlanIa generacion={generacionVisible} />
+
       {/* Header */}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-3">
@@ -753,6 +844,7 @@ export function PlanEditorPage() {
               <Button
                 type="button"
                 onClick={() => setGeneradorIaAbierto(true)}
+                disabled={planBloqueadoPorIa}
                 size="sm"
                 className="bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-700 hover:to-indigo-700 text-white font-semibold text-xs h-9 rounded-xl transition-all shadow gap-1.5"
                 data-testid="abrir-generador-ia-btn"
@@ -765,7 +857,7 @@ export function PlanEditorPage() {
               <Button
                 type="button"
                 onClick={guardarVersionExplicita}
-                disabled={guardandoBorrador || cargandoEstructura}
+                disabled={guardandoBorrador || cargandoEstructura || planBloqueadoPorIa}
                 size="sm"
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-9 flex items-center justify-center gap-1.5 rounded-xl transition-all shadow"
                 data-testid="guardar-version-btn"
@@ -813,7 +905,7 @@ export function PlanEditorPage() {
               >
 
                 <DialogGenerarIdeasIa
-                  open={slotIdeasIa !== null}
+                  open={slotIdeasIa !== null && !planBloqueadoPorIa}
                   onOpenChange={(open) => {
                     if (!open) setSlotIdeasIa(null);
                   }}
@@ -835,6 +927,9 @@ export function PlanEditorPage() {
                       planAlimentacionId={planIdEditorManual}
                       socioIdPreseleccionado={socioIdNumero}
                       fichaDisponible={!!ficha && !cargandoFicha && !sinPermisos && !sinFicha && !errorFicha}
+                      modoBackground
+                      generacionBloqueada={planBloqueadoPorIa}
+                      onGeneracionIniciada={registrarGeneracionIniciada}
                       onSuccess={(data) => {
                         const respuestaNormalizada = normalizarRespuestaConMacros(data);
                         setRespuesta(respuestaNormalizada);
@@ -881,6 +976,7 @@ export function PlanEditorPage() {
                       estructura={estructura}
                       onChange={handleEstructuraChange}
                       onSelectSlot={handleSelectSlotForIa}
+                      deshabilitado={planBloqueadoPorIa}
                     />
                   )}
 
@@ -943,6 +1039,9 @@ export function PlanEditorPage() {
                       planAlimentacionId={undefined}
                       socioIdPreseleccionado={socioIdNumero}
                       fichaDisponible={!!ficha && !cargandoFicha && !sinPermisos && !sinFicha && !errorFicha}
+                      modoBackground
+                      generacionBloqueada={planBloqueadoPorIa}
+                      onGeneracionIniciada={registrarGeneracionIniciada}
                       onSuccess={(data) => {
                         const respuestaNormalizada = normalizarRespuestaConMacros(data);
                         setRespuesta(respuestaNormalizada);
@@ -962,7 +1061,7 @@ export function PlanEditorPage() {
 
                   <Button
                     onClick={manejarCrearPlanManual}
-                    disabled={cargandoPlanManual || !socioIdNumero}
+                    disabled={cargandoPlanManual || !socioIdNumero || planBloqueadoPorIa}
                     variant="outline"
                     className="w-full h-11 text-sm font-semibold border-dashed"
                   >
@@ -989,6 +1088,12 @@ export function PlanEditorPage() {
                     planId={planIdEditorManual}
                     versionSeleccionadaId={versionSeleccionadaId}
                     onSelect={async (vid) => {
+                      if (planBloqueadoPorIa) {
+                        toast.info('El plan está bloqueado por generación IA', {
+                          description: 'Esperá a que termine la generación para cargar otra versión.',
+                        });
+                        return;
+                      }
                       setVersionSeleccionadaId(vid);
                       toast.info(`Versión ${vid} cargada en el editor`, {
                         description: 'Se usará como borrador actual.',
