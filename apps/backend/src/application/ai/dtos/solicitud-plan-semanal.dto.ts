@@ -48,4 +48,28 @@ export class SolicitudPlanSemanalHttpDTO {
   @IsOptional()
   @IsDate()
   fechaInicio?: Date;
+
+  @IsOptional()
+  @IsInt()
+  @Min(500)
+  @Max(10000)
+  caloriasLimite?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(10)
+  @Max(500)
+  proteinasEstimadas?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(10)
+  @Max(1000)
+  carbohidratosEstimados?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(10)
+  @Max(300)
+  grasasEstimados?: number;
 }

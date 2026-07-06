@@ -94,6 +94,10 @@ export class AiController {
       alternativasPorComida: dto.alternativasPorComida,
       notasGeneracion: dto.notasGeneracion,
       fechaInicio: dto.fechaInicio,
+      caloriasLimite: dto.caloriasLimite,
+      proteinasEstimadas: dto.proteinasEstimadas,
+      carbohidratosEstimados: dto.carbohidratosEstimados,
+      grasasEstimados: dto.grasasEstimados,
     });
   }
 

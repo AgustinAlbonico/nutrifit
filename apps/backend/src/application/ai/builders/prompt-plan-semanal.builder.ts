@@ -52,6 +52,10 @@ export interface ContextoPromptPlanSemanal {
   fechaInicio: Date;
   /** Nombres de las 26 categorías de grupo alimenticio (para que la IA elija categoriaNombre válido). */
   categoriasGruposAlimenticios?: string[];
+  caloriasLimite?: number;
+  proteinasEstimadas?: number;
+  carbohidratosEstimados?: number;
+  grasasEstimados?: number;
 }
 
 export interface PromptResultado {
@@ -98,13 +102,16 @@ export class PromptPlanSemanalBuilder {
       '7. Distribuí los macronutrientes de forma equilibrada entre las comidas.',
     );
     lineas.push(
-      '8. Variá los alimentos entre días y entre alternativas para evitar monotonía.',
+      '8. Si en el contexto del socio se definen metas de calorías o macronutrientes, ajustá estrictamente el tamaño de las porciones de los alimentos para que el promedio diario cumpla con estos objetivos (con un margen de ±5%).',
     );
     lineas.push(
-      '9. Los alimentos deben estar referenciados por su nombre común en español.',
+      '9. Variá los alimentos entre días y entre alternativas para evitar monotonía.',
     );
     lineas.push(
-      '10. Si un alimento no existe en el catálogo, declarálo en el array alimentosNuevos con macros aproximados y categoría correcta.',
+      '10. Los alimentos deben estar referenciados por su nombre común en español.',
+    );
+    lineas.push(
+      '11. Si un alimento no existe en el catálogo, declarálo en el array alimentosNuevos con macros aproximados y categoría correcta.',
     );
     lineas.push('');
     lineas.push('ESTRUCTURA DEL JSON DE SALIDA:');
@@ -167,6 +174,15 @@ export class PromptPlanSemanalBuilder {
     lineas.push(
       `- Patologías: ${ctx.fichaClinica.patologias.length > 0 ? ctx.fichaClinica.patologias.join(', ') : 'Ninguna'}`,
     );
+
+    if (ctx.caloriasLimite || ctx.proteinasEstimadas || ctx.carbohidratosEstimados || ctx.grasasEstimados) {
+      lineas.push('');
+      lineas.push('METAS DE MACRONUTRIENTES DIARIAS REQUERIDAS (Ajustar porciones para aproximarse a ellas):');
+      if (ctx.caloriasLimite) lineas.push(`- Límite Calórico Diario: EXACTAMENTE ${ctx.caloriasLimite} kcal (tolerancia ±5%)`);
+      if (ctx.proteinasEstimadas) lineas.push(`- Proteínas Diarias: ${ctx.proteinasEstimadas} g`);
+      if (ctx.carbohidratosEstimados) lineas.push(`- Carbohidratos Diarios: ${ctx.carbohidratosEstimados} g`);
+      if (ctx.grasasEstimados) lineas.push(`- Grasas Diarias: ${ctx.grasasEstimados} g`);
+    }
     lineas.push('');
     lineas.push('PARÁMETROS DEL PLAN:');
     lineas.push(`- Días a generar: ${diasSolicitados.length}`);

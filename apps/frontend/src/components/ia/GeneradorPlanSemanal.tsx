@@ -103,6 +103,7 @@ export function GeneradorPlanSemanal({
   onPlanGenerado: _onPlanGeneradoLegacy,
 }: PropiedadesGeneradorPlanSemanal) {
   const [enviando, setEnviando] = useState(false);
+  const [mostrarAvanzado, setMostrarAvanzado] = useState(false);
 
   const { generarPlanSemanalV2 } = useIa();
 
@@ -143,6 +144,10 @@ export function GeneradorPlanSemanal({
           ? { notasGeneracion: valores.notasGeneracion.trim() }
           : {}),
         ...(valores.fechaInicio ? { fechaInicio: valores.fechaInicio } : {}),
+        ...((valores.caloriasLimite !== undefined && !Number.isNaN(valores.caloriasLimite)) ? { caloriasLimite: valores.caloriasLimite } : {}),
+        ...((valores.proteinasEstimadas !== undefined && !Number.isNaN(valores.proteinasEstimadas)) ? { proteinasEstimadas: valores.proteinasEstimadas } : {}),
+        ...((valores.carbohidratosEstimados !== undefined && !Number.isNaN(valores.carbohidratosEstimados)) ? { carbohidratosEstimados: valores.carbohidratosEstimados } : {}),
+        ...((valores.grasasEstimados !== undefined && !Number.isNaN(valores.grasasEstimados)) ? { grasasEstimados: valores.grasasEstimados } : {}),
       };
 
       const respuesta = await generarPlanSemanalV2.mutateAsync(payload);
@@ -340,6 +345,111 @@ export function GeneradorPlanSemanal({
           )}
         </div>
       </div>
+
+      {/* Botón para alternar personalización avanzada de macros */}
+      <div className="flex justify-start">
+        <button
+          type="button"
+          onClick={() => setMostrarAvanzado(!mostrarAvanzado)}
+          className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          aria-expanded={mostrarAvanzado}
+          aria-controls="seccion-macros-personalizados"
+        >
+          {mostrarAvanzado ? 'Ocultar personalización de macros' : 'Personalizar calorías y macros (opcional)'}
+        </button>
+      </div>
+
+      {/* Inputs de macros colapsables */}
+      {mostrarAvanzado && (
+        <div
+          id="seccion-macros-personalizados"
+          className="grid gap-4 sm:grid-cols-2 p-4 rounded-lg border border-border/80 bg-muted/20 animate-in fade-in slide-in-from-top-1 duration-200"
+        >
+          {/* caloriasLimite */}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="caloriasLimite">Límite calórico diario (kcal)</Label>
+            <Input
+              id="caloriasLimite"
+              type="number"
+              min={500}
+              max={10000}
+              placeholder="Ej: 2000"
+              disabled={enviando || generarPlanSemanalV2.isPending}
+              aria-invalid={errors.caloriasLimite ? 'true' : 'false'}
+              aria-describedby={errors.caloriasLimite ? 'caloriasLimite-error' : undefined}
+              {...register('caloriasLimite', { valueAsNumber: true })}
+            />
+            {errors.caloriasLimite && (
+              <p id="caloriasLimite-error" role="alert" className="text-xs text-destructive">
+                {errors.caloriasLimite.message}
+              </p>
+            )}
+          </div>
+
+          {/* proteinasEstimadas */}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="proteinasEstimadas">Proteínas diarias (g)</Label>
+            <Input
+              id="proteinasEstimadas"
+              type="number"
+              min={10}
+              max={500}
+              placeholder="Ej: 140"
+              disabled={enviando || generarPlanSemanalV2.isPending}
+              aria-invalid={errors.proteinasEstimadas ? 'true' : 'false'}
+              aria-describedby={errors.proteinasEstimadas ? 'proteinasEstimadas-error' : undefined}
+              {...register('proteinasEstimadas', { valueAsNumber: true })}
+            />
+            {errors.proteinasEstimadas && (
+              <p id="proteinasEstimadas-error" role="alert" className="text-xs text-destructive">
+                {errors.proteinasEstimadas.message}
+              </p>
+            )}
+          </div>
+
+          {/* carbohidratosEstimados */}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="carbohidratosEstimados">Carbohidratos diarios (g)</Label>
+            <Input
+              id="carbohidratosEstimados"
+              type="number"
+              min={10}
+              max={1000}
+              placeholder="Ej: 220"
+              disabled={enviando || generarPlanSemanalV2.isPending}
+              aria-invalid={errors.carbohidratosEstimados ? 'true' : 'false'}
+              aria-describedby={errors.carbohidratosEstimados ? 'carbohidratosEstimados-error' : undefined}
+              {...register('carbohidratosEstimados', { valueAsNumber: true })}
+            />
+            {errors.carbohidratosEstimados && (
+              <p id="carbohidratosEstimados-error" role="alert" className="text-xs text-destructive">
+                {errors.carbohidratosEstimados.message}
+              </p>
+            )}
+          </div>
+
+          {/* grasasEstimados */}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="grasasEstimados">Grasas diarias (g)</Label>
+            <Input
+              id="grasasEstimados"
+              type="number"
+              min={10}
+              max={300}
+              placeholder="Ej: 65"
+              disabled={enviando || generarPlanSemanalV2.isPending}
+              aria-invalid={errors.grasasEstimados ? 'true' : 'false'}
+              aria-describedby={errors.grasasEstimados ? 'grasasEstimados-error' : undefined}
+              {...register('grasasEstimados', { valueAsNumber: true })}
+            />
+            {errors.grasasEstimados && (
+              <p id="grasasEstimados-error" role="alert" className="text-xs text-destructive">
+                {errors.grasasEstimados.message}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* notasGeneracion */}
       <div className="flex flex-col gap-1.5">

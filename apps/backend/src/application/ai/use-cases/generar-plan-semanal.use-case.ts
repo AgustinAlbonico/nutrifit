@@ -113,6 +113,10 @@ export interface SolicitudPlanSemanal {
   alternativasPorComida?: number;
   notasGeneracion?: string;
   fechaInicio?: Date;
+  caloriasLimite?: number;
+  proteinasEstimadas?: number;
+  carbohidratosEstimados?: number;
+  grasasEstimados?: number;
 }
 
 export interface RespuestaPlanSemanal {
@@ -264,10 +268,14 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
       comidasPorDia,
       alternativasPorComida,
       fechaInicio,
+      caloriasLimite: solicitud.caloriasLimite,
+      proteinasEstimadas: solicitud.proteinasEstimadas,
+      carbohidratosEstimados: solicitud.carbohidratosEstimados,
+      grasasEstimados: solicitud.grasasEstimados,
     };
 
     const objetivoMacros: ObjetivoNutricional =
-      this.calcularObjetivoMacros(fichaClinica);
+      this.calcularObjetivoMacros(fichaClinica, solicitud);
 
     // 6) Loop de generación con reintentos
     let planJson: PlanAlimentacionDatosJson | null = null;
@@ -1039,13 +1047,14 @@ No omitas días, comidas ni alternativas aunque el JSON sea largo.`;
   private calcularObjetivoMacros(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     ficha: FichaClinicaParaValidacion,
+    solicitud: SolicitudPlanSemanal,
   ): ObjetivoNutricional {
-    // Heurística simple basada en objetivoPersonal. Una iteración futura
-    // podría usar Harris-Benedict con peso/altura/edad.
-    const calorias = 2000;
-    const proteinas = Math.round((calorias * 0.25) / 4);
-    const carbohidratos = Math.round((calorias * 0.5) / 4);
-    const grasas = Math.round((calorias * 0.25) / 9);
+    // Heurística simple basada en objetivoPersonal. Si hay valores específicos
+    // en la solicitud, se usan de forma prioritaria.
+    const calorias = solicitud.caloriasLimite ?? 2000;
+    const proteinas = solicitud.proteinasEstimadas ?? Math.round((calorias * 0.25) / 4);
+    const carbohidratos = solicitud.carbohidratosEstimados ?? Math.round((calorias * 0.5) / 4);
+    const grasas = solicitud.grasasEstimados ?? Math.round((calorias * 0.25) / 9);
 
     return {
       caloriasDiarias: calorias,

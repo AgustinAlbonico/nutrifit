@@ -256,6 +256,10 @@ export interface SolicitudPlanSemanalV2FE {
   alternativasPorComida?: number;
   notasGeneracion?: string;
   fechaInicio?: string;
+  caloriasLimite?: number;
+  proteinasEstimadas?: number;
+  carbohidratosEstimados?: number;
+  grasasEstimados?: number;
 }
 
 /** Respuesta del backend al generar plan semanal. */

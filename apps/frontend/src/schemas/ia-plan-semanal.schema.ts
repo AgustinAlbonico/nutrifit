@@ -46,6 +46,22 @@ export const solicitudPlanSemanalSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'La fecha debe tener formato YYYY-MM-DD')
     .optional(),
+  caloriasLimite: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined || (typeof val === 'number' && Number.isNaN(val)) ? undefined : Number(val)),
+    z.number().int().min(500, 'El límite calórico debe ser al menos 500 kcal').max(10000, 'El límite calórico no puede superar las 10000 kcal').optional()
+  ),
+  proteinasEstimadas: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined || (typeof val === 'number' && Number.isNaN(val)) ? undefined : Number(val)),
+    z.number().int().min(10, 'Debe indicar al menos 10 g de proteínas').max(500, 'Las proteínas no pueden superar los 500 g').optional()
+  ),
+  carbohidratosEstimados: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined || (typeof val === 'number' && Number.isNaN(val)) ? undefined : Number(val)),
+    z.number().int().min(10, 'Debe indicar al menos 10 g de carbohidratos').max(1000, 'Los carbohidratos no pueden superar los 1000 g').optional()
+  ),
+  grasasEstimados: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined || (typeof val === 'number' && Number.isNaN(val)) ? undefined : Number(val)),
+    z.number().int().min(10, 'Debe indicar al menos 10 g de grasas').max(300, 'Las grasas no pueden superar los 300 g').optional()
+  ),
 });
 
 export type SolicitudPlanSemanalForm = z.infer<typeof solicitudPlanSemanalSchema>;
