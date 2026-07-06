@@ -14,6 +14,7 @@ import { GIMNASIO_REPOSITORY } from 'src/domain/entities/Gimnasio/gimnasio.repos
 import { GimnasioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/gimnasio.entity';
 import { RecepcionistaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/persona.entity';
 import { GrupoPermisoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/grupo-permiso.entity';
+import { UsuarioGrupoPermisoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/usuario-grupo-permiso.entity';
 import { JwtAuthGuard } from 'src/infrastructure/auth/guards/auth.guard';
 import { RolesGuard } from 'src/infrastructure/auth/guards/roles.guard';
 import { AuthModule } from 'src/application/auth/auth.module';
@@ -28,6 +29,7 @@ import { PasswordEncrypterModule } from 'src/infrastructure/services/bcrypt/bcry
       GimnasioOrmEntity,
       RecepcionistaOrmEntity,
       GrupoPermisoOrmEntity,
+      UsuarioGrupoPermisoOrmEntity,
     ]),
     AuthModule,
     RepositoriesModule,

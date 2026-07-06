@@ -18,6 +18,7 @@ import { UsuarioEntity } from 'src/domain/entities/Usuario/usuario.entity';
 import { Rol } from 'src/domain/entities/Usuario/Rol';
 import { GrupoPermisoEntity } from 'src/domain/entities/Usuario/grupo-permiso.entity';
 import { GrupoPermisoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/grupo-permiso.entity';
+import { UsuarioGrupoPermisoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/usuario-grupo-permiso.entity';
 import { RecepcionistaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/persona.entity';
 import { RecepcionistaEntity } from 'src/domain/entities/Persona/Recepcionista/recepcionista.entity';
 import { Genero } from 'src/domain/entities/Persona/Genero';
@@ -41,6 +42,8 @@ export class CrearAdminGimnasioUseCase implements BaseUseCase {
     private readonly passwordEncrypter: IPasswordEncrypterService,
     @InjectRepository(GrupoPermisoOrmEntity)
     private readonly grupoPermisoRepository: Repository<GrupoPermisoOrmEntity>,
+    @InjectRepository(UsuarioGrupoPermisoOrmEntity)
+    private readonly usuarioGrupoRepo: Repository<UsuarioGrupoPermisoOrmEntity>,
     @InjectRepository(RecepcionistaOrmEntity)
     private readonly personaRepository: Repository<RecepcionistaOrmEntity>,
     private readonly emailService: EmailService,
@@ -111,7 +114,20 @@ export class CrearAdminGimnasioUseCase implements BaseUseCase {
       true,
     );
 
-    await this.usuarioRepository.save(usuario);
+    const usuarioCreado = await this.usuarioRepository.save(usuario);
+
+    const grupoAdminOrm = await this.grupoPermisoRepository.findOne({
+      where: { clave: 'ADMIN' },
+    });
+    if (grupoAdminOrm && usuarioCreado.idUsuario) {
+      await this.usuarioGrupoRepo.save(
+        this.usuarioGrupoRepo.create({
+          usuario: { idUsuario: usuarioCreado.idUsuario } as any,
+          grupoPermiso: grupoAdminOrm,
+          gimnasioId: null,
+        }),
+      );
+    }
 
     this.logger.log(
       `Usuario ADMIN creado para ${email} (debe_cambiar_password=true)`,
