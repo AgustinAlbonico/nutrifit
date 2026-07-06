@@ -39,6 +39,7 @@ import {
 } from 'src/domain/repositories/plan-alimentacion-version.repository';
 import { PlanAlimentacionDatosJson } from 'src/domain/entities/PlanAlimentacionVersion/plan-alimentacion-datos-json';
 import { DiaSemana } from 'src/domain/entities/DiaPlan/DiaSemana';
+import { BloqueoGeneracionPlanIaService } from '../services/bloqueo-generacion-plan-ia.service';
 
 @Injectable()
 export class EditarPlanAlimentacionUseCase implements BaseUseCase {
@@ -66,6 +67,7 @@ export class EditarPlanAlimentacionUseCase implements BaseUseCase {
     private readonly notificacionesService: NotificacionesService,
     private readonly restriccionesValidator: RestriccionesValidator,
     private readonly tenantContext: TenantContextService,
+    private readonly bloqueoGeneracionPlanIa: BloqueoGeneracionPlanIaService,
   ) {}
 
   async execute(
@@ -116,6 +118,12 @@ export class EditarPlanAlimentacionUseCase implements BaseUseCase {
           );
         }
       }
+
+      await this.bloqueoGeneracionPlanIa.verificarSinGeneracionActiva({
+        socioId: socioPlanId,
+        gimnasioId: this.tenantContext.gimnasioId,
+        planAlimentacionId: payload.planId,
+      });
 
       // Actualizar campos básicos
       if (payload.objetivoNutricional !== undefined) {

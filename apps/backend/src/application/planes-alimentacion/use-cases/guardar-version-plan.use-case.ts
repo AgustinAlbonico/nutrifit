@@ -32,6 +32,7 @@ import {
 } from 'src/domain/services/logger.service';
 import { mapPlanToResponse } from './plan-alimentacion.mapper';
 import { PlanAlimentacionResponseDto } from '../dtos';
+import { BloqueoGeneracionPlanIaService } from '../services/bloqueo-generacion-plan-ia.service';
 
 export interface SolicitudGuardarVersion {
   planAlimentacionId: number;
@@ -58,6 +59,7 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
     private readonly auditoriaService: AuditoriaService,
     private readonly tenantContext: TenantContextService,
     private readonly dataSource: DataSource,
+    private readonly bloqueoGeneracionPlanIa: BloqueoGeneracionPlanIaService,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
   ) {}
@@ -99,6 +101,18 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
         'Solo el nutricionista responsable del plan puede guardar versiones.',
       );
     }
+
+    const socioId = (plan.socio as unknown as { idPersona: number | null })
+      .idPersona;
+    if (socioId == null) {
+      throw new NotFoundError('Socio', String(planAlimentacionId));
+    }
+
+    await this.bloqueoGeneracionPlanIa.verificarSinGeneracionActiva({
+      socioId,
+      gimnasioId,
+      planAlimentacionId,
+    });
 
     // 5) Buscar versión borrador (numeroVersion = 0)
     const versionesExistentes = await this.planVersionRepo.listarPorPlan(planAlimentacionId);

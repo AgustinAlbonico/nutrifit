@@ -66,6 +66,7 @@ import {
 import { PlanAlimentacionResponseDto } from '../dtos';
 import { mapPlanToResponse } from './plan-alimentacion.mapper';
 import { PersistirPlanManualDto } from '../dtos/persistir-plan-manual.dto';
+import { BloqueoGeneracionPlanIaService } from '../services/bloqueo-generacion-plan-ia.service';
 
 @Injectable()
 export class PersistirPlanManualUseCase implements BaseUseCase {
@@ -91,6 +92,7 @@ export class PersistirPlanManualUseCase implements BaseUseCase {
     private readonly notificacionesService: NotificacionesService,
     private readonly restriccionesValidator: RestriccionesValidator,
     private readonly tenantContext: TenantContextService,
+    private readonly bloqueoGeneracionPlanIa: BloqueoGeneracionPlanIaService,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
   ) {}
@@ -166,6 +168,13 @@ export class PersistirPlanManualUseCase implements BaseUseCase {
     if (socioId == null) {
       throw new NotFoundError('Socio', String(planId));
     }
+
+    await this.bloqueoGeneracionPlanIa.verificarSinGeneracionActiva({
+      socioId,
+      gimnasioId: this.tenantContext.gimnasioId,
+      planAlimentacionId: planId,
+    });
+
     const incidencias = await this.restriccionesValidator.generarIncidencias(
       payload.dias.flatMap((diaDto) =>
         diaDto.comidas.flatMap((comidaDto) =>

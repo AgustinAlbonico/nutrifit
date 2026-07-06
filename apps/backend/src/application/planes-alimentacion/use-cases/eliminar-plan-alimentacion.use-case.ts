@@ -18,6 +18,7 @@ import { EliminarPlanAlimentacionDto } from '../dtos';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
+import { BloqueoGeneracionPlanIaService } from '../services/bloqueo-generacion-plan-ia.service';
 
 export class EliminarPlanAlimentacionResponseDto {
   mensaje: string;
@@ -37,6 +38,7 @@ export class EliminarPlanAlimentacionUseCase implements BaseUseCase {
     private readonly auditoriaService: AuditoriaService,
     private readonly notificacionesService: NotificacionesService,
     private readonly tenantContext: TenantContextService,
+    private readonly bloqueoGeneracionPlanIa: BloqueoGeneracionPlanIaService,
   ) {}
 
   async execute(
@@ -73,6 +75,15 @@ export class EliminarPlanAlimentacionUseCase implements BaseUseCase {
       }
     }
 
+    const socioId = plan.socio?.idPersona ?? null;
+    if (socioId !== null) {
+      await this.bloqueoGeneracionPlanIa.verificarSinGeneracionActiva({
+        socioId,
+        gimnasioId: this.tenantContext.gimnasioId,
+        planAlimentacionId: payload.planId,
+      });
+    }
+
     // Soft delete
     plan.activo = false;
     plan.eliminadoEn = new Date();
@@ -80,7 +91,6 @@ export class EliminarPlanAlimentacionUseCase implements BaseUseCase {
 
     await this.planRepo.save(plan);
 
-    const socioId = plan.socio?.idPersona ?? null;
     const socioUsuarioId = plan.socio?.usuario?.idUsuario ?? null;
 
     await this.auditoriaService.registrar({

@@ -61,6 +61,7 @@ import {
   type ObjetivoNutricional,
 } from 'src/domain/validators/macros-validator';
 import type { FichaClinicaParaValidacion } from 'src/domain/validators/restricciones-validator-v2';
+import { BloqueoGeneracionPlanIaService } from '../services/bloqueo-generacion-plan-ia.service';
 
 export interface SolicitudActivarPlan {
   planAlimentacionId: number;
@@ -94,6 +95,7 @@ export class ActivarPlanAlimentacionUseCase implements BaseUseCase {
     private readonly auditoriaService: AuditoriaService,
     private readonly tenantContext: TenantContextService,
     private readonly dataSource: DataSource,
+    private readonly bloqueoGeneracionPlanIa: BloqueoGeneracionPlanIaService,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
   ) {}
@@ -137,6 +139,18 @@ export class ActivarPlanAlimentacionUseCase implements BaseUseCase {
       );
     }
 
+    const socioId = (plan.socio as unknown as { idPersona: number | null })
+      .idPersona;
+    if (socioId == null) {
+      throw new NotFoundError('Socio', String(solicitud.planAlimentacionId));
+    }
+
+    await this.bloqueoGeneracionPlanIa.verificarSinGeneracionActiva({
+      socioId,
+      gimnasioId: solicitud.gimnasioId,
+      planAlimentacionId: solicitud.planAlimentacionId,
+    });
+
     // 5) Cargar versión y validar que pertenece al plan
     const version = await this.planVersionRepo.obtenerPorId(solicitud.versionId);
     if (!version) {
@@ -150,7 +164,7 @@ export class ActivarPlanAlimentacionUseCase implements BaseUseCase {
 
     // 6) Re-validar macros sobre la versión a activar
     const fichaClinica = await this.cargarFichaClinica(
-      (plan.socio as unknown as { idPersona: number | null }).idPersona!,
+      socioId,
     );
     const objetivoMacros = this.calcularObjetivoMacros(fichaClinica);
     const validacionMacros = MacrosValidator.validar(

@@ -40,6 +40,7 @@ import {
   APP_LOGGER_SERVICE,
   IAppLoggerService,
 } from 'src/domain/services/logger.service';
+import { BloqueoGeneracionPlanIaService } from '../services/bloqueo-generacion-plan-ia.service';
 
 export interface SolicitudFinalizarPlan {
   planAlimentacionId: number;
@@ -63,6 +64,7 @@ export class FinalizarPlanAlimentacionUseCase implements BaseUseCase {
     private readonly notificacionesService: NotificacionesService,
     private readonly auditoriaService: AuditoriaService,
     private readonly tenantContext: TenantContextService,
+    private readonly bloqueoGeneracionPlanIa: BloqueoGeneracionPlanIaService,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
   ) {}
@@ -98,6 +100,19 @@ export class FinalizarPlanAlimentacionUseCase implements BaseUseCase {
         'Solo el nutricionista dueño del plan puede finalizarlo',
       );
     }
+
+    const socioPersonaId = (plan.socio as unknown as {
+      idPersona: number | null;
+    }).idPersona;
+    if (socioPersonaId == null) {
+      throw new NotFoundError('Socio', String(solicitud.planAlimentacionId));
+    }
+
+    await this.bloqueoGeneracionPlanIa.verificarSinGeneracionActiva({
+      socioId: socioPersonaId,
+      gimnasioId: solicitud.gimnasioId,
+      planAlimentacionId: solicitud.planAlimentacionId,
+    });
 
     // 4) Estado debe ser ACTIVO (422 si no)
     if (plan.estado !== 'ACTIVO') {
@@ -136,9 +151,6 @@ export class FinalizarPlanAlimentacionUseCase implements BaseUseCase {
       });
 
       // Socio titular
-      const socioPersonaId = (plan.socio as unknown as {
-        idPersona: number | null;
-      }).idPersona;
       if (socioPersonaId) {
         const socio = await this.socioRepo.findOne({
           where: { idPersona: socioPersonaId },

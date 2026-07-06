@@ -23,6 +23,7 @@ import {
 } from 'src/domain/repositories/plan-alimentacion-version.repository';
 import { PlanAlimentacionDatosJson } from 'src/domain/entities/PlanAlimentacionVersion/plan-alimentacion-datos-json';
 import { PlanAlimentacionVersionEntity } from 'src/domain/entities/PlanAlimentacionVersion/plan-alimentacion-version.entity';
+import { BloqueoGeneracionPlanIaService } from '../services/bloqueo-generacion-plan-ia.service';
 
 type BandaMacroManual = 'VERDE' | 'AMARILLO' | 'ROJO';
 
@@ -84,6 +85,7 @@ export class CrearPlanManualVacioUseCase implements BaseUseCase {
     @Inject(PLAN_ALIMENTACION_VERSION_REPOSITORY)
     private readonly planVersionRepo: PlanAlimentacionVersionRepository,
     private readonly tenantContext: TenantContextService,
+    private readonly bloqueoGeneracionPlanIa: BloqueoGeneracionPlanIaService,
   ) {}
 
   async execute(
@@ -139,6 +141,11 @@ export class CrearPlanManualVacioUseCase implements BaseUseCase {
         'El nutricionista asignado no tiene una persona válida.',
       );
     }
+
+    await this.bloqueoGeneracionPlanIa.verificarSinGeneracionActiva({
+      socioId,
+      gimnasioId: this.tenantContext.gimnasioId,
+    });
 
     const planEditableExistente = await this.buscarPlanEditableExistente(
       socioId,

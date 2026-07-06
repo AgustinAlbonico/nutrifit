@@ -40,6 +40,7 @@ import { RepositoriesModule } from 'src/infrastructure/persistence/typeorm/repos
 import { AppLoggerModule } from 'src/infrastructure/common/logger/app-logger.module';
 import { GroqModule } from 'src/infrastructure/services/groq/groq.module';
 import { AiModule } from 'src/application/ai/ai.module';
+import { BloqueoGeneracionPlanIaService } from './services/bloqueo-generacion-plan-ia.service';
 
 @Module({
   imports: [
@@ -82,6 +83,7 @@ import { AiModule } from 'src/application/ai/ai.module';
     GenerarIdeasComidaUseCase,
     PersistirPlanManualUseCase,
     GuardarVersionPlanUseCase,
+    BloqueoGeneracionPlanIaService,
     NotificacionesService,
   ],
   exports: [
@@ -103,6 +105,7 @@ import { AiModule } from 'src/application/ai/ai.module';
     PersistirPlanManualUseCase,
     GenerarIdeasComidaUseCase,
     GuardarVersionPlanUseCase,
+    BloqueoGeneracionPlanIaService,
   ],
 })
 export class PlanesAlimentacionModule {}

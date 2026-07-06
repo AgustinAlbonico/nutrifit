@@ -42,6 +42,7 @@ import { normalizarTexto } from 'src/common/utils/text.util';
 import { ResolvedorCatalogoIA } from 'src/application/ia/services/resolvedor-catalogo-ia.service';
 import { CreadorPreparacionesIA } from 'src/application/ia/services/creador-preparaciones-ia.service';
 import type { AlimentoNuevoDto } from 'src/application/ai/dto/alimento-nuevo.dto';
+import { BloqueoGeneracionPlanIaService } from '../services/bloqueo-generacion-plan-ia.service';
 
 export interface AlternativaGenerada {
   idTemp: string;
@@ -203,6 +204,7 @@ export class GenerarIdeasComidaUseCase {
     private readonly restriccionesValidator: RestriccionesValidator,
     private readonly resolvedorCatalogoIA: ResolvedorCatalogoIA,
     private readonly creadorPreparacionesIA: CreadorPreparacionesIA,
+    private readonly bloqueoGeneracionPlanIa: BloqueoGeneracionPlanIaService,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
   ) {}
@@ -241,6 +243,12 @@ export class GenerarIdeasComidaUseCase {
     if (socioId == null) {
       throw new NotFoundError('Socio', String(dto.planAlimentacionId));
     }
+
+    await this.bloqueoGeneracionPlanIa.verificarSinGeneracionActiva({
+      socioId,
+      gimnasioId: user.gimnasioId,
+      planAlimentacionId: dto.planAlimentacionId,
+    });
 
     const socioWhere: FindOptionsWhere<SocioEntity> = { idPersona: socioId };
     const ficha = await this.fichaRepo.findOne({

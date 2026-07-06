@@ -15,6 +15,7 @@ import {
 } from 'src/infrastructure/persistence/typeorm/entities';
 import { Repository, DataSource } from 'typeorm';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
+import { BloqueoGeneracionPlanIaService } from '../services/bloqueo-generacion-plan-ia.service';
 
 export class VaciarContenidoPlanDto {
   planId: number;
@@ -43,6 +44,7 @@ export class VaciarContenidoPlanUseCase implements BaseUseCase {
     private readonly opcionComidaRepo: Repository<OpcionComidaOrmEntity>,
     private readonly dataSource: DataSource,
     private readonly tenantContext: TenantContextService,
+    private readonly bloqueoGeneracionPlanIa: BloqueoGeneracionPlanIaService,
   ) {}
 
   async execute(
@@ -54,7 +56,7 @@ export class VaciarContenidoPlanUseCase implements BaseUseCase {
         idPlanAlimentacion: payload.planId,
         socio: { gimnasioId: this.tenantContext.gimnasioId },
       },
-      relations: { nutricionista: { usuario: true }, dias: true },
+      relations: { nutricionista: { usuario: true }, socio: true, dias: true },
     });
 
     if (!plan || !plan.activo) {
@@ -78,6 +80,15 @@ export class VaciarContenidoPlanUseCase implements BaseUseCase {
           'Solo el nutricionista responsable del plan puede vaciarlo.',
         );
       }
+    }
+
+    const socioId = plan.socio?.idPersona ?? null;
+    if (socioId !== null) {
+      await this.bloqueoGeneracionPlanIa.verificarSinGeneracionActiva({
+        socioId,
+        gimnasioId: this.tenantContext.gimnasioId,
+        planAlimentacionId: payload.planId,
+      });
     }
 
     // Contar elementos a eliminar
