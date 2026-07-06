@@ -5,6 +5,9 @@ import { PasswordEncrypterService } from 'src/infrastructure/services/bcrypt/bcr
 import { LoginUseCase } from './login.use-case';
 import { CambiarContrasenaUseCase } from './cambiar-contrasena.use-case';
 import { EstablecerContrasenaUseCase } from './establecer-contrasena.use-case';
+import { SolicitarRecuperacionContrasenaUseCase } from './solicitar-recuperacion-contrasena.use-case';
+import { ConfirmarRecuperacionContrasenaUseCase } from './confirmar-recuperacion-contrasena.use-case';
+import { ResetearContrasenaUsuarioUseCase } from './resetear-contrasena-usuario.use-case';
 import { PASSWORD_ENCRYPTER_SERVICE } from 'src/domain/services/password-encrypter.service';
 import { JWT_SERVICE } from 'src/domain/services/jwt.service';
 import { JwtServiceImpl } from 'src/infrastructure/services/jwt/jwt.service';
@@ -16,6 +19,7 @@ import { USUARIO_REPOSITORY } from 'src/domain/entities/Usuario/usuario.reposito
 import { UsuarioRepositoryImplementation } from 'src/infrastructure/persistence/typeorm/repositories';
 import { EnvironmentConfigModule } from 'src/infrastructure/config/environment-config/environment-config.module';
 import { EnvironmentConfigService } from 'src/infrastructure/config/environment-config/environment-config.service';
+import { EmailModule } from 'src/application/email/email.module';
 
 @Module({
   imports: [
@@ -31,6 +35,7 @@ import { EnvironmentConfigService } from 'src/infrastructure/config/environment-
       }),
     }),
     AppLoggerModule,
+    EmailModule,
   ],
   providers: [
     {
@@ -45,11 +50,17 @@ import { EnvironmentConfigService } from 'src/infrastructure/config/environment-
     LoginUseCase,
     CambiarContrasenaUseCase,
     EstablecerContrasenaUseCase,
+    SolicitarRecuperacionContrasenaUseCase,
+    ConfirmarRecuperacionContrasenaUseCase,
+    ResetearContrasenaUsuarioUseCase,
   ],
   exports: [
     LoginUseCase,
     CambiarContrasenaUseCase,
     EstablecerContrasenaUseCase,
+    SolicitarRecuperacionContrasenaUseCase,
+    ConfirmarRecuperacionContrasenaUseCase,
+    ResetearContrasenaUsuarioUseCase,
     JwtModule,
     JWT_SERVICE,
     USUARIO_REPOSITORY,

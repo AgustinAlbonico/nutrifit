@@ -76,6 +76,12 @@ export function Permisos() {
   const [idsAccionesSeleccionadas, setIdsAccionesSeleccionadas] = useState<number[]>([]);
   const [idsGruposSeleccionados, setIdsGruposSeleccionados] = useState<number[]>([]);
 
+  // Estados para el reset de contraseña por admin
+  const [mostrarModalResetExito, setMostrarModalResetExito] = useState(false);
+  const [contrasenaResetProvisional, setContrasenaResetProvisional] = useState('');
+  const [usuarioResetSelect, setUsuarioResetSelect] = useState<Usuario | null>(null);
+  const [reseteandoId, setReseteandoId] = useState<number | null>(null);
+
   // Query de usuarios con paginación y filtros
   const { usuarios, pagination, isLoading } = useUsuarios({
     token,
@@ -201,6 +207,37 @@ export function Permisos() {
       await cargarCatalogos();
     } catch (err) {
       toast.error(obtenerMensajeError(err, 'No se pudo crear el grupo'));
+    }
+  };
+
+  const solicitarResetearPassword = async (usuario: Usuario) => {
+    if (
+      !window.confirm(
+        `¿Estás seguro de que querés resetear la contraseña del usuario ${usuario.email}? Se generará una clave temporal.`
+      )
+    ) {
+      return;
+    }
+
+    setReseteandoId(usuario.idUsuario);
+    try {
+      const res = await apiRequest<{ contrasenaProvisional: string }>(
+        `/permissions/users/${usuario.idUsuario}/reset-password`,
+        {
+          method: 'POST',
+          token,
+        }
+      );
+
+      setContrasenaResetProvisional(res.contrasenaProvisional);
+      setUsuarioResetSelect(usuario);
+      setMostrarModalResetExito(true);
+      toast.success('Contraseña provisional generada');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'No se pudo resetear la contraseña';
+      toast.error(msg);
+    } finally {
+      setReseteandoId(null);
     }
   };
 
@@ -653,7 +690,19 @@ export function Permisos() {
                               {usuario.isActive ? 'Activo' : 'Inactivo'}
                             </Badge>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right">
+                          <td className="px-6 py-4 whitespace-nowrap text-right space-x-2">
+                            {puedeGestionarPermisos && (
+                              <Button
+                                size="icon"
+                                variant="outline"
+                                onClick={() => solicitarResetearPassword(usuario)}
+                                disabled={reseteandoId === usuario.idUsuario}
+                                title="Resetear contraseña"
+                                className="text-orange-500 hover:text-orange-600 border-orange-500/20 hover:bg-orange-50/50"
+                              >
+                                <KeyRound size={18} />
+                              </Button>
+                            )}
                             <Button
                               size="icon"
                               onClick={() => {
@@ -1024,6 +1073,46 @@ export function Permisos() {
               <Button type="submit">Guardar Cambios</Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* MODAL: RESET CONTRASEÑA PROVISIONAL EXITO */}
+      <Dialog open={mostrarModalResetExito} onOpenChange={setMostrarModalResetExito}>
+        <DialogContent className="max-w-md bg-card">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <KeyRound className="text-orange-500" size={24} />
+              Contraseña Temporal Generada
+            </DialogTitle>
+            <DialogDescription>
+              Copiá la contraseña temporal para el usuario <strong>{usuarioResetSelect?.email}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="rounded-lg bg-muted p-4 flex items-center justify-between border border-border">
+              <code className="text-lg font-mono font-bold select-all bg-background px-3 py-1.5 rounded border">
+                {contrasenaResetProvisional}
+              </code>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  navigator.clipboard.writeText(contrasenaResetProvisional);
+                  toast.success('Copiado al portapapeles');
+                }}
+              >
+                Copiar
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              <strong>Importante:</strong> El usuario deberá iniciar sesión con esta clave provisional y el sistema le solicitará cambiarla obligatoriamente en su primer login.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setMostrarModalResetExito(false)}>
+              Entendido
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

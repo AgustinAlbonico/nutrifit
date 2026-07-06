@@ -160,6 +160,8 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
       ),
       null,
       user.debeCambiarPassword,
+      user.tokenRecuperacion,
+      user.tokenRecuperacionExpiracion,
     );
 
     return formatedUser;
@@ -248,6 +250,8 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
     usuarioOrmEntity.rol = entity.rol;
     usuarioOrmEntity.fechaHoraAlta = new Date();
     usuarioOrmEntity.debeCambiarPassword = entity.debeCambiarPassword;
+    usuarioOrmEntity.tokenRecuperacion = entity.tokenRecuperacion;
+    usuarioOrmEntity.tokenRecuperacionExpiracion = entity.tokenRecuperacionExpiracion;
 
     if (entity.persona) {
       usuarioOrmEntity.persona = {
@@ -275,6 +279,8 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
       [],
       null,
       usuarioCreado.debeCambiarPassword,
+      usuarioCreado.tokenRecuperacion,
+      usuarioCreado.tokenRecuperacionExpiracion,
     );
   }
 
@@ -284,6 +290,8 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
       contraseña: entity.contraseña,
       rol: entity.rol,
       debeCambiarPassword: entity.debeCambiarPassword,
+      tokenRecuperacion: entity.tokenRecuperacion,
+      tokenRecuperacionExpiracion: entity.tokenRecuperacionExpiracion,
     });
 
     return entity;
@@ -331,6 +339,8 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
         ),
         null,
         user.debeCambiarPassword,
+        user.tokenRecuperacion,
+        user.tokenRecuperacionExpiracion,
       );
     });
   }
@@ -438,6 +448,21 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
       ),
       null,
       user.debeCambiarPassword,
+      user.tokenRecuperacion,
+      user.tokenRecuperacionExpiracion,
     );
+  }
+
+  async findByTokenRecuperacion(
+    token: string,
+  ): Promise<UsuarioEntity | null> {
+    if (!token) return null;
+
+    const user = await this.userRepository.findOne({
+      where: { tokenRecuperacion: token },
+    });
+
+    if (!user) return null;
+    return this.findByEmail(user.email);
   }
 }

@@ -14,6 +14,8 @@ export class UsuarioEntity extends AuditableEntity {
   rol: Rol;
   grupos: GrupoPermisoEntity[];
   acciones: AccionPermisoEntity[];
+  tokenRecuperacion: string | null;
+  tokenRecuperacionExpiracion: Date | null;
 
   constructor(
     idUsuario: number | null = null,
@@ -25,6 +27,8 @@ export class UsuarioEntity extends AuditableEntity {
     acciones: AccionPermisoEntity[] = [],
     fechaBaja: Date | null = null,
     debeCambiarPassword: boolean = false,
+    tokenRecuperacion: string | null = null,
+    tokenRecuperacionExpiracion: Date | null = null,
   ) {
     super(fechaBaja);
     this.idUsuario = idUsuario;
@@ -36,6 +40,8 @@ export class UsuarioEntity extends AuditableEntity {
     this.rol = rol;
     this.grupos = grupos;
     this.acciones = acciones;
+    this.tokenRecuperacion = tokenRecuperacion;
+    this.tokenRecuperacionExpiracion = tokenRecuperacionExpiracion;
   }
 
   getAccionesEfectivas(): string[] {

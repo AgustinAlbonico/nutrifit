@@ -65,6 +65,15 @@ export function Login() {
                 required
                 className="h-10"
               />
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => navigate({ to: '/solicitar-recuperacion' })}
+                  className="text-xs text-orange-500 hover:text-orange-600 hover:underline cursor-pointer transition-colors"
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </div>
             </div>
             <Button className="w-full h-10 font-semibold bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 text-white shadow-md hover:shadow-lg transition-all" type="submit">
               Entrar

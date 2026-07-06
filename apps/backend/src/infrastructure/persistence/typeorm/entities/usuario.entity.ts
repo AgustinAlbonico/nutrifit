@@ -38,6 +38,21 @@ export class UsuarioOrmEntity {
   debeCambiarPassword: boolean;
 
   @Column({
+    name: 'token_recuperacion',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
+  tokenRecuperacion: string | null;
+
+  @Column({
+    name: 'token_recuperacion_expiracion',
+    type: 'datetime',
+    nullable: true,
+  })
+  tokenRecuperacionExpiracion: Date | null;
+
+  @Column({
     name: 'fecha_hora_alta',
     type: 'datetime',
     default: () => 'CURRENT_TIMESTAMP',

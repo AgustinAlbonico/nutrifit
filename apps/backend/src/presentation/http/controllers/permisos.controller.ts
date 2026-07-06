@@ -23,11 +23,15 @@ import { JwtAuthGuard } from 'src/infrastructure/auth/guards/auth.guard';
 import { ActionsGuard } from 'src/infrastructure/auth/guards/actions.guard';
 import { RolesGuard } from 'src/infrastructure/auth/guards/roles.guard';
 import { Rol as RolEnum } from 'src/domain/entities/Usuario/Rol';
+import { ResetearContrasenaUsuarioUseCase } from 'src/application/auth/resetear-contrasena-usuario.use-case';
 
 @Controller('permissions')
 @UseGuards(JwtAuthGuard, RolesGuard, ActionsGuard)
 export class PermisosController {
-  constructor(private readonly permisosService: PermisosService) {}
+  constructor(
+    private readonly permisosService: PermisosService,
+    private readonly resetearContrasenaUseCase: ResetearContrasenaUsuarioUseCase,
+  ) {}
 
   @Get('actions')
   @Rol(RolEnum.ADMIN, RolEnum.SUPERADMIN)
@@ -112,6 +116,19 @@ export class PermisosController {
   @Actions('auth.permissions.read')
   async accionesDeUsuario(@Param('id', ParseIntPipe) userId: number) {
     return this.permisosService.getAccionesEfectivasUsuario(userId);
+  }
+
+  @Post('users/:id/reset-password')
+  @Rol(RolEnum.ADMIN, RolEnum.SUPERADMIN)
+  @Actions('auth.permissions.write')
+  async resetearContrasena(
+    @Param('id', ParseIntPipe) targetUserId: number,
+    @CurrentUserId() adminUserId: number,
+  ) {
+    return this.resetearContrasenaUseCase.execute({
+      targetUserId,
+      adminUserId,
+    });
   }
 
   @Get('users')

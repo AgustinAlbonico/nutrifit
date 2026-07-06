@@ -11,8 +11,12 @@ import { LoginDto } from 'src/application/auth/dtos/login.dto';
 import { LoginUseCase } from 'src/application/auth/login.use-case';
 import { CambiarContrasenaUseCase } from 'src/application/auth/cambiar-contrasena.use-case';
 import { EstablecerContrasenaUseCase } from 'src/application/auth/establecer-contrasena.use-case';
+import { SolicitarRecuperacionContrasenaUseCase } from 'src/application/auth/solicitar-recuperacion-contrasena.use-case';
+import { ConfirmarRecuperacionContrasenaUseCase } from 'src/application/auth/confirmar-recuperacion-contrasena.use-case';
 import { CambiarContrasenaDto } from 'src/application/auth/dtos/cambiar-contrasena.dto';
 import { EstablecerContrasenaDto } from 'src/application/auth/dtos/establecer-contrasena.dto';
+import { SolicitarRecuperacionDto } from 'src/application/auth/dtos/solicitar-recuperacion.dto';
+import { ConfirmarRecuperacionDto } from 'src/application/auth/dtos/confirmar-recuperacion.dto';
 import {
   APP_LOGGER_SERVICE,
   IAppLoggerService,
@@ -35,6 +39,8 @@ export class AuthController {
     private readonly loginUseCase: LoginUseCase,
     private readonly cambiarContrasenaUseCase: CambiarContrasenaUseCase,
     private readonly establecerContrasenaUseCase: EstablecerContrasenaUseCase,
+    private readonly solicitarRecuperacionUseCase: SolicitarRecuperacionContrasenaUseCase,
+    private readonly confirmarRecuperacionUseCase: ConfirmarRecuperacionContrasenaUseCase,
     private readonly permisosService: PermisosService,
     @Inject(USUARIO_REPOSITORY)
     private readonly usuarioRepository: UsuarioRepository,
@@ -49,6 +55,16 @@ export class AuthController {
       `Login correcto para el usuario con email: ${body.email}, tiene el rol de ${res.rol}`,
     );
     return res;
+  }
+
+  @Post('solicitar-recuperacion')
+  async solicitarRecuperacion(@Body() body: SolicitarRecuperacionDto) {
+    return this.solicitarRecuperacionUseCase.execute(body);
+  }
+
+  @Post('confirmar-recuperacion')
+  async confirmarRecuperacion(@Body() body: ConfirmarRecuperacionDto) {
+    return this.confirmarRecuperacionUseCase.execute(body);
   }
 
   @Get('permissions')

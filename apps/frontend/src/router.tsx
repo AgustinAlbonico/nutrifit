@@ -42,6 +42,8 @@ import { Recepcionistas } from '@/pages/Recepcionistas';
 import { MiPerfilNutricionista } from '@/pages/MiPerfilNutricionista';
 import { AsignarTurnoPage } from '@/pages/AsignarTurnoPage';
 import { CambiarContrasenaObligatorio } from '@/pages/CambiarContrasenaObligatorio';
+import { RecuperarContrasenaSolicitud } from '@/pages/RecuperarContrasenaSolicitud';
+import { RecuperarContrasenaConfirmacion } from '@/pages/RecuperarContrasenaConfirmacion';
 
 // Definir el tipo del context del router
 declare module '@tanstack/react-router' {
@@ -107,6 +109,20 @@ const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/login',
   component: Login,
+});
+
+// Solicitar recuperación de contraseña (Public)
+const solicitarRecuperacionRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/solicitar-recuperacion',
+  component: RecuperarContrasenaSolicitud,
+});
+
+// Recuperar contraseña (Public)
+const recuperarContrasenaRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/recuperar-contrasena',
+  component: RecuperarContrasenaConfirmacion,
 });
 
 // Authenticated layout route con beforeLoad para validación
@@ -395,6 +411,8 @@ const routeTree = rootRoute.addChildren([
   indexRoute,
   cambiarContrasenaRoute,
   loginRoute,
+  solicitarRecuperacionRoute,
+  recuperarContrasenaRoute,
   authLayoutRoute.addChildren([
     dashboardRoute,
     nutricionistasRoute,
