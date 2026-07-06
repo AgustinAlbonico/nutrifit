@@ -26,6 +26,11 @@ export class SolicitudPlanSemanalHttpDTO {
   @IsOptional()
   @IsInt()
   @Min(1)
+  planAlimentacionId?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
   @Max(14)
   diasAGenerar?: number;
 

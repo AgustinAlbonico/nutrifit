@@ -1,4 +1,13 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -16,6 +25,9 @@ import { GenerarIdeasComidaInputDto } from 'src/application/ai/dto/generar-ideas
 import {
   GenerarRecomendacionComidaUseCase,
   GenerarPlanSemanalUseCase,
+  IniciarGeneracionPlanSemanalUseCase,
+  ObtenerGeneracionPlanActivaUseCase,
+  ObtenerGeneracionPlanSemanalUseCase,
   RegenerarPlanSemanalUseCase,
   SugerirSustitucionUseCase,
   AnalizarPlanNutricionalUseCase,
@@ -23,6 +35,7 @@ import {
 } from 'src/application/ai/use-cases';
 import type { RespuestaPlanSemanal } from 'src/application/ai/use-cases/generar-plan-semanal.use-case';
 import type { RespuestaRegenerarPlan } from 'src/application/ai/use-cases/regenerar-plan-semanal.use-case';
+import { BadRequestError } from 'src/domain/exceptions/custom-exceptions';
 import { Rol } from 'src/infrastructure/auth/decorators/role.decorator';
 import { Actions } from 'src/infrastructure/auth/decorators/actions.decorator';
 import { JwtAuthGuard } from 'src/infrastructure/auth/guards/auth.guard';
@@ -40,6 +53,9 @@ export class AiController {
   constructor(
     private readonly generarRecomendacionUseCase: GenerarRecomendacionComidaUseCase,
     private readonly generarPlanSemanalUseCase: GenerarPlanSemanalUseCase,
+    private readonly iniciarGeneracionPlanSemanalUseCase: IniciarGeneracionPlanSemanalUseCase,
+    private readonly obtenerGeneracionPlanActivaUseCase: ObtenerGeneracionPlanActivaUseCase,
+    private readonly obtenerGeneracionPlanSemanalUseCase: ObtenerGeneracionPlanSemanalUseCase,
     private readonly regenerarPlanSemanalUseCase: RegenerarPlanSemanalUseCase,
     private readonly sugerirSustitucionUseCase: SugerirSustitucionUseCase,
     private readonly analizarPlanNutricionalUseCase: AnalizarPlanNutricionalUseCase,
@@ -100,6 +116,79 @@ export class AiController {
       grasasEstimados: dto.grasasEstimados,
       alimentosPreferidos: dto.alimentosPreferidos,
       alimentosEvitados: dto.alimentosEvitados,
+    });
+  }
+
+  @Post('plan-semanal/generaciones')
+  @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN, RolEnum.SUPERADMIN)
+  @Actions(ACCIONES.PLANES_IA_GENERAR)
+  @ApiOperation({
+    summary: 'Iniciar generación de plan semanal con IA en background',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Generación en background creada exitosamente',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Ya existe una generación activa para el socio o plan',
+  })
+  async iniciarGeneracionPlanSemanal(
+    @Body() dto: SolicitudPlanSemanalHttpDTO,
+    @CurrentUser() user: { personaId: number; gimnasioId: number },
+  ) {
+    return this.iniciarGeneracionPlanSemanalUseCase.execute({
+      socioId: dto.socioId,
+      nutricionistaId: user.personaId,
+      gimnasioId: user.gimnasioId,
+      planAlimentacionId: dto.planAlimentacionId,
+      diasAGenerar: dto.diasAGenerar,
+      comidasPorDia: dto.comidasPorDia,
+      alternativasPorComida: dto.alternativasPorComida,
+      notasGeneracion: dto.notasGeneracion,
+      fechaInicio: dto.fechaInicio,
+      caloriasLimite: dto.caloriasLimite,
+      proteinasEstimadas: dto.proteinasEstimadas,
+      carbohidratosEstimados: dto.carbohidratosEstimados,
+      grasasEstimados: dto.grasasEstimados,
+      alimentosPreferidos: dto.alimentosPreferidos,
+      alimentosEvitados: dto.alimentosEvitados,
+    });
+  }
+
+  @Get('plan-semanal/generaciones/activa')
+  @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN, RolEnum.SUPERADMIN)
+  @ApiOperation({ summary: 'Consultar generación activa de plan semanal IA' })
+  @ApiResponse({ status: 200, description: 'Generación activa o null' })
+  async obtenerGeneracionPlanActiva(
+    @Query('socioId') socioIdRaw: string,
+    @Query('planAlimentacionId') planAlimentacionIdRaw: string | undefined,
+    @CurrentUser() user: { gimnasioId: number },
+  ) {
+    const socioId = this.parsearEnteroQuery(socioIdRaw, 'socioId');
+    const planAlimentacionId = planAlimentacionIdRaw
+      ? this.parsearEnteroQuery(planAlimentacionIdRaw, 'planAlimentacionId')
+      : null;
+
+    return this.obtenerGeneracionPlanActivaUseCase.execute({
+      socioId,
+      gimnasioId: user.gimnasioId,
+      planAlimentacionId,
+    });
+  }
+
+  @Get('plan-semanal/generaciones/:id')
+  @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN, RolEnum.SUPERADMIN)
+  @ApiOperation({ summary: 'Consultar una generación de plan semanal IA' })
+  @ApiResponse({ status: 200, description: 'Generación encontrada' })
+  @ApiResponse({ status: 404, description: 'Generación no encontrada' })
+  async obtenerGeneracionPlanSemanal(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { gimnasioId: number },
+  ) {
+    return this.obtenerGeneracionPlanSemanalUseCase.execute({
+      generacionId: id,
+      gimnasioId: user.gimnasioId,
     });
   }
 
@@ -184,5 +273,14 @@ export class AiController {
   async generarIdeasComida(@Body() dto: GenerarIdeasComidaInputDto) {
     const socioId = dto.socioId ?? 0;
     return this.generarIdeasComidaUseCase.execute(socioId, dto);
+  }
+
+  private parsearEnteroQuery(value: string | undefined, nombre: string): number {
+    const parsed = Number(value);
+    if (!value || !Number.isInteger(parsed) || parsed < 1) {
+      throw new BadRequestError(`${nombre} debe ser un entero positivo`);
+    }
+
+    return parsed;
   }
 }
