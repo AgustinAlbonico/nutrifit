@@ -161,10 +161,16 @@ export class CrearTurnoEnNombreDeSocioUseCase {
     // 7. Persistir.
     const turnoCreado = await this.turnoRepository.save(turno);
 
-    // 8. Notificar al socio (in-app) y al nutri (email).
+    // 8. Notificar al socio (in-app + email) y al nutri (email).
     //    Operaciones best-effort: si fallan, se loguea y se continua,
     //    para no abortar la creacion del turno por un fallo secundario.
     await this.notificarSocioTurnoReservado(turnoCreado, socio, creadoPor);
+    await this.notificarSocioNuevoTurnoEmail(
+      turnoCreado,
+      socio,
+      nutricionistaOrm,
+      actor.gimnasioId,
+    );
     await this.notificarNutriNuevoTurno(
       turnoCreado,
       socio,
@@ -323,6 +329,35 @@ export class CrearTurnoEnNombreDeSocioUseCase {
     } catch (error) {
       this.logger.warn(
         `Fallo el email al nutricionista ${nutricionista.idPersona} para turno ${turno.idTurno}: ${(error as Error).message}`,
+      );
+    }
+  }
+
+  private async notificarSocioNuevoTurnoEmail(
+    turno: TurnoOrmEntity,
+    socio: SocioOrmEntity,
+    nutricionista: NutricionistaOrmEntity,
+    gimnasioId: number,
+  ): Promise<void> {
+    const email = socio.usuario?.email;
+    if (!email) {
+      this.logger.warn(
+        `Socio ${socio.idPersona} sin email; notificacion de nuevo turno por email omitida.`,
+      );
+      return;
+    }
+    try {
+      await this.emailService.enviarNotificacionTurnoParaSocio({
+        email,
+        nombreSocio: `${socio.nombre} ${socio.apellido}`.trim(),
+        nombreNutricionista: `${nutricionista.nombre} ${nutricionista.apellido}`.trim(),
+        fecha: formatArgentinaDate(turno.fechaTurno),
+        hora: normalizeTimeToHHmm(turno.horaTurno),
+        gimnasioId,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Fallo el email al socio ${socio.idPersona} para turno ${turno.idTurno}: ${(error as Error).message}`,
       );
     }
   }

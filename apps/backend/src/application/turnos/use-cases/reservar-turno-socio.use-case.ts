@@ -35,6 +35,7 @@ import { NotificacionesService } from 'src/application/notificaciones/notificaci
 import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 import { ValidacionesCreacionTurno } from '../helpers/validaciones-creacion-turno.helper';
+import { EmailService } from 'src/application/email/email.service';
 
 @Injectable()
 export class ReservarTurnoSocioUseCase implements BaseUseCase {
@@ -54,6 +55,7 @@ export class ReservarTurnoSocioUseCase implements BaseUseCase {
     private readonly notificacionesService: NotificacionesService,
     private readonly tenantContext: TenantContextService,
     private readonly validaciones: ValidacionesCreacionTurno,
+    private readonly emailService: EmailService,
   ) {}
 
   async execute(
@@ -144,6 +146,23 @@ export class ReservarTurnoSocioUseCase implements BaseUseCase {
       });
     }
 
+    if (socio.usuario?.email) {
+      try {
+        await this.emailService.enviarNotificacionTurnoParaSocio({
+          email: socio.usuario.email,
+          nombreSocio: `${socio.nombre} ${socio.apellido}`.trim(),
+          nombreNutricionista: `${nutricionistaOrm.nombre} ${nutricionistaOrm.apellido}`.trim(),
+          fecha: formatArgentinaDate(turnoCreado.fechaTurno),
+          hora: normalizeTimeToHHmm(turnoCreado.horaTurno),
+          gimnasioId: socio.gimnasioId ?? undefined,
+        });
+      } catch (error) {
+        this.logger.warn(
+          `Fallo el email al socio ${socio.idPersona} para turno ${turnoCreado.idTurno}: ${(error as Error).message}`,
+        );
+      }
+    }
+
     this.logger.log(
       `Turno reservado por socio ${socio.idPersona}. Turno=${turnoCreado.idTurno}, profesional=${payload.nutricionistaId}.`,
     );
@@ -174,6 +193,7 @@ export class ReservarTurnoSocioUseCase implements BaseUseCase {
       },
       relations: {
         fichaSalud: true,
+        usuario: true,
       },
     });
 

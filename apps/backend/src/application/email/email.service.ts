@@ -14,6 +14,10 @@ import {
   type NuevoTurnoNutriTemplateData,
 } from './templates/nuevo-turno-nutri.template';
 import {
+  nuevoTurnoSocioTemplate,
+  type NuevoTurnoSocioTemplateData,
+} from './templates/nuevo-turno-socio.template';
+import {
   bienvenidaTemplate,
   type BienvenidaTemplateData,
 } from './templates/bienvenida.template';
@@ -47,6 +51,15 @@ export interface NotificacionTurnoParaNutriData {
   fecha: string;
   hora: string;
   creadoPor: CreadoPor;
+  gimnasioId?: number;
+}
+
+export interface NotificacionTurnoParaSocioData {
+  email: string;
+  nombreSocio: string;
+  nombreNutricionista: string;
+  fecha: string;
+  hora: string;
   gimnasioId?: number;
 }
 
@@ -159,6 +172,25 @@ export class EmailService {
       to: data.email,
       subject,
       html: nuevoTurnoNutriTemplate(templateData),
+      gimnasioId: data.gimnasioId,
+    });
+  }
+
+  async enviarNotificacionTurnoParaSocio(
+    data: NotificacionTurnoParaSocioData,
+  ): Promise<void> {
+    const subject = 'Confirmación de tu turno agendado';
+    const templateData: NuevoTurnoSocioTemplateData = {
+      nombreSocio: data.nombreSocio,
+      nombreNutricionista: data.nombreNutricionista,
+      fecha: data.fecha,
+      hora: data.hora,
+      turnosUrl: this.construirUrlFrontend('/turnos'),
+    };
+    await this.emailProvider.enviar({
+      to: data.email,
+      subject,
+      html: nuevoTurnoSocioTemplate(templateData),
       gimnasioId: data.gimnasioId,
     });
   }

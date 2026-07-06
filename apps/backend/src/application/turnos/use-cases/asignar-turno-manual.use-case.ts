@@ -31,6 +31,7 @@ import {
 import { Repository } from 'typeorm';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 import { ValidacionesCreacionTurno } from '../helpers/validaciones-creacion-turno.helper';
+import { EmailService } from 'src/application/email/email.service';
 
 @Injectable()
 export class AsignarTurnoManualUseCase implements BaseUseCase {
@@ -48,6 +49,7 @@ export class AsignarTurnoManualUseCase implements BaseUseCase {
     private readonly notificacionesService: NotificacionesService,
     private readonly tenantContext: TenantContextService,
     private readonly validaciones: ValidacionesCreacionTurno,
+    private readonly emailService: EmailService,
   ) {}
 
   async execute(
@@ -125,6 +127,23 @@ export class AsignarTurnoManualUseCase implements BaseUseCase {
         mensaje: `Te asignaron un turno para el ${formatArgentinaDate(turnoCreado.fechaTurno)} a las ${normalizeTimeToHHmm(turnoCreado.horaTurno)}.`,
         metadata: { turnoId: turnoCreado.idTurno },
       });
+    }
+
+    if (socio.usuario?.email) {
+      try {
+        await this.emailService.enviarNotificacionTurnoParaSocio({
+          email: socio.usuario.email,
+          nombreSocio: `${socio.nombre} ${socio.apellido}`.trim(),
+          nombreNutricionista: `${nutricionistaOrm.nombre} ${nutricionistaOrm.apellido}`.trim(),
+          fecha: formatArgentinaDate(turnoCreado.fechaTurno),
+          hora: normalizeTimeToHHmm(turnoCreado.horaTurno),
+          gimnasioId: socio.gimnasioId ?? undefined,
+        });
+      } catch (error) {
+        this.logger.warn(
+          `Fallo el email al socio ${socio.idPersona} para turno ${turnoCreado.idTurno}: ${(error as Error).message}`,
+        );
+      }
     }
 
     this.logger.log(
