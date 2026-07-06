@@ -20,6 +20,7 @@ export interface AlertaClinicaProgreso {
 
 export interface MedicionHistorial {
   idMedicion: number;
+  idTurno: number;
   fecha: string;
   peso: number;
   altura: number;

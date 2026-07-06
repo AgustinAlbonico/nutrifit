@@ -45,7 +45,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import type { ApiResponse } from '@/types/api';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { IndicadorEtapasConsulta } from '@/components/consulta/IndicadorEtapasConsulta';
 import { FotosSesionConsulta } from '@/components/consulta/FotosSesionConsulta';
 import { RevisionFinalConsulta } from '@/components/consulta/RevisionFinalConsulta';
@@ -404,44 +404,44 @@ export function ConsultaProfesionalPage() {
   const [colaArchivos, setColaArchivos] = useState<File[]>([]);
 
   // Estado para secciones colapsables
-const [secciones, setSecciones] = useState<EstadoSeccionesMediciones>(() => leerSeccionesMediciones());
+  const [secciones, setSecciones] = useState<EstadoSeccionesMediciones>(() => leerSeccionesMediciones());
 
-interface EstadoMedicionPrecargada {
-  medicionActualId: number | null;
-  camposPrecargados: CampoMedicionPrecargado[];
-}
-
-type AccionMedicionPrecargada =
-  | { tipo: 'precargar'; idMedicion: number; campos: CampoMedicionPrecargado[] }
-  | { tipo: 'actualizarId'; idMedicion: number }
-  | { tipo: 'limpiar' };
-
-const estadoMedicionInicial: EstadoMedicionPrecargada = {
-  medicionActualId: null,
-  camposPrecargados: [],
-};
-
-function reducerMedicionPrecargada(
-  estado: EstadoMedicionPrecargada,
-  accion: AccionMedicionPrecargada
-): EstadoMedicionPrecargada {
-  switch (accion.tipo) {
-    case 'precargar':
-      return { medicionActualId: accion.idMedicion, camposPrecargados: accion.campos };
-    case 'actualizarId':
-      return { ...estado, medicionActualId: accion.idMedicion };
-    case 'limpiar':
-      return estadoMedicionInicial;
+  interface EstadoMedicionPrecargada {
+    medicionActualId: number | null;
+    camposPrecargados: CampoMedicionPrecargado[];
   }
-}
 
-const [estadoMedicionPrecargada, despacharMedicionPrecargada] = useReducer(
-  reducerMedicionPrecargada,
-  estadoMedicionInicial
-);
+  type AccionMedicionPrecargada =
+    | { tipo: 'precargar'; idMedicion: number | null; campos: CampoMedicionPrecargado[] }
+    | { tipo: 'actualizarId'; idMedicion: number }
+    | { tipo: 'limpiar' };
 
-const medicionActualId = estadoMedicionPrecargada.medicionActualId;
-const camposPrecargados = estadoMedicionPrecargada.camposPrecargados;
+  const estadoMedicionInicial: EstadoMedicionPrecargada = {
+    medicionActualId: null,
+    camposPrecargados: [],
+  };
+
+  function reducerMedicionPrecargada(
+    estado: EstadoMedicionPrecargada,
+    accion: AccionMedicionPrecargada
+  ): EstadoMedicionPrecargada {
+    switch (accion.tipo) {
+      case 'precargar':
+        return { medicionActualId: accion.idMedicion, camposPrecargados: accion.campos };
+      case 'actualizarId':
+        return { ...estado, medicionActualId: accion.idMedicion, camposPrecargados: [] };
+      case 'limpiar':
+        return estadoMedicionInicial;
+    }
+  }
+
+  const [estadoMedicionPrecargada, despacharMedicionPrecargada] = useReducer(
+    reducerMedicionPrecargada,
+    estadoMedicionInicial
+  );
+
+  const medicionActualId = estadoMedicionPrecargada.medicionActualId;
+  const camposPrecargados = estadoMedicionPrecargada.camposPrecargados;
 
   const toggleSeccion = (seccion: SeccionMediciones) => {
     setSecciones((prev) => {
@@ -647,16 +647,18 @@ const camposPrecargados = estadoMedicionPrecargada.camposPrecargados;
     registrarValorPrevio('tensionSistolica', ultima.tensionSistolica);
     registrarValorPrevio('tensionDiastolica', ultima.tensionDiastolica);
 
+    const esDelTurnoActual = ultima.idTurno === idTurnoNumerico;
+
     despacharMedicionPrecargada({
       tipo: 'precargar',
-      idMedicion: ultima.idMedicion,
-      campos: camposDesdeHistorial,
+      idMedicion: esDelTurnoActual ? ultima.idMedicion : null,
+      campos: esDelTurnoActual ? [] : camposDesdeHistorial,
     });
     reset({
       ...previo,
       ...valoresPrecargados,
     });
-  }, [getValues, historialMediciones, reset]);
+  }, [getValues, historialMediciones, reset, idTurnoNumerico]);
 
   const imc = useMemo(() => {
     const pesoNum = Number(formulario.peso);
@@ -894,7 +896,6 @@ const camposPrecargados = estadoMedicionPrecargada.camposPrecargados;
       });
 
       despacharMedicionPrecargada({ tipo: 'actualizarId', idMedicion: respuesta.data.idMedicion });
-      despacharMedicionPrecargada({ tipo: 'limpiar' });
       setMensajeExito(
         actualizandoMedicion
           ? 'Mediciones actualizadas correctamente'
@@ -947,8 +948,8 @@ const camposPrecargados = estadoMedicionPrecargada.camposPrecargados;
       // que el AppErrorFilter global traduce a HTTP 409.
       const status =
         requestError instanceof Error &&
-        'status' in requestError &&
-        typeof requestError.status === 'number'
+          'status' in requestError &&
+          typeof requestError.status === 'number'
           ? requestError.status
           : null;
 
@@ -1168,13 +1169,13 @@ const camposPrecargados = estadoMedicionPrecargada.camposPrecargados;
         onValueChange={(valor) => setEtapaActiva(valor as IdEtapaConsulta)}
         className="w-full"
       >
-        <TabsList className="mb-8 grid h-auto w-full grid-cols-2 bg-muted/50 p-1 md:grid-cols-4 xl:grid-cols-8">
+        {/* <TabsList className="mb-8 grid h-auto w-full grid-cols-2 bg-muted/50 p-1 md:grid-cols-4 xl:grid-cols-8">
           {etapasConsulta.map((etapa) => (
             <TabsTrigger key={etapa.id} value={etapa.id} className="text-xs">
               {etapa.titulo}
             </TabsTrigger>
           ))}
-        </TabsList>
+        </TabsList> */}
 
         <TabsContent value="contexto" className="space-y-6 animate-in fade-in-50 duration-500">
           {datosTurno.fichaActualizada && (
@@ -1571,8 +1572,8 @@ const camposPrecargados = estadoMedicionPrecargada.camposPrecargados;
                         </div>
                         <p className="mt-3 whitespace-pre-line text-sm text-foreground/80">{comentario}</p>
                         {consultaPrevia.sugerencias &&
-                        consultaPrevia.notasProfesional &&
-                        consultaPrevia.sugerencias !== consultaPrevia.notasProfesional ? (
+                          consultaPrevia.notasProfesional &&
+                          consultaPrevia.sugerencias !== consultaPrevia.notasProfesional ? (
                           <div className="mt-3 border-t border-primary/10 pt-3">
                             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                               Sugerencias
@@ -1693,12 +1694,11 @@ const camposPrecargados = estadoMedicionPrecargada.camposPrecargados;
                       />
                       {imc && (
                         <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                            Number(imc) < 18.5 ? 'bg-blue-100 text-blue-800' :
+                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${Number(imc) < 18.5 ? 'bg-blue-100 text-blue-800' :
                             Number(imc) < 25 ? 'bg-green-100 text-green-800' :
-                            Number(imc) < 30 ? 'bg-amber-100 text-amber-800' :
-                            'bg-red-100 text-red-800'
-                          }`}>
+                              Number(imc) < 30 ? 'bg-amber-100 text-amber-800' :
+                                'bg-red-100 text-red-800'
+                            }`}>
                             {Number(imc) < 18.5 && 'Bajo peso'}
                             {Number(imc) >= 18.5 && Number(imc) < 25 && 'Normal'}
                             {Number(imc) >= 25 && Number(imc) < 30 && 'Sobrepeso'}
@@ -2285,9 +2285,8 @@ const camposPrecargados = estadoMedicionPrecargada.camposPrecargados;
                         className="group flex flex-col justify-between rounded-xl border border-border/60 bg-card p-4 hover:border-primary/30 hover:shadow-md transition-all duration-200"
                       >
                         <div className="flex items-start gap-3 min-w-0 mb-4">
-                          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg shadow-sm ${
-                            adjunto.mimeType === 'application/pdf' ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-blue-50 text-blue-600 border border-blue-100'
-                          }`}>
+                          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg shadow-sm ${adjunto.mimeType === 'application/pdf' ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-blue-50 text-blue-600 border border-blue-100'
+                            }`}>
                             <FileText className="h-6 w-6" />
                           </div>
                           <div className="min-w-0 flex-1">

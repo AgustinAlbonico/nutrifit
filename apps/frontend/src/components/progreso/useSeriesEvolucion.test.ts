@@ -11,6 +11,7 @@ const historialBase: HistorialMediciones = {
   mediciones: [
     {
       idMedicion: 1,
+      idTurno: 1,
       fecha: '2026-01-10T10:00:00.000Z',
       peso: 80,
       altura: 165,
@@ -33,6 +34,7 @@ const historialBase: HistorialMediciones = {
     },
     {
       idMedicion: 2,
+      idTurno: 2,
       fecha: '2026-04-10T10:00:00.000Z',
       peso: 75,
       altura: 165,
@@ -73,3 +75,4 @@ describe('derivarSeriesEvolucion', () => {
     expect(resultado.series.pliegues[1].sumaPliegues).toBe(70);
   });
 });
+

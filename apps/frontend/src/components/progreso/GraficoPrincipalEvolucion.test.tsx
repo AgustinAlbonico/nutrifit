@@ -11,6 +11,7 @@ const historialBase: HistorialMediciones = {
   mediciones: [
     {
       idMedicion: 1,
+      idTurno: 1,
       fecha: '2026-04-10T10:00:00.000Z',
       peso: 75,
       altura: 165,
@@ -80,3 +81,4 @@ describe('GraficoPrincipalEvolucion', () => {
     expect(screen.getByText('Objetivo de peso: 72 kg')).toBeInTheDocument();
   });
 });
+

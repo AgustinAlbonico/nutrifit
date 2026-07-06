@@ -71,6 +71,7 @@ const handlerMediciones = http.get(
         mediciones: [
           {
             idMedicion: 1,
+            idTurno: 1,
             fecha: '2026-06-15T10:00:00.000Z',
             peso: 81,
             altura: 190,
@@ -146,3 +147,4 @@ describe('FichaPacientePage', () => {
     expect(screen.getAllByText('81 kg').length).toBeGreaterThan(0);
   });
 });
+

@@ -236,6 +236,7 @@ const handlerHistorialMedicionesConUltima = http.get(
         mediciones: [
           {
             idMedicion: 7,
+            idTurno: 1,
             fecha: '2026-04-15T10:00:00.000Z',
             peso: 84,
             altura: 178,
@@ -710,3 +711,4 @@ describe('ConsultaProfesionalPage - Post-Cierre UI Blocking (TDD 4.4)', () => {
     });
   });
 });
+

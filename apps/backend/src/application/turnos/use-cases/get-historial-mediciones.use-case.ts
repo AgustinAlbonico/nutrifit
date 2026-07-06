@@ -8,6 +8,7 @@ import { TenantContextService } from 'src/infrastructure/auth/tenant-context.ser
 
 export interface MedicionHistorial {
   idMedicion: number;
+  idTurno: number;
   fecha: Date;
   peso: number;
   altura: number;
@@ -87,6 +88,7 @@ export class GetHistorialMedicionesUseCase {
 
     const medicionesFormateadas: MedicionHistorial[] = mediciones.map((m) => ({
       idMedicion: m.idMedicion,
+      idTurno: m.turno.idTurno,
       fecha: m.createdAt,
       peso: Number(m.peso),
       altura: m.altura,

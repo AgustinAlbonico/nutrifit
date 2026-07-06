@@ -7,6 +7,7 @@ import type { MedicionHistorial } from './types';
 const mediciones: MedicionHistorial[] = [
   {
     idMedicion: 1,
+    idTurno: 1,
     fecha: '2026-06-15T10:00:00.000Z',
     peso: 81,
     altura: 190,
@@ -62,3 +63,4 @@ describe('ExportProgresoCSVButton', () => {
     expect(screen.getByRole('button', { name: /Sin datos CSV/i })).toBeDisabled();
   });
 });
+

@@ -14,6 +14,7 @@ describe('PanelPlieguesEvolucion', () => {
           mediciones: [
             {
               idMedicion: 1,
+              idTurno: 1,
               fecha: '2026-01-10T10:00:00.000Z',
               peso: 80,
               altura: 170,
@@ -53,6 +54,7 @@ describe('PanelPlieguesEvolucion', () => {
           mediciones: [
             {
               idMedicion: 1,
+              idTurno: 1,
               fecha: '2026-01-10T10:00:00.000Z',
               peso: 80,
               altura: 170,
@@ -81,3 +83,4 @@ describe('PanelPlieguesEvolucion', () => {
     expect(screen.getByText('3 de 3 pliegues')).toBeInTheDocument();
   });
 });
+
