@@ -91,7 +91,8 @@ export function GraficoProgresoCard() {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-sm">
-            Aun no tienes mediciones registradas para graficar.
+            Aún no tenés mediciones registradas para graficar. Después de tu próxima
+            consulta vas a poder ver la evolución acá.
           </p>
         </CardContent>
       </Card>

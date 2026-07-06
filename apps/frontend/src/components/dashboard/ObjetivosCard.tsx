@@ -16,6 +16,11 @@ interface Objetivo {
 }
 
 
+const calcularProgreso = (objetivo: Objetivo): number => {
+  if (objetivo.completado) return 100;
+  const progreso = (objetivo.valorActual / objetivo.valorObjetivo) * 100;
+  return Math.min(Math.max(progreso, 0), 100);
+};
 
 export function ObjetivosCard() {
   const { token, personaId } = useAuth();
@@ -66,18 +71,13 @@ export function ObjetivosCard() {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-sm">
-            No tienes objetivos configurados. Habla con tu nutricionista.
+            No tenés objetivos configurados todavía. Pedile a tu nutricionista que
+            defina metas concretas para seguir tu evolución.
           </p>
         </CardContent>
       </Card>
     );
   }
-
-  const calcularProgreso = (objetivo: Objetivo): number => {
-    if (objetivo.completado) return 100;
-    const progreso = (objetivo.valorActual / objetivo.valorObjetivo) * 100;
-    return Math.min(Math.max(progreso, 0), 100);
-  };
 
   return (
     <Card className="rounded-2xl border-border/50 shadow-sm">
