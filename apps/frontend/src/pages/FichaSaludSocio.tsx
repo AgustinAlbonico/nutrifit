@@ -38,6 +38,7 @@ import {
 } from '@nutrifit/shared';
 import type { FichaSaludSocio as FichaSaludSocioDto } from '@/types/ficha-salud';
 import type { ApiResponse } from '@/types/api';
+import { ChipsInput } from '@/components/ui/ChipsInput';
 
 type ConsumoAlcoholValue =
   | 'Nunca'
@@ -54,8 +55,8 @@ interface FormularioFichaSalud {
   altura: string;
   peso: string;
   nivelActividadFisica: NivelActividadFisicaValue;
-  alergias: string;
-  patologias: string;
+  alergias: string[];
+  patologias: string[];
   objetivoPersonal: string;
   medicacionActual: string;
   suplementosActuales: string;
@@ -75,8 +76,8 @@ const FORMULARIO_INICIAL: FormularioFichaSalud = {
   altura: '',
   peso: '',
   nivelActividadFisica: 'MODERADO',
-  alergias: '',
-  patologias: '',
+  alergias: [],
+  patologias: [],
   objetivoPersonal: '',
   medicacionActual: '',
   suplementosActuales: '',
@@ -101,18 +102,7 @@ const SECCIONES_FICHA_SALUD = [
   'Consentimiento',
 ] as const;
 
-const separarLista = (valor: string): string[] => {
-  return Array.from(
-    new Set(
-      valor
-        .split(',')
-        .map((item) => item.trim())
-        .filter((item) => item.length > 0),
-    ),
-  );
-};
 
-const unirLista = (items: string[]): string => items.join(', ');
 
 function mapearFichaAFormulario(
   ficha: FichaSaludSocioDto,
@@ -121,8 +111,8 @@ function mapearFichaAFormulario(
     altura: String(ficha.altura),
     peso: String(ficha.peso),
     nivelActividadFisica: ficha.nivelActividadFisica,
-    alergias: unirLista(ficha.alergias),
-    patologias: unirLista(ficha.patologias),
+    alergias: [...ficha.alergias],
+    patologias: [...ficha.patologias],
     objetivoPersonal: ficha.objetivoPersonal,
     medicacionActual: ficha.medicacionActual ?? '',
     suplementosActuales: ficha.suplementosActuales ?? '',
@@ -443,8 +433,8 @@ export function FichaSaludSocio() {
         altura: Number(formulario.altura),
         peso: Number(formulario.peso),
         nivelActividadFisica: formulario.nivelActividadFisica,
-        alergias: separarLista(formulario.alergias),
-        patologias: separarLista(formulario.patologias),
+        alergias: formulario.alergias,
+        patologias: formulario.patologias,
         objetivoPersonal: formulario.objetivoPersonal.trim(),
         medicacionActual: formulario.medicacionActual.trim() || null,
         suplementosActuales: formulario.suplementosActuales.trim() || null,
@@ -715,31 +705,31 @@ export function FichaSaludSocio() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="alergias">Alergias</Label>
-                  <Input
+                  <ChipsInput
                     id="alergias"
-                    value={formulario.alergias}
-                    onChange={(event) =>
+                    valor={formulario.alergias}
+                    onChange={(nuevoValor) =>
                       setFormulario((previo) => ({
                         ...previo,
-                        alergias: event.target.value,
+                        alergias: nuevoValor,
                       }))
                     }
-                    placeholder="Separar por coma. Ej: maní, lactosa"
+                    placeholder="Ej: maní, lactosa"
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="patologias">Patologías</Label>
-                  <Input
+                  <ChipsInput
                     id="patologias"
-                    value={formulario.patologias}
-                    onChange={(event) =>
+                    valor={formulario.patologias}
+                    onChange={(nuevoValor) =>
                       setFormulario((previo) => ({
                         ...previo,
-                        patologias: event.target.value,
+                        patologias: nuevoValor,
                       }))
                     }
-                    placeholder="Separar por coma. Ej: diabetes, hipertensión"
+                    placeholder="Ej: diabetes, hipertensión"
                   />
                 </div>
 
