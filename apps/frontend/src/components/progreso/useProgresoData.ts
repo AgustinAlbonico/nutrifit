@@ -26,7 +26,7 @@ export function useProgresoData(options: UseProgresoDataOptions = {}) {
       return response.data;
     },
     enabled: enabled && !!token,
-    staleTime: 5 * 60 * 1000, // 5 minutos
+    staleTime: 15 * 1000, // 15 segundos para permitir revalidación rápida al recargar o navegar
   });
 
   // Hook para obtener resumen de progreso
@@ -43,7 +43,7 @@ export function useProgresoData(options: UseProgresoDataOptions = {}) {
       return response.data;
     },
     enabled: enabled && !!token,
-    staleTime: 5 * 60 * 1000, // 5 minutos
+    staleTime: 15 * 1000, // 15 segundos para permitir revalidación rápida al recargar o navegar
   });
 
   return {
@@ -77,7 +77,7 @@ export function useHistorialMediciones(
       return response.data;
     },
     enabled: !!token,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 15 * 1000, // 15 segundos
   });
 }
 
@@ -99,6 +99,6 @@ export function useResumenProgreso(
       return response.data;
     },
     enabled: !!token,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 15 * 1000, // 15 segundos
   });
 }

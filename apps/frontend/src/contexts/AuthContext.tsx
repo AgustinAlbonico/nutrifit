@@ -229,6 +229,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuth(null);
     localStorage.removeItem(AUTH_STORAGE_KEY);
     localStorage.removeItem(AUTH_BACKUP_STORAGE_KEY);
+    localStorage.removeItem('REACT_QUERY_OFFLINE_CACHE'); // Limpiar la caché persistida de React Query para seguridad e higiene
     window.location.href = '/login';
   }, []);
 
