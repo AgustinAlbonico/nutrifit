@@ -10,6 +10,7 @@ export * from './ficha-salud-version.entity';
 export * from './foto-progreso.entity';
 export * from './formacion-academica.entity';
 export * from './grupo-alimenticio.entity';
+export * from './generacion-plan-ia.entity';
 export * from './grupo-permiso.entity';
 export * from './item-comida.entity';
 export * from './medicion.entity';

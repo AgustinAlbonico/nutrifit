@@ -15,6 +15,7 @@ import {
   FichaSaludOrmEntity,
   FichaSaludVersionOrmEntity,
   FormacionAcademicaOrmEntity,
+  GeneracionPlanIaOrmEntity,
   GrupoAlimenticioOrmEntity,
   NutricionistaOrmEntity,
   NutricionistaIAMemoriaOrmEntity,
@@ -46,6 +47,8 @@ import { PLAN_FEEDBACK_REPOSITORY } from 'src/domain/repositories/plan-feedback.
 import { PlanFeedbackRepositoryImpl } from './plan-feedback.repository.impl';
 import { NUTRICIONISTA_IA_MEMORIA_REPOSITORY } from 'src/domain/repositories/nutricionista-ia-memoria.repository';
 import { NutricionistaIAMemoriaRepositoryImpl } from './nutricionista-ia-memoria.repository.impl';
+import { GENERACION_PLAN_IA_REPOSITORY } from 'src/domain/repositories/generacion-plan-ia.repository';
+import { GeneracionPlanIaRepositoryImpl } from './generacion-plan-ia.repository.impl';
 
 // This module is responsible for providing TypeORM repositories for the application.
 // It imports the TypeOrmConfigModule for database configuration and registers the necessary entities.
@@ -61,6 +64,7 @@ import { NutricionistaIAMemoriaRepositoryImpl } from './nutricionista-ia-memoria
       RecepcionistaOrmEntity,
       FichaSaludOrmEntity,
       FichaSaludVersionOrmEntity,
+      GeneracionPlanIaOrmEntity,
       FormacionAcademicaOrmEntity,
       GrupoAlimenticioOrmEntity,
       NutricionistaOrmEntity,
@@ -113,6 +117,10 @@ import { NutricionistaIAMemoriaRepositoryImpl } from './nutricionista-ia-memoria
       provide: NUTRICIONISTA_IA_MEMORIA_REPOSITORY,
       useClass: NutricionistaIAMemoriaRepositoryImpl,
     },
+    {
+      provide: GENERACION_PLAN_IA_REPOSITORY,
+      useClass: GeneracionPlanIaRepositoryImpl,
+    },
   ],
   exports: [
     USUARIO_REPOSITORY,
@@ -125,6 +133,7 @@ import { NutricionistaIAMemoriaRepositoryImpl } from './nutricionista-ia-memoria
     PLAN_ALIMENTACION_VERSION_REPOSITORY,
     PLAN_FEEDBACK_REPOSITORY,
     NUTRICIONISTA_IA_MEMORIA_REPOSITORY,
+    GENERACION_PLAN_IA_REPOSITORY,
   ],
 })
 export class RepositoriesModule {}
