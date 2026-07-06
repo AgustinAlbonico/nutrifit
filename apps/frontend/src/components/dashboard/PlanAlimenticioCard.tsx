@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Utensils, Coffee, Apple, Soup, Moon, ExternalLink } from 'lucide-react';
 import { apiRequest } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -38,7 +39,7 @@ export function PlanAlimenticioCard() {
     queryKey: ['plan-activo', personaId, token],
     queryFn: async () => {
       try {
-        const resp = await apiRequest<ApiResponse<PlanActivo | null>>(
+        const resp = await apiRequest<ApiResponse<PlanActivo | PlanActivo[] | null>>(
           `/planes-alimentacion/socio/${personaId}/activo`,
           { token }
         );
@@ -55,7 +56,8 @@ export function PlanAlimenticioCard() {
     retry: false,
   });
 
-  const plan = response?.data;
+  const datoPlan = response?.data;
+  const plan = Array.isArray(datoPlan) ? (datoPlan[0] ?? null) : datoPlan;
 
   if (isLoading) {
     return (
@@ -83,10 +85,21 @@ export function PlanAlimenticioCard() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground text-sm mb-4">
-            No tenes un plan alimenticio activo. Contacta a tu nutricionista.
+          <p className="mb-4 text-sm leading-6 text-muted-foreground">
+            No tenés un plan alimenticio activo todavía. Cuando tu nutricionista lo cargue,
+            lo vas a ver completo en esta sección.
           </p>
-          <Badge variant="secondary">Sin plan activo</Badge>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Badge variant="secondary">Sin plan activo</Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-orange-200 text-orange-700 hover:bg-orange-50"
+              onClick={() => navigate({ to: '/turnos/agendar' })}
+            >
+              Reservar consulta
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );
@@ -108,10 +121,10 @@ export function PlanAlimenticioCard() {
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {(plan.comidas ?? []).map((comida, index) => {
+          {(plan.comidas ?? []).map((comida) => {
             const IconoComida = ICONOS_COMIDA[comida.tipo] || Utensils;
             return (
-              <div key={index} className="flex items-start gap-3 p-2 rounded-lg bg-muted/50">
+              <div key={comida.tipo} className="flex items-start gap-3 p-2 rounded-lg bg-muted/50">
                 <IconoComida className="h-4 w-4 text-muted-foreground mt-0.5" />
                 <div className="flex-1">
                   <p className="font-medium text-sm capitalize">
@@ -132,7 +145,8 @@ export function PlanAlimenticioCard() {
           })}
         </div>
         <button
-          onClick={() => navigate({ to: '/planes' })}
+          type="button"
+          onClick={() => navigate({ to: '/mi-plan' })}
           className="mt-4 flex items-center gap-1 text-sm text-orange-600 hover:text-orange-700"
         >
           Ver plan completo
