@@ -5,12 +5,11 @@ import { ArrowLeft, Calendar, FileText, HeartPulse, Scale, Target, Utensils } fr
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ComparadorFotosSesion } from '@/components/progreso/ComparadorFotosSesion';
 import { HistorialTurnosPaciente } from '@/components/pacientes/HistorialTurnosPaciente';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRequest } from '@/lib/api';
 import type { ApiResponse } from '@/types/api';
-import type { GaleriaFotos, HistorialMediciones } from '@/components/progreso/types';
+import type { HistorialMediciones } from '@/components/progreso/types';
 import type {
   HistorialConsultaPaciente,
   HistorialTurnoPaciente,
@@ -91,18 +90,6 @@ export function FichaPacientePage() {
     enabled: habilitado,
   });
 
-  const fotosQuery = useQuery({
-    queryKey: ['paciente', socioId, 'fotos', token],
-    queryFn: async () => {
-      const response = await apiRequest<ApiResponse<GaleriaFotos>>(
-        `/progreso/${socioId}/fotos`,
-        { token },
-      );
-      return response.data;
-    },
-    enabled: habilitado,
-  });
-
   const objetivosQuery = useQuery({
     queryKey: ['paciente', socioId, 'objetivos', token],
     queryFn: async () => {
@@ -124,7 +111,6 @@ export function FichaPacientePage() {
     historialQuery.isLoading ||
     consultasQuery.isLoading ||
     historialTurnosQuery.isLoading ||
-    fotosQuery.isLoading ||
     objetivosQuery.isLoading;
   const ficha = fichaQuery.data;
   const historial = historialQuery.data;
@@ -238,7 +224,6 @@ export function FichaPacientePage() {
             }}
           />
 
-          <ComparadorFotosSesion sesiones={fotosQuery.data?.sesiones ?? []} />
         </>
       )}
     </div>
