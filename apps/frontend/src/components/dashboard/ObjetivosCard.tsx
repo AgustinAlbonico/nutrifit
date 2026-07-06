@@ -7,19 +7,40 @@ import { useAuth } from '@/contexts/AuthContext';
 import type { ApiResponse } from '@/types/api';
 
 interface Objetivo {
-  id: number;
-  descripcion: string;
+  idObjetivo: number;
+  tipoMetrica: string;
   valorObjetivo: number;
   valorActual: number;
-  unidad: string;
-  completado: boolean;
+  estado: 'ACTIVO' | 'COMPLETADO' | 'ABANDONADO';
+  progreso: number;
 }
 
+interface ListaObjetivos {
+  activos: Objetivo[];
+  completados: Objetivo[];
+}
+
+const UNIDADES_OBJETIVO: Record<string, string> = {
+  PESO: 'kg',
+  CINTURA: 'cm',
+  CADERA: 'cm',
+  BRAZO: 'cm',
+  MUSLO: 'cm',
+  PECHO: 'cm',
+};
+
+const ETIQUETAS_OBJETIVO: Record<string, string> = {
+  PESO: 'Peso',
+  CINTURA: 'Cintura',
+  CADERA: 'Cadera',
+  BRAZO: 'Brazo',
+  MUSLO: 'Muslo',
+  PECHO: 'Pecho',
+};
 
 const calcularProgreso = (objetivo: Objetivo): number => {
-  if (objetivo.completado) return 100;
-  const progreso = (objetivo.valorActual / objetivo.valorObjetivo) * 100;
-  return Math.min(Math.max(progreso, 0), 100);
+  if (objetivo.estado === 'COMPLETADO') return 100;
+  return Math.min(Math.max(objetivo.progreso, 0), 100);
 };
 
 export function ObjetivosCard() {
@@ -28,7 +49,7 @@ export function ObjetivosCard() {
   const { data: response, isLoading } = useQuery({
     queryKey: ['objetivos', personaId, token],
     queryFn: async () => {
-      const resp = await apiRequest<ApiResponse<Objetivo[]>>(
+      const resp = await apiRequest<ApiResponse<ListaObjetivos | Objetivo[]>>(
         `/progreso/${personaId}/objetivos`,
         { token }
       );
@@ -40,9 +61,7 @@ export function ObjetivosCard() {
   // Asegurar que objetivos sea siempre un array
   const objetivos = Array.isArray(response?.data)
     ? response.data
-    : Array.isArray(response)
-      ? response
-      : [];
+    : response?.data?.activos ?? [];
 
   if (isLoading) {
     return (
@@ -71,8 +90,8 @@ export function ObjetivosCard() {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-sm">
-            No tenés objetivos configurados todavía. Pedile a tu nutricionista que
-            defina metas concretas para seguir tu evolución.
+            Tu nutricionista todavía no configuró objetivos para este seguimiento.
+            Cuando los cargue, los vas a ver acá.
           </p>
         </CardContent>
       </Card>
@@ -92,21 +111,22 @@ export function ObjetivosCard() {
           {objetivos.slice(0, 4).map((objetivo) => {
             const progreso = calcularProgreso(objetivo);
             return (
-              <div key={objetivo.id} className="space-y-2">
+              <div key={objetivo.idObjetivo} className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium flex items-center gap-2">
-                    {objetivo.completado && (
+                    {objetivo.estado === 'COMPLETADO' && (
                       <CheckCircle className="h-4 w-4 text-green-500" />
                     )}
-                    {objetivo.descripcion}
+                    {ETIQUETAS_OBJETIVO[objetivo.tipoMetrica] ?? objetivo.tipoMetrica}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {objetivo.valorActual} / {objetivo.valorObjetivo} {objetivo.unidad}
+                    {objetivo.valorActual} / {objetivo.valorObjetivo}{' '}
+                    {UNIDADES_OBJETIVO[objetivo.tipoMetrica] ?? ''}
                   </span>
                 </div>
                 <Progress
                   value={progreso}
-                  className={`h-2 ${objetivo.completado ? '[&>div]:bg-green-500' : ''}`}
+                  className={`h-2 ${objetivo.estado === 'COMPLETADO' ? '[&>div]:bg-green-500' : ''}`}
                 />
               </div>
             );

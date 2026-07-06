@@ -1,7 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Zap, Calendar, FileText, Camera } from 'lucide-react';
+import { Zap, Calendar, FileText, TrendingUp } from 'lucide-react';
 
 type RutaAccionSocio = '/turnos/agendar' | '/mi-plan' | '/mi-progreso';
 
@@ -19,9 +19,9 @@ const ACCIONES_SOCIO = [
     ruta: '/mi-plan',
   },
   {
-    etiqueta: 'Subir Avance',
-    descripcion: 'Registrá fotos y evolución para tu consulta.',
-    icono: Camera,
+    etiqueta: 'Ver Progreso',
+    descripcion: 'Revisá mediciones y evolución cargadas por tu nutricionista.',
+    icono: TrendingUp,
     ruta: '/mi-progreso',
   },
 ] satisfies Array<{

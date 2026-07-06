@@ -22,10 +22,14 @@ interface Medicion {
   imc?: number;
 }
 
-interface Progreso {
-  pesoActual: number;
-  pesoObjetivo: number | null;
-  imc: number | null;
+interface HistorialMediciones {
+  mediciones: Medicion[];
+}
+
+interface ResumenProgreso {
+  rangoSaludable: {
+    pesoMaximo: number | null;
+  };
 }
 
 
@@ -36,7 +40,7 @@ export function GraficoProgresoCard() {
   const { data: historialResponse, isLoading: cargandoHistorial } = useQuery({
     queryKey: ['historial-mediciones', token],
     queryFn: async () => {
-      const resp = await apiRequest<ApiResponse<Medicion[]>>(
+      const resp = await apiRequest<ApiResponse<HistorialMediciones | Medicion[]>>(
         '/turnos/socio/mi-historial-mediciones',
         { token }
       );
@@ -48,7 +52,7 @@ export function GraficoProgresoCard() {
   const { data: progreso } = useQuery({
     queryKey: ['mi-progreso', token],
     queryFn: async () => {
-      const resp = await apiRequest<Progreso>(
+      const resp = await apiRequest<ApiResponse<ResumenProgreso>>(
         '/turnos/socio/mi-progreso',
         { token }
       );
@@ -57,12 +61,9 @@ export function GraficoProgresoCard() {
     enabled: !!token,
   });
 
-  // Asegurar que historial sea siempre un array
   const historial = Array.isArray(historialResponse?.data)
     ? historialResponse.data
-    : Array.isArray(historialResponse)
-      ? historialResponse
-      : [];
+    : historialResponse?.data?.mediciones ?? [];
 
   if (cargandoHistorial) {
     return (
@@ -99,14 +100,13 @@ export function GraficoProgresoCard() {
     );
   }
 
-  // Formatear datos para el grafico
-  const datosGrafico = historial.map((m) => ({
+  const datosGrafico = [...historial].reverse().map((m) => ({
     fecha: new Date(m.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' }),
     peso: m.peso,
     imc: m.imc,
   }));
 
-  const pesoObjetivo = progreso?.pesoObjetivo;
+  const pesoMaximoSaludable = progreso?.data?.rangoSaludable.pesoMaximo;
 
   return (
     <Card className="rounded-2xl border-border/50 shadow-sm">
@@ -117,8 +117,8 @@ export function GraficoProgresoCard() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
+        <div className="h-64 min-w-0">
+          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <LineChart data={datosGrafico} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis
@@ -140,13 +140,12 @@ export function GraficoProgresoCard() {
               />
               <Legend />
 
-              {/* Linea de peso objetivo */}
-              {pesoObjetivo && (
+              {pesoMaximoSaludable && (
                 <ReferenceLine
-                  y={pesoObjetivo}
+                  y={pesoMaximoSaludable}
                   stroke="#22c55e"
                   strokeDasharray="5 5"
-                  label={{ value: 'Objetivo', fontSize: 10, fill: '#22c55e' }}
+                  label={{ value: 'Rango saludable', fontSize: 10, fill: '#22c55e' }}
                 />
               )}
 

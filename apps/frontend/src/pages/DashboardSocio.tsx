@@ -25,12 +25,26 @@ interface MiTurno {
   especialidad: string;
 }
 
+type CategoriaIMC = 'bajo_peso' | 'normal' | 'sobrepeso' | 'obesidad';
+
 interface ResumenProgreso {
-  pesoActual: number | null;
-  pesoObjetivo: number | null;
-  imc: number | null;
-  clasificacionImc: string | null;
-  ultimaMedicion: string | null;
+  peso: {
+    actual: number | null;
+  };
+  imc: {
+    actual: number | null;
+    categoriaActual: CategoriaIMC | null;
+  };
+  rangoSaludable: {
+    pesoMinimo: number | null;
+    pesoMaximo: number | null;
+  };
+  totalMediciones: number;
+}
+
+interface DistanciaRangoSaludable {
+  valor: number;
+  estado: 'bajo' | 'alto' | 'dentro';
 }
 
 const formatearFechaTurno = (fecha: string): string =>
@@ -43,6 +57,33 @@ const formatearFechaTurno = (fecha: string): string =>
 const ICONO_PROXIMO_TURNO = <Calendar className="h-4 w-4" />;
 const ICONO_IMC = <Activity className="h-4 w-4" />;
 const ICONO_OBJETIVO = <Target className="h-4 w-4" />;
+
+const CATEGORIAS_IMC: Record<CategoriaIMC, string> = {
+  bajo_peso: 'Bajo peso',
+  normal: 'Normal',
+  sobrepeso: 'Sobrepeso',
+  obesidad: 'Obesidad',
+};
+
+const calcularDistanciaRangoSaludable = (
+  pesoActual: number | null,
+  pesoMinimo: number | null,
+  pesoMaximo: number | null,
+): DistanciaRangoSaludable | null => {
+  if (pesoActual === null || pesoMinimo === null || pesoMaximo === null) {
+    return null;
+  }
+
+  if (pesoActual < pesoMinimo) {
+    return { valor: pesoMinimo - pesoActual, estado: 'bajo' };
+  }
+
+  if (pesoActual > pesoMaximo) {
+    return { valor: pesoActual - pesoMaximo, estado: 'alto' };
+  }
+
+  return { valor: 0, estado: 'dentro' };
+};
 
 export function DashboardSocio() {
   const { token } = useAuth();
@@ -60,13 +101,17 @@ export function DashboardSocio() {
   });
 
   // KPIs - Progreso
-  const { data: progreso, isLoading: cargandoProgreso } = useQuery({
+  const { data: progresoResponse, isLoading: cargandoProgreso } = useQuery({
     queryKey: ['mi-progreso', token],
-    queryFn: () => apiRequest<ResumenProgreso>('/turnos/socio/mi-progreso', { token }),
+    queryFn: () =>
+      apiRequest<ApiResponse<ResumenProgreso>>('/turnos/socio/mi-progreso', {
+        token,
+      }),
     enabled: !!token,
   });
 
   const turnos = turnosResponse?.data?.data ?? [];
+  const progreso = progresoResponse?.data ?? null;
 
   // Calcular proximo turno
   const ahora = new Date();
@@ -89,11 +134,11 @@ export function DashboardSocio() {
       return fechaA.getTime() - fechaB.getTime();
     })[0];
 
-  // Calcular progreso hacia objetivo
-  const pesoRestante =
-    progreso?.pesoActual && progreso?.pesoObjetivo
-      ? Math.abs(progreso.pesoActual - progreso.pesoObjetivo)
-      : null;
+  const distanciaRangoSaludable = calcularDistanciaRangoSaludable(
+    progreso?.peso.actual ?? null,
+    progreso?.rangoSaludable.pesoMinimo ?? null,
+    progreso?.rangoSaludable.pesoMaximo ?? null,
+  );
 
   const textoProximoTurno = proximoTurno
     ? formatearFechaTurno(proximoTurno.fechaTurno)
@@ -102,9 +147,24 @@ export function DashboardSocio() {
     ? `${proximoTurno.horaTurno} hs · ${proximoTurno.profesionalNombreCompleto}`
     : 'Reservá tu próxima consulta para sostener el seguimiento.';
   const mensajeHero = proximoTurno
-    ? `Tu próxima consulta es con ${proximoTurno.profesionalNombreCompleto}. Llegá con tus avances cargados para aprovecharla mejor.`
+    ? `Tu próxima consulta es con ${proximoTurno.profesionalNombreCompleto}. Revisá tu evolución y llevá tus dudas para aprovecharla mejor.`
     : 'Todavía no tenés un turno próximo. Agendá una consulta y retomá el seguimiento con tu nutricionista.';
-  const textoPesoRestante = pesoRestante !== null ? `${pesoRestante.toFixed(1)} kg` : '-';
+  const textoImc = progreso?.imc.actual !== null && progreso?.imc.actual !== undefined
+    ? progreso.imc.actual.toFixed(1)
+    : '-';
+  const descripcionImc = progreso?.imc.categoriaActual
+    ? CATEGORIAS_IMC[progreso.imc.categoriaActual]
+    : 'Sin datos';
+  const textoDistanciaRango = distanciaRangoSaludable
+    ? `${distanciaRangoSaludable.valor.toFixed(1)} kg`
+    : '-';
+  const descripcionDistanciaRango = distanciaRangoSaludable
+    ? {
+        bajo: 'por debajo del rango saludable',
+        alto: 'sobre el rango saludable',
+        dentro: 'Dentro del rango saludable',
+      }[distanciaRangoSaludable.estado]
+    : 'Sin rango calculado';
 
   return (
     <div className="space-y-8 pb-10">
@@ -136,7 +196,7 @@ export function DashboardSocio() {
                 className="border-orange-200 bg-white/80 hover:bg-orange-50"
                 onClick={() => navigate({ to: '/mi-progreso' })}
               >
-                Cargar avance
+                Ver mi progreso
               </Button>
             </div>
           </div>
@@ -146,7 +206,8 @@ export function DashboardSocio() {
             <p className="mt-2 text-2xl font-bold text-foreground">{textoProximoTurno}</p>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">{detalleProximoTurno}</p>
             <div className="mt-4 rounded-xl bg-orange-50 p-3 text-sm text-orange-800">
-              Mantené tu plan actualizado y registrá cambios antes de la consulta.
+              Tus mediciones las carga el nutricionista. Acá podés revisar tu
+              evolución antes de la consulta.
             </div>
           </div>
         </div>
@@ -165,15 +226,15 @@ export function DashboardSocio() {
         />
         <EstadisticasKpiCard
           titulo="Mi IMC"
-          valor={progreso?.imc ? progreso.imc.toFixed(1) : '-'}
-          descripcion={progreso?.clasificacionImc || 'Sin datos'}
+          valor={textoImc}
+          descripcion={descripcionImc}
           icono={ICONO_IMC}
           cargando={cargandoProgreso}
         />
         <EstadisticasKpiCard
-          titulo="Distancia al Objetivo"
-          valor={textoPesoRestante}
-          descripcion={pesoRestante !== null ? 'para objetivo' : 'Sin objetivo'}
+          titulo="Distancia saludable"
+          valor={textoDistanciaRango}
+          descripcion={descripcionDistanciaRango}
           icono={ICONO_OBJETIVO}
           cargando={cargandoProgreso}
         />
