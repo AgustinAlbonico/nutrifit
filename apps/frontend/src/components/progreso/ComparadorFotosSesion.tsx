@@ -146,6 +146,7 @@ function SelectorSesion({
 }
 
 function ImagenComparacion({ foto, etiqueta }: { foto: FotoProgreso; etiqueta: string }) {
+  const esIzquierda = etiqueta === 'Antes';
   return (
     <div className="relative h-full w-full">
       <img
@@ -153,7 +154,9 @@ function ImagenComparacion({ foto, etiqueta }: { foto: FotoProgreso; etiqueta: s
         alt={`${etiqueta}: foto de progreso`}
         className="h-full w-full object-cover"
       />
-      <span className="absolute bottom-4 left-4 rounded-full bg-black/70 px-3 py-1 text-sm font-medium text-white">
+      <span
+        className={`absolute bottom-4 rounded-full bg-black/70 px-3 py-1 text-sm font-medium text-white ${esIzquierda ? 'left-4' : 'right-4'}`}
+      >
         {etiqueta}
       </span>
     </div>
