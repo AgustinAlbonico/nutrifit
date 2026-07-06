@@ -26,8 +26,10 @@ import { useState } from 'react';
 import { useForm, Controller, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
-import { Calendar, Loader2, Sparkles, AlertCircle, Info } from 'lucide-react';
+import { Calendar, Loader2, Sparkles, AlertCircle, Info, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { apiRequest } from '@/lib/api';
+import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -107,6 +109,20 @@ export function GeneradorPlanSemanal({
 
   const { generarPlanSemanalV2 } = useIa();
 
+  // Estados para alimentos preferidos interactivos
+  const [alimentosPreferidos, setAlimentosPreferidos] = useState<string[]>([]);
+  const [busquedaPref, setBusquedaPref] = useState('');
+  const [sugerenciasPref, setSugerenciasPref] = useState<string[]>([]);
+  const [buscandoPref, setBuscandoPref] = useState(false);
+  const [mostrarSugerenciasPref, setMostrarSugerenciasPref] = useState(false);
+
+  // Estados para alimentos evitados interactivos
+  const [alimentosEvitados, setAlimentosEvitados] = useState<string[]>([]);
+  const [busquedaEvit, setBusquedaEvit] = useState('');
+  const [sugerenciasEvit, setSugerenciasEvit] = useState<string[]>([]);
+  const [buscandoEvit, setBuscandoEvit] = useState(false);
+  const [mostrarSugerenciasEvit, setMostrarSugerenciasEvit] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -114,6 +130,7 @@ export function GeneradorPlanSemanal({
     watch,
     formState: { errors, isValid },
     reset,
+    setValue,
   } = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(solicitudPlanSemanalSchema),
     mode: 'onChange',
@@ -124,8 +141,104 @@ export function GeneradorPlanSemanal({
       alternativasPorComida: 3,
       notasGeneracion: '',
       fechaInicio: obtenerLunesArgentina(),
+      alimentosPreferidos: [],
+      alimentosEvitados: [],
     },
   });
+
+  // Registrar campos al montar
+  useEffect(() => {
+    register('alimentosPreferidos');
+    register('alimentosEvitados');
+  }, [register]);
+
+  // Debounce para alimentos preferidos
+  useEffect(() => {
+    if (!busquedaPref.trim()) {
+      setSugerenciasPref([]);
+      return;
+    }
+
+    const delayDebounceFn = setTimeout(async () => {
+      setBuscandoPref(true);
+      try {
+        const respuesta = await apiRequest<{ data: { nombre: string }[] }>(
+          `/alimentos?search=${encodeURIComponent(busquedaPref.trim())}&limit=5`
+        );
+        const nombres = respuesta?.data?.map((a) => a.nombre) ?? [];
+        setSugerenciasPref(nombres);
+      } catch (err) {
+        console.error('Error buscando alimentos', err);
+      } finally {
+        setBuscandoPref(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [busquedaPref]);
+
+  // Debounce para alimentos evitados
+  useEffect(() => {
+    if (!busquedaEvit.trim()) {
+      setSugerenciasEvit([]);
+      return;
+    }
+
+    const delayDebounceFn = setTimeout(async () => {
+      setBuscandoEvit(true);
+      try {
+        const respuesta = await apiRequest<{ data: { nombre: string }[] }>(
+          `/alimentos?search=${encodeURIComponent(busquedaEvit.trim())}&limit=5`
+        );
+        const nombres = respuesta?.data?.map((a) => a.nombre) ?? [];
+        setSugerenciasEvit(nombres);
+      } catch (err) {
+        console.error('Error buscando alimentos', err);
+      } finally {
+        setBuscandoEvit(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [busquedaEvit]);
+
+  // Manejadores para alimentos preferidos
+  const agregarPreferido = (alimento: string) => {
+    const limpio = alimento.trim();
+    if (!limpio) return;
+    if (alimentosPreferidos.includes(limpio)) return;
+    const nuevaLista = [...alimentosPreferidos, limpio];
+    setAlimentosPreferidos(nuevaLista);
+    setValue('alimentosPreferidos', nuevaLista, { shouldValidate: true });
+    setBusquedaPref('');
+    setSugerenciasPref([]);
+    setMostrarSugerenciasPref(false);
+  };
+
+  const eliminarPreferido = (alimento: string) => {
+    const nuevaLista = alimentosPreferidos.filter((a) => a !== alimento);
+    setAlimentosPreferidos(nuevaLista);
+    setValue('alimentosPreferidos', nuevaLista, { shouldValidate: true });
+  };
+
+  // Manejadores para alimentos evitados
+  const agregarEvitado = (alimento: string) => {
+    const limpio = alimento.trim();
+    if (!limpio) return;
+    if (alimentosEvitados.includes(limpio)) return;
+    const nuevaLista = [...alimentosEvitados, limpio];
+    setAlimentosEvitados(nuevaLista);
+    setValue('alimentosEvitados', nuevaLista, { shouldValidate: true });
+    setBusquedaEvit('');
+    setSugerenciasEvit([]);
+    setMostrarSugerenciasEvit(false);
+  };
+
+  const eliminarEvitado = (alimento: string) => {
+    const nuevaLista = alimentosEvitados.filter((a) => a !== alimento);
+    setAlimentosEvitados(nuevaLista);
+    setValue('alimentosEvitados', nuevaLista, { shouldValidate: true });
+  };
 
   const notasActuales = watch('notasGeneracion') ?? '';
 
@@ -148,11 +261,11 @@ export function GeneradorPlanSemanal({
         ...((valores.proteinasEstimadas !== undefined && !Number.isNaN(valores.proteinasEstimadas)) ? { proteinasEstimadas: valores.proteinasEstimadas } : {}),
         ...((valores.carbohidratosEstimados !== undefined && !Number.isNaN(valores.carbohidratosEstimados)) ? { carbohidratosEstimados: valores.carbohidratosEstimados } : {}),
         ...((valores.grasasEstimados !== undefined && !Number.isNaN(valores.grasasEstimados)) ? { grasasEstimados: valores.grasasEstimados } : {}),
-        ...(valores.alimentosPreferidos && valores.alimentosPreferidos.trim().length > 0
-          ? { alimentosPreferidos: valores.alimentosPreferidos.trim() }
+        ...(valores.alimentosPreferidos && valores.alimentosPreferidos.length > 0
+          ? { alimentosPreferidos: valores.alimentosPreferidos }
           : {}),
-        ...(valores.alimentosEvitados && valores.alimentosEvitados.trim().length > 0
-          ? { alimentosEvitados: valores.alimentosEvitados.trim() }
+        ...(valores.alimentosEvitados && valores.alimentosEvitados.length > 0
+          ? { alimentosEvitados: valores.alimentosEvitados }
           : {}),
       };
 
@@ -456,38 +569,212 @@ export function GeneradorPlanSemanal({
           </div>
 
           {/* alimentosPreferidos */}
-          <div className="flex flex-col gap-1.5 sm:col-span-2">
-            <Label htmlFor="alimentosPreferidos">Ingredientes/Alimentos preferidos (a priorizar)</Label>
-            <Input
-              id="alimentosPreferidos"
-              type="text"
-              placeholder="Ej: palta, huevos, pollo, avena, espinaca"
-              disabled={enviando || generarPlanSemanalV2.isPending}
-              aria-invalid={errors.alimentosPreferidos ? 'true' : 'false'}
-              aria-describedby={errors.alimentosPreferidos ? 'alimentosPreferidos-error' : undefined}
-              {...register('alimentosPreferidos')}
-            />
+          <div className="flex flex-col gap-1.5 sm:col-span-2 relative">
+            <Label>Ingredientes/Alimentos preferidos (a priorizar)</Label>
+            
+            {/* Renderizar los chips/tags actuales */}
+            <div className="flex flex-wrap gap-2 mb-1">
+              {alimentosPreferidos.map((alimento) => (
+                <span
+                  key={alimento}
+                  className="inline-flex items-center gap-1 bg-primary/10 border border-primary/20 text-primary-foreground text-xs font-medium px-2 py-0.5 rounded-full text-foreground"
+                >
+                  {alimento}
+                  <button
+                    type="button"
+                    onClick={() => eliminarPreferido(alimento)}
+                    disabled={enviando || generarPlanSemanalV2.isPending}
+                    className="text-muted-foreground hover:text-foreground hover:bg-muted p-0.5 rounded-full transition-all"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+              {alimentosPreferidos.length === 0 && (
+                <span className="text-xs text-muted-foreground italic">
+                  Ningún ingrediente preferido agregado
+                </span>
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                value={busquedaPref}
+                onChange={(e) => setBusquedaPref(e.target.value)}
+                onFocus={() => setMostrarSugerenciasPref(true)}
+                onBlur={() => {
+                  setTimeout(() => setMostrarSugerenciasPref(false), 200);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (busquedaPref.trim()) {
+                      agregarPreferido(busquedaPref.trim());
+                    }
+                  }
+                }}
+                placeholder="Buscar o escribir ingrediente a priorizar..."
+                disabled={enviando || generarPlanSemanalV2.isPending}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                disabled={enviando || generarPlanSemanalV2.isPending || !busquedaPref.trim()}
+                onClick={() => agregarPreferido(busquedaPref.trim())}
+              >
+                Agregar
+              </Button>
+            </div>
+
+            {/* Dropdown de sugerencias */}
+            {mostrarSugerenciasPref && (busquedaPref.trim().length > 0) && (
+              <div className="absolute top-[100%] left-0 w-full bg-popover border rounded-xl shadow-lg mt-1 z-50 max-h-60 overflow-y-auto p-1">
+                {buscandoPref && (
+                  <div className="flex items-center gap-2 p-2 text-xs text-muted-foreground italic">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Buscando en el catálogo...
+                  </div>
+                )}
+                
+                {sugerenciasPref.map((sug) => (
+                  <button
+                    key={sug}
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      agregarPreferido(sug);
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground rounded-lg transition-colors"
+                  >
+                    {sug}
+                  </button>
+                ))}
+
+                {!buscandoPref && sugerenciasPref.length === 0 && (
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      agregarPreferido(busquedaPref.trim());
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm text-primary font-medium hover:bg-accent rounded-lg transition-colors flex items-center gap-1.5"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Crear &ldquo;{busquedaPref.trim()}&rdquo; como nuevo alimento
+                  </button>
+                )}
+              </div>
+            )}
+            
             {errors.alimentosPreferidos && (
-              <p id="alimentosPreferidos-error" role="alert" className="text-xs text-destructive">
+              <p className="text-xs text-destructive mt-1">
                 {errors.alimentosPreferidos.message}
               </p>
             )}
           </div>
 
           {/* alimentosEvitados */}
-          <div className="flex flex-col gap-1.5 sm:col-span-2">
-            <Label htmlFor="alimentosEvitados">Ingredientes/Alimentos a evitar (excluir)</Label>
-            <Input
-              id="alimentosEvitados"
-              type="text"
-              placeholder="Ej: coliflor, repollo, cebolla, ajo"
-              disabled={enviando || generarPlanSemanalV2.isPending}
-              aria-invalid={errors.alimentosEvitados ? 'true' : 'false'}
-              aria-describedby={errors.alimentosEvitados ? 'alimentosEvitados-error' : undefined}
-              {...register('alimentosEvitados')}
-            />
+          <div className="flex flex-col gap-1.5 sm:col-span-2 relative">
+            <Label>Ingredientes/Alimentos a evitar (excluir)</Label>
+            
+            {/* Renderizar los chips/tags actuales */}
+            <div className="flex flex-wrap gap-2 mb-1">
+              {alimentosEvitados.map((alimento) => (
+                <span
+                  key={alimento}
+                  className="inline-flex items-center gap-1 bg-primary/10 border border-primary/20 text-primary-foreground text-xs font-medium px-2 py-0.5 rounded-full text-foreground"
+                >
+                  {alimento}
+                  <button
+                    type="button"
+                    onClick={() => eliminarEvitado(alimento)}
+                    disabled={enviando || generarPlanSemanalV2.isPending}
+                    className="text-muted-foreground hover:text-foreground hover:bg-muted p-0.5 rounded-full transition-all"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+              {alimentosEvitados.length === 0 && (
+                <span className="text-xs text-muted-foreground italic">
+                  Ningún ingrediente a evitar agregado
+                </span>
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                value={busquedaEvit}
+                onChange={(e) => setBusquedaEvit(e.target.value)}
+                onFocus={() => setMostrarSugerenciasEvit(true)}
+                onBlur={() => {
+                  setTimeout(() => setMostrarSugerenciasEvit(false), 200);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (busquedaEvit.trim()) {
+                      agregarEvitado(busquedaEvit.trim());
+                    }
+                  }
+                }}
+                placeholder="Buscar o escribir ingrediente a evitar..."
+                disabled={enviando || generarPlanSemanalV2.isPending}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                disabled={enviando || generarPlanSemanalV2.isPending || !busquedaEvit.trim()}
+                onClick={() => agregarEvitado(busquedaEvit.trim())}
+              >
+                Agregar
+              </Button>
+            </div>
+
+            {/* Dropdown de sugerencias */}
+            {mostrarSugerenciasEvit && (busquedaEvit.trim().length > 0) && (
+              <div className="absolute top-[100%] left-0 w-full bg-popover border rounded-xl shadow-lg mt-1 z-50 max-h-60 overflow-y-auto p-1">
+                {buscandoEvit && (
+                  <div className="flex items-center gap-2 p-2 text-xs text-muted-foreground italic">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Buscando en el catálogo...
+                  </div>
+                )}
+                
+                {sugerenciasEvit.map((sug) => (
+                  <button
+                    key={sug}
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      agregarEvitado(sug);
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground rounded-lg transition-colors"
+                  >
+                    {sug}
+                  </button>
+                ))}
+
+                {!buscandoEvit && sugerenciasEvit.length === 0 && (
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      agregarEvitado(busquedaEvit.trim());
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm text-primary font-medium hover:bg-accent rounded-lg transition-colors flex items-center gap-1.5"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Crear &ldquo;{busquedaEvit.trim()}&rdquo; como nuevo alimento
+                  </button>
+                )}
+              </div>
+            )}
+            
             {errors.alimentosEvitados && (
-              <p id="alimentosEvitados-error" role="alert" className="text-xs text-destructive">
+              <p className="text-xs text-destructive mt-1">
                 {errors.alimentosEvitados.message}
               </p>
             )}

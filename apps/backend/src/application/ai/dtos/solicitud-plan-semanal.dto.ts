@@ -12,6 +12,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsArray,
   Max,
   MaxLength,
   Min,
@@ -74,12 +75,12 @@ export class SolicitudPlanSemanalHttpDTO {
   grasasEstimados?: number;
 
   @IsOptional()
-  @IsString()
-  @MaxLength(500)
-  alimentosPreferidos?: string;
+  @IsArray()
+  @IsString({ each: true })
+  alimentosPreferidos?: string[];
 
   @IsOptional()
-  @IsString()
-  @MaxLength(500)
-  alimentosEvitados?: string;
+  @IsArray()
+  @IsString({ each: true })
+  alimentosEvitados?: string[];
 }

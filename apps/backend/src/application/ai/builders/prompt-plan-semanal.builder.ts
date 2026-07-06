@@ -56,8 +56,8 @@ export interface ContextoPromptPlanSemanal {
   proteinasEstimadas?: number;
   carbohidratosEstimados?: number;
   grasasEstimados?: number;
-  alimentosPreferidos?: string;
-  alimentosEvitados?: string;
+  alimentosPreferidos?: string[];
+  alimentosEvitados?: string[];
 }
 
 export interface PromptResultado {
@@ -189,16 +189,16 @@ export class PromptPlanSemanalBuilder {
       if (ctx.grasasEstimados) lineas.push(`- Grasas Diarias: ${ctx.grasasEstimados} g`);
     }
 
-    if (ctx.alimentosPreferidos && ctx.alimentosPreferidos.trim().length > 0) {
+    if (ctx.alimentosPreferidos && ctx.alimentosPreferidos.length > 0) {
       lineas.push('');
       lineas.push(`PREFERENCIAS DE ALIMENTOS DEL SOCIO (Priorizar su inclusión):`);
-      lineas.push(`- Ingredientes/Alimentos a priorizar: ${ctx.alimentosPreferidos.trim()}`);
+      lineas.push(`- Ingredientes/Alimentos a priorizar: ${ctx.alimentosPreferidos.join(', ')}`);
     }
 
-    if (ctx.alimentosEvitados && ctx.alimentosEvitados.trim().length > 0) {
+    if (ctx.alimentosEvitados && ctx.alimentosEvitados.length > 0) {
       lineas.push('');
       lineas.push(`EXCLUSIONES DE ALIMENTOS DEL SOCIO (Excluir absolutamente):`);
-      lineas.push(`- Ingredientes/Alimentos a evitar: ${ctx.alimentosEvitados.trim()}`);
+      lineas.push(`- Ingredientes/Alimentos a evitar: ${ctx.alimentosEvitados.join(', ')}`);
     }
     lineas.push('');
     lineas.push('PARÁMETROS DEL PLAN:');

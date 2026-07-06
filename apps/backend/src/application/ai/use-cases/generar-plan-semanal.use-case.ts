@@ -91,6 +91,7 @@ import type { AlimentoNuevoDto } from 'src/application/ai/dto/alimento-nuevo.dto
 import { AlimentoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/alimento.entity';
 import { GrupoAlimenticioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/grupo-alimenticio.entity';
 import { PreparacionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/preparacion.entity';
+import { UnidadMedida } from 'src/domain/entities/Alimento/UnidadMedida';
 
 /**
  * Representa el JSON crudo devuelto por la IA antes de resolver
@@ -117,8 +118,8 @@ export interface SolicitudPlanSemanal {
   proteinasEstimadas?: number;
   carbohidratosEstimados?: number;
   grasasEstimados?: number;
-  alimentosPreferidos?: string;
-  alimentosEvitados?: string;
+  alimentosPreferidos?: string[];
+  alimentosEvitados?: string[];
 }
 
 export interface RespuestaPlanSemanal {
@@ -254,6 +255,14 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
       comentario: e.comentario,
     }));
 
+    // Resolver / Crear Alimentos preferidos y evitados en BD si no existen
+    const alimentosPreferidosCurados = await this.buscarOCrearAlimentos(
+      solicitud.alimentosPreferidos,
+    );
+    const alimentosEvitadosCurados = await this.buscarOCrearAlimentos(
+      solicitud.alimentosEvitados,
+    );
+
     // 5) Contexto base para prompts diarios
     const contextoPromptBase = {
       fichaClinica: {
@@ -274,8 +283,8 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
       proteinasEstimadas: solicitud.proteinasEstimadas,
       carbohidratosEstimados: solicitud.carbohidratosEstimados,
       grasasEstimados: solicitud.grasasEstimados,
-      alimentosPreferidos: solicitud.alimentosPreferidos,
-      alimentosEvitados: solicitud.alimentosEvitados,
+      alimentosPreferidos: alimentosPreferidosCurados,
+      alimentosEvitados: alimentosEvitadosCurados,
     };
 
     const objetivoMacros: ObjetivoNutricional =
@@ -1191,6 +1200,43 @@ No omitas días, comidas ni alternativas aunque el JSON sea largo.`;
         })),
       })),
     };
+  }
+
+  private async buscarOCrearAlimentos(
+    nombres?: string[],
+  ): Promise<string[]> {
+    if (!nombres || nombres.length === 0) {
+      return [];
+    }
+
+    const nombresNormalizados = nombres
+      .map((n) => n.trim())
+      .filter((n) => n.length > 0);
+    const nombresUnicos = [...new Set(nombresNormalizados)];
+
+    const resultados: string[] = [];
+
+    for (const nombre of nombresUnicos) {
+      const normalizado = nombre.toLowerCase().trim();
+
+      let alimento = await this.alimentoRepo
+        .createQueryBuilder('alimento')
+        .where('LOWER(alimento.nombre) = :nombre', { nombre: normalizado })
+        .getOne();
+
+      if (!alimento) {
+        const nuevoAlimento = this.alimentoRepo.create({
+          nombre: nombre.trim(),
+          cantidad: 100,
+          unidadMedida: UnidadMedida.GRAMO,
+        });
+        alimento = await this.alimentoRepo.save(nuevoAlimento);
+      }
+
+      resultados.push(alimento.nombre);
+    }
+
+    return resultados;
   }
 
   private proximoLunesAR(): Date {
