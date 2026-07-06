@@ -100,6 +100,7 @@ export class CrearAdminGimnasioUseCase implements BaseUseCase {
       'Sin provincia',
       '',
       null,
+      gimnasioId,
     );
 
     const usuario = new UsuarioEntity(

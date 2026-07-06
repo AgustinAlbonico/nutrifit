@@ -15,6 +15,7 @@ export class RecepcionistaEntity extends PersonaEntity {
     provincia: string,
     dni: string,
     fechaBaja: Date | null = null,
+    gimnasioId: number = 1,
   ) {
     super(
       idPersona,
@@ -29,7 +30,7 @@ export class RecepcionistaEntity extends PersonaEntity {
       dni,
       '',
       null,
-      1,
+      gimnasioId,
     );
     this.fechaBaja = fechaBaja;
   }

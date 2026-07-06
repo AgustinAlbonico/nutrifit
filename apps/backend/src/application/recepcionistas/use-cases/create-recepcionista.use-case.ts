@@ -27,6 +27,7 @@ import { Repository } from 'typeorm';
 import { GrupoPermisoEntity } from 'src/domain/entities/Usuario/grupo-permiso.entity';
 import { generarContrasenaProvisional } from 'src/common/utils/password-generator.util';
 import { EmailService } from 'src/application/email/email.service';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 export interface ResultadoCrearRecepcionista {
   recepcionista: RecepcionistaEntity;
@@ -46,6 +47,7 @@ export class CreateRecepcionistaUseCase implements BaseUseCase {
     @InjectRepository(GrupoPermisoOrmEntity)
     private readonly grupoPermisoRepository: Repository<GrupoPermisoOrmEntity>,
     private readonly emailService: EmailService,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(
@@ -80,6 +82,10 @@ export class CreateRecepcionistaUseCase implements BaseUseCase {
       dni,
     } = payload;
 
+    const gimnasioId = this.tenantContext.isInitialized
+      ? this.tenantContext.gimnasioId
+      : 1;
+
     const recepcionistaEntity = new RecepcionistaEntity(
       null,
       nombre,
@@ -92,6 +98,7 @@ export class CreateRecepcionistaUseCase implements BaseUseCase {
       provincia,
       dni,
       null,
+      gimnasioId,
     );
 
     if (fotoPerfilKey) {

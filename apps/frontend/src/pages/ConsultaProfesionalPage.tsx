@@ -795,9 +795,7 @@ const camposPrecargados = estadoMedicionPrecargada.camposPrecargados;
     }
   };
 
-  const subirAdjunto = async (archivo: File) => {
-    await subirAdjuntoIndividual(archivo);
-  };
+
 
   const eliminarAdjunto = async (adjuntoId: number) => {
     if (!token || !turnoId) return;
@@ -1524,25 +1522,69 @@ const camposPrecargados = estadoMedicionPrecargada.camposPrecargados;
                   No se pudo cargar la evolución previa. Podés continuar, pero revisá la ficha completa si necesitás contexto histórico.
                 </div>
               ) : ultimaMedicion ? (
-                <div className="grid gap-4 md:grid-cols-4">
-                  <div className="rounded-xl border bg-card p-4">
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Último peso</p>
-                    <p className="mt-2 text-2xl font-bold">{ultimaMedicion.peso} kg</p>
+                <div className="space-y-6">
+                  <div className="grid gap-4 md:grid-cols-4">
+                    <div className="rounded-xl border bg-card p-4">
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">Último peso</p>
+                      <p className="mt-2 text-2xl font-bold">{ultimaMedicion.peso} kg</p>
+                    </div>
+                    <div className="rounded-xl border bg-card p-4">
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">IMC</p>
+                      <p className="mt-2 text-2xl font-bold">{ultimaMedicion.imc?.toFixed?.(1) ?? '-'}</p>
+                    </div>
+                    <div className="rounded-xl border bg-card p-4">
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">Mediciones</p>
+                      <p className="mt-2 text-2xl font-bold">{historialMediciones?.mediciones.length ?? 0}</p>
+                    </div>
+                    <div className="rounded-xl border bg-card p-4">
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">Último registro</p>
+                      <p className="mt-2 text-lg font-semibold">
+                        {new Date(ultimaMedicion.fecha).toLocaleDateString('es-AR')}
+                      </p>
+                    </div>
                   </div>
-                  <div className="rounded-xl border bg-card p-4">
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">IMC</p>
-                    <p className="mt-2 text-2xl font-bold">{ultimaMedicion.imc?.toFixed?.(1) ?? '-'}</p>
-                  </div>
-                  <div className="rounded-xl border bg-card p-4">
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Mediciones</p>
-                    <p className="mt-2 text-2xl font-bold">{historialMediciones?.mediciones.length ?? 0}</p>
-                  </div>
-                  <div className="rounded-xl border bg-card p-4">
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Último registro</p>
-                    <p className="mt-2 text-lg font-semibold">
-                      {new Date(ultimaMedicion.fecha).toLocaleDateString('es-AR')}
-                    </p>
-                  </div>
+
+                  {/* Resumen rápido de la consulta anterior: sin abrir la ficha completa */}
+                  {(() => {
+                    const consultaPrevia = historialConsultas.find(
+                      (c) => c.estadoTurno === 'REALIZADO' || c.estadoTurno === 'EN_CURSO',
+                    );
+                    if (!consultaPrevia) return null;
+
+                    const comentario = consultaPrevia.notasProfesional ?? consultaPrevia.sugerencias;
+                    if (!comentario) return null;
+
+                    return (
+                      <div
+                        data-testid="evolucion-resumen-consulta-previa"
+                        className="rounded-xl border border-primary/20 bg-primary/5 p-5 shadow-sm"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-xs font-medium uppercase tracking-wide text-primary">
+                            Última consulta · {consultaPrevia.fechaTurno} · {consultaPrevia.horaTurno}
+                          </p>
+                          {consultaPrevia.tipoConsulta ? (
+                            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                              {consultaPrevia.tipoConsulta}
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="mt-3 whitespace-pre-line text-sm text-foreground/80">{comentario}</p>
+                        {consultaPrevia.sugerencias &&
+                        consultaPrevia.notasProfesional &&
+                        consultaPrevia.sugerencias !== consultaPrevia.notasProfesional ? (
+                          <div className="mt-3 border-t border-primary/10 pt-3">
+                            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                              Sugerencias
+                            </p>
+                            <p className="mt-1 whitespace-pre-line text-sm text-foreground/70">
+                              {consultaPrevia.sugerencias}
+                            </p>
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })()}
                 </div>
               ) : (
                 <div className="rounded-xl border border-dashed bg-muted/10 p-6 text-center text-muted-foreground">

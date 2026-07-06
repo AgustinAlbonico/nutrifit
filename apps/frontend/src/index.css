@@ -215,6 +215,11 @@ body {
   .dark body {
     background-image: radial-gradient(oklch(0.269 0 0) 1px, transparent 1px);
   }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
 }
 
 /* Utilidades de Glassmorphism Controlado - Solo para fondos decorativos */
