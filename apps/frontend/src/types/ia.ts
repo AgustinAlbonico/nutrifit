@@ -260,6 +260,8 @@ export interface SolicitudPlanSemanalV2FE {
   proteinasEstimadas?: number;
   carbohidratosEstimados?: number;
   grasasEstimados?: number;
+  alimentosPreferidos?: string;
+  alimentosEvitados?: string;
 }
 
 /** Respuesta del backend al generar plan semanal. */

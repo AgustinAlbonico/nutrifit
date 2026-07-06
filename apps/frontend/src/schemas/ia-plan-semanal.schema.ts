@@ -62,6 +62,14 @@ export const solicitudPlanSemanalSchema = z.object({
     (val) => (val === '' || val === null || val === undefined || (typeof val === 'number' && Number.isNaN(val)) ? undefined : Number(val)),
     z.number().int().min(10, 'Debe indicar al menos 10 g de grasas').max(300, 'Las grasas no pueden superar los 300 g').optional()
   ),
+  alimentosPreferidos: z
+    .string()
+    .max(500, 'Las preferencias no pueden superar los 500 caracteres')
+    .optional(),
+  alimentosEvitados: z
+    .string()
+    .max(500, 'Las exclusiones no pueden superar los 500 caracteres')
+    .optional(),
 });
 
 export type SolicitudPlanSemanalForm = z.infer<typeof solicitudPlanSemanalSchema>;

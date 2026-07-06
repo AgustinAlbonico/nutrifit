@@ -117,6 +117,8 @@ export interface SolicitudPlanSemanal {
   proteinasEstimadas?: number;
   carbohidratosEstimados?: number;
   grasasEstimados?: number;
+  alimentosPreferidos?: string;
+  alimentosEvitados?: string;
 }
 
 export interface RespuestaPlanSemanal {
@@ -272,6 +274,8 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
       proteinasEstimadas: solicitud.proteinasEstimadas,
       carbohidratosEstimados: solicitud.carbohidratosEstimados,
       grasasEstimados: solicitud.grasasEstimados,
+      alimentosPreferidos: solicitud.alimentosPreferidos,
+      alimentosEvitados: solicitud.alimentosEvitados,
     };
 
     const objetivoMacros: ObjetivoNutricional =

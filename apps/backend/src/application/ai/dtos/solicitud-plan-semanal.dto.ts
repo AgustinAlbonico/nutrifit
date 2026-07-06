@@ -72,4 +72,14 @@ export class SolicitudPlanSemanalHttpDTO {
   @Min(10)
   @Max(300)
   grasasEstimados?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  alimentosPreferidos?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  alimentosEvitados?: string;
 }

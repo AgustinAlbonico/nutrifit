@@ -148,6 +148,12 @@ export function GeneradorPlanSemanal({
         ...((valores.proteinasEstimadas !== undefined && !Number.isNaN(valores.proteinasEstimadas)) ? { proteinasEstimadas: valores.proteinasEstimadas } : {}),
         ...((valores.carbohidratosEstimados !== undefined && !Number.isNaN(valores.carbohidratosEstimados)) ? { carbohidratosEstimados: valores.carbohidratosEstimados } : {}),
         ...((valores.grasasEstimados !== undefined && !Number.isNaN(valores.grasasEstimados)) ? { grasasEstimados: valores.grasasEstimados } : {}),
+        ...(valores.alimentosPreferidos && valores.alimentosPreferidos.trim().length > 0
+          ? { alimentosPreferidos: valores.alimentosPreferidos.trim() }
+          : {}),
+        ...(valores.alimentosEvitados && valores.alimentosEvitados.trim().length > 0
+          ? { alimentosEvitados: valores.alimentosEvitados.trim() }
+          : {}),
       };
 
       const respuesta = await generarPlanSemanalV2.mutateAsync(payload);
@@ -445,6 +451,44 @@ export function GeneradorPlanSemanal({
             {errors.grasasEstimados && (
               <p id="grasasEstimados-error" role="alert" className="text-xs text-destructive">
                 {errors.grasasEstimados.message}
+              </p>
+            )}
+          </div>
+
+          {/* alimentosPreferidos */}
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <Label htmlFor="alimentosPreferidos">Ingredientes/Alimentos preferidos (a priorizar)</Label>
+            <Input
+              id="alimentosPreferidos"
+              type="text"
+              placeholder="Ej: palta, huevos, pollo, avena, espinaca"
+              disabled={enviando || generarPlanSemanalV2.isPending}
+              aria-invalid={errors.alimentosPreferidos ? 'true' : 'false'}
+              aria-describedby={errors.alimentosPreferidos ? 'alimentosPreferidos-error' : undefined}
+              {...register('alimentosPreferidos')}
+            />
+            {errors.alimentosPreferidos && (
+              <p id="alimentosPreferidos-error" role="alert" className="text-xs text-destructive">
+                {errors.alimentosPreferidos.message}
+              </p>
+            )}
+          </div>
+
+          {/* alimentosEvitados */}
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <Label htmlFor="alimentosEvitados">Ingredientes/Alimentos a evitar (excluir)</Label>
+            <Input
+              id="alimentosEvitados"
+              type="text"
+              placeholder="Ej: coliflor, repollo, cebolla, ajo"
+              disabled={enviando || generarPlanSemanalV2.isPending}
+              aria-invalid={errors.alimentosEvitados ? 'true' : 'false'}
+              aria-describedby={errors.alimentosEvitados ? 'alimentosEvitados-error' : undefined}
+              {...register('alimentosEvitados')}
+            />
+            {errors.alimentosEvitados && (
+              <p id="alimentosEvitados-error" role="alert" className="text-xs text-destructive">
+                {errors.alimentosEvitados.message}
               </p>
             )}
           </div>

@@ -98,6 +98,8 @@ export class AiController {
       proteinasEstimadas: dto.proteinasEstimadas,
       carbohidratosEstimados: dto.carbohidratosEstimados,
       grasasEstimados: dto.grasasEstimados,
+      alimentosPreferidos: dto.alimentosPreferidos,
+      alimentosEvitados: dto.alimentosEvitados,
     });
   }
 

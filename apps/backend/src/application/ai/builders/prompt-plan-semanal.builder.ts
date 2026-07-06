@@ -56,6 +56,8 @@ export interface ContextoPromptPlanSemanal {
   proteinasEstimadas?: number;
   carbohidratosEstimados?: number;
   grasasEstimados?: number;
+  alimentosPreferidos?: string;
+  alimentosEvitados?: string;
 }
 
 export interface PromptResultado {
@@ -105,13 +107,16 @@ export class PromptPlanSemanalBuilder {
       '8. Si en el contexto del socio se definen metas de calorías o macronutrientes, ajustá estrictamente el tamaño de las porciones de los alimentos para que el promedio diario cumpla con estos objetivos (con un margen de ±5%).',
     );
     lineas.push(
-      '9. Variá los alimentos entre días y entre alternativas para evitar monotonía.',
+      '9. Si en el contexto se especifican alimentos/ingredientes preferidos a priorizar, hacé lo posible por incluirlos en las recetas del plan. Si se definen alimentos/ingredientes a evitar, excluílos de forma absoluta de todas las recetas.',
     );
     lineas.push(
-      '10. Los alimentos deben estar referenciados por su nombre común en español.',
+      '10. Variá los alimentos entre días y entre alternativas para evitar monotonía.',
     );
     lineas.push(
-      '11. Si un alimento no existe en el catálogo, declarálo en el array alimentosNuevos con macros aproximados y categoría correcta.',
+      '11. Los alimentos deben estar referenciados por su nombre común en español.',
+    );
+    lineas.push(
+      '12. Si un alimento no existe en el catálogo, declarálo en el array alimentosNuevos con macros aproximados y categoría correcta.',
     );
     lineas.push('');
     lineas.push('ESTRUCTURA DEL JSON DE SALIDA:');
@@ -182,6 +187,18 @@ export class PromptPlanSemanalBuilder {
       if (ctx.proteinasEstimadas) lineas.push(`- Proteínas Diarias: ${ctx.proteinasEstimadas} g`);
       if (ctx.carbohidratosEstimados) lineas.push(`- Carbohidratos Diarios: ${ctx.carbohidratosEstimados} g`);
       if (ctx.grasasEstimados) lineas.push(`- Grasas Diarias: ${ctx.grasasEstimados} g`);
+    }
+
+    if (ctx.alimentosPreferidos && ctx.alimentosPreferidos.trim().length > 0) {
+      lineas.push('');
+      lineas.push(`PREFERENCIAS DE ALIMENTOS DEL SOCIO (Priorizar su inclusión):`);
+      lineas.push(`- Ingredientes/Alimentos a priorizar: ${ctx.alimentosPreferidos.trim()}`);
+    }
+
+    if (ctx.alimentosEvitados && ctx.alimentosEvitados.trim().length > 0) {
+      lineas.push('');
+      lineas.push(`EXCLUSIONES DE ALIMENTOS DEL SOCIO (Excluir absolutamente):`);
+      lineas.push(`- Ingredientes/Alimentos a evitar: ${ctx.alimentosEvitados.trim()}`);
     }
     lineas.push('');
     lineas.push('PARÁMETROS DEL PLAN:');
