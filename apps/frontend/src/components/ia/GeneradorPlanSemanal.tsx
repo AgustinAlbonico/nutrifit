@@ -162,10 +162,10 @@ export function GeneradorPlanSemanal({
     const delayDebounceFn = setTimeout(async () => {
       setBuscandoPref(true);
       try {
-        const respuesta = await apiRequest<{ data: { nombre: string }[] }>(
+        const respuesta = await apiRequest<{ data: { data: Array<{ nombre: string }> } }>(
           `/alimentos?search=${encodeURIComponent(busquedaPref.trim())}&limit=5`
         );
-        const nombres = respuesta?.data?.map((a) => a.nombre) ?? [];
+        const nombres = respuesta?.data?.data?.map((a) => a.nombre) ?? [];
         setSugerenciasPref(nombres);
       } catch (err) {
         console.error('Error buscando alimentos', err);
@@ -187,10 +187,10 @@ export function GeneradorPlanSemanal({
     const delayDebounceFn = setTimeout(async () => {
       setBuscandoEvit(true);
       try {
-        const respuesta = await apiRequest<{ data: { nombre: string }[] }>(
+        const respuesta = await apiRequest<{ data: { data: Array<{ nombre: string }> } }>(
           `/alimentos?search=${encodeURIComponent(busquedaEvit.trim())}&limit=5`
         );
-        const nombres = respuesta?.data?.map((a) => a.nombre) ?? [];
+        const nombres = respuesta?.data?.data?.map((a) => a.nombre) ?? [];
         setSugerenciasEvit(nombres);
       } catch (err) {
         console.error('Error buscando alimentos', err);
