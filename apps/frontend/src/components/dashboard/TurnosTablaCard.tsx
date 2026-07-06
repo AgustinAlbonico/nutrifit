@@ -47,6 +47,9 @@ const ESTADOS_TURNO: Array<{ valor: EstadoTurno | 'TODOS'; etiqueta: string }> =
   { valor: 'CONFIRMADO', etiqueta: 'Confirmado' },
   { valor: 'PRESENTE', etiqueta: 'Presente' },
   { valor: 'EN_CURSO', etiqueta: 'En curso' },
+  { valor: 'REALIZADO', etiqueta: 'Realizado' },
+  { valor: 'CANCELADO', etiqueta: 'Cancelado' },
+  { valor: 'AUSENTE', etiqueta: 'Ausente' },
 ];
 
 export function TurnosTablaCard() {
