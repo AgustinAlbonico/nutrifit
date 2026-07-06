@@ -4,7 +4,10 @@ import type {
   IAiProviderService,
 } from '../../../domain/services/ai-provider.service';
 import { EnvironmentConfigService } from '../../../infrastructure/config/environment-config/environment-config.service';
-import { AIRateLimitError } from 'src/domain/exceptions/custom-exceptions';
+import {
+  AIRateLimitError,
+  ServiceUnavailableError,
+} from 'src/domain/exceptions/custom-exceptions';
 import OpenAI from 'openai';
 
 const TEMPERATURA_DEFAULT = 0.7;
@@ -26,7 +29,7 @@ export class GroqService implements IAiProviderService {
     this.baseUrl = this.configService.getGroqBaseUrl();
     this.model = this.configService.getGroqModel();
     this.client = new OpenAI({
-      apiKey: this.configService.getGroqApiKey(),
+      apiKey: this.configService.getGroqApiKeyOpcional() ?? 'groq-no-configurado',
       baseURL: this.baseUrl,
     });
   }
@@ -88,6 +91,10 @@ export class GroqService implements IAiProviderService {
         });
       }
 
+      if (status && [408, 500, 502, 503, 504].includes(status)) {
+        throw new ServiceUnavailableError(detalle, { proveedor: 'groq' });
+      }
+
       throw new Error(`No se pudo generar la recomendación: ${detalle}`);
     }
   }
@@ -147,7 +154,7 @@ export class GroqService implements IAiProviderService {
 
   verificarConexion(): Promise<boolean> {
     try {
-      const apiKey = this.configService.getGroqApiKey();
+      const apiKey = this.configService.getGroqApiKeyOpcional();
 
       if (!apiKey) {
         this.logger.warn('GROQ_API_KEY no configurada');

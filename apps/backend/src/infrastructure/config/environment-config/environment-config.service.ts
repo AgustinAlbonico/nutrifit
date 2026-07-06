@@ -26,11 +26,25 @@ enum VariablesEntorno {
   MINIO_SECRET_KEY = 'MINIO_SECRET_KEY',
   MINIO_USE_SSL = 'MINIO_USE_SSL',
   MINIO_BUCKET_NAME = 'MINIO_BUCKET_NAME',
+  AI_PROVIDER_CHAIN = 'AI_PROVIDER_CHAIN',
   GROQ_API_KEY = 'GROQ_API_KEY',
   GROQ_BASE_URL = 'GROQ_BASE_URL',
   GROQ_MODEL = 'GROQ_MODEL',
+  GEMINI_API_KEY = 'GEMINI_API_KEY',
+  GEMINI_MODEL = 'GEMINI_MODEL',
+  OPENROUTER_API_KEY = 'OPENROUTER_API_KEY',
+  OPENROUTER_BASE_URL = 'OPENROUTER_BASE_URL',
+  OPENROUTER_MODEL = 'OPENROUTER_MODEL',
   AUSENCIA_UMBRAL_MINUTOS = 'AUSENCIA_UMBRAL_MINUTOS',
 }
+
+export type AiProviderName = 'groq' | 'gemini' | 'openrouter';
+
+const AI_PROVIDER_CHAIN_DEFAULT: AiProviderName[] = [
+  'groq',
+  'gemini',
+  'openrouter',
+];
 
 const ORIGENES_DESARROLLO_POR_DEFECTO = [
   'http://localhost:4173',
@@ -169,14 +183,63 @@ export class EnvironmentConfigService
     );
     return valor === 'true';
   }
+  getAiProviderChain(): AiProviderName[] {
+    const raw = this.configService.get<string>(
+      VariablesEntorno.AI_PROVIDER_CHAIN,
+      AI_PROVIDER_CHAIN_DEFAULT.join(','),
+    );
+
+    const proveedores = raw
+      .split(',')
+      .map((proveedor) => proveedor.trim().toLowerCase())
+      .filter((proveedor): proveedor is AiProviderName =>
+        this.esProveedorIaValido(proveedor),
+      );
+
+    return proveedores.length > 0 ? proveedores : AI_PROVIDER_CHAIN_DEFAULT;
+  }
+
   getGroqApiKey(): string {
     return this.getEnvironmentVariable<string>(VariablesEntorno.GROQ_API_KEY);
   }
+  getGroqApiKeyOpcional(): string | undefined {
+    return this.configService.get<string>(VariablesEntorno.GROQ_API_KEY);
+  }
   getGroqBaseUrl(): string {
-    return this.getEnvironmentVariable<string>(VariablesEntorno.GROQ_BASE_URL);
+    return this.configService.get<string>(
+      VariablesEntorno.GROQ_BASE_URL,
+      'https://api.groq.com/openai/v1',
+    );
   }
   getGroqModel(): string {
-    return this.getEnvironmentVariable<string>(VariablesEntorno.GROQ_MODEL);
+    return this.configService.get<string>(
+      VariablesEntorno.GROQ_MODEL,
+      'llama-3.3-70b-versatile',
+    );
+  }
+  getGeminiApiKey(): string | undefined {
+    return this.configService.get<string>(VariablesEntorno.GEMINI_API_KEY);
+  }
+  getGeminiModel(): string {
+    return this.configService.get<string>(
+      VariablesEntorno.GEMINI_MODEL,
+      'gemini-2.0-flash-lite',
+    );
+  }
+  getOpenRouterApiKey(): string | undefined {
+    return this.configService.get<string>(VariablesEntorno.OPENROUTER_API_KEY);
+  }
+  getOpenRouterBaseUrl(): string {
+    return this.configService.get<string>(
+      VariablesEntorno.OPENROUTER_BASE_URL,
+      'https://openrouter.ai/api/v1',
+    );
+  }
+  getOpenRouterModel(): string {
+    return this.configService.get<string>(
+      VariablesEntorno.OPENROUTER_MODEL,
+      'meta-llama/llama-3.3-8b-instruct:free',
+    );
   }
 
   //Variables de entorno Scheduler
@@ -184,5 +247,9 @@ export class EnvironmentConfigService
     return this.getEnvironmentVariable<number>(
       VariablesEntorno.AUSENCIA_UMBRAL_MINUTOS,
     );
+  }
+
+  private esProveedorIaValido(proveedor: string): proveedor is AiProviderName {
+    return ['groq', 'gemini', 'openrouter'].includes(proveedor);
   }
 }

@@ -1,0 +1,128 @@
+import { Injectable, Logger } from '@nestjs/common';
+import OpenAI from 'openai';
+
+import {
+  AIRateLimitError,
+  ServiceUnavailableError,
+} from 'src/domain/exceptions/custom-exceptions';
+import type {
+  ConfiguracionGeneracionIA,
+  IAiProviderService,
+} from 'src/domain/services/ai-provider.service';
+import { EnvironmentConfigService } from 'src/infrastructure/config/environment-config/environment-config.service';
+
+const TEMPERATURA_DEFAULT = 0.7;
+const MAX_TOKENS_DEFAULT = 2048;
+const TIMEOUT_DEFAULT_MS = 120000;
+
+@Injectable()
+export class OpenRouterService implements IAiProviderService {
+  private readonly logger = new Logger(OpenRouterService.name);
+  private readonly apiKey?: string;
+  private readonly client: OpenAI;
+  private readonly model: string;
+
+  constructor(private readonly configService: EnvironmentConfigService) {
+    this.apiKey = this.configService.getOpenRouterApiKey();
+    this.model = this.configService.getOpenRouterModel();
+    this.client = new OpenAI({
+      apiKey: this.apiKey ?? 'openrouter-no-configurado',
+      baseURL: this.configService.getOpenRouterBaseUrl(),
+    });
+  }
+
+  async generarRecomendacion<T>(
+    prompt: string,
+    configuracion: object | ConfiguracionGeneracionIA = {},
+  ): Promise<T> {
+    if (!this.apiKey) {
+      throw new ServiceUnavailableError('OpenRouter no está configurado.', {
+        proveedor: 'openrouter',
+      });
+    }
+
+    try {
+      this.logger.log('Iniciando llamada a OpenRouter API');
+      const { schema, temperature, maxTokens, timeoutMs } =
+        this.normalizarConfiguracion(configuracion);
+
+      const response = await this.client.chat.completions.create(
+        {
+          messages: [
+            {
+              role: 'system',
+              content:
+                'Eres un asistente de nutrición profesional. DEBES responder ÚNICAMENTE con un JSON válido que coincida exactamente con el esquema proporcionado. No incluyas texto adicional, markdown ni explicaciones fuera del JSON.',
+            },
+            {
+              role: 'user',
+              content: `${prompt}\n\nEsquema JSON requerido:\n${JSON.stringify(schema, null, 2)}\n\nResponde SOLO con el JSON, sin texto adicional.`,
+            },
+          ],
+          model: this.model,
+          temperature,
+          max_tokens: maxTokens,
+          response_format: { type: 'json_object' },
+        },
+        { timeout: timeoutMs },
+      );
+
+      const content = response.choices[0].message?.content;
+
+      if (!content) {
+        throw new Error('La API de OpenRouter no devolvió contenido');
+      }
+
+      this.logger.log('Respuesta de OpenRouter API procesada exitosamente');
+      return JSON.parse(content) as T;
+    } catch (error) {
+      if (error instanceof AIRateLimitError || error instanceof ServiceUnavailableError) {
+        throw error;
+      }
+
+      const status = (error as { status?: number })?.status;
+      const detalle = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Error en OpenRouterService: ${detalle}`);
+
+      if (status === 429) {
+        throw new AIRateLimitError(detalle, { proveedor: 'openrouter' });
+      }
+
+      if (status && [408, 500, 502, 503, 504].includes(status)) {
+        throw new ServiceUnavailableError(detalle, { proveedor: 'openrouter' });
+      }
+
+      throw new Error(
+        `No se pudo generar la recomendación con OpenRouter: ${detalle}`,
+      );
+    }
+  }
+
+  verificarConexion(): Promise<boolean> {
+    return Promise.resolve(Boolean(this.apiKey && this.apiKey.length >= 20));
+  }
+
+  private normalizarConfiguracion(configuracion: object | ConfiguracionGeneracionIA) {
+    const registro = configuracion as Record<string, unknown>;
+    const schema =
+      registro.schema && typeof registro.schema === 'object'
+        ? (registro.schema as object)
+        : configuracion;
+
+    return {
+      schema,
+      temperature: this.obtenerNumero(registro.temperature, TEMPERATURA_DEFAULT),
+      maxTokens: this.obtenerNumero(
+        registro.max_tokens ?? registro.maxTokens,
+        MAX_TOKENS_DEFAULT,
+      ),
+      timeoutMs: this.obtenerNumero(registro.timeoutMs, TIMEOUT_DEFAULT_MS),
+    };
+  }
+
+  private obtenerNumero(valor: unknown, valorDefault: number): number {
+    return typeof valor === 'number' && Number.isFinite(valor)
+      ? valor
+      : valorDefault;
+  }
+}
