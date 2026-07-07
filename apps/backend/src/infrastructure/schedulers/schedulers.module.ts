@@ -13,6 +13,7 @@ import { NotificacionesService } from 'src/application/notificaciones/notificaci
 import { EmailModule } from 'src/application/email/email.module';
 import { FinalizarConsultaPorInactividadUseCase } from 'src/application/turnos/use-cases/finalizar-consulta-por-inactividad.use-case';
 import { CierreConsultaScheduler } from './cierre-consulta.scheduler';
+import { GeneracionPlanIaReaperScheduler } from './generacion-plan-ia-reaper.scheduler';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { CierreConsultaScheduler } from './cierre-consulta.scheduler';
     AusenciaTurnoScheduler,
     TurnoReminderScheduler,
     CierreConsultaScheduler,
+    GeneracionPlanIaReaperScheduler,
     NotificacionesService,
     FinalizarConsultaPorInactividadUseCase,
     AlimentosSyncService,

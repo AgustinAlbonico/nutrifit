@@ -31,18 +31,25 @@ export class EjecutarGeneracionPlanSemanalBackgroundService {
       return;
     }
 
-    await this.generacionRepo.actualizar(generacion.id, {
-      estado: 'GENERANDO',
-      mensajeEstado: 'Generando plan con IA',
-      proveedorActual: 'automático',
-      iniciadoEn: new Date(),
-    });
+    const generacionEnEjecucion = await this.generacionRepo.actualizarSiActiva(
+      generacion.id,
+      {
+        estado: 'GENERANDO',
+        mensajeEstado: 'Generando plan con IA',
+        proveedorActual: 'automático',
+        iniciadoEn: new Date(),
+      },
+    );
+
+    if (!generacionEnEjecucion) {
+      return;
+    }
 
     try {
-      const solicitud = this.construirSolicitud(generacion);
+      const solicitud = this.construirSolicitud(generacionEnEjecucion);
       const respuesta = await this.generarPlanSemanalUseCase.execute(solicitud);
 
-      await this.generacionRepo.actualizar(generacion.id, {
+      await this.generacionRepo.actualizarSiActiva(generacion.id, {
         estado: 'COMPLETADO',
         mensajeEstado: 'Plan generado correctamente',
         respuestaJson: respuesta,
@@ -55,12 +62,19 @@ export class EjecutarGeneracionPlanSemanalBackgroundService {
           ? error.message
           : 'No se pudo generar el plan con IA';
 
-      await this.generacionRepo.actualizar(generacion.id, {
-        estado: 'ERROR',
-        mensajeEstado: 'La generación falló',
-        errorMensaje: mensaje,
-        finalizadoEn: new Date(),
-      });
+      const generacionError = await this.generacionRepo.actualizarSiActiva(
+        generacion.id,
+        {
+          estado: 'ERROR',
+          mensajeEstado: 'La generación falló',
+          errorMensaje: mensaje,
+          finalizadoEn: new Date(),
+        },
+      );
+
+      if (!generacionError) {
+        return;
+      }
 
       this.logger.error(
         `Error ejecutando generación IA ${generacion.id}: ${mensaje}`,
