@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, In, IsNull, Repository } from 'typeorm';
+import type { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 
 import { GeneracionPlanIaEntity } from 'src/domain/entities/GeneracionPlanIa/generacion-plan-ia.entity';
 import {
   ActualizarGeneracionPlanIaInput,
   BuscarGeneracionActivaInput,
   CrearGeneracionPlanIaInput,
+  ExpirarGeneracionesPlanIaVencidasGlobalInput,
   ExpirarGeneracionesPlanIaVencidasInput,
   GeneracionPlanIaRepository,
 } from 'src/domain/repositories/generacion-plan-ia.repository';
@@ -14,6 +16,8 @@ import {
 import { GeneracionPlanIaOrmEntity } from '../entities/generacion-plan-ia.entity';
 
 const ESTADOS_ACTIVOS = ['PENDIENTE', 'GENERANDO'] as const;
+
+type CambiosGeneracionPlanIa = QueryDeepPartialEntity<GeneracionPlanIaOrmEntity>;
 
 @Injectable()
 export class GeneracionPlanIaRepositoryImpl
@@ -121,6 +125,59 @@ export class GeneracionPlanIaRepositoryImpl
     return resultado.affected ?? 0;
   }
 
+  async expirarActivasVencidasGlobal(
+    input: ExpirarGeneracionesPlanIaVencidasGlobalInput,
+  ): Promise<number> {
+    const resultado = await this.repo
+      .createQueryBuilder()
+      .update(GeneracionPlanIaOrmEntity)
+      .set({
+        estado: 'ERROR',
+        mensajeEstado: input.mensajeEstado,
+        errorMensaje: input.errorMensaje,
+        finalizadoEn: input.finalizadoEn,
+      })
+      .where('estado IN (:...estadosActivos)', {
+        estadosActivos: [...ESTADOS_ACTIVOS],
+      })
+      .andWhere(
+        `(
+          (estado = :estadoPendiente AND creado_en < :fechaCorte)
+          OR
+          (estado = :estadoGenerando AND COALESCE(iniciado_en, actualizado_en, creado_en) < :fechaCorte)
+        )`,
+        {
+          estadoPendiente: 'PENDIENTE',
+          estadoGenerando: 'GENERANDO',
+          fechaCorte: input.fechaCorte,
+        },
+      )
+      .execute();
+
+    return resultado.affected ?? 0;
+  }
+
+  async actualizarSiActiva(
+    id: number,
+    input: ActualizarGeneracionPlanIaInput,
+  ): Promise<GeneracionPlanIaEntity | null> {
+    const resultado = await this.repo
+      .createQueryBuilder()
+      .update(GeneracionPlanIaOrmEntity)
+      .set(this.crearCambiosActualizacion(input))
+      .where('id_generacion_plan_ia = :id', { id })
+      .andWhere('estado IN (:...estadosActivos)', {
+        estadosActivos: [...ESTADOS_ACTIVOS],
+      })
+      .execute();
+
+    if (!resultado.affected) {
+      return null;
+    }
+
+    return this.obtenerPorId(id);
+  }
+
   async actualizar(
     id: number,
     input: ActualizarGeneracionPlanIaInput,
@@ -155,6 +212,41 @@ export class GeneracionPlanIaRepositoryImpl
     }
 
     return this.toDomain(await this.repo.save(orm));
+  }
+
+  private crearCambiosActualizacion(
+    input: ActualizarGeneracionPlanIaInput,
+  ): CambiosGeneracionPlanIa {
+    const cambios: CambiosGeneracionPlanIa = {
+      estado: input.estado,
+    };
+
+    if (input.proveedorActual !== undefined) {
+      cambios.proveedorActual = input.proveedorActual;
+    }
+    if (input.mensajeEstado !== undefined) {
+      cambios.mensajeEstado = input.mensajeEstado;
+    }
+    if (input.errorMensaje !== undefined) {
+      cambios.errorMensaje = input.errorMensaje;
+    }
+    if (input.respuestaJson !== undefined) {
+      cambios.respuestaJson =
+        input.respuestaJson === null
+          ? () => 'NULL'
+          : (input.respuestaJson as CambiosGeneracionPlanIa['respuestaJson']);
+    }
+    if (input.planAlimentacionId !== undefined) {
+      cambios.planAlimentacionId = input.planAlimentacionId;
+    }
+    if (input.iniciadoEn !== undefined) {
+      cambios.iniciadoEn = input.iniciadoEn;
+    }
+    if (input.finalizadoEn !== undefined) {
+      cambios.finalizadoEn = input.finalizadoEn;
+    }
+
+    return cambios;
   }
 
   private toDomain(orm: GeneracionPlanIaOrmEntity): GeneracionPlanIaEntity {

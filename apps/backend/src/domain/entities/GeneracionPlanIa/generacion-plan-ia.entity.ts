@@ -2,7 +2,8 @@ export type EstadoGeneracionPlanIa =
   | 'PENDIENTE'
   | 'GENERANDO'
   | 'COMPLETADO'
-  | 'ERROR';
+  | 'ERROR'
+  | 'CANCELADO';
 
 export class GeneracionPlanIaEntity {
   constructor(

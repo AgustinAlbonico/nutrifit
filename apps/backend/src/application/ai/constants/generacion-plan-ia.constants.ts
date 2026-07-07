@@ -6,6 +6,11 @@ export const MENSAJE_GENERACION_PLAN_IA_VENCIDA =
 export const ERROR_GENERACION_PLAN_IA_VENCIDA =
   'La generación quedó pendiente después de una interrupción. Podés iniciar una nueva generación.';
 
+export const MENSAJE_GENERACION_PLAN_IA_CANCELADA = 'Generación cancelada';
+
+export const ERROR_GENERACION_PLAN_IA_CANCELADA =
+  'La generación fue cancelada por el usuario.';
+
 export function obtenerFechaCorteGeneracionPlanIaVencida(): Date {
   return new Date(Date.now() - DURACION_MAXIMA_GENERACION_PLAN_IA_MS);
 }
