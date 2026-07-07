@@ -52,17 +52,16 @@ export class OpenCodeZenService implements IAiProviderService {
             {
               role: 'system',
               content:
-                'Eres un asistente de nutrición profesional. DEBES responder ÚNICAMENTE con un JSON válido que coincida exactamente con el esquema proporcionado. No incluyas texto adicional, markdown ni explicaciones fuera del JSON.',
+                'Eres un asistente de nutrición profesional. DEBES responder ÚNICAMENTE con un JSON válido que coincida exactamente con el esquema proporcionado. No incluyas texto adicional, markdown ni explicaciones fuera del JSON. Tu respuesta completa debe ser parseable como JSON.',
             },
             {
               role: 'user',
-              content: `${prompt}\n\nEsquema JSON requerido:\n${JSON.stringify(schema, null, 2)}\n\nResponde SOLO con el JSON, sin texto adicional.`,
+              content: `${prompt}\n\nEsquema JSON requerido:\n${JSON.stringify(schema, null, 2)}\n\nResponde SOLO con el JSON, sin texto adicional, sin bloques de código markdown y sin comentarios.`,
             },
           ],
           model: this.model,
           temperature,
           max_tokens: maxTokens,
-          response_format: { type: 'json_object' },
         },
         { timeout: timeoutMs },
       );
