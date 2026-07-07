@@ -7,6 +7,7 @@ import {
   ActualizarGeneracionPlanIaInput,
   BuscarGeneracionActivaInput,
   CrearGeneracionPlanIaInput,
+  ExpirarGeneracionesPlanIaVencidasInput,
   GeneracionPlanIaRepository,
 } from 'src/domain/repositories/generacion-plan-ia.repository';
 
@@ -75,6 +76,49 @@ export class GeneracionPlanIaRepositoryImpl
     });
 
     return orm ? this.toDomain(orm) : null;
+  }
+
+  async expirarActivasVencidas(
+    input: ExpirarGeneracionesPlanIaVencidasInput,
+  ): Promise<number> {
+    const query = this.repo
+      .createQueryBuilder()
+      .update(GeneracionPlanIaOrmEntity)
+      .set({
+        estado: 'ERROR',
+        mensajeEstado: input.mensajeEstado,
+        errorMensaje: input.errorMensaje,
+        finalizadoEn: input.finalizadoEn,
+      })
+      .where('id_socio = :socioId', { socioId: input.socioId })
+      .andWhere('id_gimnasio = :gimnasioId', {
+        gimnasioId: input.gimnasioId,
+      })
+      .andWhere('estado IN (:...estadosActivos)', {
+        estadosActivos: [...ESTADOS_ACTIVOS],
+      })
+      .andWhere(
+        `(
+          (estado = :estadoPendiente AND creado_en < :fechaCorte)
+          OR
+          (estado = :estadoGenerando AND COALESCE(iniciado_en, actualizado_en, creado_en) < :fechaCorte)
+        )`,
+        {
+          estadoPendiente: 'PENDIENTE',
+          estadoGenerando: 'GENERANDO',
+          fechaCorte: input.fechaCorte,
+        },
+      );
+
+    if (typeof input.planAlimentacionId === 'number') {
+      query.andWhere(
+        '(id_plan_alimentacion = :planAlimentacionId OR id_plan_alimentacion IS NULL)',
+        { planAlimentacionId: input.planAlimentacionId },
+      );
+    }
+
+    const resultado = await query.execute();
+    return resultado.affected ?? 0;
   }
 
   async actualizar(

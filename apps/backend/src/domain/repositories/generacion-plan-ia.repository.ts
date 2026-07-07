@@ -33,6 +33,14 @@ export interface ActualizarGeneracionPlanIaInput {
   finalizadoEn?: Date | null;
 }
 
+export interface ExpirarGeneracionesPlanIaVencidasInput
+  extends BuscarGeneracionActivaInput {
+  fechaCorte: Date;
+  mensajeEstado: string;
+  errorMensaje: string;
+  finalizadoEn: Date;
+}
+
 export abstract class GeneracionPlanIaRepository {
   abstract crear(
     input: CrearGeneracionPlanIaInput,
@@ -43,6 +51,10 @@ export abstract class GeneracionPlanIaRepository {
   abstract obtenerActiva(
     input: BuscarGeneracionActivaInput,
   ): Promise<GeneracionPlanIaEntity | null>;
+
+  abstract expirarActivasVencidas(
+    input: ExpirarGeneracionesPlanIaVencidasInput,
+  ): Promise<number>;
 
   abstract actualizar(
     id: number,

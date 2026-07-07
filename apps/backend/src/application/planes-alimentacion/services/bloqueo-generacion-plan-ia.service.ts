@@ -5,6 +5,11 @@ import {
   GENERACION_PLAN_IA_REPOSITORY,
   GeneracionPlanIaRepository,
 } from 'src/domain/repositories/generacion-plan-ia.repository';
+import {
+  ERROR_GENERACION_PLAN_IA_VENCIDA,
+  MENSAJE_GENERACION_PLAN_IA_VENCIDA,
+  obtenerFechaCorteGeneracionPlanIaVencida,
+} from 'src/application/ai/constants/generacion-plan-ia.constants';
 
 export interface VerificarBloqueoGeneracionPlanIaInput {
   socioId: number;
@@ -22,10 +27,22 @@ export class BloqueoGeneracionPlanIaService {
   async verificarSinGeneracionActiva(
     input: VerificarBloqueoGeneracionPlanIaInput,
   ): Promise<void> {
-    const activa = await this.generacionRepo.obtenerActiva({
+    const busquedaActiva = {
       socioId: input.socioId,
       gimnasioId: input.gimnasioId,
       planAlimentacionId: input.planAlimentacionId ?? null,
+    };
+
+    await this.generacionRepo.expirarActivasVencidas({
+      ...busquedaActiva,
+      fechaCorte: obtenerFechaCorteGeneracionPlanIaVencida(),
+      mensajeEstado: MENSAJE_GENERACION_PLAN_IA_VENCIDA,
+      errorMensaje: ERROR_GENERACION_PLAN_IA_VENCIDA,
+      finalizadoEn: new Date(),
+    });
+
+    const activa = await this.generacionRepo.obtenerActiva({
+      ...busquedaActiva,
     });
 
     if (!activa) {
