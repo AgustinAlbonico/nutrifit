@@ -45,14 +45,26 @@ export function useMacrosPorDia(
 
     for (const diaData of estructura) {
       if (!diaData?.dia) continue;
-      const acc = base[diaData.dia] ?? { ...MACROS_VACIOS };
+      const acc = { ...MACROS_VACIOS };
       for (const comida of diaData.comidas ?? []) {
-        for (const alt of comida.alternativas ?? []) {
-          acc.calorias += alt.calorias ?? 0;
-          acc.proteinas += alt.proteinas ?? 0;
-          acc.carbohidratos += alt.carbohidratos ?? 0;
-          acc.grasas += alt.grasas ?? 0;
-        }
+        const alternativas = comida.alternativas ?? [];
+        if (alternativas.length === 0) continue;
+        // Cada comida aporta el PROMEDIO de sus alternativas: el socio elige
+        // UNA, no todas. Sumar todas triplicaba los totales.
+        const suma = alternativas.reduce(
+          (parcial, alt) => ({
+            calorias: parcial.calorias + (alt.calorias ?? 0),
+            proteinas: parcial.proteinas + (alt.proteinas ?? 0),
+            carbohidratos: parcial.carbohidratos + (alt.carbohidratos ?? 0),
+            grasas: parcial.grasas + (alt.grasas ?? 0),
+          }),
+          { ...MACROS_VACIOS },
+        );
+        const n = alternativas.length;
+        acc.calorias += suma.calorias / n;
+        acc.proteinas += suma.proteinas / n;
+        acc.carbohidratos += suma.carbohidratos / n;
+        acc.grasas += suma.grasas / n;
       }
       base[diaData.dia] = acc;
     }

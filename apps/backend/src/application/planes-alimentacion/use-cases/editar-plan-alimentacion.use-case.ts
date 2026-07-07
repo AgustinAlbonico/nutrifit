@@ -424,11 +424,6 @@ export class EditarPlanAlimentacionUseCase implements BaseUseCase {
           const carbohidratos = Number(item.carbohidratos ?? 0);
           const grasas = Number(item.grasas ?? 0);
 
-          resumen.calorias += calorias;
-          resumen.proteinas += proteinas;
-          resumen.carbohidratos += carbohidratos;
-          resumen.grasas += grasas;
-
           const alimento = item.alimento as unknown as { idAlimento: number };
 
           return {
@@ -446,6 +441,25 @@ export class EditarPlanAlimentacionUseCase implements BaseUseCase {
             grasas,
           };
         });
+
+        // Cada comida aporta el PROMEDIO de sus alternativas: el socio elige
+        // UNA, no todas. Sumar todas triplicaba los totales con N alternativas.
+        if (alternativas.length > 0) {
+          const suma = alternativas.reduce(
+            (parcial, alt) => ({
+              calorias: parcial.calorias + alt.calorias,
+              proteinas: parcial.proteinas + alt.proteinas,
+              carbohidratos: parcial.carbohidratos + alt.carbohidratos,
+              grasas: parcial.grasas + alt.grasas,
+            }),
+            { calorias: 0, proteinas: 0, carbohidratos: 0, grasas: 0 },
+          );
+          const n = alternativas.length;
+          resumen.calorias += suma.calorias / n;
+          resumen.proteinas += suma.proteinas / n;
+          resumen.carbohidratos += suma.carbohidratos / n;
+          resumen.grasas += suma.grasas / n;
+        }
 
         return {
           tipo: opcion.tipoComida as never,
