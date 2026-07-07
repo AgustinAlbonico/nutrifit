@@ -849,16 +849,24 @@ function CampoModeloConCarga({
               Cargar modelos
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="end">
-            <Command>
-              <CommandInput placeholder="Buscar modelo..." />
-              <CommandList>
-                <CommandEmpty>
+          <PopoverContent
+            className="w-[420px] p-0"
+            align="start"
+            sideOffset={6}
+          >
+            <Command shouldFilter>
+              <CommandInput
+                placeholder="Buscar modelo..."
+                className="h-10 border-0 focus:ring-0"
+              />
+              <CommandList className="max-h-[320px]">
+                <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
                   {modelos === undefined
                     ? 'Hacé clic en "Cargar modelos" para listar.'
                     : modelos.ok
-                      ? 'Sin resultados.'
-                      : modelos.mensaje ?? 'No se pudieron cargar los modelos.'}
+                      ? 'Sin resultados para tu búsqueda.'
+                      : modelos.mensaje ??
+                        'No se pudieron cargar los modelos.'}
                 </CommandEmpty>
                 {listado.map((modelo) => (
                   <CommandItem
@@ -870,19 +878,20 @@ function CampoModeloConCarga({
                       if (match) onChange(match.id);
                       setAbierto(false);
                     }}
+                    className="flex items-start gap-2 py-2.5"
                   >
                     <Check
                       className={cn(
-                        'mr-2 h-4 w-4 shrink-0',
+                        'mt-0.5 h-4 w-4 shrink-0',
                         valor === modelo.id ? 'opacity-100' : 'opacity-0',
                       )}
                     />
-                    <div className="flex min-w-0 flex-1 items-baseline gap-2">
-                      <span className="truncate font-mono text-xs">
+                    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="truncate font-mono text-xs font-medium">
                         {modelo.id}
                       </span>
                       {modelo.nombre ? (
-                        <span className="shrink-0 text-xs text-muted-foreground">
+                        <span className="truncate text-[11px] text-muted-foreground">
                           {modelo.nombre}
                         </span>
                       ) : null}
