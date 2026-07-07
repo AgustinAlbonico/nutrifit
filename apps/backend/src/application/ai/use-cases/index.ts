@@ -6,6 +6,7 @@ export {
 export { GenerarPlanSemanalUseCase } from './generar-plan-semanal.use-case';
 export { EjecutarGeneracionPlanSemanalBackgroundService } from './ejecutar-generacion-plan-semanal-background.service';
 export { IniciarGeneracionPlanSemanalUseCase } from './iniciar-generacion-plan-semanal.use-case';
+export { CancelarGeneracionPlanSemanalUseCase } from './cancelar-generacion-plan-semanal.use-case';
 export { ObtenerGeneracionPlanActivaUseCase } from './obtener-generacion-plan-activa.use-case';
 export { ObtenerGeneracionPlanSemanalUseCase } from './obtener-generacion-plan-semanal.use-case';
 export { RegenerarPlanSemanalUseCase } from './regenerar-plan-semanal.use-case';

@@ -26,6 +26,7 @@ import {
   GenerarRecomendacionComidaUseCase,
   GenerarPlanSemanalUseCase,
   IniciarGeneracionPlanSemanalUseCase,
+  CancelarGeneracionPlanSemanalUseCase,
   ObtenerGeneracionPlanActivaUseCase,
   ObtenerGeneracionPlanSemanalUseCase,
   RegenerarPlanSemanalUseCase,
@@ -54,6 +55,7 @@ export class AiController {
     private readonly generarRecomendacionUseCase: GenerarRecomendacionComidaUseCase,
     private readonly generarPlanSemanalUseCase: GenerarPlanSemanalUseCase,
     private readonly iniciarGeneracionPlanSemanalUseCase: IniciarGeneracionPlanSemanalUseCase,
+    private readonly cancelarGeneracionPlanSemanalUseCase: CancelarGeneracionPlanSemanalUseCase,
     private readonly obtenerGeneracionPlanActivaUseCase: ObtenerGeneracionPlanActivaUseCase,
     private readonly obtenerGeneracionPlanSemanalUseCase: ObtenerGeneracionPlanSemanalUseCase,
     private readonly regenerarPlanSemanalUseCase: RegenerarPlanSemanalUseCase,
@@ -174,6 +176,22 @@ export class AiController {
       socioId,
       gimnasioId: user.gimnasioId,
       planAlimentacionId,
+    });
+  }
+
+  @Post('plan-semanal/generaciones/:id/cancelar')
+  @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN, RolEnum.SUPERADMIN)
+  @Actions(ACCIONES.PLANES_IA_GENERAR)
+  @ApiOperation({ summary: 'Cancelar generación de plan semanal IA' })
+  @ApiResponse({ status: 200, description: 'Generación cancelada o terminal' })
+  @ApiResponse({ status: 404, description: 'Generación no encontrada' })
+  async cancelarGeneracionPlanSemanal(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { gimnasioId: number },
+  ) {
+    return this.cancelarGeneracionPlanSemanalUseCase.execute({
+      generacionId: id,
+      gimnasioId: user.gimnasioId,
     });
   }
 
