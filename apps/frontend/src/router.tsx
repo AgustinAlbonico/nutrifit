@@ -35,6 +35,7 @@ import { GestionAlimentosPage } from '@/pages/GestionAlimentosPage';
 import { AdminAuditoriaPage } from '@/pages/AdminAuditoriaPage';
 import { NotificacionesPage } from '@/features/notificaciones/pages/NotificacionesPage';
 import { GimnasiosListPage } from '@/pages/admin/GimnasiosListPage';
+import { SuperAdminIaConfigPage } from '@/pages/admin/SuperAdminIaConfigPage';
 import { GimnasioWizardPage } from '@/pages/admin/GimnasioWizardPage';
 import { GimnasioDetailPage } from '@/pages/admin/GimnasioDetailPage';
 import { UsuarioPermisosPage } from '@/pages/admin/UsuarioPermisosPage';
@@ -374,6 +375,14 @@ const gimnasioDetalleRoute = createRoute({
   beforeLoad: requireSuperadmin,
 });
 
+// Configuración IA (solo SUPERADMIN)
+const iaConfiguracionRoute = createRoute({
+  getParentRoute: () => authLayoutRoute,
+  path: '/admin/ia-configuracion',
+  component: SuperAdminIaConfigPage,
+  beforeLoad: requireSuperadmin,
+});
+
 // Usuario permisos route (ADMIN/SUPERADMIN)
 const usuarioPermisosRoute = createRoute({
   getParentRoute: () => authLayoutRoute,
@@ -446,6 +455,7 @@ const routeTree = rootRoute.addChildren([
     gimnasiosListRoute,
     gimnasioNuevoRoute,
     gimnasioDetalleRoute,
+    iaConfiguracionRoute,
     usuarioPermisosRoute,
   ]),
 ]);

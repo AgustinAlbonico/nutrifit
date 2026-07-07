@@ -20,6 +20,7 @@ import {
   X,
   UserCog,
   Apple,
+  Sparkles,
 } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -177,6 +178,12 @@ export function Sidebar() {
       to: '/admin/gimnasios',
       label: 'Gimnasios',
       icon: Building2,
+      roles: ['SUPERADMIN'],
+    },
+    {
+      to: '/admin/ia-configuracion',
+      label: 'Configuración IA',
+      icon: Sparkles,
       roles: ['SUPERADMIN'],
     },
   ];
