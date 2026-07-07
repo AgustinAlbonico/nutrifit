@@ -16,6 +16,7 @@ import { EnvironmentConfigService } from 'src/infrastructure/config/environment-
 
 const TEMPERATURA_DEFAULT = 0.7;
 const MAX_TOKENS_DEFAULT = 2048;
+const MAX_TOKENS_MINIMO_OPENCODE = 8192;
 const TIMEOUT_DEFAULT_MS = 120000;
 
 @Injectable()
@@ -80,9 +81,20 @@ export class OpenCodeZenService implements IAiProviderService {
             'La API de OpenCode Zen rechazó el contenido (finish_reason=content_filter).',
           );
         }
+        if (finishReason === 'length') {
+          throw new Error(
+            `JSON truncado por OpenCode Zen (finish_reason=length, max_tokens=${maxTokens}).`,
+          );
+        }
         throw new ServiceUnavailableError(
           `La API de OpenCode Zen no devolvió contenido (finish_reason=${finishReason ?? 'desconocido'}).`,
           { proveedor: 'opencode' },
+        );
+      }
+
+      if (finishReason === 'length') {
+        throw new Error(
+          `JSON truncado por OpenCode Zen (finish_reason=length, max_tokens=${maxTokens}).`,
         );
       }
 
@@ -136,9 +148,12 @@ export class OpenCodeZenService implements IAiProviderService {
     return {
       schema,
       temperature: this.obtenerNumero(registro.temperature, TEMPERATURA_DEFAULT),
-      maxTokens: this.obtenerNumero(
-        registro.max_tokens ?? registro.maxTokens,
-        MAX_TOKENS_DEFAULT,
+      maxTokens: Math.max(
+        this.obtenerNumero(
+          registro.max_tokens ?? registro.maxTokens,
+          MAX_TOKENS_DEFAULT,
+        ),
+        MAX_TOKENS_MINIMO_OPENCODE,
       ),
       timeoutMs: this.obtenerNumero(registro.timeoutMs, TIMEOUT_DEFAULT_MS),
     };
