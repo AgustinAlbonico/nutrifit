@@ -27,6 +27,7 @@ export interface GuardarConfiguracionIaDto {
 export interface ResultadoPruebaIa {
   ok: boolean;
   mensaje: string;
+  latencyMs?: number;
 }
 
 export interface ResultadoReinicioIa {

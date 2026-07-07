@@ -173,7 +173,7 @@ export class IaConfiguracionService implements OnModuleInit {
   probarConexion(
     provider: ProveedorIa,
     dto: GuardarIaConfiguracionDto = {},
-  ): Promise<{ ok: boolean; mensaje: string }> {
+  ): Promise<{ ok: boolean; mensaje: string; latencyMs?: number }> {
     this.validarProvider(provider);
 
     const configuracion = this.cache.get(provider);
@@ -202,10 +202,82 @@ export class IaConfiguracionService implements OnModuleInit {
       });
     }
 
-    return Promise.resolve({
-      ok: true,
-      mensaje: `Configuración de ${provider} lista para usar.`,
-    });
+    return this.probarConexionHttp(provider, apiKey);
+  }
+
+  private async probarConexionHttp(
+    provider: ProveedorIa,
+    apiKey: string,
+  ): Promise<{ ok: boolean; mensaje: string; latencyMs?: number }> {
+    const baseUrl =
+      this.cache.get(provider)?.baseUrl ?? this.obtenerBaseUrlDefault(provider);
+    if (!baseUrl) {
+      return {
+        ok: false,
+        mensaje: `No se pudo determinar la base URL de ${provider}.`,
+      };
+    }
+
+    const urlTest =
+      provider === 'gemini'
+        ? `${baseUrl.replace(/\/$/, '')}/models?key=${encodeURIComponent(apiKey)}`
+        : `${baseUrl.replace(/\/$/, '')}/models`;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const inicio = Date.now();
+
+    try {
+      const headers: Record<string, string> = { Accept: 'application/json' };
+      if (provider !== 'gemini') {
+        headers.Authorization = `Bearer ${apiKey}`;
+      }
+
+      const respuesta = await fetch(urlTest, {
+        method: 'GET',
+        headers,
+        signal: controller.signal,
+      });
+
+      const latencyMs = Date.now() - inicio;
+
+      if (respuesta.ok) {
+        return {
+          ok: true,
+          mensaje: `Conexion OK con ${provider} (HTTP ${respuesta.status}, ${latencyMs}ms)`,
+          latencyMs,
+        };
+      }
+
+      if (respuesta.status === 401 || respuesta.status === 403) {
+        return {
+          ok: false,
+          mensaje: `API key invalida o sin permisos (HTTP ${respuesta.status})`,
+          latencyMs,
+        };
+      }
+
+      return {
+        ok: false,
+        mensaje: `${provider} respondio HTTP ${respuesta.status} (${latencyMs}ms)`,
+        latencyMs,
+      };
+    } catch (error) {
+      const latencyMs = Date.now() - inicio;
+      const detalle =
+        error instanceof Error && error.name === 'AbortError'
+          ? 'timeout (5s)'
+          : error instanceof Error
+            ? error.message
+            : 'error desconocido';
+      return {
+        ok: false,
+        mensaje: `No se pudo contactar ${provider}: ${detalle} (${latencyMs}ms)`,
+        latencyMs,
+      };
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   async obtenerModelosRemotos(
