@@ -48,6 +48,7 @@ export interface ContextoPromptPlanSemanal {
   diasAGenerar: number;
   diasEspecificos?: DiaSemana[];
   comidasPorDia: number;
+  tiposComidaEspecificos?: TipoComida[];
   alternativasPorComida: number;
   fechaInicio: Date;
   /** Nombres de las 26 categorías de grupo alimenticio (para que la IA elija categoriaNombre válido). */
@@ -77,6 +78,8 @@ export class PromptPlanSemanalBuilder {
     const lineas: string[] = [];
     const diasSolicitados = this.obtenerDiasSolicitados(ctx);
     const cantidadDias = diasSolicitados.length;
+    const tiposComidaSolicitados = this.obtenerTiposComidaSolicitados(ctx);
+    const cantidadComidas = tiposComidaSolicitados.length;
 
     lineas.push(
       'Eres un nutricionista profesional argentino. Tu tarea es generar un plan de alimentación semanal detallado para un socio.',
@@ -86,7 +89,7 @@ export class PromptPlanSemanalBuilder {
     lineas.push('REGLAS DURAS (no negociables):');
     lineas.push(`1. El plan debe tener EXACTAMENTE ${cantidadDias} días.`);
     lineas.push(
-      `2. Cada día debe tener EXACTAMENTE ${ctx.comidasPorDia} comidas.`,
+      `2. Cada día debe tener EXACTAMENTE ${cantidadComidas} comidas.`,
     );
     lineas.push(
       `3. Cada comida debe tener EXACTAMENTE ${ctx.alternativasPorComida} alternativas.`,
@@ -128,10 +131,10 @@ export class PromptPlanSemanalBuilder {
       `- Debe haber ${cantidadDias} objetos dentro de estructura, uno por cada día solicitado.`,
     );
     lineas.push(
-      `- Cada día debe tener ${ctx.comidasPorDia} comidas y cada comida ${ctx.alternativasPorComida} alternativas.`,
+      `- Cada día debe tener ${cantidadComidas} comidas y cada comida ${ctx.alternativasPorComida} alternativas.`,
     );
     lineas.push(
-      `- Debe haber ${cantidadDias * ctx.comidasPorDia * ctx.alternativasPorComida} alternativas en total.`,
+      `- Debe haber ${cantidadDias * cantidadComidas * ctx.alternativasPorComida} alternativas en total.`,
     );
     lineas.push(
       '- No resumas, no uses puntos suspensivos y no omitas días aunque el JSON sea largo.',
@@ -165,6 +168,7 @@ export class PromptPlanSemanalBuilder {
   private construirUserPrompt(ctx: ContextoPromptPlanSemanal): string {
     const lineas: string[] = [];
     const diasSolicitados = this.obtenerDiasSolicitados(ctx);
+    const tiposComidaSolicitados = this.obtenerTiposComidaSolicitados(ctx);
 
     lineas.push('CONTEXTO DEL SOCIO:');
     lineas.push(
@@ -204,7 +208,8 @@ export class PromptPlanSemanalBuilder {
     lineas.push('PARÁMETROS DEL PLAN:');
     lineas.push(`- Días a generar: ${diasSolicitados.length}`);
     lineas.push(`- Días exactos: ${diasSolicitados.join(', ')}`);
-    lineas.push(`- Comidas por día: ${ctx.comidasPorDia}`);
+    lineas.push(`- Comidas por día: ${tiposComidaSolicitados.length}`);
+    lineas.push(`- Tipos exactos de comida: ${tiposComidaSolicitados.join(', ')}`);
     lineas.push(`- Alternativas por comida: ${ctx.alternativasPorComida}`);
     lineas.push(
       `- Fecha de inicio: ${ctx.fechaInicio.toISOString().split('T')[0]}`,
@@ -219,7 +224,7 @@ export class PromptPlanSemanalBuilder {
 
   private construirEsquemaJson(ctx: ContextoPromptPlanSemanal): string {
     const diasEsperados = this.obtenerDiasSolicitados(ctx);
-    const tiposEsperados = TODOS_TIPOS_COMIDA.slice(0, ctx.comidasPorDia);
+    const tiposEsperados = this.obtenerTiposComidaSolicitados(ctx);
     const ejemploDia = diasEsperados[0];
     const ejemploTipo = tiposEsperados[0];
     const categoriasTexto = ctx.categoriasGruposAlimenticios
@@ -298,6 +303,13 @@ Si inventás un alimento que no existe en el catálogo, declarálo en alimentosN
       return ctx.diasEspecificos;
     }
     return TODOS_LOS_DIAS.slice(0, ctx.diasAGenerar);
+  }
+
+  private obtenerTiposComidaSolicitados(ctx: ContextoPromptPlanSemanal): TipoComida[] {
+    if (ctx.tiposComidaEspecificos && ctx.tiposComidaEspecificos.length > 0) {
+      return ctx.tiposComidaEspecificos;
+    }
+    return TODOS_TIPOS_COMIDA.slice(0, ctx.comidasPorDia);
   }
 
   private consolidarNotas(

@@ -61,7 +61,7 @@ export class OpenCodeZenService implements IAiProviderService {
             },
             {
               role: 'user',
-              content: `${prompt}\n\nEsquema JSON requerido:\n${JSON.stringify(schema, null, 2)}\n\nResponde SOLO con el JSON, sin texto adicional, sin bloques de código markdown y sin comentarios.`,
+              content: this.construirPromptUsuario(prompt, schema),
             },
           ],
           model: this.model,
@@ -143,7 +143,7 @@ export class OpenCodeZenService implements IAiProviderService {
     const schema =
       registro.schema && typeof registro.schema === 'object'
         ? (registro.schema as object)
-        : configuracion;
+        : undefined;
 
     return {
       schema,
@@ -157,6 +157,14 @@ export class OpenCodeZenService implements IAiProviderService {
       ),
       timeoutMs: this.obtenerNumero(registro.timeoutMs, TIMEOUT_DEFAULT_MS),
     };
+  }
+
+  private construirPromptUsuario(prompt: string, schema: object | undefined): string {
+    const schemaTexto = schema
+      ? `\n\nEsquema JSON requerido:\n${JSON.stringify(schema, null, 2)}`
+      : '';
+
+    return `${prompt}${schemaTexto}\n\nResponde SOLO con el JSON, sin texto adicional, sin bloques de código markdown y sin comentarios.`;
   }
 
   private obtenerNumero(valor: unknown, valorDefault: number): number {
