@@ -143,7 +143,10 @@ const TIMEOUT_BACKOFF_MS = 5000;
 const TEMPERATURA_PLAN_COMPLETO = 0.4;
 const MAX_TOKENS_PLAN_COMPLETO = 8192;
 const TIMEOUT_PLAN_COMPLETO_MS = 120000;
-const CONCURRENCIA_GENERACION_COMIDAS = 2;
+// Cada comida es una llamada IA independiente. Generar 4 en paralelo reduce
+// el tiempo total (~28 comidas) sin saturar el proveedor. Si subís este valor
+// y empezás a ver rate limits del proveedor, bajalo de nuevo.
+const CONCURRENCIA_GENERACION_COMIDAS = 4;
 
 const DIAS_GENERACION: DiaSemana[] = [
   DiaSemana.LUNES,
