@@ -66,10 +66,20 @@ export class GroqService implements IAiProviderService {
         { timeout: timeoutMs },
       );
 
-      const content = response.choices[0].message?.content;
+      const choice = response.choices[0];
+      const content = choice.message?.content;
+      const finishReason = choice.finish_reason;
 
       if (!content) {
-        throw new Error('La API de Groq no devolvió contenido');
+        if (finishReason === 'content_filter') {
+          throw new Error(
+            'La API de Groq rechazó el contenido (finish_reason=content_filter).',
+          );
+        }
+        throw new ServiceUnavailableError(
+          `La API de Groq no devolvió contenido (finish_reason=${finishReason ?? 'desconocido'}).`,
+          { proveedor: 'groq' },
+        );
       }
 
       const parsed = JSON.parse(content) as T;

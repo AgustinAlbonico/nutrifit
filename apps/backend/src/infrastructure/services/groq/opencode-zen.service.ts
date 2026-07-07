@@ -67,10 +67,20 @@ export class OpenCodeZenService implements IAiProviderService {
         { timeout: timeoutMs },
       );
 
-      const content = response.choices[0].message?.content;
+      const choice = response.choices[0];
+      const content = choice.message?.content;
+      const finishReason = choice.finish_reason;
 
       if (!content) {
-        throw new Error('La API de OpenCode Zen no devolvió contenido');
+        if (finishReason === 'content_filter') {
+          throw new Error(
+            'La API de OpenCode Zen rechazó el contenido (finish_reason=content_filter).',
+          );
+        }
+        throw new ServiceUnavailableError(
+          `La API de OpenCode Zen no devolvió contenido (finish_reason=${finishReason ?? 'desconocido'}).`,
+          { proveedor: 'opencode' },
+        );
       }
 
       this.logger.log('Respuesta de OpenCode Zen API procesada exitosamente');

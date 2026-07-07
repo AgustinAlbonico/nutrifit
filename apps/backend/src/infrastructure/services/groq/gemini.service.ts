@@ -92,13 +92,23 @@ export class GeminiService implements IAiProviderService {
       }
 
       const data = (await response.json()) as GeminiResponse;
-      const content = data.candidates?.[0]?.content?.parts
+      const candidate = data.candidates?.[0];
+      const content = candidate?.content?.parts
         ?.map((part) => part.text ?? '')
         .join('')
         .trim();
+      const finishReason = candidate?.finishReason;
 
       if (!content) {
-        throw new Error('La API de Gemini no devolvió contenido');
+        if (finishReason === 'SAFETY') {
+          throw new Error(
+            'La API de Gemini rechazó el contenido por seguridad (finishReason=SAFETY).',
+          );
+        }
+        throw new ServiceUnavailableError(
+          `La API de Gemini no devolvió contenido (finishReason=${finishReason ?? 'desconocido'}).`,
+          { proveedor: 'gemini' },
+        );
       }
 
       this.logger.log('Respuesta de Gemini API procesada exitosamente');
