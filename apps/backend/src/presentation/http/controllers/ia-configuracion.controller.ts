@@ -67,4 +67,12 @@ export class IaConfiguracionController {
   ) {
     return this.iaConfiguracionService.probarConexion(provider, dto);
   }
+
+  @Get(':provider/modelos')
+  async obtenerModelos(
+    @Param('provider') provider: ProveedorIa,
+    @Body() dto: GuardarIaConfiguracionDto = {},
+  ) {
+    return this.iaConfiguracionService.obtenerModelosRemotos(provider, dto);
+  }
 }

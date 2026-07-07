@@ -208,6 +208,163 @@ export class IaConfiguracionService implements OnModuleInit {
     });
   }
 
+  async obtenerModelosRemotos(
+    provider: ProveedorIa,
+    dto: GuardarIaConfiguracionDto = {},
+  ): Promise<{
+    ok: boolean;
+    modelos: Array<{ id: string; nombre?: string }>;
+    mensaje?: string;
+  }> {
+    this.validarProvider(provider);
+
+    const configuracion = this.cache.get(provider);
+    const apiKey = dto.apiKey?.trim() || this.obtenerApiKeyDescifrada(provider);
+    const baseUrl =
+      this.normalizarTextoNullable(dto.baseUrl) ??
+      configuracion?.baseUrl ??
+      this.obtenerBaseUrlDefault(provider);
+
+    if (!apiKey) {
+      return {
+        ok: false,
+        modelos: [],
+        mensaje: `El provider ${provider} no tiene API key configurada. Cargá la key primero o pasala en el body.`,
+      };
+    }
+
+    if (!baseUrl) {
+      return {
+        ok: false,
+        modelos: [],
+        mensaje: `No se pudo determinar la base URL de ${provider}.`,
+      };
+    }
+
+    const urlModelos =
+      provider === 'gemini'
+        ? `${baseUrl.replace(/\/$/, '')}/models?key=${encodeURIComponent(apiKey)}`
+        : `${baseUrl.replace(/\/$/, '')}/models`;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+
+    try {
+      const headers: Record<string, string> = { Accept: 'application/json' };
+      if (provider !== 'gemini') {
+        headers.Authorization = `Bearer ${apiKey}`;
+      }
+
+      const respuesta = await fetch(urlModelos, {
+        method: 'GET',
+        headers,
+        signal: controller.signal,
+      });
+
+      if (!respuesta.ok) {
+        if (respuesta.status === 401 || respuesta.status === 403) {
+          return {
+            ok: false,
+            modelos: [],
+            mensaje: `API key inválida o sin permisos (HTTP ${respuesta.status}).`,
+          };
+        }
+        return {
+          ok: false,
+          modelos: [],
+          mensaje: `El provider ${provider} respondio HTTP ${respuesta.status}.`,
+        };
+      }
+
+      const data = (await respuesta.json()) as Record<string, unknown>;
+      const modelos = this.normalizarModelos(provider, data);
+
+      if (modelos.length === 0) {
+        return {
+          ok: false,
+          modelos: [],
+          mensaje: `El provider ${provider} no devolvio modelos.`,
+        };
+      }
+
+      return { ok: true, modelos };
+    } catch (error) {
+      const detalle = this.describirErrorFetch(error);
+      return {
+        ok: false,
+        modelos: [],
+        mensaje: `No se pudieron obtener los modelos de ${provider}: ${detalle}`,
+      };
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  private normalizarModelos(
+    provider: ProveedorIa,
+    data: Record<string, unknown>,
+  ): Array<{ id: string; nombre?: string }> {
+    const lista: unknown[] =
+      provider === 'gemini'
+        ? Array.isArray(data['models'])
+          ? (data['models'] as unknown[])
+          : []
+        : Array.isArray(data['data'])
+          ? (data['data'] as unknown[])
+          : [];
+
+    const normalizados: Array<{ id: string; nombre?: string }> = [];
+
+    for (const item of lista) {
+      if (!item || typeof item !== 'object') continue;
+      const obj = item as Record<string, unknown>;
+
+      if (provider === 'gemini') {
+        const nombre = obj['name'];
+        if (typeof nombre === 'string' && nombre.length > 0) {
+          const id = nombre.startsWith('models/')
+            ? nombre.slice('models/'.length)
+            : nombre;
+          const display = obj['displayName'];
+          normalizados.push({
+            id,
+            nombre: typeof display === 'string' ? display : undefined,
+          });
+        }
+        continue;
+      }
+
+      const id = obj['id'];
+      if (typeof id === 'string' && id.length > 0) {
+        const owned = obj['owned_by'];
+        normalizados.push({
+          id,
+          nombre: typeof owned === 'string' ? owned : undefined,
+        });
+      }
+    }
+
+    return normalizados;
+  }
+
+  private describirErrorFetch(error: unknown): string {
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') return 'timeout (8s)';
+      return error.message;
+    }
+    return 'error desconocido';
+  }
+
+  private obtenerBaseUrlDefault(provider: ProveedorIa): string | undefined {
+    const defaults: Record<ProveedorIa, string | undefined> = {
+      opencode: 'https://opencode.ai/zen/v1',
+      groq: 'https://api.groq.com/openai/v1',
+      gemini: 'https://generativelanguage.googleapis.com/v1beta',
+      openrouter: 'https://openrouter.ai/api/v1',
+    };
+    return defaults[provider];
+  }
+
   private validarProvider(provider: string): asserts provider is ProveedorIa {
     if (!esProveedorIa(provider)) {
       throw new BadRequestError(

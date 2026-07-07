@@ -5,6 +5,7 @@ import type {
   ConfiguracionIa,
   GuardarConfiguracionIaDto,
   ProveedorIa,
+  ResultadoModelosIa,
   ResultadoPruebaIa,
   ResultadoReinicioIa,
 } from '@/types/iaConfiguracion';
@@ -78,6 +79,26 @@ export async function probarConexionIa(
   const data = desenvolverRespuestaApi<ResultadoPruebaIa>(respuesta);
   if (!data) {
     throw new Error('La respuesta del servidor no incluye el resultado de la prueba.');
+  }
+  return data;
+}
+
+export async function obtenerModelosIa(
+  provider: ProveedorIa,
+  dto: GuardarConfiguracionIaDto | undefined,
+  token: string | null,
+): Promise<ResultadoModelosIa> {
+  const respuesta = await apiRequest<ApiResponse<ResultadoModelosIa>>(
+    `${BASE_PATH}/${provider}/modelos`,
+    {
+      method: 'POST',
+      body: dto ?? {},
+      token,
+    },
+  );
+  const data = desenvolverRespuestaApi<ResultadoModelosIa>(respuesta);
+  if (!data) {
+    throw new Error('La respuesta del servidor no incluye los modelos.');
   }
   return data;
 }

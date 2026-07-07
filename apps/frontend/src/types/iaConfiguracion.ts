@@ -34,6 +34,17 @@ export interface ResultadoReinicioIa {
   mensaje: string;
 }
 
+export interface ModeloRemotoIa {
+  id: string;
+  nombre?: string;
+}
+
+export interface ResultadoModelosIa {
+  ok: boolean;
+  modelos: ModeloRemotoIa[];
+  mensaje?: string;
+}
+
 export interface MetadatosProveedorIa {
   id: ProveedorIa;
   etiqueta: string;

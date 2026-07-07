@@ -5,6 +5,7 @@ import {
   eliminarConfiguracionIa,
   guardarConfiguracionIa,
   obtenerConfiguracionesIa,
+  obtenerModelosIa,
   probarConexionIa,
   solicitarReinicioIa,
 } from '@/lib/api/iaConfiguracion';
@@ -78,6 +79,20 @@ export function useProbarConexionIa() {
       provider: ProveedorIa;
       dto?: GuardarConfiguracionIaDto;
     }) => probarConexionIa(provider, dto, token),
+  });
+}
+
+export function useObtenerModelosIa() {
+  const { token } = useAuth();
+
+  return useMutation({
+    mutationFn: ({
+      provider,
+      dto,
+    }: {
+      provider: ProveedorIa;
+      dto?: GuardarConfiguracionIaDto;
+    }) => obtenerModelosIa(provider, dto, token),
   });
 }
 

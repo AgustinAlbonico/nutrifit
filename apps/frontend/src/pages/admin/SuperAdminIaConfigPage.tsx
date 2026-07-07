@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   Bot,
+  Check,
+  ChevronsUpDown,
   Eye,
   EyeOff,
   Loader2,
@@ -25,6 +27,13 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {
+  Command,
+  CommandEmpty,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -34,12 +43,18 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import {
   useConfiguracionesIa,
   useEliminarConfiguracionIa,
   useGuardarConfiguracionIa,
+  useObtenerModelosIa,
   useProbarConexionIa,
   useSolicitarReinicioIa,
 } from '@/hooks/useIaConfiguracion';
@@ -49,6 +64,7 @@ import {
   type ConfiguracionIa,
   type GuardarConfiguracionIaDto,
   type ProveedorIa,
+  type ResultadoModelosIa,
 } from '@/types/iaConfiguracion';
 
 interface FormStatePorProvider {
@@ -138,6 +154,7 @@ export function SuperAdminIaConfigPage() {
   const guardarMut = useGuardarConfiguracionIa();
   const eliminarMut = useEliminarConfiguracionIa();
   const probarMut = useProbarConexionIa();
+  const modelosMut = useObtenerModelosIa();
   const reiniciarMut = useSolicitarReinicioIa();
 
   const [forms, setForms] = useState<FormStatePorProvider>({});
@@ -148,6 +165,9 @@ export function SuperAdminIaConfigPage() {
     null,
   );
   const [mostrarReinicio, setMostrarReinicio] = useState(false);
+  const [modelosPorProvider, setModelosPorProvider] = useState<
+    Partial<Record<ProveedorIa, ResultadoModelosIa>>
+  >({});
 
   useEffect(() => {
     if (configuraciones.length === 0) return;
@@ -261,6 +281,37 @@ export function SuperAdminIaConfigPage() {
       toast.error('Error al probar', { description: mensaje });
     } finally {
       setProviderProbando(null);
+    }
+  }
+
+  async function cargarModelos(provider: ProveedorIa): Promise<void> {
+    const form = forms[provider];
+    if (!form) return;
+    try {
+      const dto = formAEsquema(form, false);
+      const resultado = await modelosMut.mutateAsync({
+        provider,
+        dto: Object.keys(dto).length > 0 ? dto : undefined,
+      });
+      setModelosPorProvider((previo) => ({
+        ...previo,
+        [provider]: resultado,
+      }));
+      if (resultado.ok) {
+        toast.success(
+          `${resultado.modelos.length} modelos cargados de ${etiquetaProveedor(provider)}.`,
+        );
+      } else {
+        toast.error('No se pudieron cargar los modelos', {
+          description: resultado.mensaje,
+        });
+      }
+    } catch (error) {
+      const mensaje =
+        error instanceof Error
+          ? error.message
+          : 'No se pudieron cargar los modelos.';
+      toast.error('Error al cargar modelos', { description: mensaje });
     }
   }
 
@@ -385,12 +436,13 @@ export function SuperAdminIaConfigPage() {
                     valor={form.apiKey}
                     onChange={(valor) => actualizarCampo(meta.id, 'apiKey', valor)}
                   />
-                  <CampoForm
-                    id={`${meta.id}-model`}
-                    label="Modelo"
-                    placeholder="ej: gpt-4, llama-3.3-70b-versatile"
+                  <CampoModeloConCarga
+                    provider={meta.id}
                     valor={form.model}
+                    modelos={modelosPorProvider[meta.id]}
+                    cargando={modelosMut.isPending}
                     onChange={(valor) => actualizarCampo(meta.id, 'model', valor)}
+                    onCargar={() => cargarModelos(meta.id)}
                   />
                   <CampoForm
                     id={`${meta.id}-base-url`}
@@ -742,5 +794,106 @@ function EstadoBadge({
     <Badge className="shrink-0 bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/15">
       Configurada
     </Badge>
+  );
+}
+
+interface CampoModeloConCargaProps {
+  provider: ProveedorIa;
+  valor: string;
+  modelos: ResultadoModelosIa | undefined;
+  cargando: boolean;
+  onChange: (valor: string) => void;
+  onCargar: () => void;
+}
+
+function CampoModeloConCarga({
+  provider,
+  valor,
+  modelos,
+  cargando,
+  onChange,
+  onCargar,
+}: CampoModeloConCargaProps) {
+  const [abierto, setAbierto] = useState(false);
+  const listado = modelos?.ok ? modelos.modelos : [];
+  const etiqueta = PROVEEDORES_IA.find((p) => p.id === provider)?.etiqueta ?? provider;
+
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={`${provider}-model`}>Modelo</Label>
+      <div className="flex gap-2">
+        <Input
+          id={`${provider}-model`}
+          placeholder={`ej: deepseek-v4-flash-free`}
+          value={valor}
+          onChange={(e) => onChange(e.target.value)}
+          className="flex-1"
+        />
+        <Popover open={abierto} onOpenChange={setAbierto}>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={cargando}
+              onClick={() => {
+                if (!modelos) onCargar();
+                setAbierto(true);
+              }}
+              aria-label={`Cargar modelos de ${etiqueta}`}
+            >
+              {cargando ? (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              ) : (
+                <ChevronsUpDown className="mr-1.5 h-4 w-4" />
+              )}
+              Cargar modelos
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="end">
+            <Command>
+              <CommandInput placeholder="Buscar modelo..." />
+              <CommandList>
+                <CommandEmpty>
+                  {modelos === undefined
+                    ? 'Hacé clic en "Cargar modelos" para listar.'
+                    : modelos.ok
+                      ? 'Sin resultados.'
+                      : modelos.mensaje ?? 'No se pudieron cargar los modelos.'}
+                </CommandEmpty>
+                {listado.map((modelo) => (
+                  <CommandItem
+                    key={modelo.id}
+                    value={modelo.id}
+                    onSelect={() => {
+                      onChange(modelo.id);
+                      setAbierto(false);
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        'mr-2 h-4 w-4 shrink-0',
+                        valor === modelo.id ? 'opacity-100' : 'opacity-0',
+                      )}
+                    />
+                    <span className="flex-1 truncate font-mono text-xs">
+                      {modelo.id}
+                    </span>
+                    {modelo.nombre ? (
+                      <span className="ml-2 shrink-0 text-xs text-muted-foreground">
+                        {modelo.nombre}
+                      </span>
+                    ) : null}
+                  </CommandItem>
+                ))}
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Podés tipear un modelo a mano o cargarlo del provider (si tenés la
+        API key configurada).
+      </p>
+    </div>
   );
 }
