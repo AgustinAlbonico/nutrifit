@@ -3,6 +3,10 @@ import { Copy, Pencil, Trash2, Sparkles, Plus, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSlotDroppable } from '@/hooks/useDragDropSlot';
 import { DialogEditarAlternativa } from './DialogEditarAlternativa';
+import {
+  DialogDetalleComida,
+  type AlternativaDetalle,
+} from './DialogDetalleComida';
 
 export interface AlternativaSlot {
   /** Temporary id for FE-only items (e.g. `tmp-1`). */
@@ -44,6 +48,8 @@ export function SlotComidaManual({
   const { setNodeRef, isOver } = useSlotDroppable(slotKey);
   const [dialogoEdicionAbierto, setDialogoEdicionAbierto] = useState(false);
   const [alternativaEnEdicion, setAlternativaEnEdicion] = useState<AlternativaSlot | null>(null);
+  const [detalleAbierto, setDetalleAbierto] = useState(false);
+  const [detalleComida, setDetalleComida] = useState<AlternativaDetalle | null>(null);
 
   const eliminarAlternativa = (id: string) => {
     if (deshabilitado) return;
@@ -70,6 +76,20 @@ export function SlotComidaManual({
     if (deshabilitado) return;
     setAlternativaEnEdicion(alt);
     setDialogoEdicionAbierto(true);
+  };
+
+  const abrirDetalle = (alt: AlternativaSlot) => {
+    if (deshabilitado) return;
+    setDetalleComida({
+      nombre: alt.nombre,
+      alimentos: alt.alimentos,
+      calorias: alt.calorias,
+      proteinas: alt.proteinas,
+      carbohidratos: alt.carbohidratos,
+      grasas: alt.grasas,
+      preparacionId: alt.preparacionId ?? null,
+    });
+    setDetalleAbierto(true);
   };
 
   const alGuardarAlternativa = (alt: AlternativaSlot) => {
@@ -144,6 +164,7 @@ export function SlotComidaManual({
                 onDelete={eliminarAlternativa}
                 onDuplicate={duplicarAlternativa}
                 onEdit={abrirEdicionExistente}
+                onVerDetalle={abrirDetalle}
                 deshabilitado={deshabilitado}
               />
             ))}
@@ -158,6 +179,15 @@ export function SlotComidaManual({
         alternativaInicial={alternativaEnEdicion}
         onSave={alGuardarAlternativa}
       />
+
+      {/* Modal read-only con el detalle de la comida seleccionada */}
+      <DialogDetalleComida
+        open={detalleAbierto && !deshabilitado}
+        onOpenChange={(open) => setDetalleAbierto(deshabilitado ? false : open)}
+        alternativa={detalleComida}
+        diaLabel={dia}
+        tipoComidaLabel={tipoComida}
+      />
     </div>
   );
 }
@@ -167,18 +197,30 @@ function SlotAlternativaItem({
   onDelete,
   onDuplicate,
   onEdit,
+  onVerDetalle,
   deshabilitado,
 }: {
   alternativa: AlternativaSlot;
   onDelete: (id: string) => void;
   onDuplicate: (alt: AlternativaSlot) => void;
   onEdit: (alt: AlternativaSlot) => void;
+  onVerDetalle: (alt: AlternativaSlot) => void;
   deshabilitado?: boolean;
 }) {
   return (
     <div
-      className="rounded-lg border border-border/50 bg-muted/40 p-2 group/item hover:border-border hover:bg-muted/80 transition-all"
+      className="rounded-lg border border-border/50 bg-muted/40 p-2 group/item hover:border-border hover:bg-muted/80 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
       data-testid={`alternativa-slot-${alternativa.id}`}
+      role="button"
+      tabIndex={deshabilitado ? -1 : 0}
+      aria-label={`Ver detalle de ${alternativa.nombre}`}
+      onClick={() => onVerDetalle(alternativa)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onVerDetalle(alternativa);
+        }
+      }}
     >
       <div className="flex items-start justify-between gap-1">
         <div className="flex-1 min-w-0">
@@ -197,7 +239,10 @@ function SlotAlternativaItem({
           <Button
             size="icon"
             variant="ghost"
-            onClick={() => onEdit(alternativa)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(alternativa);
+            }}
             disabled={deshabilitado}
             aria-label="Editar comida"
             className="size-5 rounded-md hover:bg-background"
@@ -208,7 +253,10 @@ function SlotAlternativaItem({
           <Button
             size="icon"
             variant="ghost"
-            onClick={() => onDuplicate(alternativa)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDuplicate(alternativa);
+            }}
             disabled={deshabilitado}
             aria-label="Duplicar comida"
             className="size-5 rounded-md hover:bg-background"
@@ -219,7 +267,10 @@ function SlotAlternativaItem({
           <Button
             size="icon"
             variant="ghost"
-            onClick={() => onDelete(alternativa.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(alternativa.id);
+            }}
             disabled={deshabilitado}
             aria-label="Eliminar comida"
             className="size-5 rounded-md hover:bg-destructive/10 text-destructive"

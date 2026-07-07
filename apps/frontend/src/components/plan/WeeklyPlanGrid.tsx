@@ -46,6 +46,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import {
+  DialogDetalleComida,
+  type AlternativaDetalle,
+} from './DialogDetalleComida';
 import type {
   DiaSemana,
   PlanAlimentacionDatosJsonFE,
@@ -358,6 +362,21 @@ function WeeklyPlanGridV2({ planV2, regen }: PropsGrillaPlanSemanalV2) {
     alternativaIndex?: number;
   } | null>(null);
 
+  const [detalleComida, setDetalleComida] = useState<{
+    alt: AlternativaDetalle;
+    dia: DiaSemana;
+    tipo: TipoComidaPlan;
+  } | null>(null);
+  const [detalleAbierto, setDetalleAbierto] = useState(false);
+  const abrirDetalle = (
+    alt: AlternativaDetalle,
+    dia: DiaSemana,
+    tipo: TipoComidaPlan,
+  ) => {
+    setDetalleComida({ alt, dia, tipo });
+    setDetalleAbierto(true);
+  };
+
   // Index de días para lookup rápido de macros
   const macrosPorDia = useMemo(() => {
     return (planV2.macrosPorDia ?? {}) as Partial<
@@ -532,6 +551,7 @@ function WeeklyPlanGridV2({ planV2, regen }: PropsGrillaPlanSemanalV2) {
                     onRegenerarAlternativa={(idx) =>
                       intentarRegenerar('ALTERNATIVA', dia, tipo, idx)
                     }
+                    onVerDetalle={(alt) => abrirDetalle(alt, dia, tipo)}
                     regenerando={regen?.estaRegenerando ?? false}
                     puedeRegenerarAlternativa={
                       regen?.alRegenerarAlternativa !== undefined
@@ -593,6 +613,7 @@ function WeeklyPlanGridV2({ planV2, regen }: PropsGrillaPlanSemanalV2) {
                       onRegenerarAlternativa={(idx) =>
                         intentarRegenerar('ALTERNATIVA', dia, comida.tipo, idx)
                       }
+                      onVerDetalle={(alt) => abrirDetalle(alt, dia, comida.tipo)}
                       regenerando={regen?.estaRegenerando ?? false}
                       puedeRegenerarAlternativa={
                         regen?.alRegenerarAlternativa !== undefined
@@ -697,6 +718,16 @@ function WeeklyPlanGridV2({ planV2, regen }: PropsGrillaPlanSemanalV2) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <DialogDetalleComida
+        open={detalleAbierto}
+        onOpenChange={setDetalleAbierto}
+        alternativa={detalleComida?.alt ?? null}
+        diaLabel={detalleComida ? formatearDiaCompleto(detalleComida.dia) : ''}
+        tipoComidaLabel={
+          detalleComida ? formatearTipoComida(detalleComida.tipo) : ''
+        }
+      />
     </div>
   );
 }
@@ -711,6 +742,7 @@ interface PropsSlotAlternativasV2 {
   alternativaActivaIndex: number;
   onSelectAlternativa: (index: number) => void;
   onRegenerarAlternativa: (index: number) => void;
+  onVerDetalle: (alt: AlternativaDetalle) => void;
   regenerando: boolean;
   puedeRegenerarAlternativa: boolean;
   fueEditado: boolean;
@@ -722,6 +754,7 @@ function SlotAlternativasV2({
   alternativaActivaIndex,
   onSelectAlternativa,
   onRegenerarAlternativa,
+  onVerDetalle,
   regenerando,
   puedeRegenerarAlternativa,
   fueEditado,
@@ -773,7 +806,19 @@ function SlotAlternativasV2({
       </Tabs>
 
       {/* Detalle de la alternativa activa */}
-      <div className="flex-1 space-y-1 overflow-hidden">
+      <div
+        className="flex-1 space-y-1 overflow-hidden rounded-md p-1 -m-1 cursor-pointer transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
+        role="button"
+        tabIndex={0}
+        aria-label={`Ver detalle de ${alternativaActiva.nombre}`}
+        onClick={() => onVerDetalle(alternativaActiva as AlternativaDetalle)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onVerDetalle(alternativaActiva as AlternativaDetalle);
+          }
+        }}
+      >
         <p
           className="truncate text-xs font-medium"
           title={alternativaActiva.nombre}
