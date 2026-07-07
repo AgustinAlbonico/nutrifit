@@ -280,7 +280,8 @@ export type EstadoGeneracionPlanIaFE =
   | 'PENDIENTE'
   | 'GENERANDO'
   | 'COMPLETADO'
-  | 'ERROR';
+  | 'ERROR'
+  | 'CANCELADO';
 
 export interface GeneracionPlanIaFE {
   id: number;

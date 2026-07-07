@@ -13,9 +13,9 @@
  * Esto permite que el badge siga visible (y actualizado) al navegar entre
  * pantallas del módulo profesional.
  *
- * El efecto de "cierre" de la generación (cuando llega a COMPLETADO/ERROR)
- * también vive aquí, de forma que el estado se limpie de forma consistente
- * aunque el usuario no esté en el editor.
+ * El efecto de "cierre" de la generación (cuando llega a COMPLETADO/ERROR/
+ * CANCELADO) también vive aquí, de forma que el estado se limpie de forma
+ * consistente aunque el usuario no esté en el editor.
  */
 
 import {
@@ -108,7 +108,7 @@ export function GeneracionPlanIaProvider({ children }: { children: ReactNode }) 
     if (ultimaGeneracionCerradaRef.current === generacionPlanIa.id) return;
 
     const estado = generacionPlanIa.estado;
-    if (estado !== 'COMPLETADO' && estado !== 'ERROR') return;
+    if (estado !== 'COMPLETADO' && estado !== 'ERROR' && estado !== 'CANCELADO') return;
 
     ultimaGeneracionCerradaRef.current = generacionPlanIa.id;
     // Limpiamos el ID específico; React Query mantendrá la data en caché

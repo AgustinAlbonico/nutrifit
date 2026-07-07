@@ -61,6 +61,12 @@ interface UseGeneracionPlanIaOptions {
   habilitado?: boolean;
 }
 
+interface CancelarGeneracionPlanIaInput {
+  generacionId: number;
+  socioId?: number;
+  planAlimentacionId?: number | null;
+}
+
 export function esGeneracionPlanIaActiva(
   generacion: GeneracionPlanIaFE | null | undefined,
 ): boolean {
@@ -251,6 +257,42 @@ export function useIa() {
     },
   });
 
+  const cancelarGeneracionPlanIa: UseMutationResult<
+    GeneracionPlanIaFE,
+    Error,
+    CancelarGeneracionPlanIaInput
+  > = useMutation({
+    mutationFn: async ({ generacionId }: CancelarGeneracionPlanIaInput) => {
+      const respuesta = await apiRequest<
+        GeneracionPlanIaFE | ApiResponse<GeneracionPlanIaFE>
+      >(`/ia/plan-semanal/generaciones/${generacionId}/cancelar`, {
+        method: 'POST',
+      });
+      return desenvolverRespuestaApi(respuesta);
+    },
+    onError: (err) => {
+      const errorTraducido = traducirErrorApi(err);
+      toast.error(errorTraducido.titulo, { description: errorTraducido.descripcion });
+    },
+    onSuccess: (generacion, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ['generacion-plan-ia', generacion.id],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['generacion-plan-ia-activa', generacion.socioId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [
+          'generacion-plan-ia-activa',
+          variables.socioId ?? generacion.socioId,
+          variables.planAlimentacionId ?? generacion.planAlimentacionId ?? null,
+        ],
+      });
+      queryClient.invalidateQueries({ queryKey: ['planes-alimentacion'] });
+      toast.success('Generación cancelada');
+    },
+  });
+
   const generarIdeasComida: UseMutationResult<
     GenerarIdeasComidaRespuesta,
     Error,
@@ -277,6 +319,7 @@ export function useIa() {
   return {
     generarPlanSemanalV2,
     iniciarGeneracionPlanSemanal,
+    cancelarGeneracionPlanIa,
     regenerarPlanSemanal,
     generarIdeasComida,
   };
