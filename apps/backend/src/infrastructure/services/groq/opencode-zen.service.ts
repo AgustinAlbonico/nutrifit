@@ -1,5 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import OpenAI from 'openai';
+import OpenAI, {
+  APIConnectionError,
+  APIConnectionTimeoutError,
+} from 'openai';
 
 import {
   AIRateLimitError,
@@ -28,6 +31,7 @@ export class OpenCodeZenService implements IAiProviderService {
     this.client = new OpenAI({
       apiKey: this.apiKey ?? 'opencode-zen-no-configurado',
       baseURL: this.configService.getOpenCodeBaseUrl(),
+      maxRetries: 0,
     });
   }
 
@@ -85,19 +89,30 @@ export class OpenCodeZenService implements IAiProviderService {
       this.logger.log('Respuesta de OpenCode Zen API procesada exitosamente');
       return JSON.parse(content) as T;
     } catch (error) {
+      const status = this.obtenerStatusError(error);
+      const detalle = error instanceof Error ? error.message : String(error);
+      const nombreError = this.obtenerNombreError(error);
+
+      this.logger.error(
+        `Error en OpenCodeZenService (${nombreError}${status ? ` status=${status}` : ''}): ${detalle}`,
+      );
+
       if (error instanceof AIRateLimitError || error instanceof ServiceUnavailableError) {
         throw error;
       }
-
-      const status = (error as { status?: number })?.status;
-      const detalle = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Error en OpenCodeZenService: ${detalle}`);
 
       if (status === 429) {
         throw new AIRateLimitError(detalle, { proveedor: 'opencode' });
       }
 
-      if (status && [408, 500, 502, 503, 504].includes(status)) {
+      if (this.esErrorConexionOpenAi(error)) {
+        throw new ServiceUnavailableError(
+          `OpenCode Zen no respondió a tiempo o rechazó la conexión: ${detalle}`,
+          { proveedor: 'opencode' },
+        );
+      }
+
+      if (status !== undefined && [408, 500, 502, 503, 504].includes(status)) {
         throw new ServiceUnavailableError(detalle, { proveedor: 'opencode' });
       }
 
@@ -133,5 +148,25 @@ export class OpenCodeZenService implements IAiProviderService {
     return typeof valor === 'number' && Number.isFinite(valor)
       ? valor
       : valorDefault;
+  }
+
+  private obtenerStatusError(error: unknown): number | undefined {
+    if (typeof error !== 'object' || error === null) {
+      return undefined;
+    }
+
+    const status = (error as { status?: unknown }).status;
+    return typeof status === 'number' ? status : undefined;
+  }
+
+  private obtenerNombreError(error: unknown): string {
+    return error instanceof Error ? error.constructor.name : typeof error;
+  }
+
+  private esErrorConexionOpenAi(error: unknown): boolean {
+    return (
+      error instanceof APIConnectionTimeoutError ||
+      error instanceof APIConnectionError
+    );
   }
 }
