@@ -864,8 +864,10 @@ function CampoModeloConCarga({
                   <CommandItem
                     key={modelo.id}
                     value={modelo.id}
-                    onSelect={() => {
-                      onChange(modelo.id);
+                    keywords={[modelo.id, modelo.nombre ?? '']}
+                    onSelect={(valorElegido) => {
+                      const match = listado.find((m) => m.id === valorElegido);
+                      if (match) onChange(match.id);
                       setAbierto(false);
                     }}
                   >
@@ -875,14 +877,16 @@ function CampoModeloConCarga({
                         valor === modelo.id ? 'opacity-100' : 'opacity-0',
                       )}
                     />
-                    <span className="flex-1 truncate font-mono text-xs">
-                      {modelo.id}
-                    </span>
-                    {modelo.nombre ? (
-                      <span className="ml-2 shrink-0 text-xs text-muted-foreground">
-                        {modelo.nombre}
+                    <div className="flex min-w-0 flex-1 items-baseline gap-2">
+                      <span className="truncate font-mono text-xs">
+                        {modelo.id}
                       </span>
-                    ) : null}
+                      {modelo.nombre ? (
+                        <span className="shrink-0 text-xs text-muted-foreground">
+                          {modelo.nombre}
+                        </span>
+                      ) : null}
+                    </div>
                   </CommandItem>
                 ))}
               </CommandList>
