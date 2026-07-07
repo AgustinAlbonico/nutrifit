@@ -290,7 +290,9 @@ export function useGeneracionPlanIaActiva({
   return useQuery({
     queryKey: ['generacion-plan-ia-activa', socioId, planAlimentacionId ?? null],
     enabled: habilitado && typeof socioId === 'number' && Number.isFinite(socioId),
-    refetchInterval: 5_000,
+    refetchInterval: (query) =>
+      esGeneracionPlanIaActiva(query.state.data) ? 5_000 : false,
+    refetchIntervalInBackground: false,
     queryFn: async () => {
       const params = new URLSearchParams({ socioId: String(socioId) });
       if (typeof planAlimentacionId === 'number' && Number.isFinite(planAlimentacionId)) {

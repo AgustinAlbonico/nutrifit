@@ -16,7 +16,7 @@ import { EnvironmentConfigService } from 'src/infrastructure/config/environment-
 
 const TEMPERATURA_DEFAULT = 0.7;
 const MAX_TOKENS_DEFAULT = 2048;
-const MAX_TOKENS_MINIMO_OPENCODE = 8192;
+const MAX_TOKENS_MINIMO_OPENCODE = 16384;
 const TIMEOUT_DEFAULT_MS = 120000;
 
 @Injectable()
@@ -99,7 +99,7 @@ export class OpenCodeZenService implements IAiProviderService {
       }
 
       this.logger.log('Respuesta de OpenCode Zen API procesada exitosamente');
-      return JSON.parse(content) as T;
+      return JSON.parse(this.limpiarContenidoJson(content)) as T;
     } catch (error) {
       const status = this.obtenerStatusError(error);
       const detalle = error instanceof Error ? error.message : String(error);
@@ -191,5 +191,31 @@ export class OpenCodeZenService implements IAiProviderService {
       error instanceof APIConnectionTimeoutError ||
       error instanceof APIConnectionError
     );
+  }
+
+  /**
+   * Limpia el contenido devuelto por el modelo para hacerlo parseable como JSON.
+   * Algunos modelos free-tier envuelven la respuesta en bloques de código markdown
+   * (```json ... ```) o anteponen/posponen texto explicativo a pesar del system
+   * prompt. Esta función extrae el primer objeto/arreglo JSON válido.
+   */
+  private limpiarContenidoJson(contenido: string): string {
+    const texto = contenido.trim();
+
+    // Caso 1: bloque markdown ```json ... ``` (o ``` sin lenguaje)
+    const matchBloqueCodigo = /^```(?:json)?\s*([\s\S]*?)\s*```$/m.exec(
+      texto,
+    );
+    if (matchBloqueCodigo && matchBloqueCodigo[1]) {
+      return matchBloqueCodigo[1].trim();
+    }
+
+    // Caso 2: el texto arranca con texto no-JSON antes del objeto/arreglo.
+    const matchLlaves = texto.match(/[{[][\s\S]*[}\]]/);
+    if (matchLlaves) {
+      return matchLlaves[0];
+    }
+
+    return texto;
   }
 }

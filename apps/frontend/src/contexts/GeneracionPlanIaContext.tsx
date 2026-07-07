@@ -28,6 +28,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
 import {
   esGeneracionPlanIaActiva,
@@ -66,6 +67,8 @@ export function GeneracionPlanIaProvider({ children }: { children: ReactNode }) 
   const [planAlimentacionId, setPlanAlimentacionId] = useState<number | null>(null);
   const [generacionIdEspecifica, setGeneracionIdEspecifica] = useState<number | null>(null);
 
+  const queryClient = useQueryClient();
+
   const { data: generacionActiva } = useGeneracionPlanIaActiva({
     socioId,
     planAlimentacionId,
@@ -94,6 +97,9 @@ export function GeneracionPlanIaProvider({ children }: { children: ReactNode }) 
   // ----------------------------------------------------------------------
   // Limpieza cuando la generación llega a estado terminal.
   // Conservamos el último ID visto para no re-disparar el cleanup.
+  // Al cerrar, invalidamos el query de la activa para que el próximo
+  // `setIds` o un reinicio del provider detecte correctamente la ausencia
+  // de una activa (sin esto, React Query serviría el dato cacheado).
   // ----------------------------------------------------------------------
   const ultimaGeneracionCerradaRef = useRef<number | null>(null);
 
@@ -109,9 +115,17 @@ export function GeneracionPlanIaProvider({ children }: { children: ReactNode }) 
     // unos segundos para que el badge pueda renderizar el estado final,
     // pero el polling se detiene.
     setGeneracionIdEspecifica(null);
+    if (socioId !== null) {
+      void queryClient.invalidateQueries({
+        queryKey: ['generacion-plan-ia-activa', socioId, planAlimentacionId ?? null],
+      });
+    }
   }, [
     generacionPlanIa?.id,
     generacionPlanIa?.estado,
+    queryClient,
+    socioId,
+    planAlimentacionId,
   ]);
 
   const setIds = useCallback((ids: Partial<GeneracionPlanIaIds>) => {

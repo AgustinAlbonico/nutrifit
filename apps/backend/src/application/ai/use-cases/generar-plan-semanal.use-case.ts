@@ -141,7 +141,7 @@ const MAX_REINTENTOS_ESTRUCTURA = 2;
 const MAX_REINTENTOS_CATALOGO = 2;
 const TIMEOUT_BACKOFF_MS = 5000;
 const TEMPERATURA_PLAN_COMPLETO = 0.4;
-const MAX_TOKENS_PLAN_COMPLETO = 2048;
+const MAX_TOKENS_PLAN_COMPLETO = 8192;
 const TIMEOUT_PLAN_COMPLETO_MS = 120000;
 const CONCURRENCIA_GENERACION_COMIDAS = 2;
 
@@ -968,6 +968,19 @@ Requisitos exactos:
           });
         }
 
+        if (this.esTruncacionDeterminista(mensaje)) {
+          this.logger.warn(
+            `Proveedor IA truncó respuesta (intento ${intentoProveedor}/${MAX_REINTENTOS_PROVEEDOR_IA}, no retry): ${mensaje}`,
+          );
+          throw new BadGatewayError(
+            `AI_PROVIDER_TRUNCATED: ${mensaje}. Reducí alternativas o aumentá el límite de tokens.`,
+            {
+              codigo: 'AI_PROVIDER_TRUNCATED',
+              socioId,
+            },
+          );
+        }
+
         if (this.esJsonInvalido(mensaje)) {
           this.logger.warn(
             `Proveedor IA JSON inválido (intento ${intentoProveedor}/${MAX_REINTENTOS_PROVEEDOR_IA}): ${mensaje}`,
@@ -1023,6 +1036,19 @@ Requisitos exactos:
             codigo: 'AI_PROVIDER_TIMEOUT',
             socioId,
           });
+        }
+
+        if (this.esTruncacionDeterminista(mensaje)) {
+          this.logger.warn(
+            `Proveedor IA truncó respuesta generando comida (intento ${intentoProveedor}/${MAX_REINTENTOS_PROVEEDOR_IA}, no retry): ${mensaje}`,
+          );
+          throw new BadGatewayError(
+            `AI_PROVIDER_TRUNCATED: ${mensaje}. Reducí alternativas o aumentá el límite de tokens.`,
+            {
+              codigo: 'AI_PROVIDER_TRUNCATED',
+              socioId,
+            },
+          );
         }
 
         if (this.esJsonInvalido(mensaje)) {
@@ -1319,6 +1345,21 @@ No omitas días, comidas ni alternativas aunque el JSON sea largo.`;
       lower.includes('json') ||
       lower.includes('parse') ||
       lower.includes('unexpected token')
+    );
+  }
+
+  /**
+   * La truncación por finish_reason=length es determinista para el mismo
+   * prompt+máximo de tokens: reintentar con el mismo setup vuelve a truncar.
+   * Solo reintentamos si el mensaje NO contiene el marcador explícito de
+   * truncación (que sí indica un fallo no recuperable del prompt actual).
+   */
+  private esTruncacionDeterminista(mensaje: string): boolean {
+    const lower = mensaje.toLowerCase();
+    return (
+      lower.includes('truncado') ||
+      lower.includes('finish_reason=length') ||
+      (lower.includes('length') && lower.includes('max_tokens'))
     );
   }
 
