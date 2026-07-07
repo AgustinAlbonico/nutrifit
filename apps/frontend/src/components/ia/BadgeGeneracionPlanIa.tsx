@@ -1,24 +1,97 @@
-import { AlertCircle, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
+/**
+ * BadgeGeneracionPlanIa — Chip fijo, persistente, detalle en hover.
+ *
+ * REQUIERE: debe vivir DENTRO de GeneracionPlanIaProvider (consume del context).
+ *
+ * DISEÑO:
+ *  - Posición: `fixed bottom-6 left-6 z-50` (no choca con BannerConsultaActiva
+ *    que vive en `right-6`).
+ *  - Estado collapsed (default): chip chico (~210px) con spinner/ícono +
+ *    titulo corto. No ocupa espacio vertical relevante.
+ *  - Estado hover/focus: expande panel detalle con descripcion, proveedor,
+ *    estado, errorMensaje, y un CTA "Ir al plan" si hay socioId.
+ *
+ * ACCESIBILIDAD:
+ *  - role="status" + aria-live="polite" para lectores de pantalla.
+ *  - El panel detalle se abre tanto en :hover como en :focus-within
+ *    (teclado usable).
+ *  - El ícono tiene `aria-hidden`, la info está en texto.
+ */
+
+import { useNavigate } from '@tanstack/react-router';
+import { AlertCircle, ArrowUpRight, CheckCircle2, Loader2, Sparkles, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import type { GeneracionPlanIaFE } from '@/types/ia';
+import { useGeneracionPlanIa } from '@/contexts/GeneracionPlanIaContext';
+import type { EstadoGeneracionPlanIaFE, GeneracionPlanIaFE } from '@/types/ia';
 
-interface BadgeGeneracionPlanIaProps {
-  generacion: GeneracionPlanIaFE | null;
-}
-
-const ESTILOS_ESTADO: Record<GeneracionPlanIaFE['estado'], string> = {
-  PENDIENTE: 'border-fuchsia-500/30 bg-fuchsia-950/90 text-fuchsia-50 shadow-fuchsia-950/20',
-  GENERANDO: 'border-indigo-500/30 bg-indigo-950/90 text-indigo-50 shadow-indigo-950/20',
-  COMPLETADO: 'border-emerald-500/30 bg-emerald-950/90 text-emerald-50 shadow-emerald-950/20',
-  ERROR: 'border-destructive/40 bg-destructive text-destructive-foreground shadow-destructive/20',
+const ESTILOS_ESTADO: Record<EstadoGeneracionPlanIaFE, string> = {
+  PENDIENTE: 'border-fuchsia-500/40 bg-fuchsia-500/15 text-fuchsia-700 dark:text-fuchsia-200',
+  GENERANDO: 'border-indigo-500/40 bg-indigo-500/15 text-indigo-700 dark:text-indigo-200',
+  COMPLETADO: 'border-emerald-500/40 bg-emerald-500/15 text-emerald-700 dark:text-emerald-200',
+  ERROR: 'border-rose-500/50 bg-rose-500/15 text-rose-700 dark:text-rose-200',
 };
 
-export function BadgeGeneracionPlanIa({ generacion }: BadgeGeneracionPlanIaProps) {
+const ETIQUETA_ESTADO: Record<EstadoGeneracionPlanIaFE, string> = {
+  PENDIENTE: 'En cola',
+  GENERANDO: 'Generando',
+  COMPLETADO: 'Listo',
+  ERROR: 'Error',
+};
+
+function obtenerTitulo(g: GeneracionPlanIaFE): string {
+  switch (g.estado) {
+    case 'PENDIENTE':
+      return 'Plan IA en cola';
+    case 'GENERANDO':
+      return 'Generando plan IA';
+    case 'ERROR':
+      return 'Generación IA falló';
+    case 'COMPLETADO':
+      return 'Plan IA listo';
+    default:
+      return 'Plan IA';
+  }
+}
+
+function obtenerDescripcion(g: GeneracionPlanIaFE): string {
+  switch (g.estado) {
+    case 'PENDIENTE':
+      return g.mensajeEstado ?? 'Queda en cola hasta que el proveedor arranque.';
+    case 'GENERANDO':
+      return g.mensajeEstado ?? 'El plan queda bloqueado durante la generación.';
+    case 'ERROR':
+      return g.errorMensaje ?? 'El editor vuelve a estar disponible. Intentá de nuevo.';
+    case 'COMPLETADO':
+      return 'El editor se actualizó con la nueva versión del plan.';
+    default:
+      return '';
+  }
+}
+
+export function BadgeGeneracionPlanIa() {
+  const { generacionVisible, generacionPlanIa, planBloqueadoPorIa, limpiarGeneracionEspecifica } =
+    useGeneracionPlanIa();
+  const navigate = useNavigate();
+
+  const generacion = generacionVisible;
   if (!generacion) return null;
 
   const estaProcesando = generacion.estado === 'PENDIENTE' || generacion.estado === 'GENERANDO';
-  const mensaje = obtenerMensaje(generacion);
+  const esTerminal = generacion.estado === 'COMPLETADO' || generacion.estado === 'ERROR';
+  const titulo = obtenerTitulo(generacion);
+  const descripcion = obtenerDescripcion(generacion);
+
+  const irAlPlan = () => {
+    if (generacion.socioId) {
+      void navigate({ to: `/profesional/plan/${generacion.socioId}/editar` });
+    }
+  };
+
+  const cerrar = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    limpiarGeneracionEspecifica();
+  };
 
   return (
     <div
@@ -26,55 +99,83 @@ export function BadgeGeneracionPlanIa({ generacion }: BadgeGeneracionPlanIaProps
       aria-live="polite"
       data-testid="badge-generacion-plan-ia"
       className={cn(
-        'fixed bottom-6 left-1/2 z-50 flex w-[min(calc(100vw-2rem),440px)] -translate-x-1/2 items-center gap-3 rounded-2xl border px-4 py-3 shadow-2xl backdrop-blur-md',
+        'group fixed bottom-6 left-6 z-50 flex w-[210px] flex-col gap-1.5 rounded-xl border px-3 py-2 shadow-lg backdrop-blur-md transition-all duration-200',
+        'hover:w-[280px] hover:shadow-2xl focus-within:w-[280px] focus-within:shadow-2xl',
         ESTILOS_ESTADO[generacion.estado],
       )}
     >
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/12">
-        {estaProcesando ? (
-          <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-        ) : generacion.estado === 'ERROR' ? (
-          <AlertCircle className="size-4" aria-hidden="true" />
-        ) : generacion.estado === 'COMPLETADO' ? (
-          <CheckCircle2 className="size-4" aria-hidden="true" />
-        ) : (
-          <Sparkles className="size-4" aria-hidden="true" />
+      {/* Fila compacta (siempre visible) */}
+      <div className="flex items-center gap-2">
+        <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-background/40">
+          {estaProcesando ? (
+            <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+          ) : generacion.estado === 'ERROR' ? (
+            <AlertCircle className="size-3.5" aria-hidden="true" />
+          ) : generacion.estado === 'COMPLETADO' ? (
+            <CheckCircle2 className="size-3.5" aria-hidden="true" />
+          ) : (
+            <Sparkles className="size-3.5" aria-hidden="true" />
+          )}
+        </span>
+        <span className="min-w-0 flex-1 truncate text-xs font-semibold">
+          {titulo}
+        </span>
+        <span className="text-[9px] font-bold uppercase tracking-wide opacity-75">
+          {ETIQUETA_ESTADO[generacion.estado]}
+        </span>
+        {esTerminal && (
+          <button
+            type="button"
+            onClick={cerrar}
+            aria-label="Cerrar aviso"
+            className="shrink-0 rounded-md p-0.5 opacity-60 transition-opacity hover:opacity-100 focus-visible:opacity-100"
+          >
+            <X className="size-3" aria-hidden="true" />
+          </button>
         )}
       </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold">{mensaje.titulo}</p>
-        <p className="truncate text-xs opacity-85">{mensaje.descripcion}</p>
+
+      {/* Panel detalle (solo en hover/focus) */}
+      <div
+        className={cn(
+          'max-h-0 overflow-hidden opacity-0 transition-all duration-200',
+          'group-hover:max-h-48 group-hover:opacity-100',
+          'group-focus-within:max-h-48 group-focus-within:opacity-100',
+        )}
+      >
+        <p className="border-t border-current/15 pt-1.5 text-[11px] leading-snug opacity-90">
+          {descripcion}
+        </p>
+
+        <dl className="mt-1.5 grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10px] opacity-80">
+          <dt className="font-semibold uppercase tracking-wide">Proveedor</dt>
+          <dd className="truncate text-right">
+            {generacion.proveedorActual ?? '—'}
+          </dd>
+          <dt className="font-semibold uppercase tracking-wide">Bloqueo</dt>
+          <dd className="text-right">
+            {planBloqueadoPorIa ? 'Editor bloqueado' : 'Editor libre'}
+          </dd>
+        </dl>
+
+        <div className="mt-2 flex items-center justify-end gap-2">
+          {generacion.socioId && (
+            <button
+              type="button"
+              onClick={irAlPlan}
+              className="inline-flex items-center gap-1 rounded-md bg-background/60 px-2 py-1 text-[10px] font-semibold transition-colors hover:bg-background/90"
+            >
+              <span>Ir al plan</span>
+              <ArrowUpRight className="size-2.5" aria-hidden="true" />
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Hidden flag for tests / debugging */}
+      <span data-testid="generacion-id-oculto" className="sr-only">
+        ID: {generacionPlanIa?.id ?? generacion.id} · socio: {generacion.socioId}
+      </span>
     </div>
   );
-}
-
-function obtenerMensaje(generacion: GeneracionPlanIaFE): { titulo: string; descripcion: string } {
-  if (generacion.estado === 'PENDIENTE') {
-    return {
-      titulo: 'Generación IA en cola',
-      descripcion: generacion.mensajeEstado ?? 'El plan queda bloqueado hasta que empiece la generación.',
-    };
-  }
-
-  if (generacion.estado === 'GENERANDO') {
-    return {
-      titulo: 'Generando plan de alimentación',
-      descripcion: generacion.proveedorActual
-        ? `${generacion.mensajeEstado ?? 'Procesando con IA'} · ${generacion.proveedorActual}`
-        : generacion.mensajeEstado ?? 'Procesando con IA',
-    };
-  }
-
-  if (generacion.estado === 'ERROR') {
-    return {
-      titulo: 'La generación falló',
-      descripcion: generacion.errorMensaje ?? 'El editor vuelve a estar disponible.',
-    };
-  }
-
-  return {
-    titulo: 'Plan generado correctamente',
-    descripcion: 'Actualizando el editor con la nueva versión.',
-  };
 }

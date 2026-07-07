@@ -13,7 +13,7 @@
 import { useCallback, useMemo } from 'react';
 
 import { SlotComidaManual, type AlternativaSlot } from './SlotComidaManual';
-import { DialogResumenMacros } from './DialogResumenMacros';
+import { ResumenMacrosPorDia } from './ResumenMacrosPorDia';
 import type { EstructuraDiaFE, ItemComidaSnapshotFE } from '@/types/ia';
 
 const DIAS = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'] as const;
@@ -162,67 +162,91 @@ export function GrillaManualSlots({
         aria-label="Grilla de slots manuales"
         className="min-w-0 overflow-x-auto rounded-xl border bg-card/40 p-2"
       >
-        <div className="flex min-w-[760px] gap-2">
-          <div className="flex flex-col" style={{ width: '72px' }}>
-            <div className="h-8" />
-            {DIAS.map((dia) => (
-              <div
-                key={dia}
-                className="flex items-center font-bold text-xs uppercase tracking-wide text-muted-foreground"
-                style={{ height: '120px' }}
-              >
-                {dia}
-              </div>
-            ))}
-          </div>
-
-          <div className="flex-1">
+        {/* Layout en una sola grilla CSS Grid de 6 columnas (1 label + 5 comidas).
+            Cada día es una fila → el label de día y sus celdas comparten altura
+            automáticamente. Ya no hay altura fija de 120px que se desalinee. */}
+        <div
+          className="min-w-[760px]"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: `72px repeat(${TIPOS_COMIDA.length}, minmax(0, 1fr))`,
+            gap: '8px',
+          }}
+        >
+          {/* Header: primera celda vacía + 5 labels de tipo de comida */}
+          <div className="h-8" aria-hidden="true" />
+          {TIPOS_COMIDA.map((tipo) => (
             <div
-              className="mb-2 grid gap-2"
-              style={{ gridTemplateColumns: `repeat(${TIPOS_COMIDA.length}, 1fr)` }}
+              key={tipo}
+              className="flex h-8 items-center justify-center text-center text-xs font-bold uppercase tracking-wide text-muted-foreground"
             >
-              {TIPOS_COMIDA.map((tipo) => (
-                <div
-                  key={tipo}
-                  className="text-center text-xs font-bold uppercase tracking-wide text-muted-foreground"
-                >
-                  {tipo}
-                </div>
-              ))}
+              {tipo}
             </div>
+          ))}
 
-            <div className="flex flex-col gap-2">
-              {filas.map(({ dia, celdas }) => (
-                <div
-                  key={dia}
-                  className="grid gap-2"
-                  style={{ gridTemplateColumns: `repeat(${TIPOS_COMIDA.length}, 1fr)` }}
-                >
-                  {celdas.map(({ slotKey, dia: celdaDia, tipoComida, alternativas, handleSlotChange }) => (
-                    <CeldaSlot
-                      key={slotKey}
-                      slotKey={slotKey}
-                      dia={celdaDia}
-                      tipoComida={tipoComida}
-                      alternativas={alternativas}
-                      onChange={handleSlotChange}
-                      onSelectForIa={
-                        deshabilitado ? undefined : () => onSelectSlot?.(celdaDia, tipoComida)
-                      }
-                      deshabilitado={deshabilitado}
-                    />
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* Filas: una por día */}
+          {filas.map(({ dia, celdas }) => (
+            <FilaDia
+              key={dia}
+              dia={dia}
+              celdas={celdas}
+              onSelectSlot={onSelectSlot}
+              deshabilitado={deshabilitado}
+            />
+          ))}
         </div>
       </div>
 
-      <div className="sticky bottom-0 z-10">
-        <DialogResumenMacros estructura={estructura} />
-      </div>
+      {/* Resumen por día (reemplaza al antiguo DialogResumenMacros fijo) */}
+      <ResumenMacrosPorDia estructura={estructura} />
     </div>
+  );
+}
+
+function FilaDia({
+  dia,
+  celdas,
+  onSelectSlot,
+  deshabilitado,
+}: {
+  dia: (typeof DIAS)[number];
+  celdas: Array<{
+    slotKey: string;
+    dia: (typeof DIAS)[number];
+    tipoComida: (typeof TIPOS_COMIDA)[number];
+    alternativas: AlternativaSlot[];
+    handleSlotChange: (alternativas: AlternativaSlot[]) => void;
+  }>;
+  onSelectSlot?: (dia: string, tipoComida: string) => void;
+  deshabilitado?: boolean;
+}) {
+  return (
+    <>
+      {/* Label de día: sticky left para que sea visible al scrollear horizontal */}
+      <div
+        className="flex items-center justify-center rounded-md bg-muted/40 px-1 py-2 text-xs font-bold uppercase tracking-wide text-muted-foreground"
+        aria-label={`Día ${dia}`}
+      >
+        <span className="[writing-mode:vertical-rl] [transform:rotate(180deg)]">
+          {dia}
+        </span>
+      </div>
+
+      {celdas.map(({ slotKey, dia: celdaDia, tipoComida, alternativas, handleSlotChange }) => (
+        <CeldaSlot
+          key={slotKey}
+          slotKey={slotKey}
+          dia={celdaDia}
+          tipoComida={tipoComida}
+          alternativas={alternativas}
+          onChange={handleSlotChange}
+          onSelectForIa={
+            deshabilitado ? undefined : () => onSelectSlot?.(celdaDia, tipoComida)
+          }
+          deshabilitado={deshabilitado}
+        />
+      ))}
+    </>
   );
 }
 

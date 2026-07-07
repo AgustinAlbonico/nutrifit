@@ -67,7 +67,6 @@ import {
 } from '@/components/ui/dialog';
 
 import { GeneradorPlanSemanal } from '@/components/ia/GeneradorPlanSemanal';
-import { BadgeGeneracionPlanIa } from '@/components/ia/BadgeGeneracionPlanIa';
 import { FeedbackModal } from '@/components/ia/FeedbackModal';
 import { VersionHistory } from '@/components/plan/VersionHistory';
 import { RazonamientoCumplimiento } from '@/components/plan/RazonamientoCumplimiento';
@@ -82,11 +81,7 @@ import { desenvolverRespuestaApi } from '@/lib/api-response';
 import { useObtenerFichaNutricionista } from '@/hooks/useObtenerFichaNutricionista';
 import { useEditarFichaPaciente } from '@/hooks/useEditarFichaPaciente';
 import { useDebounce } from '@/hooks/useDebounce';
-import {
-  esGeneracionPlanIaActiva,
-  useGeneracionPlanIa,
-  useGeneracionPlanIaActiva,
-} from '@/hooks/useIa';
+import { useGeneracionPlanIa as useGeneracionPlanIaContext } from '@/contexts/GeneracionPlanIaContext';
 import { normalizarVersionesPlan } from '@/hooks/useVersionesPlan';
 import type { PaginatedData } from '@nutrifit/shared';
 import type { ApiResponse } from '@/types/api';
@@ -297,8 +292,10 @@ export function PlanEditorPage() {
     dia: DiaSemana;
     tipoComida: TipoComidaPlan;
   } | null>(null);
-  const [generacionPlanIaId, setGeneracionPlanIaId] = useState<number | null>(null);
-  const generacionCerradaRef = useRef<number | null>(null);
+  // El estado de generación IA (ID específico, bloqueo, etc.) vive en
+  // GeneracionPlanIaContext para que el badge persista al navegar.
+  // `planBloqueadoPorIaRef` se mantiene como puente para callbacks estables
+  // (no queremos que `manejarCrearPlanManual` se recree en cada cambio de estado IA).
   const planBloqueadoPorIaRef = useRef(false);
 
   // Ficha de salud del paciente
@@ -449,30 +446,30 @@ export function PlanEditorPage() {
 
   const planIdActual = respuesta?.planAlimentacionId ?? planManualExistenteId;
 
-  const { data: generacionActiva } = useGeneracionPlanIaActiva({
-    socioId: socioIdNumero,
-    planAlimentacionId: planIdActual,
-    habilitado: puedeEditarPlanes && !!socioIdNumero,
-  });
-  const { data: generacionPlanIa } = useGeneracionPlanIa({
-    generacionId: generacionPlanIaId,
-    habilitado: puedeEditarPlanes && generacionPlanIaId !== null,
-  });
-  const generacionVisible = generacionPlanIa ?? generacionActiva ?? null;
-  const planBloqueadoPorIa = esGeneracionPlanIaActiva(generacionVisible);
+  // El polling y el badge persistente viven en GeneracionPlanIaContext.
+  // Aquí solo consumimos el estado y sincronizamos los IDs del socio/plan.
+  const {
+    generacionVisible,
+    planBloqueadoPorIa,
+    setIds,
+  } = useGeneracionPlanIaContext();
   planBloqueadoPorIaRef.current = planBloqueadoPorIa;
 
-  const registrarGeneracionIniciada = useCallback((generacion: GeneracionPlanIaFE) => {
-    generacionCerradaRef.current = null;
-    setGeneracionPlanIaId(generacion.id);
-    setGeneradorIaAbierto(false);
-  }, []);
-
   useEffect(() => {
-    if (!generacionActiva?.id || generacionActiva.id === generacionPlanIaId) return;
-    generacionCerradaRef.current = null;
-    setGeneracionPlanIaId(generacionActiva.id);
-  }, [generacionActiva?.id, generacionPlanIaId]);
+    if (!puedeEditarPlanes) return;
+    setIds({
+      socioId: socioIdNumero ?? null,
+      planAlimentacionId: planIdActual ?? null,
+    });
+  }, [puedeEditarPlanes, socioIdNumero, planIdActual, setIds]);
+
+  const registrarGeneracionIniciada = useCallback(
+    (generacion: GeneracionPlanIaFE) => {
+      setIds({ generacionIdEspecifica: generacion.id });
+      setGeneradorIaAbierto(false);
+    },
+    [setIds],
+  );
 
   useEffect(() => {
     if (!planBloqueadoPorIa) return;
@@ -480,41 +477,42 @@ export function PlanEditorPage() {
     setGeneradorIaAbierto(false);
   }, [planBloqueadoPorIa]);
 
+  // El Context se encarga del cleanup del ID cuando llega a estado terminal.
+  // Aquí solo reaccionamos a la transición COMPLETADO/ERROR para actualizar
+  // la UI local del editor (estructura, versión, toasts).
+  const generacionCerradaRef = useRef<number | null>(null);
   useEffect(() => {
-    if (!generacionPlanIa?.id) return;
-    if (generacionCerradaRef.current === generacionPlanIa.id) return;
+    const g = generacionVisible;
+    if (!g?.id) return;
+    if (generacionCerradaRef.current === g.id) return;
 
-    const { id, estado, respuestaJson, errorMensaje } = generacionPlanIa;
-
-    if (estado === 'COMPLETADO') {
-      generacionCerradaRef.current = id;
-      if (respuestaJson) {
-        const respuestaNormalizada = normalizarRespuestaConMacros(respuestaJson);
+    if (g.estado === 'COMPLETADO') {
+      generacionCerradaRef.current = g.id;
+      if (g.respuestaJson) {
+        const respuestaNormalizada = normalizarRespuestaConMacros(g.respuestaJson);
         setRespuesta(respuestaNormalizada);
         setPlanManualExistenteId(respuestaNormalizada.planAlimentacionId);
         setEstructura(completarEstructuraManual(respuestaNormalizada.plan.estructura));
         setVersionSeleccionadaId(respuestaNormalizada.versionId);
         haSidoModificadoRef.current = false;
       }
-      setGeneracionPlanIaId(null);
       toast.success('Plan generado correctamente', {
         description: 'El editor se actualizó con la nueva versión del plan.',
       });
       return;
     }
 
-    if (estado === 'ERROR') {
-      generacionCerradaRef.current = id;
-      setGeneracionPlanIaId(null);
+    if (g.estado === 'ERROR') {
+      generacionCerradaRef.current = g.id;
       toast.error('La generación con IA falló', {
-        description: errorMensaje ?? 'El editor vuelve a estar disponible.',
+        description: g.errorMensaje ?? 'El editor vuelve a estar disponible.',
       });
     }
   }, [
-    generacionPlanIa?.id,
-    generacionPlanIa?.estado,
-    generacionPlanIa?.respuestaJson,
-    generacionPlanIa?.errorMensaje,
+    generacionVisible?.id,
+    generacionVisible?.estado,
+    generacionVisible?.respuestaJson,
+    generacionVisible?.errorMensaje,
   ]);
 
   // Carga el borrador o versión activa al montar o cambiar de plan
@@ -772,8 +770,6 @@ export function PlanEditorPage() {
 
   return (
     <div className="flex flex-col gap-6 pb-24">
-      <BadgeGeneracionPlanIa generacion={generacionVisible} />
-
       {/* Header */}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-3">

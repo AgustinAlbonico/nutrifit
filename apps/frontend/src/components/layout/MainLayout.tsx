@@ -1,7 +1,9 @@
 import { Outlet } from '@tanstack/react-router';
+
 import { Sidebar } from './Sidebar';
 import { ImpersonationIndicator } from '@/components/admin/ImpersonationIndicator';
 import { BannerConsultaActiva } from './BannerConsultaActiva';
+import { BadgeGeneracionPlanIa } from '@/components/ia/BadgeGeneracionPlanIa';
 
 export function MainLayout() {
   return (
@@ -16,6 +18,7 @@ export function MainLayout() {
         </div>
       </main>
       <BannerConsultaActiva />
+      <BadgeGeneracionPlanIa />
     </div>
   );
 }
