@@ -25,6 +25,7 @@ import type { ApiResponse } from '@/types/api';
 import type { DiaSemana, TipoComidaPlan, IdeaComidaIa } from '@/types/ia';
 
 const CANTIDADES_ALTERNATIVAS = [1, 2, 3, 5, 8, 10] as const;
+const LIMITE_POR_PAGINA = 3;
 const ESTADO_DIALOG_INICIAL = {
   cantidadAlternativas: 3,
   ideas: [] as IdeaComidaIa[],
@@ -100,13 +101,22 @@ export function DialogGenerarIdeasIa({
 
   const agregar = (idea: IdeaComidaIa) => {
     onAddIdea(slot.dia, slot.tipoComida, idea);
+    setEstado((prev) => {
+      const ideasRestantes = prev.ideas.filter((i) => i.idTemp !== idea.idTemp);
+      const totalPaginasRestantes = Math.ceil(ideasRestantes.length / LIMITE_POR_PAGINA);
+      const ultimaPaginaValida = Math.max(0, totalPaginasRestantes - 1);
+      return {
+        ...prev,
+        ideas: ideasRestantes,
+        pagina: Math.min(prev.pagina, ultimaPaginaValida),
+      };
+    });
     toast.success(`"${idea.nombre}" agregado a ${slot.dia} · ${slot.tipoComida}`);
   };
 
-  const limitePorPagina = 3;
-  const inicio = pagina * limitePorPagina;
-  const visibles = ideas.slice(inicio, inicio + limitePorPagina);
-  const totalPaginas = Math.ceil(ideas.length / limitePorPagina);
+  const inicio = pagina * LIMITE_POR_PAGINA;
+  const visibles = ideas.slice(inicio, inicio + LIMITE_POR_PAGINA);
+  const totalPaginas = Math.ceil(ideas.length / LIMITE_POR_PAGINA);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
