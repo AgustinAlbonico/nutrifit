@@ -68,7 +68,7 @@ export class IaConfiguracionController {
     return this.iaConfiguracionService.probarConexion(provider, dto);
   }
 
-  @Get(':provider/modelos')
+  @Post(':provider/modelos')
   async obtenerModelos(
     @Param('provider') provider: ProveedorIa,
     @Body() dto: GuardarIaConfiguracionDto = {},
