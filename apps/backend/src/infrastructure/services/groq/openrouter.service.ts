@@ -18,24 +18,16 @@ const TIMEOUT_DEFAULT_MS = 120000;
 @Injectable()
 export class OpenRouterService implements IAiProviderService {
   private readonly logger = new Logger(OpenRouterService.name);
-  private readonly apiKey?: string;
-  private readonly client: OpenAI;
-  private readonly model: string;
 
-  constructor(private readonly configService: EnvironmentConfigService) {
-    this.apiKey = this.configService.getOpenRouterApiKey();
-    this.model = this.configService.getOpenRouterModel();
-    this.client = new OpenAI({
-      apiKey: this.apiKey ?? 'openrouter-no-configurado',
-      baseURL: this.configService.getOpenRouterBaseUrl(),
-    });
-  }
+  constructor(private readonly configService: EnvironmentConfigService) {}
 
   async generarRecomendacion<T>(
     prompt: string,
     configuracion: object | ConfiguracionGeneracionIA = {},
   ): Promise<T> {
-    if (!this.apiKey) {
+    const apiKey = this.configService.getOpenRouterApiKey();
+
+    if (!apiKey) {
       throw new ServiceUnavailableError('OpenRouter no está configurado.', {
         proveedor: 'openrouter',
       });
@@ -46,7 +38,7 @@ export class OpenRouterService implements IAiProviderService {
       const { schema, temperature, maxTokens, timeoutMs } =
         this.normalizarConfiguracion(configuracion);
 
-      const response = await this.client.chat.completions.create(
+      const response = await this.crearCliente(apiKey).chat.completions.create(
         {
           messages: [
             {
@@ -59,7 +51,7 @@ export class OpenRouterService implements IAiProviderService {
               content: `${prompt}\n\nEsquema JSON requerido:\n${JSON.stringify(schema, null, 2)}\n\nResponde SOLO con el JSON, sin texto adicional.`,
             },
           ],
-          model: this.model,
+          model: this.configService.getOpenRouterModel(),
           temperature,
           max_tokens: maxTokens,
           response_format: { type: 'json_object' },
@@ -86,7 +78,10 @@ export class OpenRouterService implements IAiProviderService {
       this.logger.log('Respuesta de OpenRouter API procesada exitosamente');
       return JSON.parse(content) as T;
     } catch (error) {
-      if (error instanceof AIRateLimitError || error instanceof ServiceUnavailableError) {
+      if (
+        error instanceof AIRateLimitError ||
+        error instanceof ServiceUnavailableError
+      ) {
         throw error;
       }
 
@@ -109,25 +104,42 @@ export class OpenRouterService implements IAiProviderService {
   }
 
   verificarConexion(): Promise<boolean> {
-    return Promise.resolve(Boolean(this.apiKey && this.apiKey.length >= 20));
+    const apiKey = this.configService.getOpenRouterApiKey();
+    return Promise.resolve(Boolean(apiKey && apiKey.length >= 20));
   }
 
-  private normalizarConfiguracion(configuracion: object | ConfiguracionGeneracionIA) {
+  private normalizarConfiguracion(
+    configuracion: object | ConfiguracionGeneracionIA,
+  ) {
     const registro = configuracion as Record<string, unknown>;
     const schema =
       registro.schema && typeof registro.schema === 'object'
-        ? (registro.schema as object)
+        ? registro.schema
         : configuracion;
 
     return {
       schema,
-      temperature: this.obtenerNumero(registro.temperature, TEMPERATURA_DEFAULT),
+      temperature: this.obtenerNumero(
+        registro.temperature,
+        this.configService.getTemperatureIa('openrouter') ??
+          TEMPERATURA_DEFAULT,
+      ),
       maxTokens: this.obtenerNumero(
         registro.max_tokens ?? registro.maxTokens,
-        MAX_TOKENS_DEFAULT,
+        this.configService.getMaxTokensIa('openrouter') ?? MAX_TOKENS_DEFAULT,
       ),
-      timeoutMs: this.obtenerNumero(registro.timeoutMs, TIMEOUT_DEFAULT_MS),
+      timeoutMs: this.obtenerNumero(
+        registro.timeoutMs,
+        this.configService.getTimeoutMsIa('openrouter') ?? TIMEOUT_DEFAULT_MS,
+      ),
     };
+  }
+
+  private crearCliente(apiKey: string): OpenAI {
+    return new OpenAI({
+      apiKey,
+      baseURL: this.configService.getOpenRouterBaseUrl(),
+    });
   }
 
   private obtenerNumero(valor: unknown, valorDefault: number): number {

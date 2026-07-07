@@ -13,10 +13,10 @@ export * from './notificaciones.controller';
 export * from './admin/admin-estadisticas.controller';
 export * from './admin/admin-reportes.controller';
 export * from './admin/configuracion.controller';
+export * from './ia-configuracion.controller';
 export * from './gimnasios.controller';
 export * from './recepcionistas.controller';
 export * from './nutricionista-ia-memoria.controller';
 export * from './ideas-comida.controller';
 
 export * from './ai.controller';
-

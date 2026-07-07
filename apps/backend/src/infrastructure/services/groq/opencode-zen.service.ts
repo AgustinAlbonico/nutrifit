@@ -1,8 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import OpenAI, {
-  APIConnectionError,
-  APIConnectionTimeoutError,
-} from 'openai';
+import OpenAI, { APIConnectionError, APIConnectionTimeoutError } from 'openai';
 
 import {
   AIRateLimitError,
@@ -22,25 +19,16 @@ const TIMEOUT_DEFAULT_MS = 120000;
 @Injectable()
 export class OpenCodeZenService implements IAiProviderService {
   private readonly logger = new Logger(OpenCodeZenService.name);
-  private readonly apiKey?: string;
-  private readonly client: OpenAI;
-  private readonly model: string;
 
-  constructor(private readonly configService: EnvironmentConfigService) {
-    this.apiKey = this.configService.getOpenCodeApiKey();
-    this.model = this.configService.getOpenCodeModel();
-    this.client = new OpenAI({
-      apiKey: this.apiKey ?? 'opencode-zen-no-configurado',
-      baseURL: this.configService.getOpenCodeBaseUrl(),
-      maxRetries: 0,
-    });
-  }
+  constructor(private readonly configService: EnvironmentConfigService) {}
 
   async generarRecomendacion<T>(
     prompt: string,
     configuracion: object | ConfiguracionGeneracionIA = {},
   ): Promise<T> {
-    if (!this.apiKey) {
+    const apiKey = this.configService.getOpenCodeApiKey();
+
+    if (!apiKey) {
       throw new ServiceUnavailableError('OpenCode Zen no está configurado.', {
         proveedor: 'opencode',
       });
@@ -51,7 +39,7 @@ export class OpenCodeZenService implements IAiProviderService {
       const { schema, temperature, maxTokens, timeoutMs } =
         this.normalizarConfiguracion(configuracion);
 
-      const response = await this.client.chat.completions.create(
+      const response = await this.crearCliente(apiKey).chat.completions.create(
         {
           messages: [
             {
@@ -64,7 +52,7 @@ export class OpenCodeZenService implements IAiProviderService {
               content: this.construirPromptUsuario(prompt, schema),
             },
           ],
-          model: this.model,
+          model: this.configService.getOpenCodeModel(),
           temperature,
           max_tokens: maxTokens,
         },
@@ -109,7 +97,10 @@ export class OpenCodeZenService implements IAiProviderService {
         `Error en OpenCodeZenService (${nombreError}${status ? ` status=${status}` : ''}): ${detalle}`,
       );
 
-      if (error instanceof AIRateLimitError || error instanceof ServiceUnavailableError) {
+      if (
+        error instanceof AIRateLimitError ||
+        error instanceof ServiceUnavailableError
+      ) {
         throw error;
       }
 
@@ -135,31 +126,51 @@ export class OpenCodeZenService implements IAiProviderService {
   }
 
   verificarConexion(): Promise<boolean> {
-    return Promise.resolve(Boolean(this.apiKey && this.apiKey.length >= 20));
+    const apiKey = this.configService.getOpenCodeApiKey();
+    return Promise.resolve(Boolean(apiKey && apiKey.length >= 20));
   }
 
-  private normalizarConfiguracion(configuracion: object | ConfiguracionGeneracionIA) {
+  private normalizarConfiguracion(
+    configuracion: object | ConfiguracionGeneracionIA,
+  ) {
     const registro = configuracion as Record<string, unknown>;
     const schema =
       registro.schema && typeof registro.schema === 'object'
-        ? (registro.schema as object)
+        ? registro.schema
         : undefined;
 
     return {
       schema,
-      temperature: this.obtenerNumero(registro.temperature, TEMPERATURA_DEFAULT),
+      temperature: this.obtenerNumero(
+        registro.temperature,
+        this.configService.getTemperatureIa('opencode') ?? TEMPERATURA_DEFAULT,
+      ),
       maxTokens: Math.max(
         this.obtenerNumero(
           registro.max_tokens ?? registro.maxTokens,
-          MAX_TOKENS_DEFAULT,
+          this.configService.getMaxTokensIa('opencode') ?? MAX_TOKENS_DEFAULT,
         ),
         MAX_TOKENS_MINIMO_OPENCODE,
       ),
-      timeoutMs: this.obtenerNumero(registro.timeoutMs, TIMEOUT_DEFAULT_MS),
+      timeoutMs: this.obtenerNumero(
+        registro.timeoutMs,
+        this.configService.getTimeoutMsIa('opencode') ?? TIMEOUT_DEFAULT_MS,
+      ),
     };
   }
 
-  private construirPromptUsuario(prompt: string, schema: object | undefined): string {
+  private crearCliente(apiKey: string): OpenAI {
+    return new OpenAI({
+      apiKey,
+      baseURL: this.configService.getOpenCodeBaseUrl(),
+      maxRetries: 0,
+    });
+  }
+
+  private construirPromptUsuario(
+    prompt: string,
+    schema: object | undefined,
+  ): string {
     const schemaTexto = schema
       ? `\n\nEsquema JSON requerido:\n${JSON.stringify(schema, null, 2)}`
       : '';
@@ -203,9 +214,7 @@ export class OpenCodeZenService implements IAiProviderService {
     const texto = contenido.trim();
 
     // Caso 1: bloque markdown ```json ... ``` (o ``` sin lenguaje)
-    const matchBloqueCodigo = /^```(?:json)?\s*([\s\S]*?)\s*```$/m.exec(
-      texto,
-    );
+    const matchBloqueCodigo = /^```(?:json)?\s*([\s\S]*?)\s*```$/m.exec(texto);
     if (matchBloqueCodigo && matchBloqueCodigo[1]) {
       return matchBloqueCodigo[1].trim();
     }

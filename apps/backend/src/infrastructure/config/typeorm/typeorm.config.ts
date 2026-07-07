@@ -17,6 +17,7 @@ import {
 } from 'src/infrastructure/persistence/typeorm/entities/ficha-salud.entity';
 import { FichaSaludVersionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/ficha-salud-version.entity';
 import { GeneracionPlanIaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/generacion-plan-ia.entity';
+import { IaConfiguracionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/ia-configuracion.entity';
 import { UsuarioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/usuario.entity';
 import { OpcionComidaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/opcion-comida.entity';
 import { GrupoAlimenticioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/grupo-alimenticio.entity';
@@ -76,6 +77,7 @@ export const AppDataSource = (
     FichaSaludOrmEntity,
     FichaSaludVersionOrmEntity,
     GeneracionPlanIaOrmEntity,
+    IaConfiguracionOrmEntity,
     ItemComidaOrmEntity,
     OpcionComidaOrmEntity,
     NutricionistaOrmEntity,

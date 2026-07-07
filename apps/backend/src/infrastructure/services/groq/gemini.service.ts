@@ -22,6 +22,7 @@ interface GeminiCandidate {
   content?: {
     parts?: GeminiPart[];
   };
+  finishReason?: string;
 }
 
 interface GeminiResponse {
@@ -31,19 +32,16 @@ interface GeminiResponse {
 @Injectable()
 export class GeminiService implements IAiProviderService {
   private readonly logger = new Logger(GeminiService.name);
-  private readonly apiKey?: string;
-  private readonly model: string;
 
-  constructor(private readonly configService: EnvironmentConfigService) {
-    this.apiKey = this.configService.getGeminiApiKey();
-    this.model = this.configService.getGeminiModel();
-  }
+  constructor(private readonly configService: EnvironmentConfigService) {}
 
   async generarRecomendacion<T>(
     prompt: string,
     configuracion: object | ConfiguracionGeneracionIA = {},
   ): Promise<T> {
-    if (!this.apiKey) {
+    const apiKey = this.configService.getGeminiApiKey();
+
+    if (!apiKey) {
       throw new ServiceUnavailableError('Gemini no está configurado.', {
         proveedor: 'gemini',
       });
@@ -56,7 +54,7 @@ export class GeminiService implements IAiProviderService {
 
     try {
       this.logger.log('Iniciando llamada a Gemini API');
-      const response = await fetch(this.crearUrl(), {
+      const response = await fetch(this.crearUrl(apiKey), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -114,7 +112,10 @@ export class GeminiService implements IAiProviderService {
       this.logger.log('Respuesta de Gemini API procesada exitosamente');
       return JSON.parse(content) as T;
     } catch (error) {
-      if (error instanceof AIRateLimitError || error instanceof ServiceUnavailableError) {
+      if (
+        error instanceof AIRateLimitError ||
+        error instanceof ServiceUnavailableError
+      ) {
         throw error;
       }
 
@@ -126,19 +127,24 @@ export class GeminiService implements IAiProviderService {
 
       const detalle = error instanceof Error ? error.message : String(error);
       this.logger.error(`Error en GeminiService: ${detalle}`);
-      throw new Error(`No se pudo generar la recomendación con Gemini: ${detalle}`);
+      throw new Error(
+        `No se pudo generar la recomendación con Gemini: ${detalle}`,
+      );
     } finally {
       clearTimeout(timeout);
     }
   }
 
   verificarConexion(): Promise<boolean> {
-    return Promise.resolve(Boolean(this.apiKey && this.apiKey.length >= 20));
+    const apiKey = this.configService.getGeminiApiKey();
+    return Promise.resolve(Boolean(apiKey && apiKey.length >= 20));
   }
 
-  private crearUrl(): string {
-    const modeloCodificado = encodeURIComponent(this.model);
-    return `https://generativelanguage.googleapis.com/v1beta/models/${modeloCodificado}:generateContent?key=${this.apiKey}`;
+  private crearUrl(apiKey: string): string {
+    const modeloCodificado = encodeURIComponent(
+      this.configService.getGeminiModel(),
+    );
+    return `https://generativelanguage.googleapis.com/v1beta/models/${modeloCodificado}:generateContent?key=${apiKey}`;
   }
 
   private async lanzarErrorHttp(response: Response): Promise<never> {
@@ -164,21 +170,29 @@ export class GeminiService implements IAiProviderService {
     }
   }
 
-  private normalizarConfiguracion(configuracion: object | ConfiguracionGeneracionIA) {
+  private normalizarConfiguracion(
+    configuracion: object | ConfiguracionGeneracionIA,
+  ) {
     const registro = configuracion as Record<string, unknown>;
     const schema =
       registro.schema && typeof registro.schema === 'object'
-        ? (registro.schema as object)
+        ? registro.schema
         : configuracion;
 
     return {
       schema,
-      temperature: this.obtenerNumero(registro.temperature, TEMPERATURA_DEFAULT),
+      temperature: this.obtenerNumero(
+        registro.temperature,
+        this.configService.getTemperatureIa('gemini') ?? TEMPERATURA_DEFAULT,
+      ),
       maxTokens: this.obtenerNumero(
         registro.max_tokens ?? registro.maxTokens,
-        MAX_TOKENS_DEFAULT,
+        this.configService.getMaxTokensIa('gemini') ?? MAX_TOKENS_DEFAULT,
       ),
-      timeoutMs: this.obtenerNumero(registro.timeoutMs, TIMEOUT_DEFAULT_MS),
+      timeoutMs: this.obtenerNumero(
+        registro.timeoutMs,
+        this.configService.getTimeoutMsIa('gemini') ?? TIMEOUT_DEFAULT_MS,
+      ),
     };
   }
 

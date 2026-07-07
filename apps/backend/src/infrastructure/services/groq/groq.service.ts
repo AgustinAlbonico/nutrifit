@@ -21,18 +21,8 @@ const TIMEOUT_DEFAULT_MS = 120000;
 @Injectable()
 export class GroqService implements IAiProviderService {
   private readonly logger = new Logger(GroqService.name);
-  private readonly client: OpenAI;
-  private readonly baseUrl: string;
-  private readonly model: string;
 
-  constructor(private readonly configService: EnvironmentConfigService) {
-    this.baseUrl = this.configService.getGroqBaseUrl();
-    this.model = this.configService.getGroqModel();
-    this.client = new OpenAI({
-      apiKey: this.configService.getGroqApiKeyOpcional() ?? 'groq-no-configurado',
-      baseURL: this.baseUrl,
-    });
-  }
+  constructor(private readonly configService: EnvironmentConfigService) {}
 
   async generarRecomendacion<T>(
     prompt: string,
@@ -40,12 +30,19 @@ export class GroqService implements IAiProviderService {
   ): Promise<T> {
     try {
       this.logger.log('Iniciando llamada a Groq API');
+      const apiKey = this.configService.getGroqApiKeyOpcional();
+
+      if (!apiKey) {
+        throw new ServiceUnavailableError('Groq no está configurado.', {
+          proveedor: 'groq',
+        });
+      }
 
       const { schema, temperature, maxTokens, timeoutMs } =
         this.normalizarConfiguracion(configuracion);
       const schemaDescription = JSON.stringify(schema, null, 2);
 
-      const response = await this.client.chat.completions.create(
+      const response = await this.crearCliente(apiKey).chat.completions.create(
         {
           messages: [
             {
@@ -58,7 +55,7 @@ export class GroqService implements IAiProviderService {
               content: `${prompt}\n\nEsquema JSON requerido:\n${schemaDescription}\n\nResponde SOLO con el JSON, sin texto adicional.`,
             },
           ],
-          model: this.model,
+          model: this.configService.getGroqModel(),
           temperature,
           max_tokens: maxTokens,
           response_format: { type: 'json_object' },
@@ -92,7 +89,9 @@ export class GroqService implements IAiProviderService {
 
       const status = (error as { status?: number })?.status;
       if (status === 429) {
-        const mensajeGroq = (error as { error?: { message?: string } })?.error?.message ?? detalle;
+        const mensajeGroq =
+          (error as { error?: { message?: string } })?.error?.message ??
+          detalle;
         const retryMatch = mensajeGroq.match(/try again in\s+([0-9hms.]+)/i);
         const retryTexto = retryMatch?.[1]?.trim();
         throw new AIRateLimitError(mensajeGroq, {
@@ -133,14 +132,24 @@ export class GroqService implements IAiProviderService {
       schema,
       temperature: this.obtenerNumero(
         registro.temperature,
-        TEMPERATURA_DEFAULT,
+        this.configService.getTemperatureIa('groq') ?? TEMPERATURA_DEFAULT,
       ),
       maxTokens: this.obtenerNumero(
         registro.max_tokens ?? registro.maxTokens,
-        MAX_TOKENS_DEFAULT,
+        this.configService.getMaxTokensIa('groq') ?? MAX_TOKENS_DEFAULT,
       ),
-      timeoutMs: this.obtenerNumero(registro.timeoutMs, TIMEOUT_DEFAULT_MS),
+      timeoutMs: this.obtenerNumero(
+        registro.timeoutMs,
+        this.configService.getTimeoutMsIa('groq') ?? TIMEOUT_DEFAULT_MS,
+      ),
     };
+  }
+
+  private crearCliente(apiKey: string): OpenAI {
+    return new OpenAI({
+      apiKey,
+      baseURL: this.configService.getGroqBaseUrl(),
+    });
   }
 
   private obtenerSchemaDesdeConfiguracion(

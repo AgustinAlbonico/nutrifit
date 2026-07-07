@@ -16,6 +16,7 @@ import {
   PatologiaOrmEntity,
 } from '../../persistence/typeorm/entities/ficha-salud.entity';
 import { FichaSaludVersionOrmEntity } from '../../persistence/typeorm/entities/ficha-salud-version.entity';
+import { IaConfiguracionOrmEntity } from '../../persistence/typeorm/entities/ia-configuracion.entity';
 import { UsuarioOrmEntity } from '../../persistence/typeorm/entities/usuario.entity';
 import { OpcionComidaOrmEntity } from '../../persistence/typeorm/entities/opcion-comida.entity';
 import { GrupoAlimenticioOrmEntity } from '../../persistence/typeorm/entities/grupo-alimenticio.entity';
@@ -60,6 +61,7 @@ export const AppMigrationDataSource = new DataSource({
     PatologiaOrmEntity,
     FichaSaludOrmEntity,
     FichaSaludVersionOrmEntity,
+    IaConfiguracionOrmEntity,
     ItemComidaOrmEntity,
     OpcionComidaOrmEntity,
     NutricionistaOrmEntity,

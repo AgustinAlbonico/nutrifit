@@ -17,6 +17,7 @@ import {
   AdminEstadisticasController,
   AdminReportesController,
   ConfiguracionController,
+  IaConfiguracionController,
   RecepcionistasController,
   NutricionistaIaMemoriaController,
   IdeasComidaController,
@@ -58,7 +59,6 @@ import { NotificacionOrmEntity } from 'src/infrastructure/persistence/typeorm/en
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import { GimnasioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/gimnasio.entity';
 import { GimnasioRepository } from 'src/infrastructure/persistence/typeorm/repositories/gimnasio.repository';
-import { APP_INTERCEPTOR } from '@nestjs/core';
 import { RepositoriesModule } from 'src/infrastructure/persistence/typeorm/repositories/repositories.module';
 import { GimnasiosModule } from './gimnasios.module';
 
@@ -124,6 +124,7 @@ import { GimnasiosModule } from './gimnasios.module';
     AdminEstadisticasController,
     AdminReportesController,
     ConfiguracionController,
+    IaConfiguracionController,
     RecepcionistasController,
     NutricionistaIaMemoriaController,
     IdeasComidaController,

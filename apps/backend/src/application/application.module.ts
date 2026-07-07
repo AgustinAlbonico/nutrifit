@@ -11,6 +11,7 @@ import { PlanesAlimentacionModule } from './planes-alimentacion/planes-alimentac
 import { AiModule } from './ai/ai.module';
 import { ReportesModule } from './reportes/reportes.module';
 import { IaMemoriaModule } from './ia-memoria/ia-memoria.module';
+import { IaConfiguracionModule } from './ia-configuracion/ia-configuracion.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { IaMemoriaModule } from './ia-memoria/ia-memoria.module';
     AiModule,
     ReportesModule,
     IaMemoriaModule,
+    IaConfiguracionModule,
   ],
   exports: [
     AuthModule,
@@ -39,6 +41,7 @@ import { IaMemoriaModule } from './ia-memoria/ia-memoria.module';
     AiModule,
     ReportesModule,
     IaMemoriaModule,
+    IaConfiguracionModule,
   ],
 })
 export class ApplicationModule {}

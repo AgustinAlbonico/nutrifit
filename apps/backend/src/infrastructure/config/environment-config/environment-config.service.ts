@@ -1,5 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ModuleRef } from '@nestjs/core';
+import { IA_CONFIGURACION_SERVICE } from 'src/application/ia-configuracion/ia-configuracion.tokens';
+import type {
+  IaConfiguracionConsultaService,
+  ProveedorIa,
+} from 'src/application/ia-configuracion/ia-configuracion.types';
 import { DatabaseConfig } from 'src/domain/config/database.config';
 import { EnvironmentConfigurationError } from './environment-config.error';
 import { AppConfig } from 'src/domain/config/app.config';
@@ -50,6 +56,10 @@ const AI_PROVIDER_CHAIN_DEFAULT: AiProviderName[] = [
   'openrouter',
 ];
 
+const MAX_TOKENS_DEFAULT = 2048;
+const TEMPERATURA_DEFAULT = 0.7;
+const TIMEOUT_DEFAULT_MS = 120000;
+
 const ORIGENES_DESARROLLO_POR_DEFECTO = [
   'http://localhost:4173',
   'http://127.0.0.1:4173',
@@ -63,7 +73,10 @@ export class EnvironmentConfigService
 {
   private readonly logger = new Logger(EnvironmentConfigService.name);
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    @Optional() private readonly moduleRef?: ModuleRef,
+  ) {}
 
   private getEnvironmentVariable<T>(key: string): T {
     try {
@@ -188,6 +201,12 @@ export class EnvironmentConfigService
     return valor === 'true';
   }
   getAiProviderChain(): AiProviderName[] {
+    const chainDb = this.obtenerIaConfiguracionService()?.obtenerChain();
+
+    if (chainDb && chainDb.length > 0) {
+      return chainDb;
+    }
+
     const raw = this.configService.get<string>(
       VariablesEntorno.AI_PROVIDER_CHAIN,
       AI_PROVIDER_CHAIN_DEFAULT.join(','),
@@ -204,60 +223,117 @@ export class EnvironmentConfigService
   }
 
   getGroqApiKey(): string {
-    return this.getEnvironmentVariable<string>(VariablesEntorno.GROQ_API_KEY);
+    return (
+      this.obtenerApiKeyIa('groq') ??
+      this.getEnvironmentVariable<string>(VariablesEntorno.GROQ_API_KEY)
+    );
   }
   getGroqApiKeyOpcional(): string | undefined {
-    return this.configService.get<string>(VariablesEntorno.GROQ_API_KEY);
+    return (
+      this.obtenerApiKeyIa('groq') ??
+      this.configService.get<string>(VariablesEntorno.GROQ_API_KEY)
+    );
   }
   getGroqBaseUrl(): string {
-    return this.configService.get<string>(
-      VariablesEntorno.GROQ_BASE_URL,
-      'https://api.groq.com/openai/v1',
+    return (
+      this.obtenerBaseUrlIa('groq') ??
+      this.configService.get<string>(
+        VariablesEntorno.GROQ_BASE_URL,
+        'https://api.groq.com/openai/v1',
+      )
     );
   }
   getGroqModel(): string {
-    return this.configService.get<string>(
-      VariablesEntorno.GROQ_MODEL,
-      'llama-3.3-70b-versatile',
+    return (
+      this.obtenerModelIa('groq') ??
+      this.configService.get<string>(
+        VariablesEntorno.GROQ_MODEL,
+        'llama-3.3-70b-versatile',
+      )
     );
   }
   getGeminiApiKey(): string | undefined {
-    return this.configService.get<string>(VariablesEntorno.GEMINI_API_KEY);
+    return (
+      this.obtenerApiKeyIa('gemini') ??
+      this.configService.get<string>(VariablesEntorno.GEMINI_API_KEY)
+    );
   }
   getGeminiModel(): string {
-    return this.configService.get<string>(
-      VariablesEntorno.GEMINI_MODEL,
-      'gemini-2.0-flash-lite',
+    return (
+      this.obtenerModelIa('gemini') ??
+      this.configService.get<string>(
+        VariablesEntorno.GEMINI_MODEL,
+        'gemini-2.0-flash-lite',
+      )
     );
   }
   getOpenCodeApiKey(): string | undefined {
-    return this.configService.get<string>(VariablesEntorno.OPENCODE_API_KEY);
+    return (
+      this.obtenerApiKeyIa('opencode') ??
+      this.configService.get<string>(VariablesEntorno.OPENCODE_API_KEY)
+    );
   }
   getOpenCodeBaseUrl(): string {
-    return this.configService.get<string>(
-      VariablesEntorno.OPENCODE_BASE_URL,
-      'https://opencode.ai/zen/v1',
+    return (
+      this.obtenerBaseUrlIa('opencode') ??
+      this.configService.get<string>(
+        VariablesEntorno.OPENCODE_BASE_URL,
+        'https://opencode.ai/zen/v1',
+      )
     );
   }
   getOpenCodeModel(): string {
-    return this.configService.get<string>(
-      VariablesEntorno.OPENCODE_MODEL,
-      'deepseek-v4-flash-free',
+    return (
+      this.obtenerModelIa('opencode') ??
+      this.configService.get<string>(
+        VariablesEntorno.OPENCODE_MODEL,
+        'deepseek-v4-flash-free',
+      )
     );
   }
   getOpenRouterApiKey(): string | undefined {
-    return this.configService.get<string>(VariablesEntorno.OPENROUTER_API_KEY);
+    return (
+      this.obtenerApiKeyIa('openrouter') ??
+      this.configService.get<string>(VariablesEntorno.OPENROUTER_API_KEY)
+    );
   }
   getOpenRouterBaseUrl(): string {
-    return this.configService.get<string>(
-      VariablesEntorno.OPENROUTER_BASE_URL,
-      'https://openrouter.ai/api/v1',
+    return (
+      this.obtenerBaseUrlIa('openrouter') ??
+      this.configService.get<string>(
+        VariablesEntorno.OPENROUTER_BASE_URL,
+        'https://openrouter.ai/api/v1',
+      )
     );
   }
   getOpenRouterModel(): string {
-    return this.configService.get<string>(
-      VariablesEntorno.OPENROUTER_MODEL,
-      'meta-llama/llama-3.3-8b-instruct:free',
+    return (
+      this.obtenerModelIa('openrouter') ??
+      this.configService.get<string>(
+        VariablesEntorno.OPENROUTER_MODEL,
+        'meta-llama/llama-3.3-8b-instruct:free',
+      )
+    );
+  }
+
+  getMaxTokensIa(provider: ProveedorIa): number {
+    return (
+      this.obtenerIaConfiguracionService()?.obtenerMaxTokens(provider) ??
+      MAX_TOKENS_DEFAULT
+    );
+  }
+
+  getTemperatureIa(provider: ProveedorIa): number {
+    return (
+      this.obtenerIaConfiguracionService()?.obtenerTemperature(provider) ??
+      TEMPERATURA_DEFAULT
+    );
+  }
+
+  getTimeoutMsIa(provider: ProveedorIa): number {
+    return (
+      this.obtenerIaConfiguracionService()?.obtenerTimeoutMs(provider) ??
+      TIMEOUT_DEFAULT_MS
     );
   }
 
@@ -270,5 +346,36 @@ export class EnvironmentConfigService
 
   private esProveedorIaValido(proveedor: string): proveedor is AiProviderName {
     return ['groq', 'gemini', 'opencode', 'openrouter'].includes(proveedor);
+  }
+
+  private obtenerIaConfiguracionService():
+    | IaConfiguracionConsultaService
+    | undefined {
+    if (!this.moduleRef) {
+      return undefined;
+    }
+
+    try {
+      return this.moduleRef.get<IaConfiguracionConsultaService>(
+        IA_CONFIGURACION_SERVICE,
+        { strict: false },
+      );
+    } catch {
+      return undefined;
+    }
+  }
+
+  private obtenerApiKeyIa(provider: ProveedorIa): string | undefined {
+    return this.obtenerIaConfiguracionService()?.obtenerApiKeyDescifrada(
+      provider,
+    );
+  }
+
+  private obtenerModelIa(provider: ProveedorIa): string | undefined {
+    return this.obtenerIaConfiguracionService()?.obtenerModel(provider);
+  }
+
+  private obtenerBaseUrlIa(provider: ProveedorIa): string | undefined {
+    return this.obtenerIaConfiguracionService()?.obtenerBaseUrl(provider);
   }
 }

@@ -11,6 +11,7 @@ export * from './foto-progreso.entity';
 export * from './formacion-academica.entity';
 export * from './grupo-alimenticio.entity';
 export * from './generacion-plan-ia.entity';
+export * from './ia-configuracion.entity';
 export * from './grupo-permiso.entity';
 export * from './item-comida.entity';
 export * from './medicion.entity';
@@ -34,4 +35,3 @@ export * from './turno-confirmacion-token.entity';
 export * from './usuario.entity';
 export * from './gimnasio.entity';
 export * from './usuario-grupo-permiso.entity';
-
