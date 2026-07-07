@@ -19,10 +19,20 @@
  */
 
 import { useNavigate } from '@tanstack/react-router';
-import { AlertCircle, ArrowUpRight, CheckCircle2, Loader2, Sparkles, X } from 'lucide-react';
+import type { MouseEvent } from 'react';
+import {
+  AlertCircle,
+  ArrowUpRight,
+  CheckCircle2,
+  Loader2,
+  Sparkles,
+  X,
+  XCircle,
+} from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { useGeneracionPlanIa } from '@/contexts/GeneracionPlanIaContext';
+import { useIa } from '@/hooks/useIa';
 import type { EstadoGeneracionPlanIaFE, GeneracionPlanIaFE } from '@/types/ia';
 
 const ESTILOS_ESTADO: Record<EstadoGeneracionPlanIaFE, string> = {
@@ -30,6 +40,7 @@ const ESTILOS_ESTADO: Record<EstadoGeneracionPlanIaFE, string> = {
   GENERANDO: 'border-indigo-500/40 bg-indigo-500/15 text-indigo-700 dark:text-indigo-200',
   COMPLETADO: 'border-emerald-500/40 bg-emerald-500/15 text-emerald-700 dark:text-emerald-200',
   ERROR: 'border-rose-500/50 bg-rose-500/15 text-rose-700 dark:text-rose-200',
+  CANCELADO: 'border-slate-500/40 bg-slate-500/15 text-slate-700 dark:text-slate-200',
 };
 
 const ETIQUETA_ESTADO: Record<EstadoGeneracionPlanIaFE, string> = {
@@ -37,6 +48,7 @@ const ETIQUETA_ESTADO: Record<EstadoGeneracionPlanIaFE, string> = {
   GENERANDO: 'Generando',
   COMPLETADO: 'Listo',
   ERROR: 'Error',
+  CANCELADO: 'Cancelado',
 };
 
 function obtenerTitulo(g: GeneracionPlanIaFE): string {
@@ -47,6 +59,8 @@ function obtenerTitulo(g: GeneracionPlanIaFE): string {
       return 'Generando plan IA';
     case 'ERROR':
       return 'Generación IA falló';
+    case 'CANCELADO':
+      return 'Generación cancelada';
     case 'COMPLETADO':
       return 'Plan IA listo';
     default:
@@ -62,6 +76,8 @@ function obtenerDescripcion(g: GeneracionPlanIaFE): string {
       return g.mensajeEstado ?? 'El plan queda bloqueado durante la generación.';
     case 'ERROR':
       return g.errorMensaje ?? 'El editor vuelve a estar disponible. Intentá de nuevo.';
+    case 'CANCELADO':
+      return g.errorMensaje ?? 'La generación se canceló. El editor vuelve a estar disponible.';
     case 'COMPLETADO':
       return 'El editor se actualizó con la nueva versión del plan.';
     default:
@@ -73,12 +89,17 @@ export function BadgeGeneracionPlanIa() {
   const { generacionVisible, generacionPlanIa, planBloqueadoPorIa, limpiarGeneracionEspecifica } =
     useGeneracionPlanIa();
   const navigate = useNavigate();
+  const { cancelarGeneracionPlanIa } = useIa();
 
   const generacion = generacionVisible;
   if (!generacion) return null;
 
   const estaProcesando = generacion.estado === 'PENDIENTE' || generacion.estado === 'GENERANDO';
-  const esTerminal = generacion.estado === 'COMPLETADO' || generacion.estado === 'ERROR';
+  const esTerminal =
+    generacion.estado === 'COMPLETADO' ||
+    generacion.estado === 'ERROR' ||
+    generacion.estado === 'CANCELADO';
+  const cancelando = cancelarGeneracionPlanIa.isPending;
   const titulo = obtenerTitulo(generacion);
   const descripcion = obtenerDescripcion(generacion);
 
@@ -88,7 +109,18 @@ export function BadgeGeneracionPlanIa() {
     }
   };
 
-  const cerrar = (e: React.MouseEvent) => {
+  const manejarCancelar = (e: MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    if (!estaProcesando || cancelando) return;
+
+    cancelarGeneracionPlanIa.mutate({
+      generacionId: generacion.id,
+      socioId: generacion.socioId,
+      planAlimentacionId: generacion.planAlimentacionId,
+    });
+  };
+
+  const cerrar = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     limpiarGeneracionEspecifica();
   };
@@ -111,6 +143,8 @@ export function BadgeGeneracionPlanIa() {
             <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
           ) : generacion.estado === 'ERROR' ? (
             <AlertCircle className="size-3.5" aria-hidden="true" />
+          ) : generacion.estado === 'CANCELADO' ? (
+            <XCircle className="size-3.5" aria-hidden="true" />
           ) : generacion.estado === 'COMPLETADO' ? (
             <CheckCircle2 className="size-3.5" aria-hidden="true" />
           ) : (
@@ -120,9 +154,21 @@ export function BadgeGeneracionPlanIa() {
         <span className="min-w-0 flex-1 truncate text-xs font-semibold">
           {titulo}
         </span>
-        <span className="text-[9px] font-bold uppercase tracking-wide opacity-75">
-          {ETIQUETA_ESTADO[generacion.estado]}
-        </span>
+        {estaProcesando ? (
+          <button
+            type="button"
+            onClick={manejarCancelar}
+            disabled={cancelando}
+            aria-label="Cancelar generación IA"
+            className="shrink-0 rounded-md border border-current/20 bg-background/35 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide transition-colors hover:bg-background/70 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {cancelando ? 'Cancelando' : 'Cancelar'}
+          </button>
+        ) : (
+          <span className="text-[9px] font-bold uppercase tracking-wide opacity-75">
+            {ETIQUETA_ESTADO[generacion.estado]}
+          </span>
+        )}
         {esTerminal && (
           <button
             type="button"
