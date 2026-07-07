@@ -3,6 +3,7 @@ import { AI_PROVIDER_SERVICE } from '../../../domain/services/ai-provider.servic
 import { AiProviderOrchestratorService } from './ai-provider-orchestrator.service';
 import { GeminiService } from './gemini.service';
 import { GroqService } from './groq.service';
+import { OpenCodeZenService } from './opencode-zen.service';
 import { OpenRouterService } from './openrouter.service';
 
 /**
@@ -13,6 +14,7 @@ import { OpenRouterService } from './openrouter.service';
   providers: [
     GroqService,
     GeminiService,
+    OpenCodeZenService,
     OpenRouterService,
     {
       provide: AI_PROVIDER_SERVICE,

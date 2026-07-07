@@ -32,15 +32,19 @@ enum VariablesEntorno {
   GROQ_MODEL = 'GROQ_MODEL',
   GEMINI_API_KEY = 'GEMINI_API_KEY',
   GEMINI_MODEL = 'GEMINI_MODEL',
+  OPENCODE_API_KEY = 'OPENCODE_API_KEY',
+  OPENCODE_BASE_URL = 'OPENCODE_BASE_URL',
+  OPENCODE_MODEL = 'OPENCODE_MODEL',
   OPENROUTER_API_KEY = 'OPENROUTER_API_KEY',
   OPENROUTER_BASE_URL = 'OPENROUTER_BASE_URL',
   OPENROUTER_MODEL = 'OPENROUTER_MODEL',
   AUSENCIA_UMBRAL_MINUTOS = 'AUSENCIA_UMBRAL_MINUTOS',
 }
 
-export type AiProviderName = 'groq' | 'gemini' | 'openrouter';
+export type AiProviderName = 'groq' | 'gemini' | 'opencode' | 'openrouter';
 
 const AI_PROVIDER_CHAIN_DEFAULT: AiProviderName[] = [
+  'opencode',
   'groq',
   'gemini',
   'openrouter',
@@ -226,6 +230,21 @@ export class EnvironmentConfigService
       'gemini-2.0-flash-lite',
     );
   }
+  getOpenCodeApiKey(): string | undefined {
+    return this.configService.get<string>(VariablesEntorno.OPENCODE_API_KEY);
+  }
+  getOpenCodeBaseUrl(): string {
+    return this.configService.get<string>(
+      VariablesEntorno.OPENCODE_BASE_URL,
+      'https://opencode.ai/zen/v1',
+    );
+  }
+  getOpenCodeModel(): string {
+    return this.configService.get<string>(
+      VariablesEntorno.OPENCODE_MODEL,
+      'deepseek-v4-flash-free',
+    );
+  }
   getOpenRouterApiKey(): string | undefined {
     return this.configService.get<string>(VariablesEntorno.OPENROUTER_API_KEY);
   }
@@ -250,6 +269,6 @@ export class EnvironmentConfigService
   }
 
   private esProveedorIaValido(proveedor: string): proveedor is AiProviderName {
-    return ['groq', 'gemini', 'openrouter'].includes(proveedor);
+    return ['groq', 'gemini', 'opencode', 'openrouter'].includes(proveedor);
   }
 }

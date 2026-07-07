@@ -13,6 +13,7 @@ import { EnvironmentConfigService } from 'src/infrastructure/config/environment-
 
 import { GeminiService } from './gemini.service';
 import { GroqService } from './groq.service';
+import { OpenCodeZenService } from './opencode-zen.service';
 import { OpenRouterService } from './openrouter.service';
 
 interface ProveedorIaConfigurado {
@@ -28,6 +29,7 @@ export class AiProviderOrchestratorService implements IAiProviderService {
     private readonly configService: EnvironmentConfigService,
     private readonly groqService: GroqService,
     private readonly geminiService: GeminiService,
+    private readonly openCodeZenService: OpenCodeZenService,
     private readonly openRouterService: OpenRouterService,
   ) {}
 
@@ -92,6 +94,7 @@ export class AiProviderOrchestratorService implements IAiProviderService {
     const disponibles: Record<AiProviderName, IAiProviderService> = {
       groq: this.groqService,
       gemini: this.geminiService,
+      opencode: this.openCodeZenService,
       openrouter: this.openRouterService,
     };
 
