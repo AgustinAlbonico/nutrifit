@@ -74,6 +74,113 @@ export class PromptPlanSemanalBuilder {
     return { systemPrompt, userPrompt };
   }
 
+  construirComida(contexto: ContextoPromptPlanSemanal): PromptResultado {
+    const diasSolicitados = this.obtenerDiasSolicitados(contexto);
+    const tiposComidaSolicitados = this.obtenerTiposComidaSolicitados(contexto);
+    const dia = diasSolicitados[0];
+    const tipoComida = tiposComidaSolicitados[0];
+    const notasConsolidadas = this.consolidarNotas(
+      contexto.nutricionista.preferenciasIa,
+      contexto.notasGeneracion,
+    );
+
+    const systemPrompt = [
+      'Eres un nutricionista profesional argentino.',
+      'Tu tarea es generar SOLO una comida puntual para un plan alimentario.',
+      '',
+      'REGLAS DURAS:',
+      `1. Respondé una única comida de tipo ${tipoComida}.`,
+      `2. La comida debe tener EXACTAMENTE ${contexto.alternativasPorComida} alternativas.`,
+      '3. No devuelvas estructura semanal, macrosPorDia ni razonamiento global del plan.',
+      '4. NUNCA incluyas ingredientes que estén en alergias, restricciones o exclusiones del socio.',
+      '5. Cada alternativa debe tener nombre, alimentos, calorías, proteínas, carbohidratos y grasas.',
+      '6. Cada alimento debe usar alimentoNombre, cantidad y unidad.',
+      '7. Si inventás alimentos, declará un resumen mínimo en alimentosNuevos; si no, devolvé alimentosNuevos como array vacío.',
+      '',
+      'JSON DE SALIDA EXACTO:',
+      this.construirEsquemaJsonComida(tipoComida),
+      '',
+      'IMPORTANTE: Respondé ÚNICAMENTE con el JSON solicitado, sin markdown, sin explicaciones, sin texto adicional.',
+    ].join('\n');
+
+    const lineasUsuario: string[] = [];
+    lineasUsuario.push('CONTEXTO DEL SOCIO:');
+    lineasUsuario.push(
+      `- Objetivo nutricional: ${contexto.fichaClinica.objetivoPersonal ?? 'No especificado'}`,
+    );
+    lineasUsuario.push(
+      `- Alergias: ${contexto.fichaClinica.alergias.length > 0 ? contexto.fichaClinica.alergias.join(', ') : 'Ninguna'}`,
+    );
+    lineasUsuario.push(
+      `- Restricciones alimentarias: ${contexto.fichaClinica.restriccionesAlimentarias ?? 'Ninguna'}`,
+    );
+    lineasUsuario.push(
+      `- Patologías: ${contexto.fichaClinica.patologias.length > 0 ? contexto.fichaClinica.patologias.join(', ') : 'Ninguna'}`,
+    );
+
+    if (
+      contexto.caloriasLimite ||
+      contexto.proteinasEstimadas ||
+      contexto.carbohidratosEstimados ||
+      contexto.grasasEstimados
+    ) {
+      lineasUsuario.push('');
+      lineasUsuario.push('OBJETIVO APROXIMADO PARA ESTA COMIDA:');
+      if (contexto.caloriasLimite) {
+        lineasUsuario.push(`- Calorías: ${contexto.caloriasLimite} kcal`);
+      }
+      if (contexto.proteinasEstimadas) {
+        lineasUsuario.push(`- Proteínas: ${contexto.proteinasEstimadas} g`);
+      }
+      if (contexto.carbohidratosEstimados) {
+        lineasUsuario.push(`- Carbohidratos: ${contexto.carbohidratosEstimados} g`);
+      }
+      if (contexto.grasasEstimados) {
+        lineasUsuario.push(`- Grasas: ${contexto.grasasEstimados} g`);
+      }
+    }
+
+    if (contexto.alimentosPreferidos && contexto.alimentosPreferidos.length > 0) {
+      lineasUsuario.push('');
+      lineasUsuario.push(
+        `Alimentos a priorizar si encajan: ${contexto.alimentosPreferidos.join(', ')}`,
+      );
+    }
+
+    if (contexto.alimentosEvitados && contexto.alimentosEvitados.length > 0) {
+      lineasUsuario.push('');
+      lineasUsuario.push(
+        `Alimentos a excluir absolutamente: ${contexto.alimentosEvitados.join(', ')}`,
+      );
+    }
+
+    if (notasConsolidadas.length > 0) {
+      lineasUsuario.push('');
+      lineasUsuario.push('INSTRUCCIONES DEL NUTRICIONISTA:');
+      lineasUsuario.push(notasConsolidadas);
+    }
+
+    if (contexto.ejemplosMemoria.length > 0) {
+      lineasUsuario.push('');
+      lineasUsuario.push('FEEDBACK PASADO A CONSIDERAR:');
+      lineasUsuario.push(this.formatearEjemplos(contexto.ejemplosMemoria));
+    }
+
+    lineasUsuario.push('');
+    lineasUsuario.push('PARÁMETROS EXACTOS:');
+    lineasUsuario.push(`- Día: ${dia}`);
+    lineasUsuario.push(`- Tipo de comida: ${tipoComida}`);
+    lineasUsuario.push(`- Alternativas: ${contexto.alternativasPorComida}`);
+    lineasUsuario.push(
+      `- Fecha de inicio del plan: ${contexto.fechaInicio.toISOString().split('T')[0]}`,
+    );
+
+    return {
+      systemPrompt,
+      userPrompt: lineasUsuario.join('\n'),
+    };
+  }
+
   private construirSystemPrompt(ctx: ContextoPromptPlanSemanal): string {
     const lineas: string[] = [];
     const diasSolicitados = this.obtenerDiasSolicitados(ctx);
@@ -296,6 +403,31 @@ export class PromptPlanSemanalBuilder {
 ${categoriasTexto}Los días deben ser exactamente: ${diasEsperados.join(', ')}.
 Las comidas deben ser exactamente: ${tiposEsperados.join(', ')}.
 Si inventás un alimento que no existe en el catálogo, declarálo en alimentosNuevos con sus macros aproximados y la categoría correcta.`;
+  }
+
+  private construirEsquemaJsonComida(tipoComida: TipoComida): string {
+    return `{
+  "comida": {
+    "tipo": "${tipoComida}",
+    "alternativas": [
+      {
+        "nombre": "string (ej: 'Pollo grillado con quinoa')",
+        "alimentos": [
+          {
+            "alimentoNombre": "string (nombre exacto del alimento en español)",
+            "cantidad": 0,
+            "unidad": "string (ej: 'g', 'ml', 'unidad')"
+          }
+        ],
+        "calorias": 0,
+        "proteinas": 0,
+        "carbohidratos": 0,
+        "grasas": 0
+      }
+    ]
+  },
+  "alimentosNuevos": []
+}`;
   }
 
   private obtenerDiasSolicitados(ctx: ContextoPromptPlanSemanal): DiaSemana[] {

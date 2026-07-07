@@ -110,6 +110,11 @@ export class ResolvedorCatalogoIA {
           categoriasPorDescripcion,
         );
         const nuevo = await this.crearAlimento(declaracionFallback, idCategoriaFallback);
+        catalogoPorNombre.set(nombreNormalizado, {
+          idAlimento: nuevo.idAlimento,
+          nombre: nuevo.nombre,
+        });
+        catalogoPorNombreFuzzy.push({ nombre: nuevo.nombre, item: nuevo });
         mapa.set(nombreOriginal, nuevo.idAlimento);
         creados.push({
           nombre: nombreOriginal,
@@ -125,6 +130,11 @@ export class ResolvedorCatalogoIA {
         categoriasPorDescripcion,
       );
       const nuevo = await this.crearAlimento(declaracion, idCategoria);
+      catalogoPorNombre.set(nombreNormalizado, {
+        idAlimento: nuevo.idAlimento,
+        nombre: nuevo.nombre,
+      });
+      catalogoPorNombreFuzzy.push({ nombre: nuevo.nombre, item: nuevo });
       mapa.set(nombreOriginal, nuevo.idAlimento);
       creados.push({
         nombre: declaracion.nombre,
@@ -225,6 +235,11 @@ export class ResolvedorCatalogoIA {
     const nombreCapitalizado =
       declaracion.nombre.charAt(0).toUpperCase() + declaracion.nombre.slice(1);
 
+    const existente = await this.buscarPorNombreNormalizado(nombreCapitalizado);
+    if (existente) {
+      return existente;
+    }
+
     const entity = new AlimentoOrmEntity();
     entity.nombre = nombreCapitalizado;
     entity.cantidad = declaracion.cantidadBase ?? 100;
@@ -237,7 +252,53 @@ export class ResolvedorCatalogoIA {
       { idGrupoAlimenticio: idCategoria } as GrupoAlimenticioOrmEntity,
     ];
 
-    return this.alimentoRepo.save(entity);
+    try {
+      return await this.alimentoRepo.save(entity);
+    } catch (error) {
+      if (!this.esErrorNombreDuplicado(error)) {
+        throw error;
+      }
+
+      const alimentoExistente =
+        await this.buscarPorNombreNormalizado(nombreCapitalizado);
+      if (alimentoExistente) {
+        return alimentoExistente;
+      }
+
+      throw error;
+    }
+  }
+
+  private async buscarPorNombreNormalizado(
+    nombre: string,
+  ): Promise<AlimentoOrmEntity | null> {
+    const claves = obtenerClavesBusquedaAlimento(nombre);
+    if (claves.length === 0) {
+      return null;
+    }
+
+    return this.alimentoRepo
+      .createQueryBuilder('alimento')
+      .where('LOWER(alimento.nombre) IN (:...claves)', { claves })
+      .getOne();
+  }
+
+  private esErrorNombreDuplicado(error: unknown): boolean {
+    const candidato = error as {
+      code?: string;
+      errno?: number;
+      driverError?: { code?: string; errno?: number; message?: string };
+    };
+    const codigo = candidato.code ?? candidato.driverError?.code;
+    const errno = candidato.errno ?? candidato.driverError?.errno;
+    const mensaje =
+      error instanceof Error ? error.message : candidato.driverError?.message;
+
+    return (
+      codigo === 'ER_DUP_ENTRY' ||
+      errno === 1062 ||
+      (mensaje?.includes('uq_alimento_nombre') ?? false)
+    );
   }
 
   private mapearUnidad(unidad: string): UnidadMedida {
