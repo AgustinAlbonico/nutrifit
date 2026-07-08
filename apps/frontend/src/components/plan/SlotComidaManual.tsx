@@ -231,8 +231,10 @@ function SlotAlternativaItem({
             {alternativa.nombre}
           </p>
           <p className="text-[9px] text-muted-foreground tabular-nums">
-            {alternativa.calorias} kcal · P {alternativa.proteinas}g · C{' '}
-            {alternativa.carbohidratos}g · G {alternativa.grasas}g
+            {Math.round(alternativa.calorias * 10) / 10} kcal · P{' '}
+            {Math.round(alternativa.proteinas * 10) / 10}g · C{' '}
+            {Math.round(alternativa.carbohidratos * 10) / 10}g · G{' '}
+            {Math.round(alternativa.grasas * 10) / 10}g
           </p>
         </div>
         <div className="flex items-center gap-0.5 opacity-40 group-hover/item:opacity-100 transition-opacity shrink-0">

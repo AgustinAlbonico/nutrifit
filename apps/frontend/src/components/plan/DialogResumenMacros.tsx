@@ -29,9 +29,9 @@ export function DialogResumenMacros({ estructura, objetivoKcal = PORCENTAJE_OBJE
         <Sparkles className="size-3.5" aria-hidden="true" />
         Total del plan
       </div>
-      <p className="mt-1 text-2xl font-bold tabular-nums">{totales.calorias} <span className="text-sm text-muted-foreground">kcal</span></p>
+      <p className="mt-1 text-2xl font-bold tabular-nums">{Math.round(totales.calorias * 10) / 10} <span className="text-sm text-muted-foreground">kcal</span></p>
       <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
-        P {totales.proteinas}g · C {totales.carbohidratos}g · G {totales.grasas}g
+        P {Math.round(totales.proteinas * 10) / 10}g · C {Math.round(totales.carbohidratos * 10) / 10}g · G {Math.round(totales.grasas * 10) / 10}g
       </p>
       <div className="mt-2">
         <MacrosBadge banda={banda} desvioPorcentaje={desvioPct} compact />
