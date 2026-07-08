@@ -49,7 +49,6 @@ CREDENTIALS.md
 
 # Lock files for agents
 skills-lock.json
-openspec/
 
 # Playwright MCP artifacts
 .playwright-mcp/
