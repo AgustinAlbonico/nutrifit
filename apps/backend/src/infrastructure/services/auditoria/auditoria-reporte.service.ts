@@ -2,12 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import type { PaginatedData, PaginationParams } from '@nutrifit/shared';
 import { Readable, Transform } from 'stream';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 
 import { calcularMeta, paginarQuery } from 'src/common/helpers/paginacion.helper';
 import {
   AuditLogOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
+import { LoginAuditOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/login-audit.entity';
 import {
   FiltrosAuditoria,
   ExportarAuditoriaResultado,
@@ -16,11 +17,6 @@ import {
 
 type FilaAuditoriaRaw = Record<string, unknown>;
 
-interface ConsultaRaw {
-  sql: string;
-  parametros: unknown[];
-}
-
 @Injectable()
 export class AuditoriaReporteService {
   private readonly limiteStreaming = 1000;
@@ -28,6 +24,8 @@ export class AuditoriaReporteService {
   constructor(
     @InjectRepository(AuditLogOrmEntity)
     private readonly auditoriaRepository: Repository<AuditLogOrmEntity>,
+    @InjectRepository(LoginAuditOrmEntity)
+    private readonly loginAuditRepository: Repository<LoginAuditOrmEntity>,
     @InjectDataSource()
     private readonly dataSource: DataSource,
   ) {}
@@ -79,22 +77,43 @@ export class AuditoriaReporteService {
     return this.crearResultadoExportacion(contenido, formato, true);
   }
 
+  /**
+   * Lista eventos de autenticacion combinando `audit_log` (modulo='auth') y
+   * `login_audit`. Para evitar colisiones entre collations/charsets a nivel de
+   * SQL, NO usamos UNION ALL: hacemos dos queries separadas y mergeamos en
+   * memoria. Paginacion en codigo (offset/limit sobre el array combinado y
+   * ordenado por fecha).
+   */
   private async listarAuthConFiltros(
     filtros: FiltrosAuditoria,
   ): Promise<PaginatedData<RegistroAuditoriaReporte>> {
     const page = filtros.page ?? 1;
     const limit = filtros.limit ?? 50;
     const offset = (page - 1) * limit;
-    const consulta = this.crearConsultaAuthUnion(filtros, limit, offset);
-    const totalConsulta = this.crearConsultaAuthTotal(filtros);
-    const [filas, totalFilas] = await Promise.all([
-      this.dataSource.query(consulta.sql, consulta.parametros) as Promise<FilaAuditoriaRaw[]>,
-      this.dataSource.query(totalConsulta.sql, totalConsulta.parametros) as Promise<Array<{ total: string | number }>>,
+
+    // Dos queries independientes; cada una aplica los filtros que le corresponden.
+    const auditQuery = this.crearQueryAuditLog({
+      ...filtros,
+      modulo: 'auth',
+    });
+    const loginQuery = this.crearQueryLoginAudit(filtros);
+
+    const [registrosAudit, registrosLogin] = await Promise.all([
+      auditQuery.getMany(),
+      loginQuery.getMany(),
     ]);
-    const total = Number(totalFilas[0]?.total ?? 0);
+
+    const total = registrosAudit.length + registrosLogin.length;
+    const todos = [
+      ...registrosAudit.map((registro) => this.mapearAuditLog(registro)),
+      ...registrosLogin.map((registro) => this.mapearLoginAudit(registro)),
+    ];
+    todos.sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
+
+    const data = todos.slice(offset, offset + limit);
 
     return {
-      data: filas.map((fila) => this.mapearRaw(fila)),
+      data,
       pagination: calcularMeta(total, page, limit),
     };
   }
@@ -104,16 +123,29 @@ export class AuditoriaReporteService {
     limite: number,
   ): Promise<RegistroAuditoriaReporte[]> {
     if (filtros.modulo === 'auth') {
-      const consulta = this.crearConsultaAuthUnion(filtros, limite, 0);
-      const filas = await this.dataSource.query(consulta.sql, consulta.parametros) as FilaAuditoriaRaw[];
-      return filas.map((fila) => this.mapearRaw(fila));
+      const auditQuery = this.crearQueryAuditLog({ ...filtros, modulo: 'auth' });
+      const loginQuery = this.crearQueryLoginAudit(filtros);
+
+      const [registrosAudit, registrosLogin] = await Promise.all([
+        auditQuery.take(limite).getMany(),
+        loginQuery.take(limite).getMany(),
+      ]);
+
+      const todos = [
+        ...registrosAudit.map((registro) => this.mapearAuditLog(registro)),
+        ...registrosLogin.map((registro) => this.mapearLoginAudit(registro)),
+      ];
+      todos.sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
+      return todos.slice(0, limite);
     }
 
     const registros = await this.crearQueryAuditLog(filtros).take(limite).getMany();
     return registros.map((registro) => this.mapearAuditLog(registro));
   }
 
-  private crearQueryAuditLog(filtros: FiltrosAuditoria) {
+  private crearQueryAuditLog(
+    filtros: FiltrosAuditoria,
+  ): SelectQueryBuilder<AuditLogOrmEntity> {
     const queryBuilder = this.auditoriaRepository
       .createQueryBuilder('auditoria')
       .orderBy('auditoria.fecha', filtros.orden ?? 'DESC');
@@ -170,151 +202,48 @@ export class AuditoriaReporteService {
     return queryBuilder;
   }
 
-  private crearConsultaAuthUnion(
+  private crearQueryLoginAudit(
     filtros: FiltrosAuditoria,
-    limit?: number,
-    offset?: number,
-  ): ConsultaRaw {
-    const audit = this.crearCondicionesRaw(filtros, 'audit_log');
-    const login = this.crearCondicionesRaw(filtros, 'login_audit');
-    const parametros = [...audit.parametros, ...login.parametros];
-    const orden = filtros.orden === 'ASC' ? 'ASC' : 'DESC';
-    const limiteSql = limit === undefined ? '' : ' LIMIT ? OFFSET ?';
-
-    if (limit !== undefined) {
-      parametros.push(limit, offset ?? 0);
-    }
-
-    return {
-      sql: `
-        SELECT * FROM (
-          SELECT
-            'audit_log' AS kind,
-            id_audit_log AS id,
-            fecha,
-            id_gimnasio AS gimnasioId,
-            id_usuario AS usuarioId,
-            modulo,
-            accion,
-            entidad,
-            entidad_id AS entidadId,
-            tipo_accion AS tipoAccion,
-            descripcion,
-            ip,
-            user_agent AS userAgent,
-            valores_antes AS valoresAntes,
-            valores_despues AS valoresDespues,
-            NULL AS resultado,
-            NULL AS emailIntentado,
-            NULL AS motivo
-          FROM audit_log
-          ${audit.sql}
-          UNION ALL
-          SELECT
-            'login_audit' AS kind,
-            id_login_audit AS id,
-            fecha,
-            id_gimnasio AS gimnasioId,
-            CAST(id_usuario AS CHAR) AS usuarioId,
-            'auth' COLLATE utf8mb4_unicode_ci AS modulo,
-            CAST(resultado AS CHAR) COLLATE utf8mb4_unicode_ci AS accion,
-            'LoginAudit' COLLATE utf8mb4_unicode_ci AS entidad,
-            CAST(id_login_audit AS CHAR) COLLATE utf8mb4_unicode_ci AS entidadId,
-            NULL AS tipoAccion,
-            CONCAT('Evento de autenticacion: ', resultado) COLLATE utf8mb4_unicode_ci AS descripcion,
-            CAST(ip AS CHAR) COLLATE utf8mb4_unicode_ci AS ip,
-            CAST(user_agent AS CHAR) COLLATE utf8mb4_unicode_ci AS userAgent,
-            NULL AS valoresAntes,
-            NULL AS valoresDespues,
-            CAST(resultado AS CHAR) COLLATE utf8mb4_unicode_ci AS resultado,
-            CAST(email_intentado AS CHAR) COLLATE utf8mb4_unicode_ci AS emailIntentado,
-            NULL AS motivo
-          FROM login_audit
-          ${login.sql}
-        ) auditoria_union
-        ORDER BY fecha ${orden}
-        ${limiteSql}
-      `,
-      parametros,
-    };
-  }
-
-  private crearConsultaAuthTotal(filtros: FiltrosAuditoria): ConsultaRaw {
-    const audit = this.crearCondicionesRaw(filtros, 'audit_log');
-    const login = this.crearCondicionesRaw(filtros, 'login_audit');
-
-    return {
-      sql: `
-        SELECT SUM(total) AS total FROM (
-          SELECT COUNT(*) AS total FROM audit_log ${audit.sql}
-          UNION ALL
-          SELECT COUNT(*) AS total FROM login_audit ${login.sql}
-        ) conteos
-      `,
-      parametros: [...audit.parametros, ...login.parametros],
-    };
-  }
-
-  private crearCondicionesRaw(
-    filtros: FiltrosAuditoria,
-    tabla: 'audit_log' | 'login_audit',
-  ): ConsultaRaw {
-    const condiciones: string[] = [];
-    const parametros: unknown[] = [];
-    const columnaUsuario = 'id_usuario';
-
-    if (tabla === 'audit_log') {
-      condiciones.push('modulo = ?');
-      parametros.push('auth');
-    }
+  ): SelectQueryBuilder<LoginAuditOrmEntity> {
+    const queryBuilder = this.loginAuditRepository
+      .createQueryBuilder('login')
+      .orderBy('login.fecha', filtros.orden ?? 'DESC');
 
     if (filtros.gimnasioId !== undefined && filtros.gimnasioId !== null) {
       if (filtros.incluirSinGimnasio) {
-        condiciones.push('(id_gimnasio = ? OR id_gimnasio IS NULL)');
+        queryBuilder.andWhere(
+          '(login.gimnasioId = :gimnasioId OR login.gimnasioId IS NULL)',
+          { gimnasioId: filtros.gimnasioId },
+        );
       } else {
-        condiciones.push('id_gimnasio = ?');
+        queryBuilder.andWhere('login.gimnasioId = :gimnasioId', {
+          gimnasioId: filtros.gimnasioId,
+        });
       }
-      parametros.push(filtros.gimnasioId);
     }
 
     if (filtros.gimnasioId === null && filtros.incluirSinGimnasio) {
-      condiciones.push('id_gimnasio IS NULL');
+      queryBuilder.andWhere('login.gimnasioId IS NULL');
     }
 
     if (filtros.fechaDesde) {
-      condiciones.push('fecha >= ?');
-      parametros.push(filtros.fechaDesde);
+      queryBuilder.andWhere('login.fecha >= :fechaDesde', { fechaDesde: filtros.fechaDesde });
     }
 
     if (filtros.fechaHasta) {
-      condiciones.push('fecha <= ?');
-      parametros.push(filtros.fechaHasta);
+      queryBuilder.andWhere('login.fecha <= :fechaHasta', { fechaHasta: filtros.fechaHasta });
     }
 
+    // En login_audit, la "accion" del reporte es el `resultado`.
     if (filtros.accion) {
-      condiciones.push(tabla === 'login_audit' ? 'resultado = ?' : 'accion = ?');
-      parametros.push(filtros.accion);
+      queryBuilder.andWhere('login.resultado = :resultado', { resultado: filtros.accion });
     }
 
-    if (filtros.entidad && tabla === 'audit_log') {
-      condiciones.push('entidad = ?');
-      parametros.push(filtros.entidad);
+    if (filtros.usuarioId != null) {
+      queryBuilder.andWhere('login.usuarioId = :usuarioId', { usuarioId: filtros.usuarioId });
     }
 
-    if (filtros.entidadId != null && tabla === 'audit_log') {
-      condiciones.push('entidad_id = ?');
-      parametros.push(String(filtros.entidadId));
-    }
-
-    if (filtros.usuarioId) {
-      condiciones.push(`${columnaUsuario} = ?`);
-      parametros.push(tabla === 'audit_log' ? String(filtros.usuarioId) : filtros.usuarioId);
-    }
-
-    return {
-      sql: condiciones.length > 0 ? `WHERE ${condiciones.join(' AND ')}` : '',
-      parametros,
-    };
+    return queryBuilder;
   }
 
   private async crearStreamAuditLog(
@@ -349,21 +278,34 @@ export class AuditoriaReporteService {
     ));
   }
 
+  /**
+   * Stream de exportacion de eventos auth. Sin UNION SQL: cargamos ambos
+   * repos por separado y los envolvemos en un `Readable.from` iterable.
+   * Para `modulo=auth` el volumen esperado es bajo (eventos de login/logout/
+   * refresh), por lo que el mode "load all then stream" es razonable.
+   */
   private async crearStreamAuth(
     filtros: FiltrosAuditoria,
     formato: 'csv' | 'json',
   ): Promise<Readable> {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    const consulta = this.crearConsultaAuthUnion(filtros, filtros.limit, 0);
-    const stream = await queryRunner.stream(consulta.sql, consulta.parametros);
+    const registros = await this.listarTodosParaExportar(
+      { ...filtros, modulo: 'auth' },
+      filtros.limit ?? this.limiteStreaming,
+    );
 
-    stream.once('end', () => void queryRunner.release());
-    stream.once('error', () => void queryRunner.release());
+    const transform = this.crearTransformExportacion(formato, () => {
+      throw new Error('No se invoca: usamos buffer completo');
+    });
 
-    return stream.pipe(this.crearTransformExportacion(formato, (fila) =>
-      this.mapearRaw(fila),
-    ));
+    void transform;
+
+    if (formato === 'json') {
+      const json = JSON.stringify(registros, null, 2);
+      return Readable.from([Buffer.from(`${json}`, 'utf8')]);
+    }
+
+    const csv = this.convertirCsv(registros);
+    return Readable.from([Buffer.from(csv, 'utf8')]);
   }
 
   private crearTransformExportacion(
@@ -436,26 +378,29 @@ export class AuditoriaReporteService {
     };
   }
 
-  private mapearRaw(fila: FilaAuditoriaRaw): RegistroAuditoriaReporte {
+  private mapearLoginAudit(registro: LoginAuditOrmEntity): RegistroAuditoriaReporte {
+    const idString = String(registro.idLoginAudit);
+    const descripcion = `Evento de autenticacion: ${registro.resultado}`;
+
     return {
-      kind: fila.kind as 'audit_log' | 'login_audit',
-      id: Number(fila.id),
-      fecha: this.mapearFecha(fila.fecha),
-      gimnasioId: this.mapearNumeroNullable(fila.gimnasioId),
-      usuarioId: fila.usuarioId == null ? null : String(fila.usuarioId),
-      modulo: String(fila.modulo),
-      accion: String(fila.accion),
-      entidad: String(fila.entidad),
-      entidadId: fila.entidadId == null ? null : String(fila.entidadId),
-      tipoAccion: fila.tipoAccion == null ? null : String(fila.tipoAccion),
-      descripcion: fila.descripcion == null ? null : String(fila.descripcion),
-      ip: fila.ip == null ? null : String(fila.ip),
-      userAgent: fila.userAgent == null ? null : String(fila.userAgent),
-      valoresAntes: this.mapearJsonNullable(fila.valoresAntes),
-      valoresDespues: this.mapearJsonNullable(fila.valoresDespues),
-      resultado: fila.resultado == null ? null : String(fila.resultado),
-      emailIntentado: fila.emailIntentado == null ? null : String(fila.emailIntentado),
-      motivo: fila.motivo == null ? null : String(fila.motivo),
+      kind: 'login_audit',
+      id: registro.idLoginAudit,
+      fecha: registro.fecha,
+      gimnasioId: registro.gimnasioId,
+      usuarioId: registro.usuarioId == null ? null : String(registro.usuarioId),
+      modulo: 'auth',
+      accion: registro.resultado,
+      entidad: 'LoginAudit',
+      entidadId: idString,
+      tipoAccion: null,
+      descripcion,
+      ip: registro.ip,
+      userAgent: registro.userAgent,
+      valoresAntes: null,
+      valoresDespues: null,
+      resultado: registro.resultado,
+      emailIntentado: registro.emailIntentado,
+      motivo: null,
     };
   }
 
