@@ -3,6 +3,8 @@ import type { StringValue } from 'ms';
 
 import { PasswordEncrypterService } from 'src/infrastructure/services/bcrypt/bcrypt.service';
 import { LoginUseCase } from './login.use-case';
+import { LogoutUseCase } from './logout.use-case';
+import { RefreshTokenUseCase } from './refresh-token.use-case';
 import { CambiarContrasenaUseCase } from './cambiar-contrasena.use-case';
 import { EstablecerContrasenaUseCase } from './establecer-contrasena.use-case';
 import { SolicitarRecuperacionContrasenaUseCase } from './solicitar-recuperacion-contrasena.use-case';
@@ -21,7 +23,10 @@ import { UsuarioRepositoryImplementation } from 'src/infrastructure/persistence/
 import { EnvironmentConfigModule } from 'src/infrastructure/config/environment-config/environment-config.module';
 import { EnvironmentConfigService } from 'src/infrastructure/config/environment-config/environment-config.service';
 import { EmailModule } from 'src/application/email/email.module';
-import { LoginAuditService } from 'src/infrastructure/services/auditoria/login-audit.service';
+import {
+  LOGIN_AUDIT_SERVICE,
+  LoginAuditService,
+} from 'src/infrastructure/services/auditoria/login-audit.service';
 
 @Module({
   imports: [
@@ -51,6 +56,9 @@ import { LoginAuditService } from 'src/infrastructure/services/auditoria/login-a
     { provide: USUARIO_REPOSITORY, useClass: UsuarioRepositoryImplementation },
     LoginUseCase,
     LoginAuditService,
+    { provide: LOGIN_AUDIT_SERVICE, useExisting: LoginAuditService },
+    LogoutUseCase,
+    RefreshTokenUseCase,
     CambiarContrasenaUseCase,
     EstablecerContrasenaUseCase,
     SolicitarRecuperacionContrasenaUseCase,
@@ -59,6 +67,8 @@ import { LoginAuditService } from 'src/infrastructure/services/auditoria/login-a
   ],
   exports: [
     LoginUseCase,
+    LogoutUseCase,
+    RefreshTokenUseCase,
     CambiarContrasenaUseCase,
     EstablecerContrasenaUseCase,
     SolicitarRecuperacionContrasenaUseCase,

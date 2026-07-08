@@ -7,6 +7,8 @@ import {
   ResultadoLoginAudit,
 } from 'src/infrastructure/persistence/typeorm/entities/login-audit.entity';
 
+export const LOGIN_AUDIT_SERVICE = Symbol('LOGIN_AUDIT_SERVICE');
+
 export interface RegistrarLoginAuditDto {
   usuarioId?: number | null;
   emailIntentado?: string | null;

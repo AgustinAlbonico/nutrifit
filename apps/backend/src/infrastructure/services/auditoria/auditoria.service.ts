@@ -48,6 +48,7 @@ export interface FiltrosAuditoria {
   usuarioId?: number;
   /** Filtrar por gimnasio. Si no se provee, usa el contexto actual. */
   gimnasioId?: number | null;
+  incluirSinGimnasio?: boolean;
   orden?: 'ASC' | 'DESC';
 }
 
@@ -65,6 +66,7 @@ export interface ExportarAuditoriaResultado {
 }
 
 export interface RegistroAuditoriaReporte {
+  kind?: 'audit_log' | 'login_audit';
   id: number;
   fecha: Date;
   gimnasioId: number | null;
@@ -79,6 +81,9 @@ export interface RegistroAuditoriaReporte {
   userAgent: string | null;
   valoresAntes: Record<string, unknown> | null;
   valoresDespues: Record<string, unknown> | null;
+  resultado?: string | null;
+  emailIntentado?: string | null;
+  motivo?: string | null;
 }
 
 @Injectable()

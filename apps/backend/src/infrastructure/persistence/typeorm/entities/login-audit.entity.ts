@@ -4,6 +4,9 @@ export enum ResultadoLoginAudit {
   SUCCESS = 'SUCCESS',
   FAILURE = 'FAILURE',
   BLOCKED = 'BLOCKED',
+  LOGOUT = 'LOGOUT',
+  REFRESH_SUCCESS = 'REFRESH_SUCCESS',
+  REFRESH_FAILURE = 'REFRESH_FAILURE',
 }
 
 @Entity('login_audit')

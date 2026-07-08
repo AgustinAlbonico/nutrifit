@@ -11,6 +11,8 @@ import {
 import type { Request } from 'express';
 import { LoginDto } from 'src/application/auth/dtos/login.dto';
 import { LoginUseCase } from 'src/application/auth/login.use-case';
+import { LogoutUseCase } from 'src/application/auth/logout.use-case';
+import { RefreshTokenUseCase } from 'src/application/auth/refresh-token.use-case';
 import { CambiarContrasenaUseCase } from 'src/application/auth/cambiar-contrasena.use-case';
 import { EstablecerContrasenaUseCase } from 'src/application/auth/establecer-contrasena.use-case';
 import { SolicitarRecuperacionContrasenaUseCase } from 'src/application/auth/solicitar-recuperacion-contrasena.use-case';
@@ -44,6 +46,8 @@ export class AuthController {
     private readonly establecerContrasenaUseCase: EstablecerContrasenaUseCase,
     private readonly solicitarRecuperacionUseCase: SolicitarRecuperacionContrasenaUseCase,
     private readonly confirmarRecuperacionUseCase: ConfirmarRecuperacionContrasenaUseCase,
+    private readonly logoutUseCase: LogoutUseCase,
+    private readonly refreshTokenUseCase: RefreshTokenUseCase,
     private readonly permisosService: PermisosService,
     @Inject(USUARIO_REPOSITORY)
     private readonly usuarioRepository: UsuarioRepository,
@@ -58,6 +62,31 @@ export class AuthController {
       `Login correcto para el usuario con email: ${body.email}, tiene el rol de ${res.rol}`,
     );
     return res;
+  }
+
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  async logout(
+    @CurrentUserId() userId: number,
+    @CurrentUser() user: UsuarioAutenticadoPayload,
+    @Req() request: Request,
+  ) {
+    await this.logoutUseCase.execute(
+      userId,
+      user.gimnasioId,
+      extraerOrigenRequest(request),
+    );
+
+    return { message: 'Sesión cerrada' };
+  }
+
+  @Post('refresh')
+  @UseGuards(JwtAuthGuard)
+  async refresh(
+    @CurrentUser() user: UsuarioAutenticadoPayload,
+    @Req() request: Request,
+  ) {
+    return this.refreshTokenUseCase.execute(user, extraerOrigenRequest(request));
   }
 
   @Post('solicitar-recuperacion')
