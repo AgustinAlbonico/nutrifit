@@ -13,8 +13,9 @@
 import { useCallback, useMemo } from 'react';
 
 import { SlotComidaManual, type AlternativaSlot } from './SlotComidaManual';
+import { crearClaveSlot } from './estructuraPlan.utils';
 import { ResumenMacrosPorDia } from './ResumenMacrosPorDia';
-import type { EstructuraDiaFE, ItemComidaSnapshotFE } from '@/types/ia';
+import type { DiaSemana, EstructuraDiaFE, ItemComidaSnapshotFE, TipoComidaPlan } from '@/types/ia';
 
 const DIAS = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'] as const;
 const TIPOS_COMIDA = ['DESAYUNO', 'ALMUERZO', 'MERIENDA', 'CENA', 'COLACION'] as const;
@@ -22,8 +23,10 @@ const TIPOS_COMIDA = ['DESAYUNO', 'ALMUERZO', 'MERIENDA', 'CENA', 'COLACION'] as
 interface Props {
   estructura: EstructuraDiaFE[];
   onChange: (estructura: EstructuraDiaFE[]) => void;
-  onSelectSlot?: (dia: any, tipoComida: any) => void;
+  onSelectSlot?: (dia: DiaSemana, tipoComida: TipoComidaPlan) => void;
   deshabilitado?: boolean;
+  slotsGenerando?: Set<string>;
+  soloLectura?: boolean;
 }
 
 /**
@@ -57,7 +60,10 @@ export function GrillaManualSlots({
   onChange,
   onSelectSlot,
   deshabilitado = false,
+  slotsGenerando,
+  soloLectura = false,
 }: Props) {
+  const edicionBloqueada = deshabilitado || soloLectura;
   // ------------------------------------------------------------------
   // Helper: encuentra la comida de un slot en la estructura, creando
   // una entrada vacía si no existe.
@@ -77,9 +83,10 @@ export function GrillaManualSlots({
   const filas = useMemo(() => {
     return DIAS.map((dia) => {
       const celdas = TIPOS_COMIDA.map((tipoComida) => {
-        const slotKey = `${dia}-${tipoComida}`;
-        const comida = obtenerComidaDelSlot(dia, tipoComida);
-        const alternativasRaw = comida?.alternativas ?? [];
+          const slotKey = `${dia}-${tipoComida}`;
+          const claveSlot = crearClaveSlot(dia, tipoComida);
+          const comida = obtenerComidaDelSlot(dia, tipoComida);
+          const alternativasRaw = comida?.alternativas ?? [];
 
         const refs = new Map<string, ItemComidaSnapshotFE>();
         const alternativasConvertidas = alternativasRaw.map((item, idx) => {
@@ -99,7 +106,7 @@ export function GrillaManualSlots({
             grasas: number;
           }>,
         ) => {
-          if (deshabilitado) return;
+          if (edicionBloqueada) return;
 
           const diaIdx = estructura.findIndex((d) => d.dia === dia);
           if (diaIdx === -1) return;
@@ -143,9 +150,11 @@ export function GrillaManualSlots({
 
         return {
           slotKey,
+          claveSlot,
           dia,
           tipoComida,
           alternativas: alternativasConvertidas,
+          generando: slotsGenerando?.has(claveSlot) && alternativasConvertidas.length === 0,
           refs,
           handleSlotChange,
         };
@@ -153,7 +162,7 @@ export function GrillaManualSlots({
 
       return { dia, celdas };
     });
-  }, [deshabilitado, estructura, obtenerComidaDelSlot, onChange]);
+  }, [edicionBloqueada, estructura, obtenerComidaDelSlot, onChange, slotsGenerando]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -192,6 +201,7 @@ export function GrillaManualSlots({
               celdas={celdas}
               onSelectSlot={onSelectSlot}
               deshabilitado={deshabilitado}
+              soloLectura={soloLectura}
             />
           ))}
         </div>
@@ -208,18 +218,24 @@ function FilaDia({
   celdas,
   onSelectSlot,
   deshabilitado,
+  soloLectura,
 }: {
   dia: (typeof DIAS)[number];
   celdas: Array<{
     slotKey: string;
+    claveSlot: string;
     dia: (typeof DIAS)[number];
     tipoComida: (typeof TIPOS_COMIDA)[number];
     alternativas: AlternativaSlot[];
+    generando?: boolean;
     handleSlotChange: (alternativas: AlternativaSlot[]) => void;
   }>;
-  onSelectSlot?: (dia: string, tipoComida: string) => void;
+  onSelectSlot?: (dia: DiaSemana, tipoComida: TipoComidaPlan) => void;
   deshabilitado?: boolean;
+  soloLectura?: boolean;
 }) {
+  const edicionBloqueada = deshabilitado || soloLectura;
+
   return (
     <>
       {/* Label de día: sticky left para que sea visible al scrollear horizontal */}
@@ -232,7 +248,7 @@ function FilaDia({
         </span>
       </div>
 
-      {celdas.map(({ slotKey, dia: celdaDia, tipoComida, alternativas, handleSlotChange }) => (
+      {celdas.map(({ slotKey, dia: celdaDia, tipoComida, alternativas, generando, handleSlotChange }) => (
         <CeldaSlot
           key={slotKey}
           slotKey={slotKey}
@@ -241,9 +257,11 @@ function FilaDia({
           alternativas={alternativas}
           onChange={handleSlotChange}
           onSelectForIa={
-            deshabilitado ? undefined : () => onSelectSlot?.(celdaDia, tipoComida)
+            edicionBloqueada ? undefined : () => onSelectSlot?.(celdaDia, tipoComida)
           }
           deshabilitado={deshabilitado}
+          generando={generando}
+          soloLectura={soloLectura}
         />
       ))}
     </>
@@ -258,6 +276,8 @@ function CeldaSlot({
   onChange,
   onSelectForIa,
   deshabilitado,
+  generando,
+  soloLectura,
 }: {
   slotKey: string;
   dia: (typeof DIAS)[number];
@@ -266,6 +286,8 @@ function CeldaSlot({
   onChange: (alternativas: AlternativaSlot[]) => void;
   onSelectForIa?: () => void;
   deshabilitado?: boolean;
+  generando?: boolean;
+  soloLectura?: boolean;
 }) {
   return (
     <SlotComidaManual
@@ -276,6 +298,8 @@ function CeldaSlot({
       onChange={onChange}
       onSelectForIa={onSelectForIa}
       deshabilitado={deshabilitado}
+      generando={generando}
+      soloLectura={soloLectura}
     />
   );
 }

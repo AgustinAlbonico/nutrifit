@@ -226,6 +226,11 @@ export interface PlanAlimentacionDatosJsonFE {
   razonamientoCumplimiento: RazonamientoCumplimientoFE;
 }
 
+/** Snapshot parcial de una generación IA en curso. */
+export interface SnapshotParcialPlanIaFE {
+  estructura: EstructuraDiaFE[];
+}
+
 /** Resultado de validación de restricciones. */
 export interface ResultadoValidacionRestriccionesFE {
   restriccionesCumplidas: Array<{ restriccion: string; detalle: string }>;
@@ -294,6 +299,11 @@ export interface GeneracionPlanIaFE {
   mensajeEstado: string | null;
   errorMensaje: string | null;
   respuestaJson: RespuestaPlanSemanalV2FE | null;
+  progresoActual: number | null;
+  progresoTotal: number | null;
+  diaActual: DiaSemana | null;
+  comidaActual: TipoComidaPlan | null;
+  snapshotParcialJson: SnapshotParcialPlanIaFE | null;
   creadoEn: string;
   actualizadoEn: string;
   iniciadoEn: string | null;

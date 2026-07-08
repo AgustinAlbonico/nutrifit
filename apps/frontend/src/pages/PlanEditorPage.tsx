@@ -31,7 +31,7 @@
  * - Skip-links implícitos por jerarquía de headings
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from '@tanstack/react-router';
 import {
   ArrowLeft,
@@ -74,7 +74,11 @@ import { RestriccionesEditablesCard } from '@/components/plan/RestriccionesEdita
 import { GrillaManualSlots } from '@/components/plan/GrillaManualSlots';
 import { DialogGenerarIdeasIa } from '@/components/plan/DialogGenerarIdeasIa';
 import { DialogPreferenciasIa } from '@/components/plan/DialogPreferenciasIa';
-import { estructuraTieneContenido } from '@/components/plan/estructuraPlan.utils';
+import {
+  crearClaveSlot,
+  estructuraTieneContenido,
+  obtenerClavesGeneradas,
+} from '@/components/plan/estructuraPlan.utils';
 
 import { apiRequest } from '@/lib/api';
 import { desenvolverRespuestaApi } from '@/lib/api-response';
@@ -514,6 +518,40 @@ export function PlanEditorPage() {
     generacionVisible?.respuestaJson,
     generacionVisible?.errorMensaje,
   ]);
+
+  const snapshotParcialIa = generacionVisible?.snapshotParcialJson ?? null;
+  const mostrandoPreviewIa = Boolean(
+    planBloqueadoPorIa && snapshotParcialIa?.estructura?.length,
+  );
+  const estructuraPreviewIa = useMemo(
+    () => completarEstructuraManual(snapshotParcialIa?.estructura),
+    [snapshotParcialIa?.estructura],
+  );
+  const estructuraVisible = mostrandoPreviewIa ? estructuraPreviewIa : estructura;
+  const slotsGenerandoIa = useMemo(() => {
+    if (!mostrandoPreviewIa) return undefined;
+
+    const clavesGeneradas = obtenerClavesGeneradas(estructuraPreviewIa);
+    const clavesPendientes = new Set<string>();
+
+    for (const dia of DIAS_PLAN) {
+      for (const tipoComida of TIPOS_COMIDA_PLAN) {
+        const claveSlot = crearClaveSlot(dia, tipoComida);
+        if (!clavesGeneradas.has(claveSlot)) {
+          clavesPendientes.add(claveSlot);
+        }
+      }
+    }
+
+    return clavesPendientes;
+  }, [estructuraPreviewIa, mostrandoPreviewIa]);
+
+  const textoProgresoPreviewIa = useMemo(() => {
+    if (!mostrandoPreviewIa) return null;
+    const progresoActual = generacionVisible?.progresoActual ?? 0;
+    const progresoTotal = generacionVisible?.progresoTotal ?? DIAS_PLAN.length * TIPOS_COMIDA_PLAN.length;
+    return `${progresoActual}/${progresoTotal} comidas generadas`;
+  }, [generacionVisible?.progresoActual, generacionVisible?.progresoTotal, mostrandoPreviewIa]);
 
   // Carga el borrador o versión activa al montar o cambiar de plan
   useEffect(() => {
@@ -969,12 +1007,43 @@ export function PlanEditorPage() {
                       Cargando borrador del plan...
                     </div>
                   ) : (
-                    <GrillaManualSlots
-                      estructura={estructura}
-                      onChange={handleEstructuraChange}
-                      onSelectSlot={handleSelectSlotForIa}
-                      deshabilitado={planBloqueadoPorIa}
-                    />
+                    <div className="flex flex-col gap-3">
+                      {mostrandoPreviewIa && (
+                        <section
+                          aria-live="polite"
+                          className="rounded-xl border border-amber-300/70 bg-amber-50/80 px-4 py-3 text-sm text-amber-900 shadow-sm dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100"
+                        >
+                          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                              <p className="font-semibold">Preview IA en progreso</p>
+                              <p className="text-xs text-amber-800/80 dark:text-amber-200/80">
+                                El plan se completa comida por comida. Podés revisar lo generado, pero la edición sigue bloqueada hasta que termine.
+                              </p>
+                            </div>
+                            {textoProgresoPreviewIa && (
+                              <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold tabular-nums text-amber-900 dark:bg-amber-900/50 dark:text-amber-100">
+                                {textoProgresoPreviewIa}
+                              </span>
+                            )}
+                          </div>
+                          {(generacionVisible?.diaActual || generacionVisible?.comidaActual) && (
+                            <p className="mt-2 text-xs text-amber-800/80 dark:text-amber-200/80">
+                              Generando ahora: {generacionVisible?.diaActual ?? 'día pendiente'} ·{' '}
+                              {generacionVisible?.comidaActual ?? 'comida pendiente'}
+                            </p>
+                          )}
+                        </section>
+                      )}
+
+                      <GrillaManualSlots
+                        estructura={estructuraVisible}
+                        onChange={handleEstructuraChange}
+                        onSelectSlot={handleSelectSlotForIa}
+                        deshabilitado={planBloqueadoPorIa}
+                        slotsGenerando={slotsGenerandoIa}
+                        soloLectura={mostrandoPreviewIa}
+                      />
+                    </div>
                   )}
 
                   {/* Card: Razonamiento de cumplimiento */}

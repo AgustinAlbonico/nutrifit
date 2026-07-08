@@ -85,6 +85,20 @@ function obtenerDescripcion(g: GeneracionPlanIaFE): string {
   }
 }
 
+function obtenerTextoProgreso(g: GeneracionPlanIaFE): string | null {
+  if (g.progresoActual == null || g.progresoTotal == null || g.progresoTotal <= 0) {
+    return null;
+  }
+
+  return `${g.progresoActual}/${g.progresoTotal} comidas generadas`;
+}
+
+function obtenerTextoSlotActual(g: GeneracionPlanIaFE): string | null {
+  if (!g.diaActual && !g.comidaActual) return null;
+
+  return `${g.diaActual ?? 'Día pendiente'} · ${g.comidaActual ?? 'Comida pendiente'}`;
+}
+
 export function BadgeGeneracionPlanIa() {
   const { generacionVisible, generacionPlanIa, planBloqueadoPorIa, limpiarGeneracionEspecifica } =
     useGeneracionPlanIa();
@@ -102,6 +116,8 @@ export function BadgeGeneracionPlanIa() {
   const cancelando = cancelarGeneracionPlanIa.isPending;
   const titulo = obtenerTitulo(generacion);
   const descripcion = obtenerDescripcion(generacion);
+  const textoProgreso = obtenerTextoProgreso(generacion);
+  const textoSlotActual = obtenerTextoSlotActual(generacion);
 
   const irAlPlan = () => {
     if (generacion.socioId) {
@@ -151,8 +167,15 @@ export function BadgeGeneracionPlanIa() {
             <Sparkles className="size-3.5" aria-hidden="true" />
           )}
         </span>
-        <span className="min-w-0 flex-1 truncate text-xs font-semibold">
-          {titulo}
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-xs font-semibold">
+            {titulo}
+          </span>
+          {textoProgreso && (
+            <span className="block truncate text-[10px] font-medium opacity-80">
+              {textoProgreso}
+            </span>
+          )}
         </span>
         {estaProcesando ? (
           <button
@@ -192,8 +215,21 @@ export function BadgeGeneracionPlanIa() {
         <p className="border-t border-current/15 pt-1.5 text-[11px] leading-snug opacity-90">
           {descripcion}
         </p>
+        {textoSlotActual && (
+          <p className="mt-1 text-[10px] font-medium opacity-85">
+            Generando ahora: {textoSlotActual}
+          </p>
+        )}
 
         <dl className="mt-1.5 grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10px] opacity-80">
+          {textoProgreso && (
+            <>
+              <dt className="font-semibold uppercase tracking-wide">Progreso</dt>
+              <dd className="truncate text-right tabular-nums">
+                {textoProgreso}
+              </dd>
+            </>
+          )}
           <dt className="font-semibold uppercase tracking-wide">Proveedor</dt>
           <dd className="truncate text-right">
             {generacion.proveedorActual ?? '—'}
