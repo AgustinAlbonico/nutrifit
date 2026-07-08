@@ -12,6 +12,7 @@ import {
 
 import {
   GenerarPlanSemanalUseCase,
+  type ProgresoGeneracionPlanIa,
   type SolicitudPlanSemanal,
 } from './generar-plan-semanal.use-case';
 
@@ -26,28 +27,32 @@ export class EjecutarGeneracionPlanSemanalBackgroundService {
   ) {}
 
   async ejecutar(generacionId: number): Promise<void> {
-    const generacion = await this.generacionRepo.obtenerPorId(generacionId);
-    if (!generacion?.estaActiva()) {
-      return;
-    }
-
-    const generacionEnEjecucion = await this.generacionRepo.actualizarSiActiva(
-      generacion.id,
-      {
-        estado: 'GENERANDO',
-        mensajeEstado: 'Generando plan con IA',
-        proveedorActual: 'automático',
-        iniciadoEn: new Date(),
-      },
-    );
-
-    if (!generacionEnEjecucion) {
-      return;
-    }
-
     try {
+      const generacion = await this.generacionRepo.obtenerPorId(generacionId);
+      if (!generacion?.estaActiva()) {
+        return;
+      }
+
+      const generacionEnEjecucion = await this.generacionRepo.actualizarSiActiva(
+        generacion.id,
+        {
+          estado: 'GENERANDO',
+          mensajeEstado: 'Generando plan con IA',
+          proveedorActual: 'automático',
+          iniciadoEn: new Date(),
+        },
+      );
+
+      if (!generacionEnEjecucion) {
+        return;
+      }
+
       const solicitud = this.construirSolicitud(generacionEnEjecucion);
-      const respuesta = await this.generarPlanSemanalUseCase.execute(solicitud);
+      const respuesta = await this.generarPlanSemanalUseCase.execute(solicitud, {
+        onProgreso: async (progreso) => {
+          await this.persistirProgreso(generacion.id, progreso);
+        },
+      });
 
       await this.generacionRepo.actualizarSiActiva(generacion.id, {
         estado: 'COMPLETADO',
@@ -57,13 +62,45 @@ export class EjecutarGeneracionPlanSemanalBackgroundService {
         finalizadoEn: new Date(),
       });
     } catch (error) {
-      const mensaje =
-        error instanceof Error
-          ? error.message
-          : 'No se pudo generar el plan con IA';
+      await this.marcarErrorSiActiva(generacionId, error);
+    }
+  }
 
+  private async persistirProgreso(
+    generacionId: number,
+    progreso: ProgresoGeneracionPlanIa,
+  ): Promise<void> {
+    const generacionActualizada = await this.generacionRepo.actualizarSiActiva(
+      generacionId,
+      {
+        estado: 'GENERANDO',
+        mensajeEstado: this.crearMensajeProgreso(progreso),
+        progresoActual: progreso.comidasGeneradas,
+        progresoTotal: progreso.comidasTotales,
+        diaActual: progreso.dia,
+        comidaActual: progreso.tipoComida,
+        snapshotParcialJson: progreso.snapshotParcial,
+      },
+    );
+
+    if (!generacionActualizada) {
+      throw new Error('La generación IA ya no está activa');
+    }
+  }
+
+  private crearMensajeProgreso(progreso: ProgresoGeneracionPlanIa): string {
+    return `Generando ${progreso.dia} / ${progreso.tipoComida} (${progreso.comidasGeneradas}/${progreso.comidasTotales})`;
+  }
+
+  private async marcarErrorSiActiva(
+    generacionId: number,
+    error: unknown,
+  ): Promise<void> {
+    const mensaje = this.obtenerMensajeError(error);
+
+    try {
       const generacionError = await this.generacionRepo.actualizarSiActiva(
-        generacion.id,
+        generacionId,
         {
           estado: 'ERROR',
           mensajeEstado: 'La generación falló',
@@ -75,12 +112,29 @@ export class EjecutarGeneracionPlanSemanalBackgroundService {
       if (!generacionError) {
         return;
       }
-
+    } catch (errorPersistencia) {
       this.logger.error(
-        `Error ejecutando generación IA ${generacion.id}: ${mensaje}`,
-        error instanceof Error ? error.stack : undefined,
+        `Error persistiendo fallo de generación IA ${generacionId}: ${this.obtenerMensajeError(
+          errorPersistencia,
+        )}`,
+        this.obtenerStackError(errorPersistencia),
       );
     }
+
+    this.logger.error(
+      `Error ejecutando generación IA ${generacionId}: ${mensaje}`,
+      this.obtenerStackError(error),
+    );
+  }
+
+  private obtenerMensajeError(error: unknown): string {
+    return error instanceof Error
+      ? error.message
+      : 'No se pudo generar el plan con IA';
+  }
+
+  private obtenerStackError(error: unknown): string | undefined {
+    return error instanceof Error ? error.stack : undefined;
   }
 
   private construirSolicitud(

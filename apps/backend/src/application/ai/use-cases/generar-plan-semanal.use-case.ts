@@ -176,6 +176,22 @@ interface ResultadoGeneracionCompleta {
 type DiaPlanGenerado = PlanAlimentacionDatosJson['estructura'][number];
 type ComidaPlanGenerada = DiaPlanGenerado['comidas'][number];
 
+interface SnapshotParcialPlanIa {
+  estructura: PlanAlimentacionDatosJson['estructura'];
+}
+
+export interface ProgresoGeneracionPlanIa {
+  dia: DiaSemana;
+  tipoComida: TipoComida;
+  comidasGeneradas: number;
+  comidasTotales: number;
+  snapshotParcial: SnapshotParcialPlanIa;
+}
+
+interface OpcionesGeneracionPlanSemanal {
+  onProgreso?: (progreso: ProgresoGeneracionPlanIa) => Promise<void> | void;
+}
+
 @Injectable()
 export class GenerarPlanSemanalUseCase implements BaseUseCase {
   constructor(
@@ -209,6 +225,7 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
 
   async execute(
     solicitud: SolicitudPlanSemanal,
+    opciones: OpcionesGeneracionPlanSemanal = {},
   ): Promise<RespuestaPlanSemanal> {
     const inicioMs = Date.now();
 
@@ -328,6 +345,7 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
       alternativasPorComida,
       fechaInicio,
       objetivoMacros,
+      onProgreso: opciones.onProgreso,
     });
     planJson = generacionCompleta.planJson;
     validacionMacros = generacionCompleta.validacionMacros;
@@ -632,6 +650,7 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
     alternativasPorComida: number;
     fechaInicio: Date;
     objetivoMacros: ObjetivoNutricional;
+    onProgreso?: OpcionesGeneracionPlanSemanal['onProgreso'];
   }): Promise<ResultadoGeneracionCompleta> {
     const tiposComidaEsperados = TIPOS_COMIDA_GENERACION.slice(
       0,
@@ -647,6 +666,20 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
       comidaGenerada: ComidaPlanGenerada;
       generacionComida: ComidaGeneradaJson;
     }> = [];
+
+    const construirEstructuraParcial = (): PlanAlimentacionDatosJson['estructura'] =>
+      params.diasEsperados.map((dia) => ({
+        dia,
+        comidas: tiposComidaEsperados.flatMap((tipoComida) => {
+          const resultado = resultadosPorComida.find(
+            (comidaGenerada) =>
+              comidaGenerada.dia === dia &&
+              comidaGenerada.tipoComida === tipoComida,
+          );
+
+          return resultado ? [resultado.comidaGenerada] : [];
+        }),
+      }));
 
     for (
       let i = 0;
@@ -700,7 +733,19 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
           };
         }),
       );
-      resultadosPorComida.push(...resultadosLote);
+
+      for (const resultado of resultadosLote) {
+        resultadosPorComida.push(resultado);
+        await params.onProgreso?.({
+          dia: resultado.dia,
+          tipoComida: resultado.tipoComida,
+          comidasGeneradas: resultadosPorComida.length,
+          comidasTotales: tareasGeneracion.length,
+          snapshotParcial: {
+            estructura: construirEstructuraParcial(),
+          },
+        });
+      }
     }
 
     const comidasPorClave = new Map<string, ComidaPlanGenerada>();
