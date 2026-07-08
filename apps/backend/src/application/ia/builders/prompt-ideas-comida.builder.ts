@@ -59,7 +59,7 @@ Reglas:
 - Cada alternativa debe tener nombre, alimentos con cantidades en gramos o mililitros.
 - Incluí calorías, proteínas, carbohidratos y grasas estimadas.
 - Si no podés cumplir todas las restricciones, devolvé menos alternativas y agregá un campo "advertencias" explicando el motivo.
-- Si usás un alimento que no está en el catálogo, declaralo en alimentosNuevos con sus macros por porción base y su categoría.${categoriasTexto ? `\n${categoriasTexto}` : ''}`;
+- OBLIGATORIO: si usás un alimento que NO está en el catálogo disponible, declaralo en 'alimentosNuevos' con TODOS los campos completos: 'nombre', 'categoriaNombre', 'cantidadBase', 'unidadBase', 'calorias', 'proteinas', 'carbohidratos' y 'grasas' por porción base. Si no podés estimar los macros con confianza, NO incluyas ese ingrediente — usá uno del catálogo.${categoriasTexto ? `\n${categoriasTexto}` : ''}`;
 
     const user = `Generá ${cantidadTexto} para ${slotTexto} del paciente.`;
 

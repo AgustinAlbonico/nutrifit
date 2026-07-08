@@ -10,6 +10,7 @@ import {
 } from './util-matching-ia';
 import type { AlimentoNuevoDto } from 'src/application/ai/dto/alimento-nuevo.dto';
 import { UnidadMedida } from 'src/domain/entities/Alimento/UnidadMedida';
+import { BuscadorMacrosOpenFoodFacts } from 'src/infrastructure/alimentos/buscador-macros-openfoodfacts.service';
 
 export interface AlimentoCatalogo {
   idAlimento: number;
@@ -36,6 +37,7 @@ export class ResolvedorCatalogoIA {
     private readonly alimentoRepo: Repository<AlimentoOrmEntity>,
     @InjectRepository(GrupoAlimenticioOrmEntity)
     private readonly grupoRepo: Repository<GrupoAlimenticioOrmEntity>,
+    private readonly buscadorMacros: BuscadorMacrosOpenFoodFacts,
   ) {}
 
   async resolver(
@@ -94,7 +96,7 @@ export class ResolvedorCatalogoIA {
       );
 
       if (!declaracion) {
-        const declaracionFallback: AlimentoNuevoDto = {
+        let declaracionFallback: AlimentoNuevoDto = {
           nombre: nombreOriginal,
           categoriaNombre: '',
           cantidadBase: 100,
@@ -104,6 +106,25 @@ export class ResolvedorCatalogoIA {
           carbohidratos: null,
           grasas: null,
         };
+
+        // Fallback a Open Food Facts: si la IA no declaró el alimento con
+        // sus macros, intentamos estimarlos desde una API externa para no
+        // guardar nulls en la DB. Si OFF no responde o no tiene el
+        // alimento, se mantienen los nulls como último recurso.
+        const macrosEstimadas =
+          await this.buscadorMacros.buscarMacrosPorNombre(nombreOriginal);
+        if (macrosEstimadas) {
+          declaracionFallback = {
+            ...declaracionFallback,
+            calorias: macrosEstimadas.calorias,
+            proteinas: macrosEstimadas.proteinas,
+            carbohidratos: macrosEstimadas.carbohidratos,
+            grasas: macrosEstimadas.grasas,
+            cantidadBase: macrosEstimadas.cantidad,
+            unidadBase: macrosEstimadas.unidadMedida,
+          };
+        }
+
         const idCategoriaFallback = this.resolverCategoria(
           '',
           categoriasExistentes,

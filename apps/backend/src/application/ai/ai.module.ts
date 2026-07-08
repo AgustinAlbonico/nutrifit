@@ -39,6 +39,8 @@ import { IaMemoriaModule } from '../ia-memoria/ia-memoria.module';
 import { TenantContextModule } from 'src/infrastructure/auth/tenant-context.module';
 import { ResolvedorCatalogoIA } from '../ia/services/resolvedor-catalogo-ia.service';
 import { CreadorPreparacionesIA } from '../ia/services/creador-preparaciones-ia.service';
+import { RotadorProteinasService } from '../ia/services/rotador-proteinas.service';
+import { BuscadorMacrosOpenFoodFacts } from 'src/infrastructure/alimentos/buscador-macros-openfoodfacts.service';
 
 @Module({
   imports: [
@@ -79,6 +81,8 @@ import { CreadorPreparacionesIA } from '../ia/services/creador-preparaciones-ia.
     NotificacionesService,
     ResolvedorCatalogoIA,
     CreadorPreparacionesIA,
+    RotadorProteinasService,
+    BuscadorMacrosOpenFoodFacts,
     {
       provide: NUTRICIONISTA_REPOSITORY,
       useClass: NutricionistaRepositoryImplementation,
@@ -102,6 +106,7 @@ import { CreadorPreparacionesIA } from '../ia/services/creador-preparaciones-ia.
     NotificacionesService,
     ResolvedorCatalogoIA,
     CreadorPreparacionesIA,
+    RotadorProteinasService,
   ],
 })
 export class AiModule {}
