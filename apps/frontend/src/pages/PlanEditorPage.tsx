@@ -923,6 +923,7 @@ export function PlanEditorPage() {
                       planAlimentacionId={planIdEditorManual}
                       socioIdPreseleccionado={socioIdNumero}
                       fichaDisponible={!!ficha && !cargandoFicha && !sinPermisos && !sinFicha && !errorFicha}
+                      datosPaciente={ficha}
                       modoBackground
                       generacionBloqueada={planBloqueadoPorIa}
                       onGeneracionIniciada={registrarGeneracionIniciada}
@@ -1035,6 +1036,7 @@ export function PlanEditorPage() {
                       planAlimentacionId={undefined}
                       socioIdPreseleccionado={socioIdNumero}
                       fichaDisponible={!!ficha && !cargandoFicha && !sinPermisos && !sinFicha && !errorFicha}
+                      datosPaciente={ficha}
                       modoBackground
                       generacionBloqueada={planBloqueadoPorIa}
                       onGeneracionIniciada={registrarGeneracionIniciada}

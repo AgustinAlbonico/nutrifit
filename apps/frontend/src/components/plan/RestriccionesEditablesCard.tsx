@@ -460,8 +460,47 @@ function VistaLectura({ ficha }: PropiedadesVistaLectura) {
   const medicacionActual = ficha.medicacionActual ?? '';
   const suplementosActuales = ficha.suplementosActuales ?? '';
 
+  const tieneRestricciones =
+    alergias.length > 0 || patologias.length > 0 || restriccionesAlimentarias.length > 0;
+
   return (
-    <Tabs
+    <>
+      {/* Resumen compacto de restricciones — visible siempre, sin importar el tab activo */}
+      {tieneRestricciones && (
+        <div
+          className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-border/40 bg-muted/20 p-2.5"
+          aria-label="Resumen de restricciones del paciente"
+        >
+          {alergias.length > 0 && (
+            <span
+              className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-900 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-200"
+            >
+              <ShieldAlert className="size-3" aria-hidden="true" />
+              Alergias: {alergias.slice(0, 3).join(', ')}
+              {alergias.length > 3 && <span className="ml-0.5">(+{alergias.length - 3} más)</span>}
+            </span>
+          )}
+          {patologias.length > 0 && (
+            <span
+              className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+            >
+              Patologías: {patologias.slice(0, 2).join(', ')}
+              {patologias.length > 2 && <span className="ml-0.5">(+{patologias.length - 2} más)</span>}
+            </span>
+          )}
+          {restriccionesAlimentarias && (
+            <span
+              className="inline-flex items-center gap-1 rounded-md border border-sky-200 bg-sky-50 px-2 py-0.5 text-xs font-medium text-sky-900 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-200"
+            >
+              Dieta: {restriccionesAlimentarias.length > 45
+                ? restriccionesAlimentarias.slice(0, 45) + '…'
+                : restriccionesAlimentarias}
+            </span>
+          )}
+        </div>
+      )}
+
+      <Tabs
       defaultValue="clinica"
       className="gap-3"
       aria-label="Datos de la ficha del paciente"
@@ -592,6 +631,7 @@ function VistaLectura({ ficha }: PropiedadesVistaLectura) {
         </dl>
       </TabsContent>
     </Tabs>
+    </>
   );
 }
 

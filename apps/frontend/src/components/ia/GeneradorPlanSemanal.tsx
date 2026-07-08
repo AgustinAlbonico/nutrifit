@@ -26,7 +26,7 @@ import { useState } from 'react';
 import { useForm, Controller, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { z } from 'zod';
-import { Calendar, Loader2, Sparkles, AlertCircle, Info, X } from 'lucide-react';
+import { Calendar, Loader2, Sparkles, AlertCircle, Info, ShieldAlert, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiRequest } from '@/lib/api';
 import { useEffect } from 'react';
@@ -65,11 +65,19 @@ const OPCIONES_COMIDAS_POR_DIA = [
   { valor: 5, etiqueta: '5 comidas' },
 ] as const;
 
+interface DatosPacienteParaGeneracion {
+  alergias: string[];
+  patologias: string[];
+  restriccionesAlimentarias: string | null;
+}
+
 interface PropiedadesGeneradorPlanSemanal {
   planAlimentacionId?: number;
   socioIdPreseleccionado?: number;
   /** Si false, deshabilita el botón de generar (ej: socio sin ficha de salud). */
   fichaDisponible?: boolean;
+  /** Datos de ficha de salud para mostrar restricciones visibles antes de generar. */
+  datosPaciente?: DatosPacienteParaGeneracion | null;
   onSuccess?: (respuesta: RespuestaPlanSemanalV2FE) => void;
   modoBackground?: boolean;
   generacionBloqueada?: boolean;
@@ -97,6 +105,7 @@ export function GeneradorPlanSemanal({
   planAlimentacionId,
   socioIdPreseleccionado,
   fichaDisponible = true,
+  datosPaciente,
   onSuccess,
   modoBackground = false,
   generacionBloqueada = false,
@@ -340,6 +349,37 @@ export function GeneradorPlanSemanal({
           )}
         </div>
       </header>
+
+      {/* Banner compacto con datos del paciente — visible antes de generar */}
+      {datosPaciente && (datosPaciente.alergias.length > 0 || datosPaciente.patologias.length > 0 || datosPaciente.restriccionesAlimentarias) && (
+        <div
+          className="rounded-lg border border-border/60 bg-muted/15 p-3"
+          aria-label="Datos del paciente que la IA considerará"
+        >
+          <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <Info className="size-3.5" aria-hidden="true" />
+            Datos del paciente que la IA considerará
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            {datosPaciente.alergias.length > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-900 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-200">
+                <ShieldAlert className="size-3" aria-hidden="true" />
+                Alergias: {datosPaciente.alergias.join(', ')}
+              </span>
+            )}
+            {datosPaciente.patologias.length > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+                Patologías: {datosPaciente.patologias.join(', ')}
+              </span>
+            )}
+            {datosPaciente.restriccionesAlimentarias && (
+              <span className="inline-flex items-center gap-1 rounded-md border border-sky-200 bg-sky-50 px-2 py-0.5 text-xs font-medium text-sky-900 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-200">
+                Dieta: {datosPaciente.restriccionesAlimentarias}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2">
         {/* socioId — campo oculto, el socio ya está en el header de la página */}
