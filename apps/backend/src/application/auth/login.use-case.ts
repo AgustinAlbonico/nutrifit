@@ -21,6 +21,13 @@ import {
 import { LoginDto } from './dtos/login.dto';
 import { Rol } from 'src/domain/entities/Usuario/Rol';
 import { randomUUID } from 'crypto';
+import { LoginAuditService } from 'src/infrastructure/services/auditoria/login-audit.service';
+import { ResultadoLoginAudit } from 'src/infrastructure/persistence/typeorm/entities/login-audit.entity';
+
+export interface LoginOrigenDto {
+  ip?: string | null;
+  userAgent?: string | null;
+}
 
 @Injectable()
 export class LoginUseCase implements BaseUseCase {
@@ -33,9 +40,10 @@ export class LoginUseCase implements BaseUseCase {
     private readonly jwtService: IJwtService,
     @Inject(APP_LOGGER_SERVICE)
     private readonly loggerService: IAppLoggerService,
+    private readonly loginAuditService: LoginAuditService,
   ) {}
 
-  async execute(payload: LoginDto): Promise<{
+  async execute(payload: LoginDto, origen: LoginOrigenDto = {}): Promise<{
     token: string;
     rol: Rol;
     acciones: string[];
@@ -48,17 +56,30 @@ export class LoginUseCase implements BaseUseCase {
     const { email, contrasena } = payload;
 
     const user = await this.userRepository.findByEmail(email);
-    if (!user) throw new UnauthorizedError('No se encontró el usuario');
+    if (!user) {
+      await this.registrarIntentoLogin(email, ResultadoLoginAudit.FAILURE, origen);
+      throw new UnauthorizedError('No se encontró el usuario');
+    }
 
     const isPasswordValid = await this.passwordEncrypter.comparePasswords(
       contrasena,
       user.contraseña,
     );
-    if (!isPasswordValid) throw new UnauthorizedError('Contraseña incorrecta');
+    if (!isPasswordValid) {
+      await this.registrarIntentoLogin(email, ResultadoLoginAudit.FAILURE, origen);
+      throw new UnauthorizedError('Contraseña incorrecta');
+    }
 
     // Bloquear usuarios con fechaBaja (cuenta inactiva)
     const persona = user.persona;
     if (persona?.fechaBaja) {
+      await this.registrarIntentoLogin(
+        email,
+        ResultadoLoginAudit.BLOCKED,
+        origen,
+        user.idUsuario,
+        persona.gimnasioId ?? null,
+      );
       throw new UnauthorizedError('La cuenta está inactiva');
     }
 
@@ -73,6 +94,13 @@ export class LoginUseCase implements BaseUseCase {
       if (persona?.gimnasioId === undefined || persona?.gimnasioId === null) {
         this.loggerService.error(
           `LoginUseCase: Usuario ${email} (rol ${user.rol}) no tiene gimnasioId — estado inconsistente`,
+        );
+        await this.registrarIntentoLogin(
+          email,
+          ResultadoLoginAudit.FAILURE,
+          origen,
+          user.idUsuario,
+          null,
         );
         throw new UnauthorizedError('La cuenta no tiene gimnasio asignado');
       }
@@ -97,11 +125,36 @@ export class LoginUseCase implements BaseUseCase {
       'LoginUseCase: Login exitoso para el usuario: ' + user.email,
     );
 
+    await this.registrarIntentoLogin(
+      email,
+      ResultadoLoginAudit.SUCCESS,
+      origen,
+      user.idUsuario,
+      gimnasioId,
+    );
+
     return {
       token,
       rol: user.rol,
       acciones: user.getAccionesEfectivas(),
       debeCambiarPassword: user.debeCambiarPassword,
     };
+  }
+
+  private async registrarIntentoLogin(
+    emailIntentado: string,
+    resultado: ResultadoLoginAudit,
+    origen: LoginOrigenDto,
+    usuarioId: number | null = null,
+    gimnasioId: number | null = null,
+  ): Promise<void> {
+    await this.loginAuditService.registrar({
+      usuarioId,
+      emailIntentado,
+      resultado,
+      ip: origen.ip ?? null,
+      userAgent: origen.userAgent ?? null,
+      gimnasioId,
+    });
   }
 }

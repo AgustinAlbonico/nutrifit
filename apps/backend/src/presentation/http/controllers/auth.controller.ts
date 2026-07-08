@@ -4,9 +4,11 @@ import {
   Get,
   Inject,
   Put,
+  Req,
   UseGuards,
   Post,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { LoginDto } from 'src/application/auth/dtos/login.dto';
 import { LoginUseCase } from 'src/application/auth/login.use-case';
 import { CambiarContrasenaUseCase } from 'src/application/auth/cambiar-contrasena.use-case';
@@ -32,6 +34,7 @@ import {
   USUARIO_REPOSITORY,
   UsuarioRepository,
 } from 'src/domain/entities/Usuario/usuario.repository';
+import { extraerOrigenRequest } from 'src/infrastructure/common/http/request-origin.helper';
 
 @Controller('auth')
 export class AuthController {
@@ -48,9 +51,9 @@ export class AuthController {
   ) {}
 
   @Post('login')
-  async login(@Body() body: LoginDto) {
+  async login(@Body() body: LoginDto, @Req() request: Request) {
     this.logger.log(`Intentando loguear al usuario con email: ${body.email}`);
-    const res = await this.loginUseCase.execute(body);
+    const res = await this.loginUseCase.execute(body, extraerOrigenRequest(request));
     this.logger.log(
       `Login correcto para el usuario con email: ${body.email}, tiene el rol de ${res.rol}`,
     );

@@ -16,6 +16,11 @@ import {
   getArgentinaNow,
   getArgentinaTodayDate,
 } from 'src/common/utils/argentina-datetime.util';
+import {
+  AccionAuditoria,
+  TipoAccionAuditoria,
+} from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
+import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
 
 @Injectable()
 export class AusenciaTurnoScheduler {
@@ -27,6 +32,7 @@ export class AusenciaTurnoScheduler {
     @Inject(POLITICA_OPERATIVA_REPOSITORY)
     private readonly politicaRepository: IPoliticaOperativaRepository,
     private readonly notificacionesService: NotificacionesService,
+    private readonly auditoriaService: AuditoriaService,
   ) {}
 
   @Cron('*/5 * * * *')
@@ -61,9 +67,29 @@ export class AusenciaTurnoScheduler {
       const umbralMs = umbralMinutos * 60 * 1000;
 
       if (ahora.getTime() > turnoDateTime.getTime() + umbralMs) {
+        const valoresAntes = {
+          estadoTurno: turno.estadoTurno,
+          ausenteAt: turno.ausenteAt,
+        };
+
         turno.estadoTurno = EstadoTurno.AUSENTE;
         turno.ausenteAt = ahora;
         await this.turnoRepository.save(turno);
+        await this.auditoriaService.registrar({
+          gimnasioId,
+          usuarioId: 'system',
+          modulo: 'turnos',
+          entidad: 'Turno',
+          entidadId: turno.idTurno,
+          accion: AccionAuditoria.UPDATE,
+          tipoAccion: TipoAccionAuditoria.AUSENCIA_AUTO,
+          descripcion: 'Marcado automatico de ausencia por scheduler',
+          valoresAntes,
+          valoresDespues: {
+            estadoTurno: turno.estadoTurno,
+            ausenteAt: turno.ausenteAt,
+          },
+        });
         this.logger.log(`Turno ${turno.idTurno} marcado como AUSENTE`);
 
         // Notificaciones

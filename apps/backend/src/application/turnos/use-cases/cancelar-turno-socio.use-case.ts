@@ -35,8 +35,6 @@ import { Repository } from 'typeorm';
 import { createHash } from 'crypto';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
-import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
-import { AccionAuditoria } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 
 @Injectable()
@@ -55,7 +53,6 @@ export class CancelarTurnoSocioUseCase implements BaseUseCase {
     private readonly logger: IAppLoggerService,
     @Inject(POLITICA_OPERATIVA_REPOSITORY)
     private readonly politicaRepository: IPoliticaOperativaRepository,
-    private readonly auditoriaService: AuditoriaService,
     private readonly tenantContext: TenantContextService,
   ) {}
 
@@ -103,19 +100,6 @@ export class CancelarTurnoSocioUseCase implements BaseUseCase {
     turno.estadoTurno = EstadoTurno.CANCELADO;
     turno.motivoCancelacion = dto?.motivo ?? 'Cancelado por socio';
     const updatedTurno = await this.turnoRepository.save(turno);
-
-    const usuarioId = userId ?? null;
-    await this.auditoriaService.registrar({
-      usuarioId,
-      accion: AccionAuditoria.TURNO_ESTADO_CAMBIO,
-      entidad: 'Turno',
-      entidadId: turnoId,
-      metadata: {
-        estadoAnterior: EstadoTurno.CONFIRMADO,
-        estadoNuevo: EstadoTurno.CANCELADO,
-        motivo: turno.motivoCancelacion,
-      },
-    });
 
     if (turno.socio.usuario?.idUsuario != null) {
       await this.notificacionesService.crear({

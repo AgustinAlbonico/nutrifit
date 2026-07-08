@@ -10,8 +10,6 @@ import {
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
-import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
-import { AccionAuditoria } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
 import {
   combineArgentinaDateAndTime,
   formatArgentinaDate,
@@ -37,7 +35,6 @@ export class CheckInTurnoUseCase {
     @InjectRepository(TurnoOrmEntity)
     private readonly turnoRepository: Repository<TurnoOrmEntity>,
     private readonly notificacionesService: NotificacionesService,
-    private readonly auditoriaService: AuditoriaService,
     private readonly tenantContext: TenantContextService,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
@@ -89,33 +86,11 @@ export class CheckInTurnoUseCase {
       (ahora.getTime() - horaTurnoReal.getTime()) / 60000,
     );
 
-    const antes = {
-      estado: turno.estadoTurno,
-      checkInAt: turno.checkInAt,
-      llegadaTardeMin: turno.llegadaTardeMin,
-    };
-
     turno.estadoTurno = EstadoTurno.PRESENTE;
     turno.checkInAt = ahora;
     turno.llegadaTardeMin = diffMinutos > 0 ? diffMinutos : null;
 
     const turnoActualizado = await this.turnoRepository.save(turno);
-
-    await this.auditoriaService.registrar({
-      accion: AccionAuditoria.CHECKIN,
-      entidad: 'turno',
-      entidadId: turnoActualizado.idTurno,
-      metadata: {
-        antes,
-        despues: {
-          estado: turnoActualizado.estadoTurno,
-          checkInAt: turnoActualizado.checkInAt?.toISOString() ?? null,
-          llegadaTardeMin: turnoActualizado.llegadaTardeMin,
-        },
-        ventana: { diffMinutos },
-      },
-      gimnasioId: this.tenantContext.gimnasioId,
-    });
 
     if (turnoActualizado.nutricionista?.usuario?.idUsuario != null) {
       await this.notificacionesService.crear({

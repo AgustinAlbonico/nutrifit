@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import {
   AgendaController,
@@ -61,6 +62,7 @@ import { GimnasioOrmEntity } from 'src/infrastructure/persistence/typeorm/entiti
 import { GimnasioRepository } from 'src/infrastructure/persistence/typeorm/repositories/gimnasio.repository';
 import { RepositoriesModule } from 'src/infrastructure/persistence/typeorm/repositories/repositories.module';
 import { GimnasiosModule } from './gimnasios.module';
+import { AuditoriaInterceptor } from 'src/infrastructure/services/auditoria/auditoria.interceptor';
 
 @Module({
   imports: [
@@ -107,6 +109,10 @@ import { GimnasiosModule } from './gimnasios.module';
     ObtenerPreparacionUseCase,
     ActualizarPreparacionUseCase,
     EliminarPreparacionUseCase,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditoriaInterceptor,
+    },
   ],
   controllers: [
     AgendaController,

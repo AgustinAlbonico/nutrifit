@@ -39,6 +39,7 @@ import { GimnasioOrmEntity } from 'src/infrastructure/persistence/typeorm/entiti
 import { AdjuntoClinicoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/adjunto-clinico.entity';
 import { NotificacionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/notificacion.entity';
 import { AuditoriaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
+import { LoginAuditOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/login-audit.entity';
 import { RecordatorioEnviadoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/recordatorio-enviado.entity';
 import { SugerenciaIAOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/sugerencia-ia.entity';
 import { TurnoConfirmacionTokenOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/turno-confirmacion-token.entity';
@@ -100,6 +101,7 @@ export const AppDataSource = (
     AdjuntoClinicoOrmEntity,
     NotificacionOrmEntity,
     AuditoriaOrmEntity,
+    LoginAuditOrmEntity,
     RecordatorioEnviadoOrmEntity,
     SugerenciaIAOrmEntity,
     TurnoConfirmacionTokenOrmEntity,

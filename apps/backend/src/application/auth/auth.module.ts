@@ -15,15 +15,17 @@ import { JwtModule } from '@nestjs/jwt';
 import { AppLoggerModule } from 'src/infrastructure/common/logger/app-logger.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsuarioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities';
+import { LoginAuditOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/login-audit.entity';
 import { USUARIO_REPOSITORY } from 'src/domain/entities/Usuario/usuario.repository';
 import { UsuarioRepositoryImplementation } from 'src/infrastructure/persistence/typeorm/repositories';
 import { EnvironmentConfigModule } from 'src/infrastructure/config/environment-config/environment-config.module';
 import { EnvironmentConfigService } from 'src/infrastructure/config/environment-config/environment-config.service';
 import { EmailModule } from 'src/application/email/email.module';
+import { LoginAuditService } from 'src/infrastructure/services/auditoria/login-audit.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([UsuarioOrmEntity]),
+    TypeOrmModule.forFeature([UsuarioOrmEntity, LoginAuditOrmEntity]),
     JwtModule.registerAsync({
       imports: [EnvironmentConfigModule],
       inject: [EnvironmentConfigService],
@@ -48,6 +50,7 @@ import { EmailModule } from 'src/application/email/email.module';
     },
     { provide: USUARIO_REPOSITORY, useClass: UsuarioRepositoryImplementation },
     LoginUseCase,
+    LoginAuditService,
     CambiarContrasenaUseCase,
     EstablecerContrasenaUseCase,
     SolicitarRecuperacionContrasenaUseCase,

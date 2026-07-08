@@ -11,6 +11,11 @@ import {
 import { FinalizarConsultaPorInactividadUseCase } from 'src/application/turnos/use-cases/finalizar-consulta-por-inactividad.use-case';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
+import {
+  AccionAuditoria,
+  TipoAccionAuditoria,
+} from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
+import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
 
 @Injectable()
 export class CierreConsultaScheduler {
@@ -23,6 +28,7 @@ export class CierreConsultaScheduler {
     private readonly politicaRepository: IPoliticaOperativaRepository,
     private readonly finalizarPorInactividadUseCase: FinalizarConsultaPorInactividadUseCase,
     private readonly notificacionesService: NotificacionesService,
+    private readonly auditoriaService: AuditoriaService,
   ) {}
 
   @Cron('*/5 * * * *')
@@ -52,8 +58,26 @@ export class CierreConsultaScheduler {
           minutosTranscurridos < umbralMin &&
           !turno.preavisoCierreAutoEnviadoEn
         ) {
+          const valoresAntes = {
+            preavisoCierreAutoEnviadoEn: turno.preavisoCierreAutoEnviadoEn,
+          };
+
           turno.preavisoCierreAutoEnviadoEn = ahora;
           await this.turnoRepository.save(turno);
+          await this.auditoriaService.registrar({
+            gimnasioId,
+            usuarioId: 'system',
+            modulo: 'turnos',
+            entidad: 'Turno',
+            entidadId: turno.idTurno,
+            accion: AccionAuditoria.UPDATE,
+            tipoAccion: TipoAccionAuditoria.CIERRE_AUTO,
+            descripcion: 'Preaviso automatico de cierre de consulta',
+            valoresAntes,
+            valoresDespues: {
+              preavisoCierreAutoEnviadoEn: turno.preavisoCierreAutoEnviadoEn,
+            },
+          });
 
           if (turno.nutricionista?.usuario?.idUsuario != null) {
             await this.notificacionesService.crear({
@@ -68,7 +92,28 @@ export class CierreConsultaScheduler {
         }
 
         if (minutosTranscurridos >= umbralMin) {
+          const valoresAntes = {
+            estadoTurno: turno.estadoTurno,
+            consultaFinalizadaAt: turno.consultaFinalizadaAt,
+            cierreAutomatico: turno.cierreAutomatico,
+          };
+
           await this.finalizarPorInactividadUseCase.execute(turno.idTurno);
+          await this.auditoriaService.registrar({
+            gimnasioId,
+            usuarioId: 'system',
+            modulo: 'turnos',
+            entidad: 'Turno',
+            entidadId: turno.idTurno,
+            accion: AccionAuditoria.UPDATE,
+            tipoAccion: TipoAccionAuditoria.CIERRE_AUTO,
+            descripcion: 'Cierre automatico de consulta por inactividad',
+            valoresAntes,
+            valoresDespues: {
+              estadoTurno: EstadoTurno.REALIZADO,
+              cierreAutomatico: true,
+            },
+          });
           this.logger.log(`Turno ${turno.idTurno} cerrado automáticamente por inactividad`);
         }
       } catch (error) {

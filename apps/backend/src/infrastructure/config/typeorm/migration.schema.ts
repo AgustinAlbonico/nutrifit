@@ -35,6 +35,7 @@ import { ObjetivoOrmEntity } from '../../persistence/typeorm/entities/objetivo.e
 import { AdjuntoClinicoOrmEntity } from '../../persistence/typeorm/entities/adjunto-clinico.entity';
 import { NotificacionOrmEntity } from '../../persistence/typeorm/entities/notificacion.entity';
 import { AuditoriaOrmEntity } from '../../persistence/typeorm/entities/auditoria.entity';
+import { LoginAuditOrmEntity } from '../../persistence/typeorm/entities/login-audit.entity';
 import { RecordatorioEnviadoOrmEntity } from '../../persistence/typeorm/entities/recordatorio-enviado.entity';
 import { SugerenciaIAOrmEntity } from '../../persistence/typeorm/entities/sugerencia-ia.entity';
 import { TurnoConfirmacionTokenOrmEntity } from '../../persistence/typeorm/entities/turno-confirmacion-token.entity';
@@ -82,6 +83,7 @@ export const AppMigrationDataSource = new DataSource({
     AdjuntoClinicoOrmEntity,
     NotificacionOrmEntity,
     AuditoriaOrmEntity,
+    LoginAuditOrmEntity,
     RecordatorioEnviadoOrmEntity,
     SugerenciaIAOrmEntity,
     TurnoConfirmacionTokenOrmEntity,

@@ -125,6 +125,11 @@ import { SocioResourceAccessGuard } from 'src/infrastructure/auth/guards/socio-r
 import { TurnoNutricionistaAccessGuard } from 'src/infrastructure/auth/guards/turno-nutricionista-access.guard';
 import { AdjuntoClinicoService } from 'src/infrastructure/services/adjunto-clinico/adjunto-clinico.service';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
+import { Audit } from 'src/infrastructure/services/auditoria/auditoria.decorator';
+import {
+  AccionAuditoria,
+  TipoAccionAuditoria,
+} from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
 
 @Controller('turnos')
 @UseGuards(JwtAuthGuard, RolesGuard, ActionsGuard)
@@ -238,6 +243,13 @@ export class TurnosController {
   }
 
   @Post('profesional/:nutricionistaId/asignar-manual')
+  @Audit({
+    modulo: 'turnos',
+    accion: AccionAuditoria.CREATE,
+    descripcion: 'Asignacion manual de turno por profesional',
+    entidad: 'Turno',
+    tipoAccion: TipoAccionAuditoria.RESERVA,
+  })
   @Rol(RolEnum.NUTRICIONISTA)
   @UseGuards(NutricionistaOwnershipGuard)
   async asignarTurnoManual(
@@ -291,6 +303,13 @@ export class TurnosController {
   }
 
   @Post('profesional/:nutricionistaId/bloquear')
+  @Audit({
+    modulo: 'turnos',
+    accion: AccionAuditoria.CREATE,
+    descripcion: 'Bloqueo de turno por profesional',
+    entidad: 'Turno',
+    tipoAccion: TipoAccionAuditoria.BLOQUEO,
+  })
   @Rol(RolEnum.NUTRICIONISTA)
   @UseGuards(NutricionistaOwnershipGuard)
   async bloquearTurno(
@@ -305,6 +324,14 @@ export class TurnosController {
   }
 
   @Patch('profesional/:nutricionistaId/:turnoId/desbloquear')
+  @Audit({
+    modulo: 'turnos',
+    accion: AccionAuditoria.UPDATE,
+    descripcion: 'Desbloqueo de turno por profesional',
+    entidad: 'Turno',
+    entidadIdParam: 'turnoId',
+    tipoAccion: TipoAccionAuditoria.BLOQUEO,
+  })
   @Rol(RolEnum.NUTRICIONISTA)
   @UseGuards(NutricionistaOwnershipGuard)
   async desbloquearTurno(
@@ -319,6 +346,13 @@ export class TurnosController {
   }
 
   @Patch('profesional/:nutricionistaId/:turnoId/asistencia')
+  @Audit({
+    modulo: 'turnos',
+    accion: AccionAuditoria.UPDATE,
+    descripcion: 'Registro de asistencia de turno',
+    entidad: 'Turno',
+    entidadIdParam: 'turnoId',
+  })
   @Rol(RolEnum.NUTRICIONISTA)
   @UseGuards(NutricionistaOwnershipGuard)
   async registrarAsistencia(
@@ -564,6 +598,13 @@ export class TurnosController {
   }
 
   @Post('socio/reservar')
+  @Audit({
+    modulo: 'turnos',
+    accion: AccionAuditoria.CREATE,
+    descripcion: 'Reserva de turno por socio',
+    entidad: 'Turno',
+    tipoAccion: TipoAccionAuditoria.RESERVA,
+  })
   @Rol(RolEnum.SOCIO)
   async reservarTurnoSocio(
     @CurrentUserId() userId: number,
@@ -617,6 +658,14 @@ export class TurnosController {
   }
 
   @Patch('socio/:turnoId/cancelar')
+  @Audit({
+    modulo: 'turnos',
+    accion: AccionAuditoria.UPDATE,
+    descripcion: 'Cancelacion de turno por socio',
+    entidad: 'Turno',
+    entidadIdParam: 'turnoId',
+    tipoAccion: TipoAccionAuditoria.CANCELACION,
+  })
   @Rol(RolEnum.SOCIO)
   async cancelarTurnoSocio(
     @CurrentUserId() userId: number,
@@ -636,6 +685,14 @@ export class TurnosController {
   }
 
   @Post(':id/cancelar')
+  @Audit({
+    modulo: 'turnos',
+    accion: AccionAuditoria.UPDATE,
+    descripcion: 'Cancelacion de turno por token',
+    entidad: 'Turno',
+    entidadIdParam: 'id',
+    tipoAccion: TipoAccionAuditoria.CANCELACION,
+  })
   async cancelarTurnoPorToken(
     @Param('id', ParseIntPipe) turnoId: number,
     @Query() query: ConfirmarTurnoTokenDto,
@@ -651,6 +708,14 @@ export class TurnosController {
   }
 
   @Patch('socio/:turnoId/confirmar')
+  @Audit({
+    modulo: 'turnos',
+    accion: AccionAuditoria.UPDATE,
+    descripcion: 'Confirmacion de turno por socio',
+    entidad: 'Turno',
+    entidadIdParam: 'turnoId',
+    tipoAccion: TipoAccionAuditoria.RESERVA,
+  })
   @Rol(RolEnum.SOCIO)
   async confirmarTurnoSocio(
     @CurrentUserId() userId: number,
@@ -664,6 +729,14 @@ export class TurnosController {
   }
 
   @Post(':id/confirmar')
+  @Audit({
+    modulo: 'turnos',
+    accion: AccionAuditoria.UPDATE,
+    descripcion: 'Confirmacion de turno por token',
+    entidad: 'Turno',
+    entidadIdParam: 'id',
+    tipoAccion: TipoAccionAuditoria.RESERVA,
+  })
   async confirmarTurnoPorToken(
     @Param('id', ParseIntPipe) turnoId: number,
     @Query() query: ConfirmarTurnoTokenDto,
@@ -673,6 +746,13 @@ export class TurnosController {
   }
 
   @Post(':id/check-in')
+  @Audit({
+    modulo: 'turnos',
+    accion: AccionAuditoria.UPDATE,
+    descripcion: 'Check-in de turno',
+    entidad: 'Turno',
+    entidadIdParam: 'id',
+  })
   @Rol(RolEnum.RECEPCIONISTA, RolEnum.ADMIN, RolEnum.NUTRICIONISTA)
   @UseGuards(TurnoNutricionistaAccessGuard)
   async checkInTurno(@Param('id', ParseIntPipe) turnoId: number): Promise<{
@@ -727,6 +807,13 @@ export class TurnosController {
   }
 
   @Post(':id/iniciar-consulta')
+  @Audit({
+    modulo: 'turnos',
+    accion: AccionAuditoria.UPDATE,
+    descripcion: 'Inicio de consulta',
+    entidad: 'Turno',
+    entidadIdParam: 'id',
+  })
   @Rol(RolEnum.NUTRICIONISTA)
   @UseGuards(TurnoNutricionistaAccessGuard)
   async iniciarConsulta(
@@ -749,6 +836,14 @@ export class TurnosController {
   }
 
   @Post(':id/reabrir-cierre-auto')
+  @Audit({
+    modulo: 'turnos',
+    accion: AccionAuditoria.UPDATE,
+    descripcion: 'Reapertura de consulta cerrada automaticamente',
+    entidad: 'Turno',
+    entidadIdParam: 'id',
+    tipoAccion: TipoAccionAuditoria.CIERRE_AUTO,
+  })
   @Rol(RolEnum.NUTRICIONISTA)
   @UseGuards(TurnoNutricionistaAccessGuard)
   async reabrirConsultaCerradaAuto(

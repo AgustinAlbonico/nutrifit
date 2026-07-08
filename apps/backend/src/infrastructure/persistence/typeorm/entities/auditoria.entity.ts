@@ -3,14 +3,13 @@ import {
   CreateDateColumn,
   Entity,
   Index,
-  JoinColumn,
-  ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { UsuarioOrmEntity } from './usuario.entity';
-import { GimnasioOrmEntity } from './gimnasio.entity';
 
 export enum AccionAuditoria {
+  CREATE = 'CREATE',
+  UPDATE = 'UPDATE',
+  DELETE = 'DELETE',
   LOGIN_EXITO = 'LOGIN_EXITO',
   LOGIN_FALLO = 'LOGIN_FALLO',
   FICHA_ACCESO = 'FICHA_ACCESO',
@@ -44,35 +43,56 @@ export enum AccionAuditoria {
   PLAN_FINALIZADO_ACCION = 'PLAN_FINALIZADO_ACCION',
 }
 
-@Entity('auditoria')
-@Index('idx_auditoria_timestamp', ['timestamp'])
-@Index('idx_auditoria_usuario', ['usuario'])
-@Index('idx_auditoria_accion', ['accion'])
-@Index('idx_auditoria_gimnasio', ['gimnasioId'])
-export class AuditoriaOrmEntity {
-  @PrimaryGeneratedColumn({ name: 'id_auditoria' })
-  idAuditoria: number;
+export enum TipoAccionAuditoria {
+  RESERVA = 'RESERVA',
+  BLOQUEO = 'BLOQUEO',
+  CANCELACION = 'CANCELACION',
+  AUSENCIA_AUTO = 'AUSENCIA_AUTO',
+  CIERRE_AUTO = 'CIERRE_AUTO',
+}
 
-  @ManyToOne(() => UsuarioOrmEntity, {
-    nullable: true,
-    onDelete: 'SET NULL',
-  })
-  @JoinColumn({ name: 'id_usuario' })
-  usuario: UsuarioOrmEntity;
+@Entity('audit_log')
+@Index('idx_audit_log_fecha', ['fecha'])
+@Index('idx_audit_log_usuario', ['usuarioId'])
+@Index('idx_audit_log_accion', ['accion'])
+@Index('idx_audit_log_modulo', ['modulo'])
+@Index('idx_audit_log_entidad', ['entidad', 'entidadId'])
+@Index('idx_audit_log_gimnasio_fecha', ['gimnasioId', 'fecha'])
+export class AuditLogOrmEntity {
+  @PrimaryGeneratedColumn({ name: 'id_audit_log' })
+  idAuditLog: number;
+
+  get idAuditoria(): number {
+    return this.idAuditLog;
+  }
+
+  @CreateDateColumn({ name: 'fecha' })
+  fecha: Date;
+
+  get timestamp(): Date {
+    return this.fecha;
+  }
+
+  @Column({ name: 'id_gimnasio', type: 'int', nullable: true })
+  gimnasioId: number | null;
 
   @Column({
     name: 'id_usuario',
-    type: 'int',
+    type: 'varchar',
+    length: 50,
     nullable: true,
   })
-  usuarioId: number | null;
+  usuarioId: string | null;
+
+  @Column({ name: 'modulo', type: 'varchar', length: 100, default: 'legacy' })
+  modulo: string;
 
   @Column({
     name: 'accion',
     type: 'varchar',
     length: 100,
   })
-  accion: AccionAuditoria;
+  accion: AccionAuditoria | string;
 
   @Column({
     name: 'entidad',
@@ -83,44 +103,62 @@ export class AuditoriaOrmEntity {
 
   @Column({
     name: 'entidad_id',
-    type: 'int',
+    type: 'varchar',
+    length: 100,
     nullable: true,
   })
-  entidadId: number | null;
+  entidadId: string | null;
 
-  @CreateDateColumn({ name: 'timestamp' })
-  timestamp: Date;
+  @Column({ name: 'tipo_accion', type: 'varchar', length: 50, nullable: true })
+  tipoAccion: TipoAccionAuditoria | string | null;
+
+  @Column({ name: 'descripcion', type: 'varchar', length: 500, nullable: true })
+  descripcion: string | null;
 
   @Column({
-    name: 'ip_origen',
+    name: 'ip',
     type: 'varchar',
     length: 45,
     nullable: true,
   })
-  ipOrigen: string | null;
+  ip: string | null;
+
+  get ipOrigen(): string | null {
+    return this.ip;
+  }
 
   @Column({
     name: 'user_agent',
-    type: 'text',
+    type: 'varchar',
+    length: 500,
     nullable: true,
   })
   userAgent: string | null;
 
   @Column({
-    name: 'metadata',
+    name: 'metadata_legacy',
     type: 'json',
     nullable: true,
   })
-  metadata: Record<string, unknown> | null;
+  metadataLegacy: Record<string, unknown> | null;
 
-  /** ID del gimnasio/tenant asociado a esta auditoria */
-  @Column({ name: 'id_gimnasio', type: 'int', nullable: true })
-  gimnasioId: number | null;
+  get metadata(): Record<string, unknown> | null {
+    return this.metadataLegacy;
+  }
 
-  @ManyToOne(() => GimnasioOrmEntity, {
+  @Column({
+    name: 'valores_antes',
+    type: 'json',
     nullable: true,
-    onDelete: 'SET NULL',
   })
-  @JoinColumn({ name: 'id_gimnasio' })
-  gimnasio: GimnasioOrmEntity | null;
+  valoresAntes: Record<string, unknown> | null;
+
+  @Column({
+    name: 'valores_despues',
+    type: 'json',
+    nullable: true,
+  })
+  valoresDespues: Record<string, unknown> | null;
 }
+
+export { AuditLogOrmEntity as AuditoriaOrmEntity };

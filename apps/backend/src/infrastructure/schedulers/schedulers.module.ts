@@ -14,6 +14,7 @@ import { EmailModule } from 'src/application/email/email.module';
 import { FinalizarConsultaPorInactividadUseCase } from 'src/application/turnos/use-cases/finalizar-consulta-por-inactividad.use-case';
 import { CierreConsultaScheduler } from './cierre-consulta.scheduler';
 import { GeneracionPlanIaReaperScheduler } from './generacion-plan-ia-reaper.scheduler';
+import { AuditoriaModule } from 'src/infrastructure/services/auditoria/auditoria.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { GeneracionPlanIaReaperScheduler } from './generacion-plan-ia-reaper.sch
     ]),
     RepositoriesModule,
     EmailModule,
+    AuditoriaModule,
   ],
   providers: [
     AusenciaTurnoScheduler,
