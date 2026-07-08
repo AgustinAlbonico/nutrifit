@@ -39,7 +39,7 @@ export class RefreshTokenUseCase {
 
       const token = this.jwtService.sign(payload);
 
-      this.registrarRefresh(
+      await this.registrarRefresh(
         currentTokenPayload.id,
         currentTokenPayload.gimnasioId,
         ResultadoLoginAudit.REFRESH_SUCCESS,
@@ -48,31 +48,26 @@ export class RefreshTokenUseCase {
 
       return { token };
     } catch (error) {
-      this.registrarRefresh(null, null, ResultadoLoginAudit.REFRESH_FAILURE, origen);
+      await this.registrarRefresh(null, null, ResultadoLoginAudit.REFRESH_FAILURE, origen);
       throw error instanceof UnauthorizedError
         ? error
         : new UnauthorizedError('Token invalido o expirado');
     }
   }
 
-  private registrarRefresh(
+  private async registrarRefresh(
     usuarioId: number | null,
     gimnasioId: number | null,
     resultado: ResultadoLoginAudit,
     origen: OrigenRequest,
-  ): void {
-    void this.loginAuditService
-      .registrar({
-        usuarioId,
-        emailIntentado: null,
-        resultado,
-        ip: origen.ip ?? null,
-        userAgent: origen.userAgent ?? null,
-        gimnasioId,
-      })
-      .catch((error: unknown) => {
-        const mensaje = error instanceof Error ? error.message : String(error);
-        this.logger.warn(`No se pudo registrar refresh en auditoria: ${mensaje}`);
-      });
+  ): Promise<void> {
+    await this.loginAuditService.persistir({
+      usuarioId,
+      emailIntentado: null,
+      resultado,
+      ip: origen.ip ?? null,
+      userAgent: origen.userAgent ?? null,
+      gimnasioId,
+    });
   }
 }

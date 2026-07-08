@@ -148,7 +148,7 @@ export class LoginUseCase implements BaseUseCase {
     usuarioId: number | null = null,
     gimnasioId: number | null = null,
   ): Promise<void> {
-    await this.loginAuditService.registrar({
+    await this.loginAuditService.persistir({
       usuarioId,
       emailIntentado,
       resultado,

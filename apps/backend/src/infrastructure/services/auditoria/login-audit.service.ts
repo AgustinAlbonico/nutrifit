@@ -27,23 +27,21 @@ export class LoginAuditService {
     private readonly loginAuditRepository: Repository<LoginAuditOrmEntity>,
   ) {}
 
-  async registrar(dto: RegistrarLoginAuditDto): Promise<void> {
-    void this.persistir(dto).catch((error: unknown) => {
+  async persistir(dto: RegistrarLoginAuditDto): Promise<void> {
+    try {
+      const registro = this.loginAuditRepository.create({
+        usuarioId: dto.usuarioId ?? null,
+        emailIntentado: dto.emailIntentado ?? null,
+        resultado: dto.resultado,
+        ip: dto.ip ?? null,
+        userAgent: dto.userAgent ?? null,
+        gimnasioId: dto.gimnasioId ?? null,
+      });
+
+      await this.loginAuditRepository.save(registro);
+    } catch (error: unknown) {
       const mensaje = error instanceof Error ? error.message : String(error);
       this.logger.warn(`No se pudo registrar auditoria de login: ${mensaje}`);
-    });
-  }
-
-  private async persistir(dto: RegistrarLoginAuditDto): Promise<void> {
-    const registro = this.loginAuditRepository.create({
-      usuarioId: dto.usuarioId ?? null,
-      emailIntentado: dto.emailIntentado ?? null,
-      resultado: dto.resultado,
-      ip: dto.ip ?? null,
-      userAgent: dto.userAgent ?? null,
-      gimnasioId: dto.gimnasioId ?? null,
-    });
-
-    await this.loginAuditRepository.save(registro);
+    }
   }
 }

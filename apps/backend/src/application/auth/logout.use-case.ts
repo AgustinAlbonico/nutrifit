@@ -21,18 +21,13 @@ export class LogoutUseCase {
     gimnasioId: number | null,
     origen: OrigenRequest,
   ): Promise<void> {
-    void this.loginAuditService
-      .registrar({
-        usuarioId,
-        emailIntentado: null,
-        resultado: ResultadoLoginAudit.LOGOUT,
-        ip: origen.ip ?? null,
-        userAgent: origen.userAgent ?? null,
-        gimnasioId,
-      })
-      .catch((error: unknown) => {
-        const mensaje = error instanceof Error ? error.message : String(error);
-        this.logger.warn(`No se pudo registrar logout en auditoria: ${mensaje}`);
-      });
+    await this.loginAuditService.persistir({
+      usuarioId,
+      emailIntentado: null,
+      resultado: ResultadoLoginAudit.LOGOUT,
+      ip: origen.ip ?? null,
+      userAgent: origen.userAgent ?? null,
+      gimnasioId,
+    });
   }
 }

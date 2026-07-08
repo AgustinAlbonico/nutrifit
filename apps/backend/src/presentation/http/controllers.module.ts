@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_INTERCEPTOR, Reflector } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import {
   AgendaController,
@@ -63,6 +63,8 @@ import { GimnasioRepository } from 'src/infrastructure/persistence/typeorm/repos
 import { RepositoriesModule } from 'src/infrastructure/persistence/typeorm/repositories/repositories.module';
 import { GimnasiosModule } from './gimnasios.module';
 import { AuditoriaInterceptor } from 'src/infrastructure/services/auditoria/auditoria.interceptor';
+import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
+import { AuditoriaEntityRegistry } from 'src/infrastructure/services/auditoria/auditoria-entity.registry';
 
 @Module({
   imports: [
@@ -111,7 +113,12 @@ import { AuditoriaInterceptor } from 'src/infrastructure/services/auditoria/audi
     EliminarPreparacionUseCase,
     {
       provide: APP_INTERCEPTOR,
-      useClass: AuditoriaInterceptor,
+      useFactory: (
+        reflector: Reflector,
+        auditoriaService: AuditoriaService,
+        entityRegistry: AuditoriaEntityRegistry,
+      ) => new AuditoriaInterceptor(reflector, auditoriaService, entityRegistry),
+      inject: [Reflector, AuditoriaService, AuditoriaEntityRegistry],
     },
   ],
   controllers: [
