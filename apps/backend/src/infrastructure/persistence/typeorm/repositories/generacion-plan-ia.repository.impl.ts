@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, In, IsNull, Repository } from 'typeorm';
+import {
+  FindOptionsWhere,
+  In,
+  IsNull,
+  QueryFailedError,
+  Repository,
+} from 'typeorm';
 import type { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 
 import { GeneracionPlanIaEntity } from 'src/domain/entities/GeneracionPlanIa/generacion-plan-ia.entity';
@@ -16,6 +22,8 @@ import {
 import { GeneracionPlanIaOrmEntity } from '../entities/generacion-plan-ia.entity';
 
 const ESTADOS_ACTIVOS = ['PENDIENTE', 'GENERANDO'] as const;
+const CANTIDAD_MAXIMA_INTENTOS_DEADLOCK = 3;
+const ESPERA_BASE_DEADLOCK_MS = 50;
 
 type CambiosGeneracionPlanIa = QueryDeepPartialEntity<GeneracionPlanIaOrmEntity>;
 
@@ -42,6 +50,11 @@ export class GeneracionPlanIaRepositoryImpl
       mensajeEstado: input.mensajeEstado ?? 'Generación en cola',
       errorMensaje: null,
       respuestaJson: null,
+      progresoActual: null,
+      progresoTotal: null,
+      diaActual: null,
+      comidaActual: null,
+      snapshotParcialJson: null,
       iniciadoEn: null,
       finalizadoEn: null,
     });
@@ -121,38 +134,42 @@ export class GeneracionPlanIaRepositoryImpl
       );
     }
 
-    const resultado = await query.execute();
+    const resultado = await this.ejecutarConReintentosDeadlock(() =>
+      query.execute(),
+    );
     return resultado.affected ?? 0;
   }
 
   async expirarActivasVencidasGlobal(
     input: ExpirarGeneracionesPlanIaVencidasGlobalInput,
   ): Promise<number> {
-    const resultado = await this.repo
-      .createQueryBuilder()
-      .update(GeneracionPlanIaOrmEntity)
-      .set({
-        estado: 'ERROR',
-        mensajeEstado: input.mensajeEstado,
-        errorMensaje: input.errorMensaje,
-        finalizadoEn: input.finalizadoEn,
-      })
-      .where('estado IN (:...estadosActivos)', {
-        estadosActivos: [...ESTADOS_ACTIVOS],
-      })
-      .andWhere(
-        `(
-          (estado = :estadoPendiente AND creado_en < :fechaCorte)
-          OR
-          (estado = :estadoGenerando AND COALESCE(iniciado_en, actualizado_en, creado_en) < :fechaCorte)
-        )`,
-        {
-          estadoPendiente: 'PENDIENTE',
-          estadoGenerando: 'GENERANDO',
-          fechaCorte: input.fechaCorte,
-        },
-      )
-      .execute();
+    const resultado = await this.ejecutarConReintentosDeadlock(() =>
+      this.repo
+        .createQueryBuilder()
+        .update(GeneracionPlanIaOrmEntity)
+        .set({
+          estado: 'ERROR',
+          mensajeEstado: input.mensajeEstado,
+          errorMensaje: input.errorMensaje,
+          finalizadoEn: input.finalizadoEn,
+        })
+        .where('estado IN (:...estadosActivos)', {
+          estadosActivos: [...ESTADOS_ACTIVOS],
+        })
+        .andWhere(
+          `(
+            (estado = :estadoPendiente AND creado_en < :fechaCorte)
+            OR
+            (estado = :estadoGenerando AND COALESCE(iniciado_en, actualizado_en, creado_en) < :fechaCorte)
+          )`,
+          {
+            estadoPendiente: 'PENDIENTE',
+            estadoGenerando: 'GENERANDO',
+            fechaCorte: input.fechaCorte,
+          },
+        )
+        .execute(),
+    );
 
     return resultado.affected ?? 0;
   }
@@ -161,15 +178,17 @@ export class GeneracionPlanIaRepositoryImpl
     id: number,
     input: ActualizarGeneracionPlanIaInput,
   ): Promise<GeneracionPlanIaEntity | null> {
-    const resultado = await this.repo
-      .createQueryBuilder()
-      .update(GeneracionPlanIaOrmEntity)
-      .set(this.crearCambiosActualizacion(input))
-      .where('id_generacion_plan_ia = :id', { id })
-      .andWhere('estado IN (:...estadosActivos)', {
-        estadosActivos: [...ESTADOS_ACTIVOS],
-      })
-      .execute();
+    const resultado = await this.ejecutarConReintentosDeadlock(() =>
+      this.repo
+        .createQueryBuilder()
+        .update(GeneracionPlanIaOrmEntity)
+        .set(this.crearCambiosActualizacion(input))
+        .where('id_generacion_plan_ia = :id', { id })
+        .andWhere('estado IN (:...estadosActivos)', {
+          estadosActivos: [...ESTADOS_ACTIVOS],
+        })
+        .execute(),
+    );
 
     if (!resultado.affected) {
       return null;
@@ -210,6 +229,21 @@ export class GeneracionPlanIaRepositoryImpl
     if (input.finalizadoEn !== undefined) {
       orm.finalizadoEn = input.finalizadoEn;
     }
+    if (input.progresoActual !== undefined) {
+      orm.progresoActual = input.progresoActual;
+    }
+    if (input.progresoTotal !== undefined) {
+      orm.progresoTotal = input.progresoTotal;
+    }
+    if (input.diaActual !== undefined) {
+      orm.diaActual = input.diaActual;
+    }
+    if (input.comidaActual !== undefined) {
+      orm.comidaActual = input.comidaActual;
+    }
+    if (input.snapshotParcialJson !== undefined) {
+      orm.snapshotParcialJson = input.snapshotParcialJson;
+    }
 
     return this.toDomain(await this.repo.save(orm));
   }
@@ -245,8 +279,74 @@ export class GeneracionPlanIaRepositoryImpl
     if (input.finalizadoEn !== undefined) {
       cambios.finalizadoEn = input.finalizadoEn;
     }
+    if (input.progresoActual !== undefined) {
+      cambios.progresoActual = input.progresoActual;
+    }
+    if (input.progresoTotal !== undefined) {
+      cambios.progresoTotal = input.progresoTotal;
+    }
+    if (input.diaActual !== undefined) {
+      cambios.diaActual = input.diaActual;
+    }
+    if (input.comidaActual !== undefined) {
+      cambios.comidaActual = input.comidaActual;
+    }
+    if (input.snapshotParcialJson !== undefined) {
+      cambios.snapshotParcialJson =
+        input.snapshotParcialJson === null
+          ? () => 'NULL'
+          : (input.snapshotParcialJson as CambiosGeneracionPlanIa['snapshotParcialJson']);
+    }
 
     return cambios;
+  }
+
+  private async ejecutarConReintentosDeadlock<T>(
+    operacion: () => Promise<T>,
+  ): Promise<T> {
+    for (
+      let intento = 1;
+      intento <= CANTIDAD_MAXIMA_INTENTOS_DEADLOCK;
+      intento++
+    ) {
+      try {
+        return await operacion();
+      } catch (error) {
+        const puedeReintentar =
+          this.esDeadlockMysql(error) &&
+          intento < CANTIDAD_MAXIMA_INTENTOS_DEADLOCK;
+
+        if (!puedeReintentar) {
+          throw error;
+        }
+
+        await this.dormir(ESPERA_BASE_DEADLOCK_MS * intento);
+      }
+    }
+
+    throw new Error('No se pudo ejecutar la operación sobre generación IA');
+  }
+
+  private esDeadlockMysql(error: unknown): boolean {
+    if (!(error instanceof QueryFailedError)) {
+      return false;
+    }
+
+    const driverError: unknown = error.driverError;
+    if (!driverError || typeof driverError !== 'object') {
+      return false;
+    }
+
+    const detalle = driverError as Record<string, unknown>;
+    return (
+      detalle.code === 'ER_LOCK_DEADLOCK' ||
+      detalle.errno === 1213 ||
+      detalle.sqlState === '40001'
+    );
+  }
+
+  private async dormir(ms: number): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   private toDomain(orm: GeneracionPlanIaOrmEntity): GeneracionPlanIaEntity {
@@ -266,6 +366,11 @@ export class GeneracionPlanIaRepositoryImpl
       orm.actualizadoEn,
       orm.iniciadoEn,
       orm.finalizadoEn,
+      orm.progresoActual,
+      orm.progresoTotal,
+      orm.diaActual,
+      orm.comidaActual,
+      orm.snapshotParcialJson,
     );
   }
 }

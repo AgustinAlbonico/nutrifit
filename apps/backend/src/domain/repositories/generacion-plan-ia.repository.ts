@@ -31,6 +31,11 @@ export interface ActualizarGeneracionPlanIaInput {
   planAlimentacionId?: number | null;
   iniciadoEn?: Date | null;
   finalizadoEn?: Date | null;
+  progresoActual?: number | null;
+  progresoTotal?: number | null;
+  diaActual?: string | null;
+  comidaActual?: string | null;
+  snapshotParcialJson?: unknown | null;
 }
 
 export interface ExpirarGeneracionesPlanIaVencidasInput

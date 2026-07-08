@@ -22,6 +22,11 @@ export class GeneracionPlanIaEntity {
     public readonly actualizadoEn: Date,
     public readonly iniciadoEn: Date | null,
     public readonly finalizadoEn: Date | null,
+    public readonly progresoActual?: number | null,
+    public readonly progresoTotal?: number | null,
+    public readonly diaActual?: string | null,
+    public readonly comidaActual?: string | null,
+    public readonly snapshotParcialJson?: unknown | null,
   ) {}
 
   estaActiva(): boolean {

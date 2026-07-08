@@ -63,6 +63,21 @@ export class GeneracionPlanIaOrmEntity {
   @Column({ name: 'respuesta_json', type: 'json', nullable: true })
   respuestaJson: unknown | null;
 
+  @Column({ name: 'progreso_actual', type: 'int', nullable: true })
+  progresoActual: number | null;
+
+  @Column({ name: 'progreso_total', type: 'int', nullable: true })
+  progresoTotal: number | null;
+
+  @Column({ name: 'dia_actual', type: 'varchar', length: 32, nullable: true })
+  diaActual: string | null;
+
+  @Column({ name: 'comida_actual', type: 'varchar', length: 64, nullable: true })
+  comidaActual: string | null;
+
+  @Column({ name: 'snapshot_parcial_json', type: 'json', nullable: true })
+  snapshotParcialJson: unknown | null;
+
   @CreateDateColumn({ name: 'creado_en', type: 'timestamp' })
   creadoEn: Date;
 
