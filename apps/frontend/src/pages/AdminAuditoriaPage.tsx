@@ -142,7 +142,7 @@ function crearFiltrosIniciales(): FiltrosAuditoria {
     fechaDesde: '',
     fechaHasta: '',
     accion: '',
-    modulo: '',
+    modulo: 'auth',
     entidad: '',
     entidadId: '',
     usuarioId: '',
