@@ -56,6 +56,8 @@ interface RegistroAuditoria {
   valoresAntes: ValoresAuditoriaConCambios | null;
   valoresDespues: ValoresAuditoriaConCambios | null;
   metadataLegacy?: Record<string, unknown> | null;
+  resultado?: string | null;
+  emailIntentado?: string | null;
 }
 
 interface FiltrosAuditoria {
@@ -175,6 +177,7 @@ function formatearFechaAuditoria(fecha: string): string {
   return new Date(fecha).toLocaleString('es-AR', {
     dateStyle: 'medium',
     timeStyle: 'short',
+    timeZone: 'America/Argentina/Buenos_Aires',
   });
 }
 
@@ -696,6 +699,9 @@ export function AdminAuditoriaPage() {
                       </span>
                       {registro.usuarioId && (
                         <span>Usuario #{registro.usuarioId}</span>
+                      )}
+                      {registro.emailIntentado && (
+                        <span>Email intentado: {registro.emailIntentado}</span>
                       )}
                       {registro.ip && (
                         <span>IP: {registro.ip}</span>
