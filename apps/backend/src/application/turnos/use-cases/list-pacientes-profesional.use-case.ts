@@ -18,6 +18,7 @@ import {
 } from 'src/domain/services/logger.service';
 import {
   combineArgentinaDateAndTime,
+  formatArgentinaDate,
   formatArgentinaDateTime,
   getArgentinaNow,
 } from 'src/common/utils/argentina-datetime.util';
@@ -101,7 +102,7 @@ export class ListPacientesProfesionalUseCase implements BaseUseCase {
         paciente.email = turno.socio.usuario?.email ?? null;
         paciente.telefono = turno.socio.telefono ?? null;
         paciente.fechaNacimiento = turno.socio.fechaNacimiento
-          ? turno.socio.fechaNacimiento.toISOString().split('T')[0]
+          ? formatArgentinaDate(turno.socio.fechaNacimiento)
           : null;
         paciente.genero = turno.socio.genero ?? null;
         paciente.direccion = turno.socio.direccion ?? null;
