@@ -32,6 +32,7 @@ import {
 } from 'src/domain/services/logger.service';
 import { mapPlanToResponse } from './plan-alimentacion.mapper';
 import { PlanAlimentacionResponseDto } from '../dtos';
+import { UnidadMedida } from 'src/domain/entities/Alimento/UnidadMedida';
 import { BloqueoGeneracionPlanIaService } from '../services/bloqueo-generacion-plan-ia.service';
 
 export interface SolicitudGuardarVersion {
@@ -159,9 +160,9 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
         datosJson,
         motivoCambio: motivoCambio || 'edicion_manual',
         activa: true,
-        createdBy: plan.nutricionista.idPersona,
+        createdBy: plan.nutricionista.idPersona ?? 0,
       });
-      const savedVersion = await versionRepo.save(versionCreada);
+      const savedVersion = (await versionRepo.save(versionCreada)) as PlanAlimentacionVersionOrmEntity;
 
       // 8b) Desactivar todas las versiones anteriores del plan
       await versionRepo
@@ -217,7 +218,16 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
               item.alimentoId = al.idAlimento;
               item.alimentoNombre = al.nombre;
               item.cantidad = ali.cantidad;
-              item.unidad = (ali.unidad ?? al.unidadMedida) as never;
+              const unidadAli = ali.unidad as UnidadMedida | undefined;
+              const esUnidadValida =
+                !!unidadAli &&
+                (Object.values(UnidadMedida) as string[]).includes(unidadAli);
+              if (ali.unidad && !esUnidadValida) {
+                this.logger.warn(
+                  `unidad invalida "${ali.unidad}" para alimentoId=${ali.alimentoId}; fallback a "${al.unidadMedida}".`,
+                );
+              }
+              item.unidad = esUnidadValida ? unidadAli : al.unidadMedida;
               item.notas = null;
               item.calorias = al.calorias;
               item.proteinas = al.proteinas;
@@ -254,7 +264,7 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
             mensaje: `Tu nutricionista guardó una nueva versión del plan. Revisala en la app.`,
             metadata: {
               planId: plan.idPlanAlimentacion,
-              versionId: nuevaVersion.idPlanAlimentacionVersion,
+              versionId: nuevaVersion!.idPlanAlimentacionVersion,
               numeroVersion: nuevoNumeroVersion,
             },
           });
@@ -275,9 +285,9 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
         usuarioId: nutricionistaUserId,
         gimnasioId: gimnasioId,
         metadata: {
-          versionId: nuevaVersion.idPlanAlimentacionVersion,
+          versionId: nuevaVersion!.idPlanAlimentacionVersion,
           numeroVersion: nuevoNumeroVersion,
-          motivoCambio: nuevaVersion.motivoCambio,
+          motivoCambio: nuevaVersion!.motivoCambio,
         },
       });
     } catch (error) {
