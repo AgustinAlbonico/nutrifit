@@ -59,7 +59,7 @@ export class VaciarContenidoPlanUseCase implements BaseUseCase {
       relations: { nutricionista: { usuario: true }, socio: true, dias: true },
     });
 
-    if (!plan || !plan.activo) {
+    if (!plan) {
       throw new NotFoundError('Plan de alimentación', String(payload.planId));
     }
 
