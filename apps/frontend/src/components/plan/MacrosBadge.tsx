@@ -153,7 +153,7 @@ export function MacrosBadge({
   compact = false,
   className,
 }: PropiedadesMacrosBadge) {
-  const etiqueta = ETIQUETAS_BANDA[banda];
+  const etiqueta = ETIQUETAS_BANDA[banda] ?? 'Verde';
   const ariaLabel = `Macros ${etiqueta.toLowerCase()} con desvío de ${formatearDesvio(desvioPorcentaje)}`;
 
   const badge = (
