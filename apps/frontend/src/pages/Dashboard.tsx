@@ -2,6 +2,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Shield, KeyRound } from 'lucide-react';
+import { SuscripcionStatusCard } from '@/components/suscripcion/SuscripcionStatusCard';
 import { DashboardNutricionista } from '@/pages/DashboardNutricionista';
 import { DashboardSocio } from '@/pages/DashboardSocio';
 import { DashboardRecepcionista } from '@/pages/DashboardRecepcionista';
@@ -50,6 +51,8 @@ export function Dashboard() {
             <div className="text-2xl font-bold">{rol}</div>
           </CardContent>
         </Card>
+
+        <SuscripcionStatusCard />
       </div>
 
       <Card className="rounded-2xl border-border/50 shadow-sm overflow-hidden">

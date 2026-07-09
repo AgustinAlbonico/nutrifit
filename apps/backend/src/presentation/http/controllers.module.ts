@@ -62,6 +62,7 @@ import { GimnasioOrmEntity } from 'src/infrastructure/persistence/typeorm/entiti
 import { GimnasioRepository } from 'src/infrastructure/persistence/typeorm/repositories/gimnasio.repository';
 import { RepositoriesModule } from 'src/infrastructure/persistence/typeorm/repositories/repositories.module';
 import { GimnasiosModule } from './gimnasios.module';
+import { SuscripcionesModule } from './suscripciones.module';
 import { AuditoriaInterceptor } from 'src/infrastructure/services/auditoria/auditoria.interceptor';
 import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
 import { AuditoriaEntityRegistry } from 'src/infrastructure/services/auditoria/auditoria-entity.registry';
@@ -75,6 +76,7 @@ import { AuditoriaEntityRegistry } from 'src/infrastructure/services/auditoria/a
     AdjuntoClinicoModule,
     ProgresoModule,
     GimnasiosModule,
+    SuscripcionesModule,
     TypeOrmModule.forFeature([
       TurnoOrmEntity,
       PlanAlimentacionOrmEntity,

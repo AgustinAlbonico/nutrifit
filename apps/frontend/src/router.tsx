@@ -46,6 +46,8 @@ import { CambiarContrasenaObligatorio } from '@/pages/CambiarContrasenaObligator
 import { RecuperarContrasenaSolicitud } from '@/pages/RecuperarContrasenaSolicitud';
 import { RecuperarContrasenaConfirmacion } from '@/pages/RecuperarContrasenaConfirmacion';
 import { Landing } from '@/pages/Landing';
+import { RegistroSuscripcionPage } from '@/pages/RegistroSuscripcionPage';
+import { PagoSimuladoPage } from '@/pages/PagoSimuladoPage';
 
 // Definir el tipo del context del router
 declare module '@tanstack/react-router' {
@@ -391,6 +393,20 @@ const usuarioPermisosRoute = createRoute({
   component: UsuarioPermisosPage,
 });
 
+// Registro público de suscripción
+const registroRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/registro',
+  component: RegistroSuscripcionPage,
+});
+
+// Pago simulado
+const pagoRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/suscripcion/$uuid/pago',
+  component: PagoSimuladoPage,
+});
+
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
@@ -424,6 +440,8 @@ const cambiarContrasenaRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
+  registroRoute,
+  pagoRoute,
   appRedirectRoute,
   cambiarContrasenaRoute,
   loginRoute,
