@@ -212,7 +212,6 @@ export class PlanAlimentacionController {
 
   @Delete(':id/contenido')
   @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN)
-  @UseGuards(SocioResourceAccessGuard)
   async vaciarContenidoPlan(
     @CurrentUserId() nutricionistaUserId: number,
     @Param('id', ParseIntPipe) id: number,

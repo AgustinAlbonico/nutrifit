@@ -39,6 +39,7 @@ import {
   ThumbsUp,
   Loader2,
   Lock,
+  Trash2,
   PenLine,
   History,
   Save,
@@ -62,6 +63,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -271,6 +274,9 @@ export function PlanEditorPage() {
   const [feedbackAbierto, setFeedbackAbierto] = useState(false);
   const [preferenciasIaAbierto, setPreferenciasIaAbierto] = useState(false);
   const [generadorIaAbierto, setGeneradorIaAbierto] = useState(false);
+  const [confirmacionVaciadoAbierta, setConfirmacionVaciadoAbierta] =
+    useState(false);
+  const [vaciandoContenido, setVaciandoContenido] = useState(false);
 
   // Modo de tabs: editor | versiones
   const [modo, setModo] = useState<'editor' | 'versiones'>('editor');
@@ -668,6 +674,39 @@ export function PlanEditorPage() {
     }
   };
 
+  // Vaciar todas las comidas del plan (DELETE /planes-alimentacion/:id/contenido).
+  // Solo nutricionista dueño del plan o admin — el backend valida el rol.
+  const manejarVaciarContenido = async () => {
+    if (!planIdActual || vaciandoContenido) return;
+    setConfirmacionVaciadoAbierta(false);
+    setVaciandoContenido(true);
+    try {
+      const respuesta = await apiRequest<{
+        mensaje: string;
+        planId: number;
+        diasEliminados: number;
+        opcionesEliminadas: number;
+        vaciadoEn: string;
+      }>(`/planes-alimentacion/${planIdActual}/contenido`, {
+        method: 'DELETE',
+      });
+      toast.success(respuesta.mensaje || 'Plan vaciado correctamente', {
+        description: `Se eliminaron ${respuesta.diasEliminados} días y ${respuesta.opcionesEliminadas} opciones de comida.`,
+      });
+      setEstructura(crearEstructuraInicial());
+      haSidoModificadoRef.current = false;
+      setUltimoGuardado(null);
+    } catch (err) {
+      const mensaje =
+        err instanceof Error
+          ? err.message
+          : 'Error al vaciar el contenido del plan';
+      toast.error(mensaje);
+    } finally {
+      setVaciandoContenido(false);
+    }
+  };
+
   // Drag and drop setup
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -885,6 +924,29 @@ export function PlanEditorPage() {
               >
                 <Sparkles className="size-4" aria-hidden="true" />
                 Generar plan completo con IA
+              </Button>
+
+              {/* Botón: Limpiar comidas (solo nutricionista) */}
+              <Button
+                type="button"
+                onClick={() => setConfirmacionVaciadoAbierta(true)}
+                disabled={
+                  vaciandoContenido ||
+                  guardandoBorrador ||
+                  cargandoEstructura ||
+                  planBloqueadoPorIa
+                }
+                size="sm"
+                variant="outline"
+                className="font-semibold text-xs h-9 flex items-center gap-1.5 rounded-xl border-amber-500/40 text-amber-700 hover:bg-amber-50 hover:text-amber-800 dark:text-amber-300 dark:hover:bg-amber-950/40 dark:hover:text-amber-200"
+                data-testid="limpiar-comidas-btn"
+              >
+                {vaciandoContenido ? (
+                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Trash2 className="size-4" aria-hidden="true" />
+                )}
+                Limpiar comidas
               </Button>
 
               {/* Botón: Guardar versión definitiva */}
@@ -1232,6 +1294,67 @@ export function PlanEditorPage() {
         open={preferenciasIaAbierto}
         onOpenChange={setPreferenciasIaAbierto}
       />
+
+      {/* Dialog de confirmación: vaciar contenido del plan */}
+      <Dialog
+        open={confirmacionVaciadoAbierta}
+        onOpenChange={(open) => {
+          if (vaciandoContenido) return;
+          setConfirmacionVaciadoAbierta(open);
+        }}
+      >
+        <DialogContent
+          className="max-w-md"
+          data-testid="confirmar-vaciado-dialog"
+        >
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
+              <Trash2 className="size-5" aria-hidden="true" />
+              ¿Limpiar todas las comidas?
+            </DialogTitle>
+            <DialogDescription>
+              Esta acción elimina <strong>todas las comidas y los días</strong> del
+              borrador actual. El plan en sí no se borra: queda como un borrador
+              vacío listo para que vuelvas a armarlo desde cero.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-900/80 dark:text-amber-200/80">
+            <strong>Importante:</strong> las versiones definitivas guardadas
+            previamente (V1, V2, …) no se ven afectadas. Podés volver a
+            cualquiera de ellas desde la pestaña «Versiones».
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setConfirmacionVaciadoAbierta(false)}
+              disabled={vaciandoContenido}
+              data-testid="cancelar-vaciado-btn"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={manejarVaciarContenido}
+              disabled={vaciandoContenido}
+              className="bg-amber-600 hover:bg-amber-700 text-white font-semibold gap-1.5"
+              data-testid="confirmar-vaciado-btn"
+            >
+              {vaciandoContenido ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                  Vaciando…
+                </>
+              ) : (
+                <>
+                  <Trash2 className="size-4" aria-hidden="true" />
+                  Sí, limpiar comidas
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
