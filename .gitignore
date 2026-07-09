@@ -60,6 +60,9 @@ skills-lock.json
 # Playwright MCP artifacts
 .playwright-mcp/
 
+# Code intelligence (codegraph local index)
+.codegraph/
+
 # Temporary files
 *.tmp
 *.temp
