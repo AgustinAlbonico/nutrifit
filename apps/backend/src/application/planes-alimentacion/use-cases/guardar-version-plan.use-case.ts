@@ -30,8 +30,15 @@ import {
   APP_LOGGER_SERVICE,
   IAppLoggerService,
 } from 'src/domain/services/logger.service';
-import { mapPlanToResponse } from './plan-alimentacion.mapper';
-import { PlanAlimentacionResponseDto } from '../dtos';
+import {
+  MacrosValidator,
+  type ObjetivoNutricional,
+} from 'src/domain/validators/macros-validator';
+import {
+  RestriccionesValidatorV2,
+  type FichaClinicaParaValidacion,
+} from 'src/domain/validators/restricciones-validator-v2';
+import { RespuestaGuardarVersionDto } from '../dtos';
 import { UnidadMedida } from 'src/domain/entities/Alimento/UnidadMedida';
 import { BloqueoGeneracionPlanIaService } from '../services/bloqueo-generacion-plan-ia.service';
 
@@ -111,7 +118,7 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
 
   async execute(
     solicitud: SolicitudGuardarVersion,
-  ): Promise<PlanAlimentacionResponseDto> {
+  ): Promise<RespuestaGuardarVersionDto> {
     const { planAlimentacionId, nutricionistaUserId, gimnasioId } = solicitud;
 
     // 1) Cargar plan
@@ -339,16 +346,37 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
       );
     }
 
-    // 11) Recargar plan completo con relaciones
-    const planCompleto = await this.planRepo.findOne({
-      where: { idPlanAlimentacion: planAlimentacionId },
-      relations: {
-        dias: { opcionesComida: { items: { alimento: true } } },
-        socio: true,
-        nutricionista: true,
-      },
-    });
+    const objetivoMacros: ObjetivoNutricional = {
+      caloriasDiarias: 2000,
+      proteinasDiarias: 150,
+      carbohidratosDiarios: 200,
+      grasasDiarias: 70,
+    };
+    const fichaClinicaValidacion: FichaClinicaParaValidacion = {
+      alergias: [],
+      restriccionesAlimentarias: null,
+      patologias: [],
+      objetivoPersonal: motivoCambio ?? null,
+    };
+    const macros = MacrosValidator.validar(
+      datosJson as unknown as Parameters<typeof MacrosValidator.validar>[0],
+      objetivoMacros,
+    );
+    const validacion = RestriccionesValidatorV2.validarPlanCompleto(
+      datosJson as unknown as Parameters<typeof RestriccionesValidatorV2.validarPlanCompleto>[0],
+      fichaClinicaValidacion,
+    );
 
-    return mapPlanToResponse(planCompleto!);
+    return {
+      idPlanAlimentacion,
+      planAlimentacionId,
+      versionId: nuevaVersion!.idPlanAlimentacionVersion,
+      numeroVersion: nuevoNumeroVersion,
+      motivoCambio,
+      plan: datosJson as unknown as RespuestaGuardarVersionDto['plan'],
+      validacion,
+      macros,
+      advertencias: [],
+    };
   }
 }
