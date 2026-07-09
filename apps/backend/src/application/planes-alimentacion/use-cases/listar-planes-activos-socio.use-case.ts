@@ -13,6 +13,7 @@ import {
 } from 'src/domain/repositories/plan-alimentacion-version.repository';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 import type { PlanAlimentacionDatosJson } from 'src/domain/entities/PlanAlimentacionVersion/plan-alimentacion-datos-json';
+import { formatArgentinaDate } from 'src/common/utils/argentina-datetime.util';
 
 /**
  * PlanSocioActivoDTO — DTO que devuelve el endpoint
@@ -149,7 +150,7 @@ export class ListarPlanesActivosSocioUseCase implements BaseUseCase {
         nutricionistaNombre: `${nutri?.nombre ?? ''} ${
           nutri?.apellido ?? ''
         }`.trim(),
-        fechaInicio: plan.fechaCreacion.toISOString(),
+        fechaInicio: formatArgentinaDate(plan.fechaCreacion),
         plan: datosJson,
         objetivoNutricional: plan.objetivoNutricional,
         validacion: {
