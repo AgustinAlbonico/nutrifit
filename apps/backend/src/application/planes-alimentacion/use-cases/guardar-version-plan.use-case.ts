@@ -368,7 +368,7 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
     );
 
     return {
-      idPlanAlimentacion,
+      idPlanAlimentacion: planAlimentacionId,
       planAlimentacionId,
       versionId: nuevaVersion!.idPlanAlimentacionVersion,
       numeroVersion: nuevoNumeroVersion,

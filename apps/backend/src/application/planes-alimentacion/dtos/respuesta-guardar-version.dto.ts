@@ -31,7 +31,7 @@ export type BandaMacroDto = 'VERDE' | 'AMARILLO' | 'ROJO';
 export class ResultadoValidacionMacrosDto {
   cumpleEstructura: boolean;
   diasFaltantes: string[];
-  comidasFaltantes: string[];
+  comidasFaltantes: Array<{ dia: string; faltantes: string[] }>;
   advertencias: string[];
   macrosPorDia: Record<string, ResumenMacrosDiaDto>;
   bandaGlobal: BandaMacroDto;
@@ -43,7 +43,7 @@ export class RespuestaGuardarVersionDto {
   planAlimentacionId: number;
   versionId: number;
   numeroVersion: number;
-  motivoCambio: string;
+  motivoCambio: string | null;
   plan: PlanAlimentacionDatosJson;
   validacion: ResultadoValidacionRestriccionesDto;
   macros: ResultadoValidacionMacrosDto;
