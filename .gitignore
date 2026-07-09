@@ -21,6 +21,7 @@ Thumbs.db
 .env.local
 .env.*.local
 .env-copy
+tokens.env
 
 # Logs
 *.log
@@ -30,12 +31,18 @@ logs/
 # Test coverage
 coverage/
 
+# Test and browser automation artifacts
+test-results/
+playwright-report/
+apps/frontend/test-files/
+
 # Credentials (security)
 CREDENTIALS.md
 
 # Agent/IDE config directories (local only)
 .agent/
 .agents/
+.omo/
 .claude/
 .clavix/
 .opencode/
