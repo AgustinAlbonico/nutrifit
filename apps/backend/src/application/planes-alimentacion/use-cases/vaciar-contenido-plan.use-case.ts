@@ -176,7 +176,7 @@ export class VaciarContenidoPlanUseCase implements BaseUseCase {
         .createQueryBuilder()
         .update(PlanAlimentacionVersionOrmEntity)
         .set({
-          datos_json: JSON.stringify(estructuraVacia),
+          datosJson: JSON.stringify(estructuraVacia),
         })
         .where('id_plan_alimentacion = :planId AND activa = :activa', {
           planId: payload.planId,
