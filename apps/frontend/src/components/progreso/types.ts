@@ -139,30 +139,6 @@ export interface DatoGraficoPeso {
   pesoMaximoSaludable?: number;
 }
 
-export interface DatoGraficoPerimetros {
-  fecha: string;
-  fechaFormateada: string;
-  cintura: number | null;
-  cadera: number | null;
-  brazo: number | null;
-  muslo: number | null;
-}
-
-export interface DatoGraficoComposicion {
-  fecha: string;
-  fechaFormateada: string;
-  porcentajeGrasa: number | null;
-  masaMagra: number | null;
-}
-
-export interface DatoGraficoSignosVitales {
-  fecha: string;
-  fechaFormateada: string;
-  frecuenciaCardiaca: number | null;
-  tensionSistolica: number | null;
-  tensionDiastolica: number | null;
-}
-
 // Tipos para fotos de progreso
 export type TipoFoto = 'frente' | 'perfil' | 'espalda' | 'otro';
 

@@ -1,9 +1,9 @@
 import heic2any from 'heic2any';
 
-export const TAMANIO_MAXIMO_MB = 10;
-export const TAMANIO_MAXIMO_BYTES = TAMANIO_MAXIMO_MB * 1024 * 1024;
+const TAMANIO_MAXIMO_MB = 10;
+const TAMANIO_MAXIMO_BYTES = TAMANIO_MAXIMO_MB * 1024 * 1024;
 
-export const FORMATOS_PERMITIDOS = [
+const FORMATOS_PERMITIDOS = [
   'image/jpeg',
   'image/png',
   'image/webp',
@@ -11,8 +11,6 @@ export const FORMATOS_PERMITIDOS = [
   'image/heic',
   'image/heif',
 ];
-
-export const EXTENSIONES_PERMITIDAS = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.heic', '.heif'];
 
 interface ResultadoValidacion {
   valido: boolean;
@@ -41,7 +39,7 @@ export function validarArchivo(archivo: File): ResultadoValidacion {
   return { valido: true };
 }
 
-export function esArchivoHeic(archivo: File): boolean {
+function esArchivoHeic(archivo: File): boolean {
   return (
     archivo.type === 'image/heic' ||
     archivo.type === 'image/heif' ||
@@ -50,7 +48,7 @@ export function esArchivoHeic(archivo: File): boolean {
   );
 }
 
-export async function convertirHeicAJpeg(archivo: File): Promise<File> {
+async function convertirHeicAJpeg(archivo: File): Promise<File> {
   try {
     const blob = await heic2any({
       blob: archivo,

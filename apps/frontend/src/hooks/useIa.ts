@@ -1,20 +1,15 @@
 /**
  * Hooks de React Query para el módulo de Inteligencia Artificial.
  *
- * Estructura legacy (componentes previos a plan-alimentacion-ia-v2):
- * - useGenerarRecomendacion
- * - useGenerarPlanSemanal        (LEGACY V1, sin reintentos, sin validación post-gen)
- * - useSugerirSustitucion
- * - useAnalizarPlan
- * - useGenerarIdeasComida
+ * Estructura actual (plan-alimentacion-ia-v2, Packet 5b):
+ * - useIa() retorna { generarPlanSemanalV2, regenerarPlanSemanal,
+ *   iniciarGeneracionPlanSemanal, cancelarGeneracionPlanIa, generarIdeasComida }
+ * - useGeneracionPlanIaActiva, useGeneracionPlanIa: queries de polling.
  *
- * Estructura nueva (plan-alimentacion-ia-v2, Packet 5b):
- * - useIa() retorna { generarPlanSemanalV2, regenerarPlanSemanal }
- *
- * Las funciones legacy se conservan porque son usadas por componentes
- * existentes (GeneradorRecomendacion, IdeasComidaPanel, etc.). Las nuevas
- * mutations se exponen a través de un solo hook `useIa()` para mantener
- * una API consistente y limpia para los componentes V2.
+ * Las mutations legacy (useGenerarRecomendacion, useGenerarPlanSemanal V1,
+ * useSugerirSustitucion, useAnalizarPlan, useGenerarIdeasComida) fueron
+ * removidas junto con los componentes legacy que las usaban
+ * (GeneradorRecomendacion, IdeasComidaPanel, etc.).
  */
 
 import {
@@ -30,17 +25,6 @@ import type { ApiResponse } from '@/types/api';
 import { traducirErrorApi } from '@/lib/error-messages';
 import { toast } from 'sonner';
 import type {
-  RecomendacionComida,
-  PlanSemanalIA,
-  SustitucionAlimento,
-  AnalisisNutricional,
-  RespuestaIA,
-  ParametrosRecomendacion,
-  ParametrosPlanSemanal,
-  ParametrosSustitucion,
-  ParametrosAnalisis,
-  ParametrosIdeasComida,
-  RespuestaIdeasComida,
   SolicitudPlanSemanalV2FE,
   RespuestaPlanSemanalV2FE,
   GeneracionPlanIaFE,
@@ -78,91 +62,7 @@ interface UseIaOptions {
 }
 
 // ============================================================================
-// LEGACY — Conservados para componentes pre-existentes
-// ============================================================================
-
-export function useGenerarRecomendacion({ token }: UseIaOptions) {
-  return useMutation({
-    mutationFn: async (params: ParametrosRecomendacion): Promise<RespuestaIA<RecomendacionComida[]>> => {
-      const response = await apiRequest<ApiResponse<RespuestaIA<RecomendacionComida[]>>>(
-        '/ia/recomendacion',
-        {
-          method: 'POST',
-          token,
-          body: params,
-        },
-      );
-      return response.data;
-    },
-  });
-}
-
-export function useGenerarPlanSemanal({ token }: UseIaOptions) {
-  return useMutation({
-    mutationFn: async (params: ParametrosPlanSemanal): Promise<RespuestaIA<PlanSemanalIA>> => {
-      const response = await apiRequest<ApiResponse<RespuestaIA<PlanSemanalIA>>>(
-        '/ia/plan-semanal',
-        {
-          method: 'POST',
-          token,
-          body: params,
-        },
-      );
-      return response.data;
-    },
-  });
-}
-
-export function useSugerirSustitucion({ token }: UseIaOptions) {
-  return useMutation({
-    mutationFn: async (params: ParametrosSustitucion): Promise<RespuestaIA<SustitucionAlimento>> => {
-      const response = await apiRequest<ApiResponse<RespuestaIA<SustitucionAlimento>>>(
-        '/ia/sustitucion',
-        {
-          method: 'POST',
-          token,
-          body: params,
-        },
-      );
-      return response.data;
-    },
-  });
-}
-
-export function useAnalizarPlan({ token }: UseIaOptions) {
-  return useMutation({
-    mutationFn: async (params: ParametrosAnalisis): Promise<RespuestaIA<AnalisisNutricional>> => {
-      const response = await apiRequest<ApiResponse<RespuestaIA<AnalisisNutricional>>>(
-        '/ia/analisis',
-        {
-          method: 'POST',
-          token,
-          body: params,
-        },
-      );
-      return response.data;
-    },
-  });
-}
-
-export function useGenerarIdeasComida({ token }: UseIaOptions) {
-  return useMutation({
-    mutationFn: async (params: ParametrosIdeasComida): Promise<RespuestaIdeasComida> => {
-      const response = await apiRequest<ApiResponse<RespuestaIdeasComida>>(
-        '/ia/ideas-comida',
-        {
-          method: 'POST',
-          token,
-          body: params,
-        },
-      );
-      return response.data;
-    },
-  });
-}
-
-// ============================================================================
-// NUEVO — plan-alimentacion-ia-v2 (Packet 5b)
+// plan-alimentacion-ia-v2 (Packet 5b)
 // ============================================================================
 
 /**

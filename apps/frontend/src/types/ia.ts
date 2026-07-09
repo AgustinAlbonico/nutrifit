@@ -6,7 +6,6 @@ import type {
   AnalisisNutricional,
   RespuestaIA,
   SolicitudRecomendacion,
-  SolicitudPlanSemanal as SolicitudPlanSemanalLegacy,
   SolicitudSustitucion,
   SolicitudAnalisis,
 } from '@nutrifit/shared';
@@ -23,56 +22,8 @@ export type {
   SolicitudAnalisis,
 };
 
-// Mantener compatibilidad con el nombre legacy exportado desde shared
-export type SolicitudPlanSemanal = SolicitudPlanSemanalLegacy;
-
-export interface ParametrosRecomendacion {
-  socioId: number;
-  tipoComida?: TipoComida;
-  preferenciasAdicionales?: string;
-}
-
-export interface ParametrosPlanSemanal {
-  socioId: number;
-  caloriasObjetivo?: number;
-  diasAGenerar?: number;
-}
-
-export interface ParametrosSustitucion {
-  alimento: string;
-  razon?: string;
-}
-
-export interface ParametrosAnalisis {
-  planId: number;
-}
-
 /** Alias para ItemComidaIaFE — nombre usado en el editor de plan manual con IA. */
 export type IdeaComidaIa = ItemComidaIaFE;
-
-// --- IdeasComida (RF36-RF38) ---
-export interface IngredienteIA {
-  nombre: string;
-  cantidad: string;
-  unidad: string;
-}
-
-export interface PropuestaIA {
-  nombre: string;
-  ingredientes: IngredienteIA[];
-  pasos: string[];
-}
-
-export interface ParametrosIdeasComida {
-  objetivo: string;
-  restricciones?: string[];
-  infoExtra: string;
-  socioId?: number;
-}
-
-export interface RespuestaIdeasComida {
-  propuestas: [PropuestaIA, PropuestaIA];
-}
 
 // ============================================================================
 // Plan Alimentacion IA v2 (RF-001..RF-013)
@@ -108,9 +59,6 @@ export type ScopeRegeneracion = 'PLAN' | 'DIA' | 'ALTERNATIVA';
 
 /** Voto de feedback del nutricionista. */
 export type VotoPlan = 'POSITIVO' | 'NEGATIVO';
-
-/** Tipo de ejemplo en la memoria IA. */
-export type TipoEjemploIA = 'POSITIVO' | 'NEGATIVO';
 
 /** Item de comida snapshot dentro de una estructura de plan. */
 export interface ItemComidaSnapshotFE {
@@ -368,24 +316,6 @@ export interface PlanFeedbackFE {
 export interface SolicitudFeedbackFE {
   voto: VotoPlan;
   comentario?: string;
-}
-
-/** Ejemplo de memoria IA del nutricionista. */
-export interface EjemploMemoriaFE {
-  idNutricionistaIaMemoria: number;
-  tipoEjemplo: TipoEjemploIA;
-  comentario: string;
-  idPlanAlimentacionVersion: number | null;
-  archivada: boolean;
-  createdAt: string;
-}
-
-/** Respuesta del endpoint GET /nutricionistai/memoria. */
-export interface RespuestaMemoriaFE {
-  positivos: EjemploMemoriaFE[];
-  negativos: EjemploMemoriaFE[];
-  totalActivas: number;
-  archivadas: number;
 }
 
 /**
