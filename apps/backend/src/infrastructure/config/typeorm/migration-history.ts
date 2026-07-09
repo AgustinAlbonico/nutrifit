@@ -12,15 +12,6 @@ type MigrationConstructor = {
   };
 };
 
-export interface LegacySchemaState {
-  recordedMigrationNames: Set<string>;
-  hasHistoricalSchema: boolean;
-  hasStructuredProfessionalSchema: boolean;
-}
-
-export const HISTORICAL_BASELINE_TIMESTAMP = 20260616200000;
-export const STRUCTURED_PROFESSIONAL_TIMESTAMP = 20260617150000;
-
 export function parseMigrationArtifactName(
   fileName: string,
 ): MigrationHistoryEntry | null {
@@ -60,31 +51,4 @@ export function extractMigrationEntriesFromModule(
       };
     })
     .filter((entry): entry is MigrationHistoryEntry => entry !== null);
-}
-
-export function resolveMigrationsToRecord(
-  availableMigrations: MigrationHistoryEntry[],
-  state: LegacySchemaState,
-): MigrationHistoryEntry[] {
-  return availableMigrations.filter((migration) => {
-    if (state.recordedMigrationNames.has(migration.name)) {
-      return false;
-    }
-
-    if (
-      state.hasHistoricalSchema &&
-      migration.timestamp <= HISTORICAL_BASELINE_TIMESTAMP
-    ) {
-      return true;
-    }
-
-    if (
-      state.hasStructuredProfessionalSchema &&
-      migration.timestamp === STRUCTURED_PROFESSIONAL_TIMESTAMP
-    ) {
-      return true;
-    }
-
-    return false;
-  });
 }

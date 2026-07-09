@@ -16,11 +16,15 @@ import {
   PatologiaOrmEntity,
 } from '../../persistence/typeorm/entities/ficha-salud.entity';
 import { FichaSaludVersionOrmEntity } from '../../persistence/typeorm/entities/ficha-salud-version.entity';
+import { GeneracionPlanIaOrmEntity } from '../../persistence/typeorm/entities/generacion-plan-ia.entity';
 import { IaConfiguracionOrmEntity } from '../../persistence/typeorm/entities/ia-configuracion.entity';
 import { UsuarioOrmEntity } from '../../persistence/typeorm/entities/usuario.entity';
 import { OpcionComidaOrmEntity } from '../../persistence/typeorm/entities/opcion-comida.entity';
 import { GrupoAlimenticioOrmEntity } from '../../persistence/typeorm/entities/grupo-alimenticio.entity';
 import { PlanAlimentacionOrmEntity } from '../../persistence/typeorm/entities/plan-alimentacion.entity';
+import { PlanAlimentacionVersionOrmEntity } from '../../persistence/typeorm/entities/plan-alimentacion-version.entity';
+import { PlanFeedbackOrmEntity } from '../../persistence/typeorm/entities/plan-feedback.entity';
+import { NutricionistaIAMemoriaOrmEntity } from '../../persistence/typeorm/entities/nutricionista-ia-memoria.entity';
 import { FormacionAcademicaOrmEntity } from '../../persistence/typeorm/entities/formacion-academica.entity';
 import { ObservacionClinicaOrmEntity } from '../../persistence/typeorm/entities/observacion-clinica.entity';
 import { AccionOrmEntity } from '../../persistence/typeorm/entities/accion.entity';
@@ -39,7 +43,10 @@ import { LoginAuditOrmEntity } from '../../persistence/typeorm/entities/login-au
 import { RecordatorioEnviadoOrmEntity } from '../../persistence/typeorm/entities/recordatorio-enviado.entity';
 import { SugerenciaIAOrmEntity } from '../../persistence/typeorm/entities/sugerencia-ia.entity';
 import { TurnoConfirmacionTokenOrmEntity } from '../../persistence/typeorm/entities/turno-confirmacion-token.entity';
+import { ExcepcionDisponibilidadOrmEntity } from '../../persistence/typeorm/entities/excepcion-disponibilidad.entity';
 import { PoliticaOperativaOrmEntity } from '../../politicas/politica-operativa.entity';
+import { PreparacionOrmEntity } from '../../persistence/typeorm/entities/preparacion.entity';
+import { PreparacionItemOrmEntity } from '../../persistence/typeorm/entities/preparacion-item.entity';
 import { DataSource } from 'typeorm';
 
 export const AppMigrationDataSource = new DataSource({
@@ -53,6 +60,7 @@ export const AppMigrationDataSource = new DataSource({
   entities: [
     AgendaOrmEntity,
     AlimentoOrmEntity,
+    ExcepcionDisponibilidadOrmEntity,
     SocioOrmEntity,
     TurnoOrmEntity,
     AlergiaOrmEntity,
@@ -62,12 +70,16 @@ export const AppMigrationDataSource = new DataSource({
     PatologiaOrmEntity,
     FichaSaludOrmEntity,
     FichaSaludVersionOrmEntity,
+    GeneracionPlanIaOrmEntity,
     IaConfiguracionOrmEntity,
     ItemComidaOrmEntity,
     OpcionComidaOrmEntity,
     NutricionistaOrmEntity,
     GrupoAlimenticioOrmEntity,
     PlanAlimentacionOrmEntity,
+    PlanAlimentacionVersionOrmEntity,
+    PlanFeedbackOrmEntity,
+    NutricionistaIAMemoriaOrmEntity,
     FormacionAcademicaOrmEntity,
     CertificacionOrmEntity,
     ObservacionClinicaOrmEntity,
@@ -88,6 +100,8 @@ export const AppMigrationDataSource = new DataSource({
     SugerenciaIAOrmEntity,
     TurnoConfirmacionTokenOrmEntity,
     PoliticaOperativaOrmEntity,
+    PreparacionOrmEntity,
+    PreparacionItemOrmEntity,
   ],
   migrations: ['dist/infrastructure/persistence/typeorm/migrations/*.js'],
   synchronize: false,

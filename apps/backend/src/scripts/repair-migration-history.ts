@@ -5,43 +5,7 @@ import { DataSource } from 'typeorm';
 import {
   extractMigrationEntriesFromModule,
   parseMigrationArtifactName,
-  resolveMigrationsToRecord,
 } from 'src/infrastructure/config/typeorm/migration-history';
-
-type MigrationRow = { timestamp: number; name: string };
-
-async function tableExists(
-  dataSource: DataSource,
-  tableName: string,
-): Promise<boolean> {
-  const rows = await dataSource.query('SHOW TABLES LIKE ?', [tableName]);
-  return rows.length > 0;
-}
-
-async function columnMetadata(
-  dataSource: DataSource,
-  tableName: string,
-  columnName: string,
-): Promise<{ type: string; nullable: boolean } | null> {
-  const rows = await dataSource.query(
-    `
-      SELECT COLUMN_TYPE AS columnType, IS_NULLABLE AS isNullable
-      FROM INFORMATION_SCHEMA.COLUMNS
-      WHERE TABLE_SCHEMA = DATABASE()
-        AND TABLE_NAME = ?
-        AND COLUMN_NAME = ?
-    `,
-    [tableName, columnName],
-  );
-
-  const row = rows[0];
-  if (!row) return null;
-
-  return {
-    type: row.columnType,
-    nullable: row.isNullable === 'YES',
-  };
-}
 
 async function main(): Promise<void> {
   const migrationsDir = join(
@@ -93,65 +57,20 @@ async function main(): Promise<void> {
       `,
     );
 
-    const recorded = await dataSource.query(
+    const recorded = (await dataSource.query(
       'SELECT timestamp, name FROM migrations ORDER BY timestamp',
+    )) as { timestamp: number; name: string }[];
+
+    const recordedNames = new Set(recorded.map((r) => r.name));
+
+    // Si la DB ya tiene tablas pero no tiene registros de migración,
+    // marcar todas las migraciones como ejecutadas.
+    const tables = await dataSource.query('SHOW TABLES');
+    const hasSchema = tables.length > 1; // más que solo la tabla migrations
+
+    const toRecord = availableMigrations.filter(
+      (m) => !recordedNames.has(m.name) && hasSchema,
     );
-
-    const validMigrationNames = new Set(
-      availableMigrations.map((migration) => migration.name),
-    );
-
-    for (const migration of recorded) {
-      const hasMatchingTimestamp = availableMigrations.some(
-        (available) => available.timestamp === migration.timestamp,
-      );
-
-      if (!validMigrationNames.has(migration.name) && hasMatchingTimestamp) {
-        await dataSource.query(
-          'DELETE FROM migrations WHERE timestamp = ? AND name = ?',
-          [migration.timestamp, migration.name],
-        );
-        console.log(
-          `repair-migration-history: removed invalid row ${migration.name} (${migration.timestamp})`,
-        );
-      }
-    }
-
-    const repairedRecorded = (await dataSource.query(
-      'SELECT timestamp, name FROM migrations ORDER BY timestamp',
-    )) as MigrationRow[];
-
-    const recordedMigrationNames = new Set<string>(
-      repairedRecorded.map((migration) => migration.name),
-    );
-
-    const hasHistoricalSchema =
-      (await tableExists(dataSource, 'foto_progreso')) &&
-      (await tableExists(dataSource, 'notificacion')) &&
-      (await tableExists(dataSource, 'diploma'));
-
-    const certTableExists = await tableExists(dataSource, 'certificacion');
-    const formacionNivel = await columnMetadata(
-      dataSource,
-      'formacion_academica',
-      'nivel',
-    );
-    const formacionAnioFin = await columnMetadata(
-      dataSource,
-      'formacion_academica',
-      'anio_fin',
-    );
-
-    const hasStructuredProfessionalSchema =
-      certTableExists &&
-      formacionNivel?.type.includes('GRADO') === true &&
-      formacionAnioFin?.nullable === true;
-
-    const toRecord = resolveMigrationsToRecord(availableMigrations, {
-      recordedMigrationNames,
-      hasHistoricalSchema,
-      hasStructuredProfessionalSchema,
-    });
 
     if (toRecord.length === 0) {
       console.log('repair-migration-history: no changes needed');
