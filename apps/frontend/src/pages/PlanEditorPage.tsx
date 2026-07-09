@@ -1211,9 +1211,6 @@ export function PlanEditorPage() {
                         return;
                       }
                       setVersionSeleccionadaId(vid);
-                      toast.info(`Versión ${vid} cargada en el editor`, {
-                        description: 'Se usará como borrador actual.',
-                      });
                       try {
                         const res = await apiRequest<VersionPlanCompletaFE | ApiResponse<VersionPlanCompletaFE>>(
                           `/planes-alimentacion/version/${vid}`,
@@ -1221,16 +1218,11 @@ export function PlanEditorPage() {
                         );
                         const versionCompleta = desenvolverRespuestaApi(res);
                         setEstructura(completarEstructuraManual(versionCompleta.datosJson?.estructura));
-                        
-                        // Guardarla como borrador en el servidor inmediatamente
-                        await apiRequest(
-                          `/planes-alimentacion/${planIdEditorManual}/persistir-manual`,
-                          {
-                            method: 'POST',
-                            body: estructuraToPayload(completarEstructuraManual(versionCompleta.datosJson?.estructura)),
-                          },
-                        );
                         haSidoModificadoRef.current = false;
+                        setModo('editor');
+                        toast.success(`Versión v${versionCompleta.numeroVersion} cargada`, {
+                          description: 'La estructura del editor se actualizó con esta versión.',
+                        });
                       } catch {
                         toast.error('Error al cargar la versión');
                       }
