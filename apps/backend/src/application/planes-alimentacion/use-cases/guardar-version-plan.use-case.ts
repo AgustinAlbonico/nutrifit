@@ -95,7 +95,7 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
     }
 
     // 4) NUT dueño
-    const ownerId = plan.nutricionista.usuario?.idUsuario ?? plan.nutricionista.idPersona;
+    const ownerId = plan.nutricionista.idPersona;
     if (ownerId !== nutricionistaUserId) {
       throw new ForbiddenError(
         'Solo el nutricionista responsable del plan puede guardar versiones.',
