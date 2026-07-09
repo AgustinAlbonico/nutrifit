@@ -75,8 +75,9 @@ const PUNTO_BANDA: Record<BandaMacro, string> = {
 };
 
 function formatearDesvio(desvio: number): string {
-  const signo = desvio > 0 ? '+' : '';
-  return `${signo}${desvio.toFixed(1)}%`;
+  const valor = desvio ?? 0;
+  const signo = valor > 0 ? '+' : '';
+  return `${signo}${valor.toFixed(1)}%`;
 }
 
 function formatearKcal(real: number): string {
