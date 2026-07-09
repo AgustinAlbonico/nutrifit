@@ -45,6 +45,7 @@ import { AsignarTurnoPage } from '@/pages/AsignarTurnoPage';
 import { CambiarContrasenaObligatorio } from '@/pages/CambiarContrasenaObligatorio';
 import { RecuperarContrasenaSolicitud } from '@/pages/RecuperarContrasenaSolicitud';
 import { RecuperarContrasenaConfirmacion } from '@/pages/RecuperarContrasenaConfirmacion';
+import { Landing } from '@/pages/Landing';
 
 // Definir el tipo del context del router
 declare module '@tanstack/react-router' {
@@ -390,10 +391,15 @@ const usuarioPermisosRoute = createRoute({
   component: UsuarioPermisosPage,
 });
 
-// Default redirect to dashboard or login
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
+  component: Landing,
+});
+
+const appRedirectRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/app',
   beforeLoad: () => {
     const auth = readStoredAuth();
     const to = auth?.isAuthenticated ? '/dashboard' : '/login';
@@ -418,6 +424,7 @@ const cambiarContrasenaRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
+  appRedirectRoute,
   cambiarContrasenaRoute,
   loginRoute,
   solicitarRecuperacionRoute,
