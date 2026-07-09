@@ -6,15 +6,3 @@ export interface IApiResponse<T = any> {
   errors?: any[];
   meta: any | null;
 }
-
-export interface IPaginatedData<T> {
-  items: T[];
-  pagination: {
-    total: number;
-    page: number;
-    per_page: number;
-    total_pages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  };
-}
