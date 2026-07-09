@@ -333,9 +333,6 @@ describe('PlanEditorPage (Packet 5b)', () => {
     expect(
       screen.queryByTestId('feedback-floating-button'),
     ).not.toBeInTheDocument();
-
-    // Link a preferencias IA sí está visible
-    expect(screen.getByTestId('link-preferencias-ia')).toBeInTheDocument();
   });
 
   it('crea un plan manual desde una respuesta ApiResponse envuelta', async () => {
@@ -659,16 +656,6 @@ describe('PlanEditorPage (Packet 5b)', () => {
     await waitFor(() => {
       expect(screen.getAllByTestId('version-item')).toHaveLength(2);
     });
-  });
-
-  it('el link a preferencias IA está presente', async () => {
-    render(<PlanEditorPage />, { wrapper: crearWrapper() });
-
-    const link = await screen.findByTestId('link-preferencias-ia');
-    expect(link).toHaveAttribute(
-      'aria-label',
-      'Editar preferencias de la IA',
-    );
   });
 
   it('muestra advertencias del backend cuando las hay', async () => {

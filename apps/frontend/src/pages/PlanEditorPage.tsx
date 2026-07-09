@@ -76,7 +76,6 @@ import { RazonamientoCumplimiento } from '@/components/plan/RazonamientoCumplimi
 import { RestriccionesEditablesCard } from '@/components/plan/RestriccionesEditablesCard';
 import { GrillaManualSlots } from '@/components/plan/GrillaManualSlots';
 import { DialogGenerarIdeasIa } from '@/components/plan/DialogGenerarIdeasIa';
-import { DialogPreferenciasIa } from '@/components/plan/DialogPreferenciasIa';
 import {
   crearClaveSlot,
   estructuraTieneContenido,
@@ -272,7 +271,6 @@ export function PlanEditorPage() {
 
   // Modal de feedback
   const [feedbackAbierto, setFeedbackAbierto] = useState(false);
-  const [preferenciasIaAbierto, setPreferenciasIaAbierto] = useState(false);
   const [generadorIaAbierto, setGeneradorIaAbierto] = useState(false);
   const [confirmacionVaciadoAbierta, setConfirmacionVaciadoAbierta] =
     useState(false);
@@ -964,17 +962,6 @@ export function PlanEditorPage() {
             </>
           )}
 
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setPreferenciasIaAbierto(true)}
-            aria-label="Editar preferencias de la IA"
-            data-testid="link-preferencias-ia"
-          >
-            <Sparkles className="size-4 text-fuchsia-500" aria-hidden="true" />
-            Preferencias IA
-          </Button>
         </div>
       </header>
 
@@ -1288,12 +1275,6 @@ export function PlanEditorPage() {
           }}
         />
       )}
-
-      {/* Modal de Preferencias IA */}
-      <DialogPreferenciasIa
-        open={preferenciasIaAbierto}
-        onOpenChange={setPreferenciasIaAbierto}
-      />
 
       {/* Dialog de confirmación: vaciar contenido del plan */}
       <Dialog
