@@ -159,7 +159,7 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
         datosJson,
         motivoCambio: motivoCambio || 'edicion_manual',
         activa: true,
-        createdBy: nutricionistaUserId,
+        createdBy: plan.nutricionista.idPersona,
       });
       const savedVersion = await versionRepo.save(versionCreada);
 
