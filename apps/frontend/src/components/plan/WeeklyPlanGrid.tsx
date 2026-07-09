@@ -472,12 +472,12 @@ function WeeklyPlanGridV2({ planV2, regen }: PropsGrillaPlanSemanalV2) {
                   </span>
                   {resumenMacros && (
                     <MacrosBadge
-                      banda={resumenMacros.banda}
-                      desvioPorcentaje={resumenMacros.desvioPorcentaje}
+                      banda={resumenMacros.banda ?? 'VERDE'}
+                      desvioPorcentaje={resumenMacros.desvioPorcentaje ?? 0}
                       detalle={{
-                        real: Math.round(resumenMacros.calorias),
+                        real: Math.round(resumenMacros.calorias ?? 0),
                         objetivo: Math.round(
-                          resumenMacros.detallePorMacro.calorias.objetivo,
+                          resumenMacros.detallePorMacro?.calorias?.objetivo ?? 0,
                         ),
                       }}
                     />
