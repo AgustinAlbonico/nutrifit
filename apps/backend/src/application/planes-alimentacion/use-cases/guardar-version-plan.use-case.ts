@@ -43,6 +43,50 @@ export interface SolicitudGuardarVersion {
 
 @Injectable()
 export class GuardarVersionPlanUseCase implements BaseUseCase {
+  private static readonly ENUM_VALORES_UNIDAD = Object.values(
+    UnidadMedida,
+  ) as string[];
+
+  private static readonly SINONIMOS_UNIDAD: Record<string, UnidadMedida> = {
+    g: UnidadMedida.GRAMO,
+    gr: UnidadMedida.GRAMO,
+    gramos: UnidadMedida.GRAMO,
+    kg: UnidadMedida.KILOGRAMO,
+    kilo: UnidadMedida.KILOGRAMO,
+    kilos: UnidadMedida.KILOGRAMO,
+    kilogramos: UnidadMedida.KILOGRAMO,
+    ml: UnidadMedida.MILILITRO,
+    mililitros: UnidadMedida.MILILITRO,
+    l: UnidadMedida.LITRO,
+    lt: UnidadMedida.LITRO,
+    litros: UnidadMedida.LITRO,
+    mg: UnidadMedida.MILIGRAMO,
+    miligramos: UnidadMedida.MILIGRAMO,
+    u: UnidadMedida.UNIDAD,
+    unid: UnidadMedida.UNIDAD,
+    unidades: UnidadMedida.UNIDAD,
+    rebanada: UnidadMedida.UNIDAD,
+    rebanadas: UnidadMedida.UNIDAD,
+    porcion: UnidadMedida.UNIDAD,
+    porciones: UnidadMedida.UNIDAD,
+    pieza: UnidadMedida.UNIDAD,
+    piezas: UnidadMedida.UNIDAD,
+    tazas: UnidadMedida.TAZA,
+    cucharadas: UnidadMedida.CUCHARADA,
+    cucharaditas: UnidadMedida.CUCHARADITA,
+  };
+
+  private static normalizarUnidad(
+    input: string | undefined,
+  ): UnidadMedida | null {
+    if (!input) return null;
+    const limpio = input.trim().toLowerCase();
+    if (GuardarVersionPlanUseCase.ENUM_VALORES_UNIDAD.includes(limpio)) {
+      return limpio as UnidadMedida;
+    }
+    return GuardarVersionPlanUseCase.SINONIMOS_UNIDAD[limpio] ?? null;
+  }
+
   constructor(
     @InjectRepository(PlanAlimentacionOrmEntity)
     private readonly planRepo: Repository<PlanAlimentacionOrmEntity>,
@@ -218,16 +262,15 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
               item.alimentoId = al.idAlimento;
               item.alimentoNombre = al.nombre;
               item.cantidad = ali.cantidad;
-              const unidadAli = ali.unidad as UnidadMedida | undefined;
-              const esUnidadValida =
-                !!unidadAli &&
-                (Object.values(UnidadMedida) as string[]).includes(unidadAli);
-              if (ali.unidad && !esUnidadValida) {
+              const unidadNormalizada = GuardarVersionPlanUseCase.normalizarUnidad(
+                ali.unidad,
+              );
+              if (ali.unidad && !unidadNormalizada) {
                 this.logger.warn(
                   `unidad invalida "${ali.unidad}" para alimentoId=${ali.alimentoId}; fallback a "${al.unidadMedida}".`,
                 );
               }
-              item.unidad = esUnidadValida ? unidadAli : al.unidadMedida;
+              item.unidad = unidadNormalizada ?? al.unidadMedida;
               item.notas = null;
               item.calorias = al.calorias;
               item.proteinas = al.proteinas;
