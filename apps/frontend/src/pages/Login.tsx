@@ -37,11 +37,18 @@ export function Login() {
 
   return (
     <main className="flex min-h-screen w-full flex-col items-center justify-center bg-muted/40 px-4">
+      <div className="mb-6 flex flex-col items-center animate-fade-in">
+        <img
+          src="/logo-completo.png"
+          alt="NutriFit Supervisor Logo"
+          className="h-16 object-contain"
+        />
+      </div>
       <Card className="w-full max-w-md border-border bg-card shadow-lg">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Iniciar sesión</CardTitle>
           <p className="text-sm text-muted-foreground text-center">
-            Nutrifit Supervisor
+            Panel de control administrativo
           </p>
         </CardHeader>
         <CardContent>
@@ -69,13 +76,13 @@ export function Login() {
                 <button
                   type="button"
                   onClick={() => navigate({ to: '/solicitar-recuperacion' })}
-                  className="text-xs text-orange-500 hover:text-orange-600 hover:underline cursor-pointer transition-colors"
+                  className="text-xs text-primary hover:text-primary/80 hover:underline cursor-pointer transition-colors"
                 >
                   ¿Olvidaste tu contraseña?
                 </button>
               </div>
             </div>
-            <Button className="w-full h-10 font-semibold bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 text-white shadow-md hover:shadow-lg transition-all" type="submit">
+            <Button className="w-full h-10 font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-md hover:shadow-lg transition-all" type="submit">
               Entrar
             </Button>
           </form>

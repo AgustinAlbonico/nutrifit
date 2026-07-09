@@ -57,9 +57,6 @@ export function esGeneracionPlanIaActiva(
   return generacion?.estado === 'PENDIENTE' || generacion?.estado === 'GENERANDO';
 }
 
-interface UseIaOptions {
-  token: string | null;
-}
 
 // ============================================================================
 // plan-alimentacion-ia-v2 (Packet 5b)

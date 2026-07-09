@@ -18,26 +18,32 @@
   --radius: 0.625rem;  /* Base: 10px */
 
   /* ============================================================
-     TOKENS DE MARCA - LANDING "Athletic Editorial"
-     Verde-lima eléctrico + Off-black editorial + Cream warm
-     FIXED: no cambian con light/dark (la landing tiene paleta propia)
+     TOKENS DE MARCA - PALETA DEL LOGO CORPORATIVO
+     Adaptado a los colores reales del logo:
+     Carmesí: #dc4249 -> oklch(0.604 0.190 22.6)
+     Verde: #64bc62 -> oklch(0.719 0.152 143.4)
+     Carbón: #2f2826 -> oklch(0.284 0.011 36.5)
      ============================================================ */
-  --landing-lima: oklch(0.84 0.21 128);
-  --landing-lima-bright: oklch(0.88 0.24 128);
-  --landing-lima-deep: oklch(0.62 0.19 132);
-  --landing-lima-soft: oklch(0.84 0.21 128 / 0.14);
-  --landing-lima-glow: oklch(0.84 0.21 128 / 0.45);
+  --landing-naranja: oklch(0.604 0.190 22.6);
+  --landing-naranja-bright: oklch(0.64 0.20 22.6);
+  --landing-naranja-deep: oklch(0.48 0.16 22.6);
+  --landing-naranja-soft: oklch(0.604 0.190 22.6 / 0.14);
+  --landing-naranja-glow: oklch(0.604 0.190 22.6 / 0.45);
 
-  --landing-ink: oklch(0.165 0.012 245);
-  --landing-ink-deep: oklch(0.115 0.012 245);
-  --landing-ink-soft: oklch(0.24 0.010 245);
-  --landing-ink-muted: oklch(0.45 0.008 245);
+  --landing-rose: oklch(0.719 0.152 143.4);
+  --landing-rose-bright: oklch(0.76 0.16 143.4);
+  --landing-rose-soft: oklch(0.719 0.152 143.4 / 0.14);
+
+  --landing-ink: oklch(0.284 0.011 36.5);
+  --landing-ink-deep: oklch(0.22 0.010 36.5);
+  --landing-ink-soft: oklch(0.35 0.010 36.5);
+  --landing-ink-muted: oklch(0.50 0.008 36.5);
 
   --landing-cream: oklch(0.975 0.012 95);
   --landing-cream-deep: oklch(0.945 0.016 95);
   --landing-cream-muted: oklch(0.55 0.012 95);
 
-  --landing-line: oklch(0.165 0.012 245 / 0.12);
+  --landing-line: oklch(0.284 0.011 36.5 / 0.12);
   --landing-line-dark: oklch(1 0 0 / 0.10);
 
   /* Tokens de Color - Modo Claro */
@@ -47,23 +53,23 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --primary: oklch(0.604 0.190 22.6); /* Carmesí del Logo */
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
+  --secondary-foreground: oklch(0.604 0.190 22.6);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
   --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --accent-foreground: oklch(0.604 0.190 22.6);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --ring: oklch(0.604 0.190 22.6 / 0.4);
 
   /* Colores de Gráfico */
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-1: oklch(0.604 0.190 22.6); /* Primario Carmesí */
+  --chart-2: oklch(0.719 0.152 143.4); /* Acento Verde */
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
@@ -71,12 +77,12 @@
   /* Tokens de Barra Lateral */
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary: oklch(0.604 0.190 22.6); /* Carmesí */
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-accent-foreground: oklch(0.604 0.190 22.6);
   --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-ring: oklch(0.604 0.190 22.6 / 0.4);
 
   /* Tokens de Sombras - Modo Claro */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
@@ -137,7 +143,7 @@ body {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
+  --color-card-foreground: var(--color-card-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
@@ -166,11 +172,14 @@ body {
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  --color-landing-lima: var(--landing-lima);
-  --color-landing-lima-bright: var(--landing-lima-bright);
-  --color-landing-lima-deep: var(--landing-lima-deep);
-  --color-landing-lima-soft: var(--landing-lima-soft);
-  --color-landing-lima-glow: var(--landing-lima-glow);
+  --color-landing-naranja: var(--landing-naranja);
+  --color-landing-naranja-bright: var(--landing-naranja-bright);
+  --color-landing-naranja-deep: var(--landing-naranja-deep);
+  --color-landing-naranja-soft: var(--landing-naranja-soft);
+  --color-landing-naranja-glow: var(--landing-naranja-glow);
+  --color-landing-rose: var(--landing-rose);
+  --color-landing-rose-bright: var(--landing-rose-bright);
+  --color-landing-rose-soft: var(--landing-rose-soft);
   --color-landing-ink: var(--landing-ink);
   --color-landing-ink-deep: var(--landing-ink-deep);
   --color-landing-ink-soft: var(--landing-ink-soft);
@@ -180,6 +189,31 @@ body {
   --color-landing-cream-muted: var(--landing-cream-muted);
   --color-landing-line: var(--landing-line);
   --color-landing-line-dark: var(--landing-line-dark);
+
+  /* Re-mapeo del sistema de colores de Tailwind para reflejar la marca del logo sin alterar componentes */
+  --color-orange-50: oklch(0.95 0.02 22.6);
+  --color-orange-100: oklch(0.90 0.05 22.6);
+  --color-orange-200: oklch(0.81 0.10 22.6);
+  --color-orange-300: oklch(0.72 0.15 22.6);
+  --color-orange-400: oklch(0.66 0.18 22.6);
+  --color-orange-500: oklch(0.604 0.190 22.6); /* Logo Crimson Red */
+  --color-orange-600: oklch(0.53 0.18 22.6);
+  --color-orange-700: oklch(0.45 0.16 22.6);
+  --color-orange-800: oklch(0.38 0.14 22.6);
+  --color-orange-900: oklch(0.30 0.12 22.6);
+  --color-orange-950: oklch(0.20 0.08 22.6);
+
+  --color-rose-50: oklch(0.96 0.02 143.4);
+  --color-rose-100: oklch(0.91 0.04 143.4);
+  --color-rose-200: oklch(0.85 0.07 143.4);
+  --color-rose-300: oklch(0.80 0.11 143.4);
+  --color-rose-400: oklch(0.76 0.13 143.4);
+  --color-rose-500: oklch(0.719 0.152 143.4); /* Logo Green */
+  --color-rose-600: oklch(0.64 0.15 143.4);
+  --color-rose-700: oklch(0.54 0.13 143.4);
+  --color-rose-800: oklch(0.44 0.11 143.4);
+  --color-rose-900: oklch(0.35 0.09 143.4);
+  --color-rose-950: oklch(0.22 0.06 143.4);
 
   --font-display: 'Bricolage Grotesque', 'Sora', sans-serif;
 }
@@ -192,8 +226,8 @@ body {
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
+  --primary: oklch(0.604 0.190 22.6); /* Carmesí del Logo */
+  --primary-foreground: oklch(0.985 0 0); /* Texto claro sobre carmesí */
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
@@ -204,11 +238,11 @@ body {
   --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --ring: oklch(0.604 0.190 22.6 / 0.5);
 
   /* Colores de Gráfico - Modo Oscuro */
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-1: oklch(0.604 0.190 22.6);
+  --chart-2: oklch(0.719 0.152 143.4);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
@@ -216,12 +250,12 @@ body {
   /* Tokens de Barra Lateral - Modo Oscuro */
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary: oklch(0.604 0.190 22.6); /* Carmesí */
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-ring: oklch(0.604 0.190 22.6 / 0.5);
 
   /* Tokens de Sombras - Modo Oscuro */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
@@ -397,14 +431,14 @@ body {
 .landing-mesh-ink {
   background-color: var(--landing-ink);
   background-image:
-    radial-gradient(ellipse 80% 50% at 20% 0%, var(--landing-lima-glow), transparent 60%),
-    radial-gradient(ellipse 60% 40% at 85% 100%, oklch(0.84 0.21 128 / 0.18), transparent 55%);
+    radial-gradient(ellipse 80% 50% at 20% 0%, var(--landing-naranja-glow), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 85% 100%, var(--landing-rose-soft), transparent 55%);
 }
 
 .landing-mesh-cream {
   background-color: var(--landing-cream);
   background-image:
-    radial-gradient(ellipse 70% 40% at 90% 10%, oklch(0.84 0.21 128 / 0.10), transparent 60%);
+    radial-gradient(ellipse 70% 40% at 90% 10%, var(--landing-naranja-soft), transparent 60%);
 }
 
 .landing-dot-ink::before {
@@ -431,9 +465,9 @@ body {
   height: 2px;
   background: linear-gradient(90deg,
     transparent 0%,
-    var(--landing-lima) 20%,
-    var(--landing-lima-bright) 50%,
-    var(--landing-lima) 80%,
+    var(--landing-naranja) 20%,
+    var(--landing-rose-bright) 50%,
+    var(--landing-naranja) 80%,
     transparent 100%);
   opacity: 0.7;
   filter: blur(0.5px);
@@ -448,8 +482,8 @@ body {
   animation: landing-ribbon-sweep 8s var(--ease-in-out) infinite alternate;
 }
 
-.landing-glow-lima {
-  box-shadow: 0 0 0 1px var(--landing-lima-soft), 0 8px 32px -8px var(--landing-lima-glow);
+.landing-glow-naranja {
+  box-shadow: 0 0 0 1px var(--landing-naranja-soft), 0 8px 32px -8px var(--landing-naranja-glow);
 }
 
 @keyframes landing-reveal-up {
@@ -490,7 +524,7 @@ body {
   bottom: -2px;
   width: 0;
   height: 1px;
-  background: var(--landing-lima);
+  background: var(--landing-naranja);
   transition: width var(--duration-slow) var(--ease-out);
 }
 

@@ -7,7 +7,6 @@ import {
   Settings,
   LogOut,
   UserCheck,
-  Dumbbell,
   User,
   FileText,
   Utensils,
@@ -254,9 +253,11 @@ export function Sidebar() {
         {/* Header / Logo */}
         <div className={`flex h-14 items-center px-3 ${expandido ? 'justify-between' : 'justify-center'}`}>
           <div className="flex items-center gap-2.5 overflow-hidden">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
-              <Dumbbell className="h-5 w-5" />
-            </div>
+            <img
+              src="/logo.png"
+              alt="NutriFit Logo"
+              className="h-9 w-9 shrink-0 object-contain transition-transform duration-200"
+            />
             <div className={`flex flex-col whitespace-nowrap transition-all duration-200 ${expandido ? 'opacity-100 w-auto' : 'opacity-0 w-0 overflow-hidden'}`}>
               <span className="text-base font-bold tracking-tight text-foreground">
                 NutriFit

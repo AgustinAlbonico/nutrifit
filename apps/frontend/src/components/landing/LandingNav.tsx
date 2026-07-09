@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Activity, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -36,11 +36,13 @@ export function LandingNav() {
           className="group flex items-center gap-2.5 text-landing-cream"
           aria-label="NutriFit Supervisor - inicio"
         >
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-landing-lima text-landing-ink transition-transform duration-200 group-hover:scale-105">
-            <Activity className="h-5 w-5" strokeWidth={2.5} />
-          </span>
+          <img
+            src="/logo.png"
+            alt="NutriFit Logo"
+            className="h-9 w-9 object-contain transition-transform duration-200 group-hover:scale-105"
+          />
           <span className="font-display text-lg font-semibold tracking-tight">
-            NutriFit<span className="text-landing-lima"> Supervisor</span>
+            NutriFit<span className="text-landing-naranja"> Supervisor</span>
           </span>
         </a>
 
@@ -58,7 +60,7 @@ export function LandingNav() {
         </ul>
 
         <div className="hidden items-center gap-3 lg:flex">
-          <a href="#top">
+          <a href="/login">
             <Button
               variant="ghost"
               className="text-landing-cream/75 hover:bg-landing-cream/10 hover:text-landing-cream"
@@ -67,7 +69,7 @@ export function LandingNav() {
             </Button>
           </a>
           <a href="#contacto">
-            <Button className="bg-landing-lima text-landing-ink hover:bg-landing-lima-bright">
+            <Button className="bg-landing-naranja text-landing-ink hover:bg-landing-naranja-bright">
               Agendar demo
             </Button>
           </a>
@@ -91,7 +93,7 @@ export function LandingNav() {
               <li key={enlace.href}>
                 <a
                   href={enlace.href}
-                  className="block text-base font-medium text-landing-cream/80 hover:text-landing-lima"
+                  className="block text-base font-medium text-landing-cream/80 hover:text-landing-naranja"
                   onClick={() => establecerMenuAbierto(false)}
                 >
                   {enlace.label}
@@ -99,8 +101,15 @@ export function LandingNav() {
               </li>
             ))}
             <li className="pt-2">
-              <a href="#contacto">
-                <Button className="w-full bg-landing-lima text-landing-ink hover:bg-landing-lima-bright">
+              <a href="/login" onClick={() => establecerMenuAbierto(false)}>
+                <Button variant="ghost" className="w-full text-landing-cream/80 hover:bg-landing-cream/10 hover:text-landing-cream">
+                  Iniciar sesión
+                </Button>
+              </a>
+            </li>
+            <li>
+              <a href="#contacto" onClick={() => establecerMenuAbierto(false)}>
+                <Button className="w-full bg-landing-naranja text-landing-ink hover:bg-landing-naranja-bright">
                   Agendar demo
                 </Button>
               </a>
