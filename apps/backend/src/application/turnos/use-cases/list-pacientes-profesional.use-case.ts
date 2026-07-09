@@ -52,6 +52,7 @@ export class ListPacientesProfesionalUseCase implements BaseUseCase {
       .createQueryBuilder('turno')
       .innerJoin('turno.nutricionista', 'nutricionista')
       .innerJoinAndSelect('turno.socio', 'socio')
+      .leftJoinAndSelect('socio.usuario', 'usuario')
       .leftJoinAndSelect('socio.fichaSalud', 'fichaSalud')
       .andWhere('nutricionista.gimnasioId = :gimnasioId', {
         gimnasioId: this.tenantContext.gimnasioId,
@@ -97,6 +98,15 @@ export class ListPacientesProfesionalUseCase implements BaseUseCase {
         paciente.nombreCompleto =
           `${turno.socio.nombre} ${turno.socio.apellido}`.trim();
         paciente.dni = turno.socio.dni ?? '';
+        paciente.email = turno.socio.usuario?.email ?? null;
+        paciente.telefono = turno.socio.telefono ?? null;
+        paciente.fechaNacimiento = turno.socio.fechaNacimiento
+          ? turno.socio.fechaNacimiento.toISOString().split('T')[0]
+          : null;
+        paciente.genero = turno.socio.genero ?? null;
+        paciente.direccion = turno.socio.direccion ?? null;
+        paciente.ciudad = turno.socio.ciudad ?? null;
+        paciente.provincia = turno.socio.provincia ?? null;
         paciente.objetivo = turno.socio.fichaSalud?.objetivoPersonal ?? null;
         paciente.ultimoTurno = null;
         paciente.proximoTurno = null;

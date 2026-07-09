@@ -178,11 +178,27 @@ export function PacientesPage() {
                     </div>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
                       <span>DNI: {paciente.dni || 'Sin DNI'}</span>
+                      {paciente.email && <span>{paciente.email}</span>}
+                      {paciente.telefono && <span>Tel: {paciente.telefono}</span>}
                       {paciente.objetivo && (
                         <span className="truncate max-w-[200px]">
                           Objetivo: {paciente.objetivo}
                         </span>
                       )}
+                    </div>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mt-1">
+                      {paciente.fechaNacimiento && (
+                        <span>
+                          Nacimiento:{' '}
+                          {new Date(paciente.fechaNacimiento + 'T00:00:00').toLocaleDateString('es-AR')}
+                        </span>
+                      )}
+                      {paciente.genero && (
+                        <span>
+                          Género: {paciente.genero === 'MASCULINO' ? 'Masculino' : paciente.genero === 'FEMENINO' ? 'Femenino' : paciente.genero}
+                        </span>
+                      )}
+                      {paciente.ciudad && <span>{paciente.ciudad}{paciente.provincia ? `, ${paciente.provincia}` : ''}</span>}
                     </div>
                     {paciente.ultimoTurno && (
                       <p className="text-xs text-muted-foreground mt-1">

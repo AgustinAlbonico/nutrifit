@@ -6,6 +6,13 @@ export interface PacientePaginado {
   socioId: number;
   nombreCompleto: string;
   dni: string;
+  email: string | null;
+  telefono: string | null;
+  fechaNacimiento: string | null;
+  genero: string | null;
+  direccion: string | null;
+  ciudad: string | null;
+  provincia: string | null;
   objetivo: string | null;
   ultimoTurno: string | null;
   proximoTurno: string | null;
