@@ -10,6 +10,7 @@ import {
   UsuarioOrmEntity,
   NutricionistaOrmEntity,
   PlanAlimentacionOrmEntity,
+  PlanAlimentacionVersionOrmEntity,
   DiaPlanOrmEntity,
   OpcionComidaOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
@@ -28,6 +29,24 @@ export class VaciarContenidoPlanResponseDto {
   opcionesEliminadas: number;
   vaciadoEn: Date;
 }
+
+const DIAS_PLAN = [
+  'LUNES',
+  'MARTES',
+  'MIERCOLES',
+  'JUEVES',
+  'VIERNES',
+  'SABADO',
+  'DOMINGO',
+] as const;
+
+const TIPOS_COMIDA_PLAN = [
+  'DESAYUNO',
+  'ALMUERZO',
+  'MERIENDA',
+  'CENA',
+  'COLACION',
+] as const;
 
 @Injectable()
 export class VaciarContenidoPlanUseCase implements BaseUseCase {
@@ -105,6 +124,27 @@ export class VaciarContenidoPlanUseCase implements BaseUseCase {
       return dia.idDiaPlan;
     });
 
+    // Estructura vacía para sobrescribir datosJson de la versión activa.
+    // Mantiene el shape de PlanAlimentacionDatosJson (7 días × 5 comidas) para
+    // que el frontend muestre slots vacíos en vez de caer al fallback.
+    const estructuraVacia = {
+      estructura: DIAS_PLAN.map((dia) => ({
+        dia,
+        comidas: TIPOS_COMIDA_PLAN.map((tipo) => ({ tipo, alternativas: [] })),
+      })),
+      macrosPorDia: DIAS_PLAN.reduce(
+        (acc, dia) => {
+          acc[dia] = { calorias: 0, proteinas: 0, carbohidratos: 0, grasas: 0 };
+          return acc;
+        },
+        {} as Record<(typeof DIAS_PLAN)[number], { calorias: number; proteinas: number; carbohidratos: number; grasas: number }>,
+      ),
+      razonamientoCumplimiento: {
+        restriccionesCumplidas: [],
+        restriccionesNoCumplidas: [],
+      },
+    };
+
     // Ejecutar en transacción para garantizar consistencia
     await this.dataSource.transaction(async (manager) => {
       // 1. Eliminar opciones de comida (primero porque tienen FK a dia_plan)
@@ -129,7 +169,22 @@ export class VaciarContenidoPlanUseCase implements BaseUseCase {
           .execute();
       }
 
-      // 3. Actualizar fecha de edición del plan
+      // 3. Sobrescribir datosJson de la versión activa para que el frontend
+      // muestre el plan vacío al recargar. V1, V2 anteriores quedan como
+      // histórico inmutable (no se tocan).
+      await manager
+        .createQueryBuilder()
+        .update(PlanAlimentacionVersionOrmEntity)
+        .set({
+          datos_json: JSON.stringify(estructuraVacia),
+        })
+        .where('id_plan_alimentacion = :planId AND activa = :activa', {
+          planId: payload.planId,
+          activa: true,
+        })
+        .execute();
+
+      // 4. Actualizar fecha de edición del plan
       await manager
         .createQueryBuilder()
         .update(PlanAlimentacionOrmEntity)
