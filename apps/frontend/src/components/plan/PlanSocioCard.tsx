@@ -21,8 +21,9 @@
  * - Contraste WCAG AA en todo el texto
  */
 
-import { Calendar, CheckCheck, Mail, Sparkles } from 'lucide-react';
+import { Calendar, CheckCheck, FileDown, Mail, Sparkles } from 'lucide-react';
 import { useState } from 'react';
+import { PDFDownloadLink } from '@react-pdf/renderer';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -40,9 +41,14 @@ import {
   type EstadoPlanVisual,
 } from '@/components/plan/estado-plan.types';
 import { WeeklyPlanGrid } from '@/components/plan/WeeklyPlanGrid';
+import { DocumentoPlan } from '@/lib/pdf/plan-pdf';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import type { PlanSocioActivo } from '@/types/ia';
+import type {
+  ComidaEnPlan,
+  AlimentoEnComida,
+} from '@/components/plan/WeeklyPlanGrid';
+import type { PlanSocioActivo, EstructuraDiaFE } from '@/types/ia';
 
 interface PropiedadesPlanSocioCard {
   /** Plan activo del socio (asociado a un nutricionista). */
@@ -66,6 +72,48 @@ function formatearFecha(fechaIso: string | null | undefined): string {
     month: 'long',
     year: 'numeric',
   });
+}
+
+/**
+ * Mapea la estructura del plan IA (EstructuraDiaFE[]) al formato plano
+ * ComidaEnPlan[] que espera el componente DocumentoPlan (PDF).
+ *
+ * Toma la PRIMER alternativa de cada comida (la seleccionada por defecto).
+ */
+function mapearPlanAComidas(estructura: EstructuraDiaFE[]): ComidaEnPlan[] {
+  const comidas: ComidaEnPlan[] = [];
+
+  for (const dia of estructura) {
+    for (const comida of dia.comidas) {
+      const primeraAlternativa = comida.alternativas[0];
+      if (!primeraAlternativa) continue;
+
+      const alimentos: AlimentoEnComida[] = primeraAlternativa.alimentos.map(
+        (item) => ({
+          alimento: {
+            idAlimento: item.alimentoId,
+            nombre: item.nombre ?? 'Alimento',
+            cantidad: item.cantidad,
+            unidadMedida: item.unidad,
+            calorias: item.calorias ?? null,
+            proteinas: item.proteinas ?? null,
+            carbohidratos: item.carbohidratos ?? null,
+            grasas: item.grasas ?? null,
+            grupoAlimenticio: null,
+          },
+          cantidad: item.cantidad,
+        }),
+      );
+
+      comidas.push({
+        dia: dia.dia,
+        tipoComida: comida.tipo,
+        alimentos,
+      });
+    }
+  }
+
+  return comidas;
 }
 
 const MENSAJE_CONFIRMACION =
@@ -164,6 +212,31 @@ export function PlanSocioCard({
           tu nutricionista.
         </p>
         <div className="flex flex-wrap items-center gap-2">
+          <PDFDownloadLink
+            document={
+              <DocumentoPlan
+                objetivoNutricional={plan.objetivoNutricional ?? 'Sin objetivo definido'}
+                comidas={mapearPlanAComidas(plan.plan.estructura)}
+                nombreSocio=""
+              />
+            }
+            fileName={`plan-alimentacion-${plan.nutricionistaNombre.replace(/\s+/g, '-')}.pdf`}
+          >
+            {({ loading }) => (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={loading}
+                aria-label="Descargar plan en PDF"
+                data-testid="boton-descargar-pdf"
+                className="text-muted-foreground"
+              >
+                <FileDown className="mr-1.5 size-4" aria-hidden="true" />
+                {loading ? 'Generando...' : 'Descargar PDF'}
+              </Button>
+            )}
+          </PDFDownloadLink>
           <Button
             type="button"
             variant="ghost"

@@ -215,7 +215,7 @@ export function MiPlanPage() {
         <EmptyStatePlanSocio />
       ) : (
         <div
-          className="grid gap-5 lg:grid-cols-1 xl:grid-cols-2"
+          className="grid gap-5 grid-cols-1"
           data-testid="mi-plan-cards-container"
         >
           {planes.map((plan) => (
