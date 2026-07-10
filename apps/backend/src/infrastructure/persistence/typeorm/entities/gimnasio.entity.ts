@@ -16,8 +16,11 @@ export class GimnasioOrmEntity extends AuditableOrmEntity {
   @Column({ name: 'telefono', type: 'varchar', length: 15 })
   telefono: string;
 
-  @Column({ name: 'ciudad', type: 'varchar', length: 100 })
+  @Column({ name: 'ciudad', type: 'varchar', length: 100, default: '' })
   ciudad: string;
+
+  @Column({ name: 'provincia', type: 'varchar', length: 100, default: '' })
+  provincia: string;
 
   // Branding
   @Column({ name: 'logo_url', type: 'varchar', length: 500, nullable: true })

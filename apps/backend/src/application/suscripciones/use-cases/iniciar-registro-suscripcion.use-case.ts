@@ -35,10 +35,17 @@ export interface RegistroSuscripcionInput {
   gimnasio: {
     nombre: string;
     direccion: string;
+    ciudad?: string;
+    provincia?: string;
     telefono?: string;
-    email?: string;
   };
-  admin: { nombre: string; email: string; password: string };
+  admin: {
+    nombre: string;
+    apellido: string;
+    email: string;
+    telefono: string;
+    password: string;
+  };
 }
 
 export interface RegistroSuscripcionOutput {
@@ -84,7 +91,8 @@ export class IniciarRegistroSuscripcionUseCase implements BaseUseCase {
       nombre: input.gimnasio.nombre,
       direccion: input.gimnasio.direccion,
       telefono: input.gimnasio.telefono ?? null,
-      email: input.gimnasio.email ?? null,
+      email: null,
+      ciudad: input.gimnasio.ciudad ?? null,
       fechaAlta: new Date(),
       fechaBaja: null,
     });
@@ -93,13 +101,13 @@ export class IniciarRegistroSuscripcionUseCase implements BaseUseCase {
     const personaOrm = new RecepcionistaOrmEntity();
     personaOrm.idPersona = null;
     personaOrm.nombre = input.admin.nombre;
-    personaOrm.apellido = '';
+    personaOrm.apellido = input.admin.apellido;
     personaOrm.fechaNacimiento = new Date('1990-01-01');
     personaOrm.genero = Genero.Otro;
-    personaOrm.telefono = 'Sin teléfono';
-    personaOrm.direccion = 'Sin dirección';
-    personaOrm.ciudad = 'Sin ciudad';
-    personaOrm.provincia = 'Sin provincia';
+    personaOrm.telefono = input.admin.telefono;
+    personaOrm.direccion = input.gimnasio.direccion;
+    personaOrm.ciudad = input.gimnasio.ciudad ?? '';
+    personaOrm.provincia = input.gimnasio.provincia ?? '';
     personaOrm.dni = null;
     personaOrm.fotoPerfilKey = null;
     personaOrm.gimnasioId = gimnasio.id;
@@ -114,13 +122,13 @@ export class IniciarRegistroSuscripcionUseCase implements BaseUseCase {
     const personaRef = new RecepcionistaEntity(
       personaCreada.idPersona,
       input.admin.nombre,
-      '',
+      input.admin.apellido,
       new Date('1990-01-01'),
-      'Sin teléfono',
+      input.admin.telefono,
       Genero.Otro,
-      'Sin dirección',
-      'Sin ciudad',
-      'Sin provincia',
+      input.gimnasio.direccion,
+      input.gimnasio.ciudad ?? 'Sin ciudad',
+      input.gimnasio.provincia ?? 'Sin provincia',
       '',
       null,
       gimnasio.id,

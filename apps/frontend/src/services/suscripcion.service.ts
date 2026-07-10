@@ -5,12 +5,15 @@ export interface RegistroSuscripcionInput {
   gimnasio: {
     nombre: string;
     direccion: string;
+    ciudad?: string;
+    provincia?: string;
     telefono?: string;
-    email?: string;
   };
   admin: {
     nombre: string;
+    apellido: string;
     email: string;
+    telefono: string;
     password: string;
   };
 }

@@ -30,6 +30,7 @@ export class GimnasioRepositoryImplementation implements GimnasioRepository {
       direccion: orm.direccion,
       telefono: orm.telefono ?? null,
       email: null, // GimnasioOrmEntity no tiene email
+      ciudad: orm.ciudad || null,
       fechaAlta: orm.plazoCancelacionHoras // placeholder - ORM no tiene fechaAlta
         ? new Date()
         : new Date(),
@@ -58,7 +59,8 @@ export class GimnasioRepositoryImplementation implements GimnasioRepository {
     orm.nombre = entity.nombre;
     orm.direccion = entity.direccion;
     orm.telefono = entity.telefono ?? '';
-    orm.ciudad = '';
+    orm.ciudad = entity.ciudad ?? '';
+    orm.provincia = ''; // se puede exponer en el futuro
     orm.plazoCancelacionHoras = 24;
     orm.plazoReprogramacionHoras = 12;
     orm.antelacionMinimaReservaHoras = 2;

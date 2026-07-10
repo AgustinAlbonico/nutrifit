@@ -4,6 +4,7 @@ export interface GimnasioEntityData {
   direccion: string;
   telefono: string | null;
   email: string | null;
+  ciudad?: string | null;
   fechaAlta: Date;
   fechaBaja: Date | null;
 }
@@ -18,6 +19,7 @@ export class GimnasioEntity {
   public readonly direccion: string;
   public readonly telefono: string | null;
   public readonly email: string | null;
+  public readonly ciudad: string | null;
   public readonly fechaAlta: Date;
   public readonly fechaBaja: Date | null;
 
@@ -27,6 +29,7 @@ export class GimnasioEntity {
     this.direccion = data.direccion;
     this.telefono = data.telefono;
     this.email = data.email;
+    this.ciudad = data.ciudad ?? null;
     this.fechaAlta = data.fechaAlta;
     this.fechaBaja = data.fechaBaja;
   }

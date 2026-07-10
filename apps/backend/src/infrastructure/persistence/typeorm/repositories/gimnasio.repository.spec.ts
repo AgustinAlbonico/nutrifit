@@ -18,6 +18,7 @@ describe('GimnasioRepositoryImplementation', () => {
     direccion: 'Calle Principal 123',
     telefono: '1234567890',
     ciudad: 'Ciudad',
+    provincia: '',
     logoUrl: null,
     colorPrimario: null,
     colorSecundario: null,

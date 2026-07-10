@@ -18,24 +18,27 @@ export function RegistroSuscripcionPage() {
   const [gymData, setGymData] = useState({
     nombre: '',
     direccion: '',
+    ciudad: '',
+    provincia: '',
     telefono: '',
-    email: '',
   });
   const [adminData, setAdminData] = useState({
     nombre: '',
+    apellido: '',
     email: '',
+    telefono: '',
     password: '',
   });
 
   const handleGymSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!gymData.nombre || !gymData.direccion) return;
+    if (!gymData.nombre || !gymData.direccion || !gymData.ciudad || !gymData.provincia) return;
     setStep('admin');
   };
 
   const handleAdminSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!adminData.nombre || !adminData.email || !adminData.password) return;
+    if (!adminData.nombre || !adminData.apellido || !adminData.email || !adminData.telefono || !adminData.password) return;
 
     setCargando(true);
     setError(null);
@@ -45,10 +48,17 @@ export function RegistroSuscripcionPage() {
         gimnasio: {
           nombre: gymData.nombre,
           direccion: gymData.direccion,
+          ciudad: gymData.ciudad || undefined,
+          provincia: gymData.provincia || undefined,
           telefono: gymData.telefono || undefined,
-          email: gymData.email || undefined,
         },
-        admin: adminData,
+        admin: {
+          nombre: adminData.nombre,
+          apellido: adminData.apellido,
+          email: adminData.email,
+          telefono: adminData.telefono,
+          password: adminData.password,
+        },
       };
 
       const result = await iniciarRegistroSuscripcion(payload);
@@ -136,24 +146,35 @@ export function RegistroSuscripcionPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="telefono">Teléfono</Label>
+                  <Label htmlFor="ciudad">Ciudad *</Label>
                   <Input
-                    id="telefono"
-                    value={gymData.telefono}
-                    onChange={(e) => setGymData({ ...gymData, telefono: e.target.value })}
-                    placeholder="+54 341..."
+                    id="ciudad"
+                    value={gymData.ciudad}
+                    onChange={(e) => setGymData({ ...gymData, ciudad: e.target.value })}
+                    placeholder="Ej: Rosario"
+                    required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="provincia">Provincia *</Label>
                   <Input
-                    id="email"
-                    type="email"
-                    value={gymData.email}
-                    onChange={(e) => setGymData({ ...gymData, email: e.target.value })}
-                    placeholder="admin@gimnasio.com"
+                    id="provincia"
+                    value={gymData.provincia}
+                    onChange={(e) => setGymData({ ...gymData, provincia: e.target.value })}
+                    placeholder="Ej: Santa Fe"
+                    required
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="telefono">Teléfono</Label>
+                <Input
+                  id="telefono"
+                  value={gymData.telefono}
+                  onChange={(e) => setGymData({ ...gymData, telefono: e.target.value })}
+                  placeholder="+54 341..."
+                />
               </div>
 
               <Button type="submit" className="w-full mt-2 bg-emerald-600 hover:bg-emerald-700">
@@ -163,15 +184,27 @@ export function RegistroSuscripcionPage() {
             </form>
           ) : (
             <form onSubmit={handleAdminSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="admin-nombre">Nombre del administrador *</Label>
-                <Input
-                  id="admin-nombre"
-                  value={adminData.nombre}
-                  onChange={(e) => setAdminData({ ...adminData, nombre: e.target.value })}
-                  placeholder="Ej: Juan Pérez"
-                  required
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="admin-nombre">Nombre *</Label>
+                  <Input
+                    id="admin-nombre"
+                    value={adminData.nombre}
+                    onChange={(e) => setAdminData({ ...adminData, nombre: e.target.value })}
+                    placeholder="Ej: Juan"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="admin-apellido">Apellido *</Label>
+                  <Input
+                    id="admin-apellido"
+                    value={adminData.apellido}
+                    onChange={(e) => setAdminData({ ...adminData, apellido: e.target.value })}
+                    placeholder="Ej: Pérez"
+                    required
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -182,6 +215,18 @@ export function RegistroSuscripcionPage() {
                   value={adminData.email}
                   onChange={(e) => setAdminData({ ...adminData, email: e.target.value })}
                   placeholder="admin@ejemplo.com"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="admin-telefono">Teléfono *</Label>
+                <Input
+                  id="admin-telefono"
+                  type="tel"
+                  value={adminData.telefono}
+                  onChange={(e) => setAdminData({ ...adminData, telefono: e.target.value })}
+                  placeholder="+54 341 1234567"
                   required
                 />
               </div>
