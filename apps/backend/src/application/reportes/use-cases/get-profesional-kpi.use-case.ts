@@ -3,7 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { KpiProfesionalDto } from '../dtos/kpi-profesional.dto';
 import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/turno.entity';
-import { SugerenciaIAOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/sugerencia-ia.entity';
+import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
+import { Rol } from 'src/domain/entities/Usuario/Rol';
 
 export interface FiltrosKpiProfesional {
   fechaInicio: Date;
@@ -15,8 +16,7 @@ export class GetProfesionalKpiUseCase {
   constructor(
     @InjectRepository(TurnoOrmEntity)
     private readonly turnoRepository: Repository<TurnoOrmEntity>,
-    @InjectRepository(SugerenciaIAOrmEntity)
-    private readonly sugerenciaIaRepository: Repository<SugerenciaIAOrmEntity>,
+    private readonly tenantContext: TenantContextService,
   ) {}
 
   async execute(
@@ -55,6 +55,15 @@ export class GetProfesionalKpiUseCase {
       .groupBy('nutricionista.idPersona')
       .addGroupBy("CONCAT(nutricionista.nombre, ' ', nutricionista.apellido)");
 
+    // Filtro multi-tenant via TurnoOrmEntity.id_gimnasio.
+    const rol = this.tenantContext.rol;
+    const esSuperadmin = rol === Rol.SUPERADMIN;
+    if (!esSuperadmin) {
+      queryBuilder.andWhere('turno.gimnasioId = :gimnasioId', {
+        gimnasioId: this.tenantContext.gimnasioId,
+      });
+    }
+
     if (profesionalId) {
       queryBuilder.andWhere('nutricionista.idPersona = :profesionalId', {
         profesionalId,
@@ -63,28 +72,9 @@ export class GetProfesionalKpiUseCase {
 
     const resultados = await queryBuilder.getRawMany();
 
-    // Query para uso de IA por profesional
-    const iaQueryBuilder = this.sugerenciaIaRepository
-      .createQueryBuilder('sugerencia')
-      .select('sugerencia.nutricionistaId', 'profesionalId')
-      .addSelect('COUNT(*)', 'cantidad')
-      .where('sugerencia.creadaEn >= :fechaInicio', { fechaInicio })
-      .andWhere('sugerencia.creadaEn <= :fechaFin', { fechaFin })
-      .groupBy('sugerencia.nutricionistaId');
-
-    if (profesionalId) {
-      iaQueryBuilder.andWhere('sugerencia.nutricionistaId = :profesionalId', {
-        profesionalId,
-      });
-    }
-
-    const iaResultados = await iaQueryBuilder.getRawMany();
-    const iaPorProfesional: Record<string, number> = {};
-    for (const row of iaResultados) {
-      iaPorProfesional[row.profesionalId] = Number(row.cantidad);
-    }
-
-    // Mapear resultados
+    // NOTA: `usoIa` queda en 0 aca. La entidad SugerenciaIA se vincula al
+    // socio (no al nutricionista), asi que el conteo total por gimnasio
+    // vive en GetIaUsoKpiUseCase y se expone aparte en usoIa.
     const dtos: KpiProfesionalDto[] = [];
     for (const row of resultados) {
       const turnosProgramados = Number(row.turnosProgramados) || 0;
@@ -100,7 +90,7 @@ export class GetProfesionalKpiUseCase {
         turnosProgramados > 0
           ? Math.round((ausentes / turnosProgramados) * 100) / 100
           : 0;
-      dto.usoIa = iaPorProfesional[row.profesionalId] || 0;
+      dto.usoIa = 0;
 
       dtos.push(dto);
     }

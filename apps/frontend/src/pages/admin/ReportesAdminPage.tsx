@@ -95,7 +95,6 @@ interface DatoProfesionalGrafico {
   nombre: string;
   Programados: number;
   Realizados: number;
-  'Uso IA': number;
 }
 
 interface DatoSocio {
@@ -219,7 +218,6 @@ export function ReportesAdminPage() {
         nombre: p.nombreProfesional,
         Programados: p.turnosProgramados,
         Realizados: p.turnosRealizados,
-        'Uso IA': p.usoIa,
       }))
     : [];
 
@@ -372,7 +370,7 @@ export function ReportesAdminPage() {
           icono={<Brain className="h-4 w-4" />}
           descripcion={
             datos
-              ? `${datos.usoIa.length} profesionales usaron IA`
+              ? `${totalUsoIa} sugerencia${totalUsoIa === 1 ? '' : 's'} generada${totalUsoIa === 1 ? '' : 's'} en el período`
               : undefined
           }
           cargando={cargando}
@@ -483,7 +481,6 @@ export function ReportesAdminPage() {
                 <Legend />
                 <Bar dataKey="Programados" fill="#3b82f6" radius={[6, 6, 0, 0]} />
                 <Bar dataKey="Realizados" fill="#10b981" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="Uso IA" fill="#a855f7" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -516,7 +513,6 @@ export function ReportesAdminPage() {
                   <TableHead className="text-right">Programados</TableHead>
                   <TableHead className="text-right">Realizados</TableHead>
                   <TableHead className="text-right">% Ausencias</TableHead>
-                  <TableHead className="text-right">Uso IA</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -541,9 +537,6 @@ export function ReportesAdminPage() {
                       >
                         {(profesional.ratioAusencias * 100).toFixed(1)}%
                       </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {profesional.usoIa}
                     </TableCell>
                   </TableRow>
                 ))}
