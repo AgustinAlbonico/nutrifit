@@ -47,6 +47,8 @@ import { ExcepcionDisponibilidadOrmEntity } from 'src/infrastructure/persistence
 import { PoliticaOperativaOrmEntity } from 'src/infrastructure/politicas/politica-operativa.entity';
 import { PreparacionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/preparacion.entity';
 import { PreparacionItemOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/preparacion-item.entity';
+import { SuscripcionGimnasioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/suscripcion-gimnasio.entity';
+import { PagoSimuladoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/pago-simulado.entity';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { EnvironmentConfigService } from '../environment-config/environment-config.service';
 
@@ -110,6 +112,8 @@ export const AppDataSource = (
     PoliticaOperativaOrmEntity,
     PreparacionOrmEntity,
     PreparacionItemOrmEntity,
+    SuscripcionGimnasioOrmEntity,
+    PagoSimuladoOrmEntity,
   ],
   //BORRAR ESTO CUANDO SAQUE LA APP A PRODUCCION
   synchronize: true,
