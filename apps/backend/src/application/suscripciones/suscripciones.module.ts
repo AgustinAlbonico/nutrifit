@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { GimnasioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/gimnasio.entity';
 import { IniciarRegistroSuscripcionUseCase } from './use-cases/iniciar-registro-suscripcion.use-case';
 import { ProcesarPagoSimuladoUseCase } from './use-cases/procesar-pago-simulado.use-case';
 import { VerEstadoSuscripcionUseCase } from './use-cases/ver-estado-suscripcion.use-case';
@@ -17,6 +18,7 @@ import { GimnasioRepositoryImplementation } from 'src/infrastructure/persistence
 @Module({
   imports: [
     TypeOrmModule.forFeature([
+      GimnasioOrmEntity,
       SuscripcionGimnasioOrmEntity,
       PagoSimuladoOrmEntity,
       GrupoPermisoOrmEntity,
