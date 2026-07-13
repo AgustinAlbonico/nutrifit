@@ -1,10 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   AlertCircle,
   BarChart3,
   Brain,
   CalendarCheck,
+  CalendarDays,
+  ChevronDown,
   Download,
   Filter,
   Loader2,
@@ -37,6 +39,11 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
@@ -102,6 +109,35 @@ interface DatoSocio {
   valor: number;
 }
 
+interface ResumenAsistenciaProfesionales {
+  turnosProgramados: number;
+  turnosRealizados: number;
+  turnosCancelados: number;
+  ausencias: number;
+  porcentajeAsistencia: number;
+  porcentajeAusentismo: number;
+}
+
+interface AsistenciaPorNutricionista extends ResumenAsistenciaProfesionales {
+  nutricionistaId: number;
+  nombreNutricionista: string;
+}
+
+interface ReporteAsistenciaProfesionales {
+  periodo: { fechaInicio: string; fechaFin: string };
+  resumen: ResumenAsistenciaProfesionales;
+  porNutricionista: AsistenciaPorNutricionista[];
+  grafico: {
+    evolucionMensual: Array<{
+      mes: string;
+      programados: number;
+      realizados: number;
+      cancelados: number;
+      ausencias: number;
+    }>;
+  };
+}
+
 const COLORES_TURNOS: Record<string, string> = {
   Programados: '#3b82f6',
   Presentes: '#10b981',
@@ -125,6 +161,47 @@ function obtenerRangoPorDefecto(): { inicio: string; fin: string } {
   const fin = new Date();
   const inicio = new Date();
   inicio.setDate(inicio.getDate() - 30);
+  return { inicio: formatearFechaInput(inicio), fin: formatearFechaInput(fin) };
+}
+
+function obtenerRangoHoy(): { inicio: string; fin: string } {
+  const hoy = new Date();
+  return { inicio: formatearFechaInput(hoy), fin: formatearFechaInput(hoy) };
+}
+
+function obtenerRangoEstaSemana(): { inicio: string; fin: string } {
+  const hoy = new Date();
+  const inicio = new Date(hoy);
+  // Semana lunes → domingo. getDay(): 0=domingo, 1=lunes, ..., 6=sábado.
+  const diasHastaLunes = (hoy.getDay() + 6) % 7;
+  inicio.setDate(inicio.getDate() - diasHastaLunes);
+  return { inicio: formatearFechaInput(inicio), fin: formatearFechaInput(hoy) };
+}
+
+function obtenerRangoEsteMes(): { inicio: string; fin: string } {
+  const hoy = new Date();
+  const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  return { inicio: formatearFechaInput(inicio), fin: formatearFechaInput(hoy) };
+}
+
+function obtenerRangoMesPasado(): { inicio: string; fin: string } {
+  const hoy = new Date();
+  const inicio = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+  // Día 0 del mes actual = último día del mes anterior.
+  const fin = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
+  return { inicio: formatearFechaInput(inicio), fin: formatearFechaInput(fin) };
+}
+
+function obtenerRangoEsteAnio(): { inicio: string; fin: string } {
+  const hoy = new Date();
+  const inicio = new Date(hoy.getFullYear(), 0, 1);
+  return { inicio: formatearFechaInput(inicio), fin: formatearFechaInput(hoy) };
+}
+
+function obtenerRangoAnioPasado(): { inicio: string; fin: string } {
+  const hoy = new Date();
+  const inicio = new Date(hoy.getFullYear() - 1, 0, 1);
+  const fin = new Date(hoy.getFullYear() - 1, 11, 31);
   return { inicio: formatearFechaInput(inicio), fin: formatearFechaInput(fin) };
 }
 
@@ -162,6 +239,8 @@ export function ReportesAdminPage() {
   const [fechaInicio, setFechaInicio] = useState(rangoInicial.inicio);
   const [fechaFin, setFechaFin] = useState(rangoInicial.fin);
   const [exportando, setExportando] = useState(false);
+  const [periodoPopoverAbierto, setPeriodoPopoverAbierto] = useState(false);
+  const refDesdeInput = useRef<HTMLInputElement>(null);
 
   const autorizado = rol !== null && ROLES_AUTORIZADOS.includes(rol);
 
@@ -178,9 +257,23 @@ export function ReportesAdminPage() {
     enabled: autorizado && !!fechaInicio && !!fechaFin,
   });
 
+  const consultaAsistencia = useQuery({
+    queryKey: ['admin', 'asistencia-profesionales', fechaInicio, fechaFin],
+    queryFn: async () => {
+      const respuesta = await apiRequest<{ data: ReporteAsistenciaProfesionales }>(
+        `/admin/estadisticas/asistencia-profesionales?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`,
+      );
+      return respuesta.data;
+    },
+    enabled: rol === 'ADMIN' && !!fechaInicio && !!fechaFin,
+  });
+
   const datos = consultaKpi.data;
   const cargando = consultaKpi.isLoading;
   const error = consultaKpi.error;
+  const reporteAsistencia = consultaAsistencia.data;
+  const cargandoAsistencia = consultaAsistencia.isLoading;
+  const errorAsistencia = consultaAsistencia.error;
 
   const manejarCambiarInicio = (valor: string) => {
     setFechaInicio(valor);
@@ -188,6 +281,23 @@ export function ReportesAdminPage() {
 
   const manejarCambiarFin = (valor: string) => {
     setFechaFin(valor);
+  };
+
+  const manejarAplicarPeriodo = (
+    rango: { inicio: string; fin: string },
+    enfocarInicio = false,
+  ) => {
+    setFechaInicio(rango.inicio);
+    setFechaFin(rango.fin);
+    setPeriodoPopoverAbierto(false);
+    if (enfocarInicio) {
+      setTimeout(() => refDesdeInput.current?.focus(), 0);
+    }
+  };
+
+  const manejarClicRangoPersonalizado = () => {
+    setPeriodoPopoverAbierto(false);
+    setTimeout(() => refDesdeInput.current?.focus(), 0);
   };
 
   const manejarExportarCsv = async () => {
@@ -286,27 +396,109 @@ export function ReportesAdminPage() {
             Definí el rango de fechas para calcular los indicadores.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4 sm:flex-row">
-          <div className="flex-1 space-y-1.5">
-            <Label htmlFor="fecha-inicio">Desde</Label>
-            <Input
-              id="fecha-inicio"
-              type="date"
-              value={fechaInicio}
-              max={fechaFin || fechaHoy}
-              onChange={(evento) => manejarCambiarInicio(evento.target.value)}
-            />
-          </div>
-          <div className="flex-1 space-y-1.5">
-            <Label htmlFor="fecha-fin">Hasta</Label>
-            <Input
-              id="fecha-fin"
-              type="date"
-              value={fechaFin}
-              min={fechaInicio}
-              max={fechaHoy}
-              onChange={(evento) => manejarCambiarFin(evento.target.value)}
-            />
+        <CardContent className="space-y-4">
+          <Popover open={periodoPopoverAbierto} onOpenChange={setPeriodoPopoverAbierto}>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full justify-between sm:w-auto sm:min-w-[200px]"
+                aria-label="Seleccionar período preestablecido"
+                aria-haspopup="menu"
+              >
+                <span className="flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4" />
+                  Período
+                </span>
+                <ChevronDown className="h-4 w-4 opacity-70" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 p-1" align="start">
+              <div className="flex flex-col" role="menu">
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="flex w-full items-center rounded-sm px-2 py-2 text-sm hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none"
+                  onClick={() => manejarAplicarPeriodo(obtenerRangoHoy())}
+                >
+                  Hoy
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="flex w-full items-center rounded-sm px-2 py-2 text-sm hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none"
+                  onClick={() => manejarAplicarPeriodo(obtenerRangoEstaSemana())}
+                >
+                  Esta semana
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="flex w-full items-center rounded-sm px-2 py-2 text-sm hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none"
+                  onClick={() => manejarAplicarPeriodo(obtenerRangoEsteMes())}
+                >
+                  Este mes
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="flex w-full items-center rounded-sm px-2 py-2 text-sm hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none"
+                  onClick={() => manejarAplicarPeriodo(obtenerRangoMesPasado())}
+                >
+                  Mes pasado
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="flex w-full items-center rounded-sm px-2 py-2 text-sm hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none"
+                  onClick={() => manejarAplicarPeriodo(obtenerRangoEsteAnio())}
+                >
+                  Este año
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="flex w-full items-center rounded-sm px-2 py-2 text-sm hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none"
+                  onClick={() => manejarAplicarPeriodo(obtenerRangoAnioPasado())}
+                >
+                  Año pasado
+                </button>
+                <div className="my-1 h-px bg-border" aria-hidden="true" />
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="flex w-full items-center rounded-sm px-2 py-2 text-sm hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none"
+                  onClick={manejarClicRangoPersonalizado}
+                >
+                  Rango personalizado
+                </button>
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          <div className="flex flex-col gap-4 sm:flex-row">
+            <div className="flex-1 space-y-1.5">
+              <Label htmlFor="fecha-inicio">Desde</Label>
+              <Input
+                id="fecha-inicio"
+                ref={refDesdeInput}
+                type="date"
+                value={fechaInicio}
+                max={fechaFin || fechaHoy}
+                onChange={(evento) => manejarCambiarInicio(evento.target.value)}
+              />
+            </div>
+            <div className="flex-1 space-y-1.5">
+              <Label htmlFor="fecha-fin">Hasta</Label>
+              <Input
+                id="fecha-fin"
+                type="date"
+                value={fechaFin}
+                min={fechaInicio}
+                max={fechaHoy}
+                onChange={(evento) => manejarCambiarFin(evento.target.value)}
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -321,6 +513,99 @@ export function ReportesAdminPage() {
             </p>
           </CardContent>
         </Card>
+      )}
+
+      {rol === 'SUPERADMIN' ? (
+        <Card className="border-dashed">
+          <CardHeader>
+            <CardTitle className="text-base">Asistencia y rendimiento</CardTitle>
+            <CardDescription>
+              Este detalle está disponible para administradores del gimnasio, porque se calcula dentro del contexto de cada sede.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      ) : (
+        <section className="space-y-4" aria-labelledby="titulo-asistencia-rendimiento">
+          <div>
+            <h2 id="titulo-asistencia-rendimiento" className="text-xl font-semibold">
+              Asistencia y rendimiento por nutricionista
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Turnos y resultados del período seleccionado.
+            </p>
+          </div>
+
+          {errorAsistencia && (
+            <Card className="border-destructive">
+              <CardContent className="flex items-center gap-3 p-6 text-destructive">
+                <AlertCircle className="h-5 w-5" />
+                <p className="text-sm">
+                  Error al cargar la asistencia: {errorAsistencia instanceof Error ? errorAsistencia.message : 'desconocido'}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <EstadisticasKpiCard titulo="Programados" valor={reporteAsistencia?.resumen.turnosProgramados ?? '-'} icono={<CalendarCheck className="h-4 w-4" />} cargando={cargandoAsistencia} />
+            <EstadisticasKpiCard titulo="Realizados" valor={reporteAsistencia?.resumen.turnosRealizados ?? '-'} icono={<BarChart3 className="h-4 w-4" />} cargando={cargandoAsistencia} />
+            <EstadisticasKpiCard titulo="Cancelados" valor={reporteAsistencia?.resumen.turnosCancelados ?? '-'} icono={<AlertCircle className="h-4 w-4" />} cargando={cargandoAsistencia} />
+            <EstadisticasKpiCard titulo="Ausencias" valor={reporteAsistencia?.resumen.ausencias ?? '-'} icono={<Users className="h-4 w-4" />} cargando={cargandoAsistencia} />
+            <EstadisticasKpiCard titulo="% Asistencia" valor={reporteAsistencia ? `${reporteAsistencia.resumen.porcentajeAsistencia.toFixed(1)}%` : '-'} icono={<BarChart3 className="h-4 w-4" />} cargando={cargandoAsistencia} />
+            <EstadisticasKpiCard titulo="% Ausentismo" valor={reporteAsistencia ? `${reporteAsistencia.resumen.porcentajeAusentismo.toFixed(1)}%` : '-'} icono={<AlertCircle className="h-4 w-4" />} cargando={cargandoAsistencia} />
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Evolución mensual</CardTitle>
+                <CardDescription>Programados, realizados, cancelados y ausencias.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {cargandoAsistencia ? <Skeleton className="h-72 w-full" /> : (
+                  <ResponsiveContainer width="100%" height={288}>
+                    <BarChart data={reporteAsistencia?.grafico.evolucionMensual ?? []}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="mes" tick={{ fontSize: 12 }} />
+                      <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="programados" name="Programados" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="realizados" name="Realizados" fill="#10b981" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="cancelados" name="Cancelados" fill="#6b7280" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="ausencias" name="Ausencias" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Detalle de rendimiento</CardTitle>
+                <CardDescription>Resultados por nutricionista en el período.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                {cargandoAsistencia ? <div className="space-y-2 p-6"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /></div> : reporteAsistencia?.porNutricionista.length ? (
+                  <Table>
+                    <TableHeader><TableRow><TableHead>Profesional</TableHead><TableHead className="text-right">Programados</TableHead><TableHead className="text-right">Realizados</TableHead><TableHead className="text-right">Ausencias</TableHead><TableHead className="text-right">Asistencia</TableHead></TableRow></TableHeader>
+                    <TableBody>
+                      {reporteAsistencia.porNutricionista.map((nutricionista) => (
+                        <TableRow key={nutricionista.nutricionistaId}>
+                          <TableCell className="font-medium">{nutricionista.nombreNutricionista}</TableCell>
+                          <TableCell className="text-right">{nutricionista.turnosProgramados}</TableCell>
+                          <TableCell className="text-right">{nutricionista.turnosRealizados}</TableCell>
+                          <TableCell className="text-right">{nutricionista.ausencias}</TableCell>
+                          <TableCell className="text-right"><Badge variant="outline">{nutricionista.porcentajeAsistencia.toFixed(1)}%</Badge></TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : <p className="py-8 text-center text-sm text-muted-foreground">No hay datos de asistencia en este período.</p>}
+              </CardContent>
+            </Card>
+          </div>
+        </section>
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
