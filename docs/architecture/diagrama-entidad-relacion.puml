@@ -1,0 +1,601 @@
+@startuml
+' NutriFit Supervisor — Diagrama Entidad-Relación (PlantUML)
+' Generado desde entidades TypeORM del monolito NestJS
+
+hide circle
+skinparam linetype ortho
+skinparam defaultFontName Consolas
+skinparam defaultFontSize 11
+
+' ============================================================
+' ENUMERACIONES (notas)
+' ============================================================
+note "Enums:\n- tipo_persona: socio | nutricionista | recepcionista\n- rol_usuario: ADMIN | SUPERADMIN | NUTRICIONISTA | RECEPCIONISTA | SOCIO\n- estado_turno: CONFIRMADO | PRESENTE | EN_CURSO | REALIZADO | CANCELADO | AUSENTE | NO_ASISTIO\n- estado_plan: BORRADOR | ACTIVO | FINALIZADO\n- estado_ia: PENDIENTE | GENERANDO | COMPLETADO | ERROR | CANCELADO\n- tipo_foto: FRENTE | PERFIL | ESPALDA\n- tipo_notificacion: INFO | WARNING | ERROR | RECORDATORIO | LOGRO | PLAN_REVISAR | PLAN_DISPONIBLE | PLAN_VALIDACION_WARNING\n- estado_notificacion: PENDIENTE | NO_LEIDA | LEIDA | ENVIADA | ERROR_ENVIO\n- estado_objetivo: ACTIVO | COMPLETADO | ABANDONADO\n- tipo_comida: desayuno | almuerzo | merienda | cena | colacion_1 | colacion_2\n- motivo_excepcion: feriado | licencia | personal | otro\n- canal_notificacion: in_app | email" as ENUMS
+
+' ============================================================
+' TENANT
+' ============================================================
+entity gimnasio {
+  * id: int <<PK>>
+  --
+  nombre: varchar <<NOT NULL>>
+  direccion: varchar
+  telefono: varchar
+  email_contacto: varchar <<UK>>
+  logo_url: varchar
+  color_primario: varchar
+  color_secundario: varchar
+  --
+  plazo_maximo_cancelacion_hs: int <<default 24>>
+  plazo_minimo_reserva_hs: int <<default 1>>
+  plazo_maximo_reprogramacion_hs: int <<default 12>>
+  max_ausencias_consecutivas: int <<default 3>>
+  max_turnos_futuros: int <<default 5>>
+  activo: boolean <<default true>>
+  --
+  created_at: datetime
+  updated_at: datetime
+  fecha_baja: datetime <<soft-delete>>
+}
+
+' ============================================================
+' PERSONAS
+' ============================================================
+entity persona {
+  * id PK <<PK>>
+  --
+  * id_gimnasio: int <<FK>>
+  * tipo_persona: varchar <<socio|nutricionista|recepcionista>>
+  nombre: varchar
+  apellido: varchar
+  dni: varchar <<UK>>
+  telefono: varchar
+  fecha_nacimiento: date
+  genero: varchar
+  direccion: varchar
+  foto_url: varchar
+  --
+  created_at: datetime
+  updated_at: datetime
+  fecha_baja: datetime <<soft-delete>>
+}
+
+entity socio {
+  * id <<PK, FK>>
+  --
+  talla_calzado: int
+  objetivo: varchar
+}
+
+entity nutricionista {
+  * id <<PK, FK>>
+  --
+  matricula_profesional: varchar
+  biografia: text
+  foto_url: varchar
+}
+
+entity recepcionista {
+  * id <<PK, FK>>
+}
+
+entity usuario {
+  * id PK <<PK>>
+  --
+  id_persona: int <<FK, UK>>
+  * email: varchar <<UK>>
+  * password_hash: varchar
+  * rol: varchar <<enum>>
+  activo: boolean
+  ultimo_acceso: datetime
+  --
+  created_at: datetime
+  updated_at: datetime
+  fecha_baja: datetime <<soft-delete>>
+}
+
+' ============================================================
+' RBAC
+' ============================================================
+entity grupo_permiso {
+  * id PK <<PK>>
+  --
+  * clave: varchar <<UK>>
+  nombre: varchar
+  descripcion: text
+  es_grupo_sistema: boolean
+  --
+  created_at: datetime
+  updated_at: datetime
+  <<sin soft-delete>>
+}
+
+entity accion {
+  * id PK <<PK>>
+  --
+  * codigo: varchar <<UK>>
+  nombre: varchar
+  descripcion: text
+  contexto: varchar <<'gimnasio'|'sistema'>>
+  --
+  created_at: datetime
+  updated_at: datetime
+  fecha_baja: datetime <<soft-delete>>
+}
+
+entity grupo_permiso_accion {
+  * id_grupo_permiso: int <<PK, FK>>
+  * id_accion: int <<PK, FK>>
+}
+
+entity grupo_permiso_hijo {
+  * id_grupo_padre: int <<PK, FK>>
+  * id_grupo_hijo: int <<PK, FK>>
+}
+
+entity usuario_grupo_permiso {
+  * id PK <<PK>>
+  --
+  * id_usuario: int <<FK>>
+  id_gimnasio: int <<FK>>
+  * id_grupo_permiso: int <<FK>>
+}
+
+entity usuario_accion {
+  * id_usuario: int <<PK, FK>>
+  * id_accion: int <<PK, FK>>
+  id_gimnasio: int <<FK>>
+}
+
+' ============================================================
+' AGENDA
+' ============================================================
+entity agenda {
+  * id PK <<PK>>
+  --
+  * id_nutricionista: int <<FK>>
+  * dia_semana: varchar <<enum lun-dom>>
+  hora_inicio: time
+  hora_fin: time
+  duracion_turno_minutos: int
+  activo: boolean <<default true>>
+  --
+  created_at: datetime
+  updated_at: datetime
+  fecha_baja: datetime <<soft-delete>>
+  <<UK (id_nutricionista, dia_semana, hora_inicio, hora_fin)>>
+}
+
+entity excepcion_disponibilidad {
+  * id PK <<PK>>
+  --
+  id_agenda: int <<FK>>
+  * fecha_desde: date
+  fecha_hasta: date
+  hora_inicio: time
+  hora_fin: time
+  motivo: varchar(20) <<enum>>
+  disponible: boolean <<default false>>
+  --
+  created_at: datetime
+  updated_at: datetime
+  fecha_baja: datetime <<soft-delete>>
+}
+
+' ============================================================
+' TURNOS
+' ============================================================
+entity turno {
+  * id PK <<PK>>
+  --
+  * id_socio: int <<FK>>
+  * id_nutricionista: int <<FK>>
+  * id_gimnasio: int <<FK>>
+  * fecha_hora_inicio: datetime
+  fecha_hora_fin: datetime
+  * estado: varchar(15) <<enum>>
+  confirmado_por_socio: boolean
+  fecha_check_in: datetime
+  fecha_consulta_inicio: datetime
+  fecha_consulta_fin: datetime
+  fecha_marcar_ausente: datetime
+  fecha_cierre_automatico: datetime
+  motivo_cancelacion: text
+  notas: text
+  --
+  created_at: datetime
+  updated_at: datetime
+  fecha_baja: datetime <<soft-delete>>
+}
+
+entity observacion_clinica {
+  * id PK <<PK>>
+  --
+  * id_turno: int <<FK, UK>>
+  peso: decimal
+  altura: decimal
+  imc: decimal
+  comentario: text
+  es_publica: boolean <<default false>>
+  * version: int
+  --
+  created_at: datetime
+  updated_at: datetime
+  fecha_baja: datetime <<soft-delete>>
+}
+
+entity medicion {
+  * id PK <<PK>>
+  --
+  id_turno: int <<FK>>
+  * peso: decimal
+  * altura: decimal
+  * imc: decimal
+  perimetro_cintura: decimal
+  perimetro_cadera: decimal
+  perimetro_brazo: decimal
+  perimetro_muslo: decimal
+  perimetro_pecho: decimal
+  pliegue_tricipital: decimal
+  pliegue_bicipital: decimal
+  pliegue_subescapular: decimal
+  masa_grasa_porcentaje: decimal
+  masa_muscular_porcentaje: decimal
+  presion_sistolica: int
+  presion_diastolica: int
+  frecuencia_cardiaca: int
+  notas_medicion: text
+  --
+  created_at: datetime
+  updated_at: datetime
+  fecha_baja: datetime <<soft-delete>>
+}
+
+entity adjunto_clinico {
+  * id PK <<PK>>
+  --
+  * id_turno: int <<FK>>
+  * id_usuario_subio: int <<FK>>
+  nombre_original: varchar
+  mime_type: varchar
+  size_bytes: int
+  object_key: varchar
+  es_post_cierre: boolean <<default false>>
+  --
+  created_at: datetime
+  updated_at: datetime
+  fecha_baja: datetime <<soft-delete>>
+}
+
+' ============================================================
+' FICHA SALUD
+' ============================================================
+entity ficha_salud {
+  * id PK <<PK>>
+  --
+  * id_socio: int <<FK, UK>>
+  version_actual_id: int <<FK>>
+  id_gimnasio: int <<FK>>
+  motivo_consulta: text
+  antecedentes_medicos: text
+  cirugias_previas: text
+  condiciones_medicas: text
+  medicacion_actual: text
+  fumador: varchar
+  actividad_fisica_previa: text
+  alergias_conocidas: text
+  contacto_emergencia_nombre: varchar
+  contacto_emergencia_telefono: varchar
+  --
+  created_at: datetime
+  updated_at: datetime
+  fecha_baja: datetime <<soft-delete>>
+}
+
+entity ficha_salud_version {
+  * id PK <<PK>>
+  --
+  * id_ficha: int <<FK>>
+  * version: int
+  snapshot: json <<inmutable>>
+  * id_creador: int <<FK → usuario>>
+  --
+  created_at: datetime
+  <<sin soft-delete>>
+}
+
+entity patologia {
+  * id PK <<PK>>
+  --
+  * nombre: varchar <<UK>>
+  descripcion: varchar
+  --
+  created_at: datetime
+  updated_at: datetime
+  fecha_baja: datetime <<soft-delete>>
+}
+
+entity alergia {
+  * id PK <<PK>>
+  --
+  * nombre: varchar <<UK>>
+  descripcion: varchar
+  --
+  created_at: datetime
+  updated_at: datetime
+  fecha_baja: datetime <<soft-delete>>
+}
+
+entity ficha_salud_patologia {
+  * id_ficha: int <<PK, FK>>
+  * id_patologia: int <<PK, FK>>
+}
+
+entity ficha_salud_alergia {
+  * id_ficha: int <<PK, FK>>
+  * id_alergia: int <<PK, FK>>
+}
+
+' ============================================================
+' PLAN ALIMENTACION
+' ============================================================
+entity plan_alimentacion {
+  * id PK <<PK>>
+  --
+  id_socio: int <<FK>>
+  id_nutricionista: int <<FK>>
+  nombre: varchar
+  * estado: varchar(10) <<enum BORRADOR|ACTIVO|FINALIZADO>>
+  calorias_diarias: int
+  objetivo: varchar <<enum>>
+  observaciones: text
+  generado_por_ia: boolean
+  --
+  created_at: datetime
+  updated_at: datetime
+  fecha_baja: datetime <<soft-delete>>
+}
+
+entity dia_plan {
+  * id PK <<PK>>
+  --
+  * id_plan: int <<FK>>
+  * dia_semana: varchar
+  orden: int
+  notas: text
+  --
+  created_at: datetime
+  updated_at: datetime
+  fecha_baja: datetime <<soft-delete>>
+}
+
+entity opcion_comida {
+  * id PK <<PK>>
+  --
+  * id_dia_plan: int <<FK>>
+  nombre: varchar
+  * tipo_comida: varchar(15) <<enum>>
+  orden: int
+  preparacion: text
+  --
+  created_at: datetime
+  updated_at: datetime
+  fecha_baja: datetime <<soft-delete>>
+}
+
+entity item_comida {
+  * id PK <<PK>>
+  --
+  * id_opcion_comida: int <<FK>>
+  id_alimento: int <<FK>>
+  alimento_nombre: varchar <<denormalizado>>
+  cantidad: decimal
+  unidad_medida: varchar
+  porcion_estimada: decimal
+  --
+  created_at: datetime
+  updated_at: datetime
+  fecha_baja: datetime <<soft-delete>>
+}
+
+' ============================================================
+' ALIMENTOS
+' ============================================================
+entity alimento {
+  * id PK <<PK>>
+  --
+  * nombre: varchar <<UK>>
+  categoria: varchar
+  calorias: int
+  proteinas: int
+  carbohidratos: int
+  grasas: int
+  fibra: int
+  sodio: int
+  azucar: int
+  grasas_saturadas: int
+  colesterol: int
+  vitamina_a: int
+  vitamina_c: int
+  vitamina_d: int
+  vitamina_e: int
+  vitamina_k: int
+  vitamina_b6: int
+  vitamina_b12: int
+  calcio: int
+  hierro: int
+  magnesio: int
+  zinc: int
+  potasio: int
+  activo: boolean
+  --
+  created_at: datetime
+  updated_at: datetime
+  fecha_baja: datetime <<soft-delete>>
+}
+
+entity grupo_alimenticio {
+  * id PK <<PK>>
+  --
+  * nombre: varchar <<UK>>
+  descripcion: text
+  --
+  created_at: datetime
+  updated_at: datetime
+  fecha_baja: datetime <<soft-delete>>
+}
+
+entity alimento_grupo_alimenticio {
+  * id_alimento: int <<PK, FK>>
+  * id_grupo_alimenticio: int <<PK, FK>>
+}
+
+' ============================================================
+' GENERACION IA
+' ============================================================
+entity generacion_plan_ia {
+  * id PK <<PK>>
+  --
+  id_plan: int <<FK>>
+  * id_socio: int <<FK>>
+  * id_nutricionista: int <<FK>>
+  * estado: varchar(15) <<enum>>
+  solicitud: json
+  respuesta: json
+  metadatos: json
+  progreso: int <<default 0>>
+  error_mensaje: text
+  intentos: int <<default 0>>
+  usa_memoria: boolean
+  --
+  created_at: datetime
+  updated_at: datetime
+  <<sin soft-delete>>
+}
+
+' ============================================================
+' FOTOS PROGRESO
+' ============================================================
+entity foto_progreso {
+  * id PK <<PK>>
+  --
+  * id_socio: int <<FK>>
+  id_turno: int <<FK>>
+  * tipo_foto: varchar(10) <<enum>>
+  * object_key: varchar
+  fecha_toma: date
+  --
+  created_at: datetime
+  updated_at: datetime
+  fecha_baja: datetime <<soft-delete>>
+}
+
+' ============================================================
+' OBJETIVOS
+' ============================================================
+entity objetivo {
+  * id PK <<PK>>
+  --
+  * id_socio: int <<FK>>
+  * tipo_metrica: varchar(20) <<enum>>
+  valor_inicial: decimal
+  valor_objetivo: decimal
+  valor_actual: decimal
+  estado: varchar(15) <<enum ACTIVO|COMPLETADO|ABANDONADO>>
+  notas: text
+  --
+  created_at: datetime
+  updated_at: datetime
+  fecha_baja: datetime <<soft-delete>>
+}
+
+' ============================================================
+' NOTIFICACIONES
+' ============================================================
+entity notificacion {
+  * id PK <<PK>>
+  --
+  * id_usuario: int <<FK → destinatario>>
+  * tipo: varchar(30) <<enum>>
+  canal: varchar <<enum in_app|email>>
+  titulo: varchar
+  cuerpo: text
+  metadata: json
+  estado: varchar(15) <<enum>>
+  leida_en: datetime
+  --
+  created_at: datetime
+  updated_at: datetime
+  fecha_baja: datetime <<soft-delete>>
+}
+
+' ============================================================
+' RELACIONES
+' ============================================================
+
+' TENANT
+gimnasio ||--o{ persona : "1:N"
+gimnasio ||--o{ usuario_grupo_permiso : "1:N"
+gimnasio ||--o{ usuario_accion : "1:N"
+gimnasio ||--o{ ficha_salud : "1:N"
+gimnasio ||--o{ turno : "1:N"
+
+' PERSONAS
+persona ||--o| socio : "1:1 (herencia)"
+persona ||--o| nutricionista : "1:1 (herencia)"
+persona ||--o| recepcionista : "1:1 (herencia)"
+persona ||--o{ usuario : "1:N"
+socio ||--o{ turno : "1:N"
+socio ||--o{ ficha_salud : "1:N"
+socio ||--o{ plan_alimentacion : "1:N"
+socio ||--o{ generacion_plan_ia : "1:N"
+socio ||--o{ foto_progreso : "1:N"
+socio ||--o{ objetivo : "1:N"
+
+' USUARIO
+usuario ||--o{ notificacion : "1:N"
+usuario ||--o{ usuario_grupo_permiso : "1:N"
+usuario ||--o{ usuario_accion : "1:N"
+usuario ||--o{ adjunto_clinico : "1:N"
+usuario ||--o{ ficha_salud_version : "1:N"
+
+' NUTRICIONISTA
+nutricionista ||--o{ agenda : "1:N"
+nutricionista ||--o{ turno : "1:N"
+nutricionista ||--o{ plan_alimentacion : "1:N"
+nutricionista ||--o{ generacion_plan_ia : "1:N"
+
+' AGENDA
+agenda ||--o{ excepcion_disponibilidad : "1:N"
+
+' TURNOS
+turno ||--o| observacion_clinica : "1:1"
+turno ||--o{ medicion : "1:N"
+turno ||--o{ adjunto_clinico : "1:N"
+turno ||--o{ foto_progreso : "1:N"
+
+' FICHA SALUD
+ficha_salud ||--o{ ficha_salud_version : "1:N"
+ficha_salud ||--o{ ficha_salud_patologia : "1:N"
+ficha_salud ||--o{ ficha_salud_alergia : "1:N"
+patologia ||--o{ ficha_salud_patologia : "1:N"
+alergia ||--o{ ficha_salud_alergia : "1:N"
+
+' PLAN ALIMENTACION
+plan_alimentacion ||--o{ dia_plan : "1:N"
+dia_plan ||--o{ opcion_comida : "1:N"
+opcion_comida ||--o{ item_comida : "1:N"
+item_comida }o--|| alimento : "N:1"
+plan_alimentacion ||--o{ generacion_plan_ia : "1:N"
+
+' ALIMENTOS
+alimento ||--o{ alimento_grupo_alimenticio : "1:N"
+grupo_alimenticio ||--o{ alimento_grupo_alimenticio : "1:N"
+
+' RBAC
+grupo_permiso ||--o{ grupo_permiso_accion : "1:N"
+accion ||--o{ grupo_permiso_accion : "1:N"
+grupo_permiso ||--o{ grupo_permiso_hijo : "padre 1:N"
+grupo_permiso ||--o{ grupo_permiso_hijo : "hijo 1:N"
+
+@enduml

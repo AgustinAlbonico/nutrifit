@@ -162,22 +162,24 @@ describe('ActivarPlanAlimentacionUseCase', () => {
     } as unknown as jest.Mocked<AuditoriaService>;
 
     dataSourceMock = {
-      transaction: jest.fn(async (cb: (manager: unknown) => Promise<unknown>) => {
-        const fakeManager = {
-          getRepository: () => ({
-            createQueryBuilder: () => ({
-              update: () => ({
-                set: () => ({
-                  where: () => ({
-                    execute: () => Promise.resolve({ affected: 1 }),
+      transaction: jest.fn(
+        async (cb: (manager: unknown) => Promise<unknown>) => {
+          const fakeManager = {
+            getRepository: () => ({
+              createQueryBuilder: () => ({
+                update: () => ({
+                  set: () => ({
+                    where: () => ({
+                      execute: () => Promise.resolve({ affected: 1 }),
+                    }),
                   }),
                 }),
               }),
             }),
-          }),
-        };
-        return cb(fakeManager);
-      }),
+          };
+          return cb(fakeManager);
+        },
+      ),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -212,12 +214,14 @@ describe('ActivarPlanAlimentacionUseCase', () => {
     );
   });
 
-  function setupMocks(opts: {
-    estadoPlan?: 'BORRADOR' | 'ACTIVO' | 'FINALIZADO';
-    planMacros?: 'VERDE' | 'ROJO';
-    planNutId?: number;
-    versionPlanId?: number;
-  } = {}) {
+  function setupMocks(
+    opts: {
+      estadoPlan?: 'BORRADOR' | 'ACTIVO' | 'FINALIZADO';
+      planMacros?: 'VERDE' | 'ROJO';
+      planNutId?: number;
+      versionPlanId?: number;
+    } = {},
+  ) {
     planRepoMock.findOne.mockResolvedValue({
       idPlanAlimentacion: 100,
       socio: { idPersona: 50, gimnasioId: 10 } as never,

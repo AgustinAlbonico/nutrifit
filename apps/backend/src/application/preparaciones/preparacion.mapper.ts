@@ -1,8 +1,5 @@
 import { AlimentoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities';
-import {
-  PreparacionItemResponseDto,
-  PreparacionResponseDto,
-} from './dtos';
+import { PreparacionItemResponseDto, PreparacionResponseDto } from './dtos';
 import { PreparacionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities';
 
 /**
@@ -12,13 +9,19 @@ import { PreparacionOrmEntity } from 'src/infrastructure/persistence/typeorm/ent
 export function calcularMacrosProporcionales(
   alimento: AlimentoOrmEntity,
   cantidad: number,
-): { calorias: number; proteinas: number; carbohidratos: number; grasas: number } {
+): {
+  calorias: number;
+  proteinas: number;
+  carbohidratos: number;
+  grasas: number;
+} {
   const base = alimento.cantidad || 100;
   const factor = cantidad / base;
   return {
     calorias: Math.round((alimento.calorias ?? 0) * factor * 100) / 100,
     proteinas: Math.round((alimento.proteinas ?? 0) * factor * 100) / 100,
-    carbohidratos: Math.round((alimento.carbohidratos ?? 0) * factor * 100) / 100,
+    carbohidratos:
+      Math.round((alimento.carbohidratos ?? 0) * factor * 100) / 100,
     grasas: Math.round((alimento.grasas ?? 0) * factor * 100) / 100,
   };
 }
@@ -35,25 +38,30 @@ export function mapPreparacionToResponse(
   let totalCarbohidratos = 0;
   let totalGrasas = 0;
 
-  const items: PreparacionItemResponseDto[] = (preparacion.items ?? []).map((item) => {
-    const macros = calcularMacrosProporcionales(item.alimento, item.cantidadDefault);
-    totalCalorias += macros.calorias;
-    totalProteinas += macros.proteinas;
-    totalCarbohidratos += macros.carbohidratos;
-    totalGrasas += macros.grasas;
+  const items: PreparacionItemResponseDto[] = (preparacion.items ?? []).map(
+    (item) => {
+      const macros = calcularMacrosProporcionales(
+        item.alimento,
+        item.cantidadDefault,
+      );
+      totalCalorias += macros.calorias;
+      totalProteinas += macros.proteinas;
+      totalCarbohidratos += macros.carbohidratos;
+      totalGrasas += macros.grasas;
 
-    return {
-      idPreparacionItem: item.idPreparacionItem,
-      alimentoId: item.alimentoId,
-      alimentoNombre: item.alimento?.nombre ?? '',
-      cantidadDefault: item.cantidadDefault,
-      unidadDefault: item.unidadDefault,
-      calorias: macros.calorias,
-      proteinas: macros.proteinas,
-      carbohidratos: macros.carbohidratos,
-      grasas: macros.grasas,
-    };
-  });
+      return {
+        idPreparacionItem: item.idPreparacionItem,
+        alimentoId: item.alimentoId,
+        alimentoNombre: item.alimento?.nombre ?? '',
+        cantidadDefault: item.cantidadDefault,
+        unidadDefault: item.unidadDefault,
+        calorias: macros.calorias,
+        proteinas: macros.proteinas,
+        carbohidratos: macros.carbohidratos,
+        grasas: macros.grasas,
+      };
+    },
+  );
 
   return {
     idPreparacion: preparacion.idPreparacion,

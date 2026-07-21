@@ -67,9 +67,10 @@ const estilos = StyleSheet.create({
     marginTop: 2,
   },
   totalesDia: {
-    fontSize: 7,
-    color: '#888',
-    marginTop: 1,
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: '#222',
+    marginTop: 2,
   },
 });
 

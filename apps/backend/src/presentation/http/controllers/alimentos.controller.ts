@@ -30,7 +30,10 @@ import { ActualizarAlimentoDto } from 'src/application/alimentos/dtos/actualizar
 import { CrearAlimentoUseCase } from 'src/application/alimentos/use-cases/crear-alimento.use-case';
 import { ActualizarAlimentoUseCase } from 'src/application/alimentos/use-cases/actualizar-alimento.use-case';
 import { EliminarAlimentoUseCase } from 'src/application/alimentos/use-cases/eliminar-alimento.use-case';
-import { paginarQuery, crearParametrosPaginacion } from 'src/common/helpers/paginacion.helper';
+import {
+  paginarQuery,
+  crearParametrosPaginacion,
+} from 'src/common/helpers/paginacion.helper';
 import { normalizarTexto } from 'src/common/utils/text.util';
 import { stripAccentsLowerSql } from 'src/common/utils/sql-text.util';
 
@@ -137,7 +140,10 @@ export class AlimentosController {
     @Query('limit') limit?: string,
     @Query('grupoId') grupoId?: string,
   ): Promise<PaginatedData<AlimentoResponseDto>> {
-    const params = crearParametrosPaginacion({ page, limit }, { maxLimit: 100 });
+    const params = crearParametrosPaginacion(
+      { page, limit },
+      { maxLimit: 100 },
+    );
 
     const queryBuilder = this.alimentoRepo
       .createQueryBuilder('alimento')

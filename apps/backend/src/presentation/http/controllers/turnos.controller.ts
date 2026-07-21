@@ -56,6 +56,7 @@ import {
   TurnoOperacionResponseDto,
   UpsertFichaSaludSocioDto,
 } from 'src/application/turnos/dtos';
+import { ReporteEvolucionPacienteDto } from 'src/application/turnos/dtos/reporte-evolucion-paciente.dto';
 import type { PaginatedData } from '@nutrifit/shared';
 import {
   AbrirFichaDesdeTurnoUseCase,
@@ -76,6 +77,7 @@ import {
   GetHistorialConsultasPacienteUseCase,
   GetHistorialMedicionesUseCase,
   GetHistorialTurnosPacienteUseCase,
+  GetReporteEvolucionPacienteUseCase,
   GetResumenProgresoUseCase,
   GetTurnoByIdUseCase,
   GetTurnoSocioByIdUseCase,
@@ -130,6 +132,37 @@ import {
   AccionAuditoria,
   TipoAccionAuditoria,
 } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
+import { BadRequestError } from 'src/domain/exceptions/custom-exceptions';
+
+function parseFechaOpcional(
+  valor: string | undefined,
+  campo: string,
+): Date | undefined {
+  if (!valor) return undefined;
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(valor)) {
+    throw new BadRequestError(
+      `El parámetro ${campo} debe tener formato YYYY-MM-DD.`,
+    );
+  }
+
+  const fecha = new Date(`${valor}T00:00:00.000Z`);
+  if (
+    Number.isNaN(fecha.getTime()) ||
+    fecha.toISOString().slice(0, 10) !== valor
+  ) {
+    throw new BadRequestError(`El parámetro ${campo} es inválido.`);
+  }
+
+  return fecha;
+}
+
+function parseFechaFinOpcional(valor: string | undefined): Date | undefined {
+  const fecha = parseFechaOpcional(valor, 'fechaFin');
+  if (!fecha) return undefined;
+  fecha.setUTCHours(23, 59, 59, 999);
+  return fecha;
+}
 
 @Controller('turnos')
 @UseGuards(JwtAuthGuard, RolesGuard, ActionsGuard)
@@ -153,6 +186,7 @@ export class TurnosController {
     private readonly getHistorialConsultasPacienteUseCase: GetHistorialConsultasPacienteUseCase,
     private readonly getHistorialMedicionesUseCase: GetHistorialMedicionesUseCase,
     private readonly getHistorialTurnosPacienteUseCase: GetHistorialTurnosPacienteUseCase,
+    private readonly getReporteEvolucionPacienteUseCase: GetReporteEvolucionPacienteUseCase,
     private readonly getResumenProgresoUseCase: GetResumenProgresoUseCase,
     private readonly getTurnoByIdUseCase: GetTurnoByIdUseCase,
     private readonly getTurnoSocioByIdUseCase: GetTurnoSocioByIdUseCase,
@@ -1001,6 +1035,29 @@ export class TurnosController {
     );
 
     return this.getResumenProgresoUseCase.execute(socioId);
+  }
+
+  @Get('profesional/:nutricionistaId/pacientes/:socioId/reporte-evolucion')
+  @Rol(RolEnum.NUTRICIONISTA)
+  @UseGuards(NutricionistaOwnershipGuard, SocioResourceAccessGuard)
+  async getReporteEvolucionPaciente(
+    @Param('nutricionistaId', ParseIntPipe) nutricionistaId: number,
+    @Param('socioId', ParseIntPipe) socioId: number,
+    @Query('fechaInicio') fechaInicio?: string,
+    @Query('fechaFin') fechaFin?: string,
+  ): Promise<ReporteEvolucionPacienteDto> {
+    this.logger.log(
+      `Consultando reporte de evolución. Profesional=${nutricionistaId}, socio=${socioId}.`,
+    );
+
+    return this.getReporteEvolucionPacienteUseCase.execute(
+      nutricionistaId,
+      socioId,
+      {
+        fechaInicio: parseFechaOpcional(fechaInicio, 'fechaInicio'),
+        fechaFin: parseFechaFinOpcional(fechaFin),
+      },
+    );
   }
 
   @Get('socio/mi-progreso')

@@ -1035,7 +1035,14 @@ async function runSeedMultiTenant() {
 
       await asignarGruposAUsuario(emailNutri, 'NUTRICIONISTA');
 
-      const diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+      const diasSemana = [
+        'Lunes',
+        'Martes',
+        'Miércoles',
+        'Jueves',
+        'Viernes',
+        'Sábado',
+      ];
       for (const dia of diasSemana) {
         await dataSource.query(
           `INSERT IGNORE INTO agenda (dia, hora_inicio, hora_fin, duracion_turno, id_nutricionista)
@@ -1044,7 +1051,9 @@ async function runSeedMultiTenant() {
         );
       }
 
-      console.log(`NUTRICIONISTA evolucion: ${emailNutri} (ID persona: ${idNutriPersona})`);
+      console.log(
+        `NUTRICIONISTA evolucion: ${emailNutri} (ID persona: ${idNutriPersona})`,
+      );
 
       // --- CREAR SOCIO DE EVOLUCIÓN ---
       const emailSocio = 'martin-evolucion@nutrifit.com';
@@ -1109,7 +1118,9 @@ async function runSeedMultiTenant() {
         [idVersion, idFichaSalud],
       );
 
-      console.log(`SOCIO evolucion: ${emailSocio} (ID persona: ${idSocioPersona})`);
+      console.log(
+        `SOCIO evolucion: ${emailSocio} (ID persona: ${idSocioPersona})`,
+      );
 
       // --- CREAR TURNOS CON OBSERVACIONES Y MEDICIONES ---
       interface DatosTurno {
@@ -1131,20 +1142,239 @@ async function runSeedMultiTenant() {
       }
 
       const evolucion: DatosTurno[] = [
-        { fecha: '2026-01-12', peso: 95.0, imc: 31.0, cintura: 102.0, cadera: 108.0, brazo: 38.0, muslo: 62.0, pecho: 108.0, porcentajeGrasa: 32.5, masaMagra: 64.1, pliegueTriceps: 22.0, pliegueAbdominal: 35.0, comentario: 'Primera consulta. Evaluacion antropometrica inicial completa. Se realiza anamnesis alimentaria y se detectan habitos desordenados: saltea desayuno, cenas abundantes nocturnas, consumo frecuente de ultraprocesados.', sugerencias: 'Iniciar plan hipocalorico de 2100 kcal. Estructurar 4 comidas diarias. Incorporar mas verduras y proteinas magras. Reducir alcohol a 1 vez por semana.', habitos: 'Sedentario, trabaja 10h frente a PC. Cena despues de las 22hs. Consume 1.5L agua/dia.' },
-        { fecha: '2026-01-26', peso: 92.8, imc: 30.3, cintura: 100.0, cadera: 107.0, brazo: 37.5, muslo: 61.0, pecho: 107.0, porcentajeGrasa: 31.8, masaMagra: 63.2, pliegueTriceps: 21.0, pliegueAbdominal: 33.0, comentario: 'Paciente refiere buena adherencia al plan. Logro estructurar 4 comidas diarias. Disminuyo consumo de ultraprocesados. Reporta mas energia durante el dia.', sugerencias: 'Mantener plan actual. Agregar caminata de 30 min diarios. Aumentar consumo de agua a 2L/dia.', habitos: 'Incorporo desayuno. Cenas se adelantaron a 20hs. Reporta mejor descanso.' },
-        { fecha: '2026-02-09', peso: 90.5, imc: 29.6, cintura: 98.0, cadera: 106.0, brazo: 37.0, muslo: 60.0, pecho: 106.0, porcentajeGrasa: 31.0, masaMagra: 62.4, pliegueTriceps: 20.0, pliegueAbdominal: 31.5, comentario: 'Progreso consistente. Paciente motivado. Comenzo a caminar 30 min diarios. Mejoro calidad del sueno. Refiere menos ansiedad por alimentos.', sugerencias: 'Ajustar plan a 2000 kcal. Introducir 2 dias de ejercicio de fuerza en casa.', habitos: 'Camina 30 min/dia. Duerme 7h. Bebe 2L agua.' },
-        { fecha: '2026-02-23', peso: 88.2, imc: 28.8, cintura: 96.0, cadera: 105.0, brazo: 36.5, muslo: 59.0, pecho: 105.0, porcentajeGrasa: 30.2, masaMagra: 61.6, pliegueTriceps: 19.0, pliegueAbdominal: 30.0, comentario: 'Excelente evolucion. Paciente incorporo ejercicios de fuerza 2x/sem. Nota mejora en la composicion corporal y ropa le queda mas holgada.', sugerencias: 'Mantener plan de 2000 kcal con ajuste en distribucion de proteinas post-entreno (30g proteina post-ejercicio).', habitos: 'Ejercicio fuerza 2x/sem + caminata diaria. Comidas regulares cada 3-4h.' },
-        { fecha: '2026-03-09', peso: 86.0, imc: 28.1, cintura: 94.0, cadera: 104.0, brazo: 36.0, muslo: 58.0, pecho: 104.0, porcentajeGrasa: 29.4, masaMagra: 60.7, pliegueTriceps: 18.0, pliegueAbdominal: 28.5, comentario: 'Paciente muy conforme. Incremento intensidad de ejercicios. Se siente con mas vitalidad. Mediciones muestran perdida de grasa sostenida.', sugerencias: 'Ajustar plan a 1900 kcal. Aumentar proteina a 1.8g/kg. Incorporar colacion pre-entreno.', habitos: 'Ejercicio 4x/sem (2 fuerza + 2 cardio). Duerme 7-8h. Bebe 2.5L agua.' },
-        { fecha: '2026-03-23', peso: 84.1, imc: 27.5, cintura: 92.0, cadera: 103.0, brazo: 35.5, muslo: 57.0, pecho: 103.0, porcentajeGrasa: 28.6, masaMagra: 60.0, pliegueTriceps: 17.0, pliegueAbdominal: 27.0, comentario: 'Paciente supero meseta inicial. Mantuvo adherencia incluso en fines de semana. Reporta que sus companeros notan el cambio.', sugerencias: 'Mantener plan. Introducir un dia de recarga controlada los domingos para sostener adherencia.', habitos: 'Ejercicio regular. Fines de semana mas estructurados. No saltea comidas.' },
-        { fecha: '2026-04-06', peso: 82.5, imc: 27.0, cintura: 90.5, cadera: 102.0, brazo: 35.0, muslo: 56.0, pecho: 102.0, porcentajeGrasa: 27.8, masaMagra: 59.6, pliegueTriceps: 16.0, pliegueAbdominal: 25.5, comentario: 'Muy buen momento del tratamiento. Paciente completamente adaptado al estilo de vida saludable. Cambios visibles en fotos de progreso.', sugerencias: 'Ajustar plan a 1850 kcal. Evaluar incorporar entrenamiento de alta intensidad (HIIT) 1x/sem.', habitos: 'Estilo de vida activo. Cocina sus comidas. Planifica menu semanal.' },
-        { fecha: '2026-04-20', peso: 81.0, imc: 26.5, cintura: 89.0, cadera: 101.0, brazo: 34.5, muslo: 55.0, pecho: 101.0, porcentajeGrasa: 27.0, masaMagra: 59.1, pliegueTriceps: 15.0, pliegueAbdominal: 24.0, comentario: 'Perimetro de cintura sigue disminuyendo. Paciente reporta mejora en rendimiento deportivo. Se siente mas agil y fuerte.', sugerencias: 'Mantener plan. Continuar con HIIT 1x/sem. Evaluar metas de recomposicion corporal.', habitos: 'HIIT 1x/sem + fuerza 2x/sem + caminata diaria.' },
-        { fecha: '2026-05-04', peso: 79.8, imc: 26.1, cintura: 88.0, cadera: 100.0, brazo: 34.0, muslo: 54.5, pecho: 100.0, porcentajeGrasa: 26.3, masaMagra: 58.8, pliegueTriceps: 14.0, pliegueAbdominal: 22.5, comentario: 'Acercandose a la meta. Perdida total: 15.2 kg. Paciente emocionado con los resultados. Refiere que su entorno lo felicita constantemente.', sugerencias: 'Plan de transicion: aumentar calorias gradualmente hacia mantenimiento (2200 kcal). Evaluar meta final.', habitos: 'Rutina de ejercicio consolidada. Alimentacion intuitiva mejorada.' },
-        { fecha: '2026-05-18', peso: 78.5, imc: 25.7, cintura: 87.0, cadera: 99.5, brazo: 33.5, muslo: 54.0, pecho: 99.0, porcentajeGrasa: 25.5, masaMagra: 58.5, pliegueTriceps: 13.0, pliegueAbdominal: 21.0, comentario: 'Manteniendo bien los cambios. Paciente en fase de mantenimiento. Refiere sentirse como una persona nueva. Autoestima notablemente mejorada.', sugerencias: 'Plan de mantenimiento a 2200-2300 kcal. Continuar monitoreo mensual por 2 meses mas.', habitos: 'Estilo de vida saludable consolidado. Disfruta cocinar y hacer ejercicio.' },
-        { fecha: '2026-06-01', peso: 77.5, imc: 25.3, cintura: 86.0, cadera: 99.0, brazo: 33.0, muslo: 53.5, pecho: 98.5, porcentajeGrasa: 25.0, masaMagra: 58.1, pliegueTriceps: 12.5, pliegueAbdominal: 20.0, comentario: 'Control final del proceso. Perdida total: 17.5 kg en 5 meses. Reduccion del 32.5% al 25% de grasa corporal. Paciente dado de alta con plan de mantenimiento autonomo. Muy satisfecho.', sugerencias: 'Alta del programa intensivo. Seguimiento trimestral. Plan de mantenimiento vitalicio con ajustes estacionales.', habitos: 'Estilo de vida completamente transformado. Es referencia para amigos y familiares.' },
+        {
+          fecha: '2026-01-12',
+          peso: 95.0,
+          imc: 31.0,
+          cintura: 102.0,
+          cadera: 108.0,
+          brazo: 38.0,
+          muslo: 62.0,
+          pecho: 108.0,
+          porcentajeGrasa: 32.5,
+          masaMagra: 64.1,
+          pliegueTriceps: 22.0,
+          pliegueAbdominal: 35.0,
+          comentario:
+            'Primera consulta. Evaluacion antropometrica inicial completa. Se realiza anamnesis alimentaria y se detectan habitos desordenados: saltea desayuno, cenas abundantes nocturnas, consumo frecuente de ultraprocesados.',
+          sugerencias:
+            'Iniciar plan hipocalorico de 2100 kcal. Estructurar 4 comidas diarias. Incorporar mas verduras y proteinas magras. Reducir alcohol a 1 vez por semana.',
+          habitos:
+            'Sedentario, trabaja 10h frente a PC. Cena despues de las 22hs. Consume 1.5L agua/dia.',
+        },
+        {
+          fecha: '2026-01-26',
+          peso: 92.8,
+          imc: 30.3,
+          cintura: 100.0,
+          cadera: 107.0,
+          brazo: 37.5,
+          muslo: 61.0,
+          pecho: 107.0,
+          porcentajeGrasa: 31.8,
+          masaMagra: 63.2,
+          pliegueTriceps: 21.0,
+          pliegueAbdominal: 33.0,
+          comentario:
+            'Paciente refiere buena adherencia al plan. Logro estructurar 4 comidas diarias. Disminuyo consumo de ultraprocesados. Reporta mas energia durante el dia.',
+          sugerencias:
+            'Mantener plan actual. Agregar caminata de 30 min diarios. Aumentar consumo de agua a 2L/dia.',
+          habitos:
+            'Incorporo desayuno. Cenas se adelantaron a 20hs. Reporta mejor descanso.',
+        },
+        {
+          fecha: '2026-02-09',
+          peso: 90.5,
+          imc: 29.6,
+          cintura: 98.0,
+          cadera: 106.0,
+          brazo: 37.0,
+          muslo: 60.0,
+          pecho: 106.0,
+          porcentajeGrasa: 31.0,
+          masaMagra: 62.4,
+          pliegueTriceps: 20.0,
+          pliegueAbdominal: 31.5,
+          comentario:
+            'Progreso consistente. Paciente motivado. Comenzo a caminar 30 min diarios. Mejoro calidad del sueno. Refiere menos ansiedad por alimentos.',
+          sugerencias:
+            'Ajustar plan a 2000 kcal. Introducir 2 dias de ejercicio de fuerza en casa.',
+          habitos: 'Camina 30 min/dia. Duerme 7h. Bebe 2L agua.',
+        },
+        {
+          fecha: '2026-02-23',
+          peso: 88.2,
+          imc: 28.8,
+          cintura: 96.0,
+          cadera: 105.0,
+          brazo: 36.5,
+          muslo: 59.0,
+          pecho: 105.0,
+          porcentajeGrasa: 30.2,
+          masaMagra: 61.6,
+          pliegueTriceps: 19.0,
+          pliegueAbdominal: 30.0,
+          comentario:
+            'Excelente evolucion. Paciente incorporo ejercicios de fuerza 2x/sem. Nota mejora en la composicion corporal y ropa le queda mas holgada.',
+          sugerencias:
+            'Mantener plan de 2000 kcal con ajuste en distribucion de proteinas post-entreno (30g proteina post-ejercicio).',
+          habitos:
+            'Ejercicio fuerza 2x/sem + caminata diaria. Comidas regulares cada 3-4h.',
+        },
+        {
+          fecha: '2026-03-09',
+          peso: 86.0,
+          imc: 28.1,
+          cintura: 94.0,
+          cadera: 104.0,
+          brazo: 36.0,
+          muslo: 58.0,
+          pecho: 104.0,
+          porcentajeGrasa: 29.4,
+          masaMagra: 60.7,
+          pliegueTriceps: 18.0,
+          pliegueAbdominal: 28.5,
+          comentario:
+            'Paciente muy conforme. Incremento intensidad de ejercicios. Se siente con mas vitalidad. Mediciones muestran perdida de grasa sostenida.',
+          sugerencias:
+            'Ajustar plan a 1900 kcal. Aumentar proteina a 1.8g/kg. Incorporar colacion pre-entreno.',
+          habitos:
+            'Ejercicio 4x/sem (2 fuerza + 2 cardio). Duerme 7-8h. Bebe 2.5L agua.',
+        },
+        {
+          fecha: '2026-03-23',
+          peso: 84.1,
+          imc: 27.5,
+          cintura: 92.0,
+          cadera: 103.0,
+          brazo: 35.5,
+          muslo: 57.0,
+          pecho: 103.0,
+          porcentajeGrasa: 28.6,
+          masaMagra: 60.0,
+          pliegueTriceps: 17.0,
+          pliegueAbdominal: 27.0,
+          comentario:
+            'Paciente supero meseta inicial. Mantuvo adherencia incluso en fines de semana. Reporta que sus companeros notan el cambio.',
+          sugerencias:
+            'Mantener plan. Introducir un dia de recarga controlada los domingos para sostener adherencia.',
+          habitos:
+            'Ejercicio regular. Fines de semana mas estructurados. No saltea comidas.',
+        },
+        {
+          fecha: '2026-04-06',
+          peso: 82.5,
+          imc: 27.0,
+          cintura: 90.5,
+          cadera: 102.0,
+          brazo: 35.0,
+          muslo: 56.0,
+          pecho: 102.0,
+          porcentajeGrasa: 27.8,
+          masaMagra: 59.6,
+          pliegueTriceps: 16.0,
+          pliegueAbdominal: 25.5,
+          comentario:
+            'Muy buen momento del tratamiento. Paciente completamente adaptado al estilo de vida saludable. Cambios visibles en fotos de progreso.',
+          sugerencias:
+            'Ajustar plan a 1850 kcal. Evaluar incorporar entrenamiento de alta intensidad (HIIT) 1x/sem.',
+          habitos:
+            'Estilo de vida activo. Cocina sus comidas. Planifica menu semanal.',
+        },
+        {
+          fecha: '2026-04-20',
+          peso: 81.0,
+          imc: 26.5,
+          cintura: 89.0,
+          cadera: 101.0,
+          brazo: 34.5,
+          muslo: 55.0,
+          pecho: 101.0,
+          porcentajeGrasa: 27.0,
+          masaMagra: 59.1,
+          pliegueTriceps: 15.0,
+          pliegueAbdominal: 24.0,
+          comentario:
+            'Perimetro de cintura sigue disminuyendo. Paciente reporta mejora en rendimiento deportivo. Se siente mas agil y fuerte.',
+          sugerencias:
+            'Mantener plan. Continuar con HIIT 1x/sem. Evaluar metas de recomposicion corporal.',
+          habitos: 'HIIT 1x/sem + fuerza 2x/sem + caminata diaria.',
+        },
+        {
+          fecha: '2026-05-04',
+          peso: 79.8,
+          imc: 26.1,
+          cintura: 88.0,
+          cadera: 100.0,
+          brazo: 34.0,
+          muslo: 54.5,
+          pecho: 100.0,
+          porcentajeGrasa: 26.3,
+          masaMagra: 58.8,
+          pliegueTriceps: 14.0,
+          pliegueAbdominal: 22.5,
+          comentario:
+            'Acercandose a la meta. Perdida total: 15.2 kg. Paciente emocionado con los resultados. Refiere que su entorno lo felicita constantemente.',
+          sugerencias:
+            'Plan de transicion: aumentar calorias gradualmente hacia mantenimiento (2200 kcal). Evaluar meta final.',
+          habitos:
+            'Rutina de ejercicio consolidada. Alimentacion intuitiva mejorada.',
+        },
+        {
+          fecha: '2026-05-18',
+          peso: 78.5,
+          imc: 25.7,
+          cintura: 87.0,
+          cadera: 99.5,
+          brazo: 33.5,
+          muslo: 54.0,
+          pecho: 99.0,
+          porcentajeGrasa: 25.5,
+          masaMagra: 58.5,
+          pliegueTriceps: 13.0,
+          pliegueAbdominal: 21.0,
+          comentario:
+            'Manteniendo bien los cambios. Paciente en fase de mantenimiento. Refiere sentirse como una persona nueva. Autoestima notablemente mejorada.',
+          sugerencias:
+            'Plan de mantenimiento a 2200-2300 kcal. Continuar monitoreo mensual por 2 meses mas.',
+          habitos:
+            'Estilo de vida saludable consolidado. Disfruta cocinar y hacer ejercicio.',
+        },
+        {
+          fecha: '2026-06-01',
+          peso: 77.5,
+          imc: 25.3,
+          cintura: 86.0,
+          cadera: 99.0,
+          brazo: 33.0,
+          muslo: 53.5,
+          pecho: 98.5,
+          porcentajeGrasa: 25.0,
+          masaMagra: 58.1,
+          pliegueTriceps: 12.5,
+          pliegueAbdominal: 20.0,
+          comentario:
+            'Control final del proceso. Perdida total: 17.5 kg en 5 meses. Reduccion del 32.5% al 25% de grasa corporal. Paciente dado de alta con plan de mantenimiento autonomo. Muy satisfecho.',
+          sugerencias:
+            'Alta del programa intensivo. Seguimiento trimestral. Plan de mantenimiento vitalicio con ajustes estacionales.',
+          habitos:
+            'Estilo de vida completamente transformado. Es referencia para amigos y familiares.',
+        },
       ];
 
-      const horas = ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '09:30', '10:30', '14:30', '15:30', '09:00'];
+      const horas = [
+        '09:00',
+        '10:00',
+        '11:00',
+        '14:00',
+        '15:00',
+        '16:00',
+        '09:30',
+        '10:30',
+        '14:30',
+        '15:30',
+        '09:00',
+      ];
 
       for (let i = 0; i < evolucion.length; i++) {
         const d = evolucion[i];
@@ -1156,7 +1386,16 @@ async function runSeedMultiTenant() {
         const resultTurno: unknown = await dataSource.query(
           `INSERT INTO turno (fecha, hora_turno, estado, creado_por, id_socio, id_nutricionista, id_gimnasio, check_in_at, consulta_iniciada_at, consulta_finalizada_at)
            VALUES (?, ?, 'REALIZADO', 'SOCIO', ?, ?, ?, ?, ?, ?)`,
-          [d.fecha, hora, idSocioPersona, idNutriPersona, idGymCentral, checkInStr, inicioStr, finStr],
+          [
+            d.fecha,
+            hora,
+            idSocioPersona,
+            idNutriPersona,
+            idGymCentral,
+            checkInStr,
+            inicioStr,
+            finStr,
+          ],
         );
 
         const filaTurno = resultTurno as { insertId: number };
@@ -1179,11 +1418,32 @@ async function runSeedMultiTenant() {
         await dataSource.query(
           `INSERT INTO medicion (peso, altura, imc, perimetro_cintura, perimetro_cadera, perimetro_brazo, perimetro_muslo, perimetro_pecho, pliegue_triceps, pliegue_abdominal, porcentaje_grasa, masa_magra, frecuencia_cardiaca, tension_sistolica, tension_diastolica, notas_medicion, id_turno, created_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [d.peso, alturaCm, d.imc, d.cintura, d.cadera, d.brazo, d.muslo, d.pecho, d.pliegueTriceps, d.pliegueAbdominal, d.porcentajeGrasa, d.masaMagra, 75, 125, 80, `Medicion del ${d.fecha}`, idTurno, checkInStr],
+          [
+            d.peso,
+            alturaCm,
+            d.imc,
+            d.cintura,
+            d.cadera,
+            d.brazo,
+            d.muslo,
+            d.pecho,
+            d.pliegueTriceps,
+            d.pliegueAbdominal,
+            d.porcentajeGrasa,
+            d.masaMagra,
+            75,
+            125,
+            80,
+            `Medicion del ${d.fecha}`,
+            idTurno,
+            checkInStr,
+          ],
         );
       }
 
-      console.log(`Turnos evolutivos creados: ${evolucion.length} para ${emailSocio}`);
+      console.log(
+        `Turnos evolutivos creados: ${evolucion.length} para ${emailSocio}`,
+      );
     };
 
     await crearSocioConHistorialEvolutivo();
@@ -1191,8 +1451,24 @@ async function runSeedMultiTenant() {
     // Crear planes de alimentacion demo
     const crearPlanesDemo = async (): Promise<void> => {
       const planesData = generarPlanesSemilla(idsNutricionistas, idsSocios);
+      let creados = 0;
+      let saltados = 0;
 
       for (const plan of planesData) {
+        // Idempotencia: si ya existe un plan vivo para este par (socio, nutri),
+        // no insertamos otro. Esto evita que re-seedar (db:seed) multiplique
+        // planes cuando la DB ya tiene datos.
+        const existente = await dataSource.query(
+          `SELECT id_plan_alimentacion FROM plan_alimentacion
+           WHERE id_socio = ? AND id_nutricionista = ? AND eliminado_en IS NULL
+           LIMIT 1`,
+          [plan.idSocio, plan.idNutricionista],
+        );
+        if (existente.length > 0) {
+          saltados++;
+          continue;
+        }
+
         const resultadoPlan: unknown = await dataSource.query(
           `INSERT INTO plan_alimentacion (fechaCreacion, objetivo_nutricional, activo, id_socio, id_nutricionista)
            VALUES (?, ?, TRUE, ?, ?)`,
@@ -1222,8 +1498,11 @@ async function runSeedMultiTenant() {
            VALUES ('DESAYUNO', 'Plan de prueba generado automaticamente', ?)`,
           [idDia],
         );
+        creados++;
       }
-      console.log(`Planes de alimentacion creados: ${planesData.length}`);
+      console.log(
+        `Planes de alimentacion: ${creados} creados, ${saltados} saltados (ya existian). Total en seed: ${planesData.length}.`,
+      );
     };
 
     const crearGruposAlimenticios = async (): Promise<Map<string, number>> => {
@@ -1263,7 +1542,7 @@ async function runSeedMultiTenant() {
           `INSERT INTO grupo_alimenticio (id_grupo_alimenticio, descripcion)
            VALUES (?, ?)
            ON DUPLICATE KEY UPDATE descripcion = ?`,
-          [g.id, g.descripcion, g.descripcion]
+          [g.id, g.descripcion, g.descripcion],
         );
         grupoAlimenticioIds.set(g.descripcion, g.id);
       }
@@ -1273,23 +1552,29 @@ async function runSeedMultiTenant() {
     };
 
     /** Estimar perfil nutricional secundario según grupo alimenticio y macros conocidos */
-    const completarPerfil = (item: typeof ALIMENTOS_CATALOG[number]): typeof ALIMENTOS_CATALOG[number] => {
-      const p: typeof ALIMENTOS_CATALOG[number] = { ...item };
+    const completarPerfil = (
+      item: (typeof ALIMENTOS_CATALOG)[number],
+    ): (typeof ALIMENTOS_CATALOG)[number] => {
+      const p: (typeof ALIMENTOS_CATALOG)[number] = { ...item };
 
       // --- AZÚCARES ---
       if (p.azucares === undefined) {
         if ([9, 19].includes(p.grupoId)) {
           // Frutas (~80% de carbohidratos) y dulces (~70%)
-          p.azucares = +(p.carbohidratos * (p.grupoId === 9 ? 0.8 : 0.7)).toFixed(1);
+          p.azucares = +(
+            p.carbohidratos * (p.grupoId === 9 ? 0.8 : 0.7)
+          ).toFixed(1);
         } else if ([1, 3, 8].includes(p.grupoId)) {
           // Lácteos e infantiles (~50%), cereales desayuno (~25%)
-          p.azucares = +(p.carbohidratos * (p.grupoId === 8 ? 0.25 : 0.5)).toFixed(1);
+          p.azucares = +(
+            p.carbohidratos * (p.grupoId === 8 ? 0.25 : 0.5)
+          ).toFixed(1);
         } else if ([18, 23].includes(p.grupoId)) {
           // Galletitas y snacks (~30%)
           p.azucares = +(p.carbohidratos * 0.3).toFixed(1);
         } else if ([14].includes(p.grupoId) && p.carbohidratos > 2) {
           // Bebidas azucaradas (~100% de carbohidratos son azúcares)
-          p.azucares = +(p.carbohidratos).toFixed(1);
+          p.azucares = +p.carbohidratos.toFixed(1);
         } else {
           // Carnes, pescados, huevos, aceites, verduras saladas -> ~0
           p.azucares = 0;
@@ -1300,10 +1585,14 @@ async function runSeedMultiTenant() {
       if (p.fibraAlimentaria === undefined) {
         if ([11, 9].includes(p.grupoId)) {
           // Verduras (~30% de carbohidratos), frutas (~10%)
-          p.fibraAlimentaria = +(p.carbohidratos * (p.grupoId === 11 ? 0.3 : 0.1)).toFixed(1);
+          p.fibraAlimentaria = +(
+            p.carbohidratos * (p.grupoId === 11 ? 0.3 : 0.1)
+          ).toFixed(1);
         } else if ([16, 20].includes(p.grupoId)) {
           // Legumbres (~25%), cereales integrales (~10%)
-          p.fibraAlimentaria = +(p.carbohidratos * (p.grupoId === 16 ? 0.25 : 0.08)).toFixed(1);
+          p.fibraAlimentaria = +(
+            p.carbohidratos * (p.grupoId === 16 ? 0.25 : 0.08)
+          ).toFixed(1);
         } else if ([12].includes(p.grupoId)) {
           // Frutos secos (~30% de carbohidratos)
           p.fibraAlimentaria = +(p.carbohidratos * 0.3).toFixed(1);
@@ -1366,7 +1655,9 @@ async function runSeedMultiTenant() {
     };
 
     const crearAlimentosSeed = async (): Promise<void> => {
-      console.log(`Seeding alimentos... (${ALIMENTOS_CATALOG.length} alimentos en catálogo)`);
+      console.log(
+        `Seeding alimentos... (${ALIMENTOS_CATALOG.length} alimentos en catálogo)`,
+      );
       const catalog = ALIMENTOS_CATALOG;
 
       for (const raw of catalog) {
@@ -1386,26 +1677,38 @@ async function runSeedMultiTenant() {
              fibra_alimentaria = VALUES(fibra_alimentaria),
              grasas_saturadas = VALUES(grasas_saturadas),
              sodio = VALUES(sodio)`,
-          [a.nombre, a.cantidad, a.calorias, a.proteinas, a.carbohidratos, a.grasas, a.carbohidratos, a.unidadMedida,
-           a.azucares, a.fibraAlimentaria, a.grasasSaturadas, a.sodio]
+          [
+            a.nombre,
+            a.cantidad,
+            a.calorias,
+            a.proteinas,
+            a.carbohidratos,
+            a.grasas,
+            a.carbohidratos,
+            a.unidadMedida,
+            a.azucares,
+            a.fibraAlimentaria,
+            a.grasasSaturadas,
+            a.sodio,
+          ],
         );
 
         let idAlimento: number;
-        if ((resAlimento as any).insertId) {
-          idAlimento = (resAlimento as any).insertId;
+        if (resAlimento.insertId) {
+          idAlimento = resAlimento.insertId;
         } else {
           const existente = await dataSource.query(
             `SELECT id_alimento FROM alimento WHERE nombre = ? LIMIT 1`,
-            [a.nombre]
+            [a.nombre],
           );
-          idAlimento = (existente as any)[0]?.id_alimento;
+          idAlimento = existente[0]?.id_alimento;
         }
 
         if (idAlimento && a.grupoId) {
           await dataSource.query(
             `INSERT IGNORE INTO alimento_grupo_alimenticio (id_alimento, id_grupo_alimenticio)
              VALUES (?, ?)`,
-            [idAlimento, a.grupoId]
+            [idAlimento, a.grupoId],
           );
         }
       }

@@ -17,13 +17,18 @@ describe('RestriccionesValidator.validarAlternativa', () => {
     } as never;
     const alternativa = {
       nombre: 'Almendras garrapiñadas',
-      alimentos: [{ alimentoId: 1, cantidad: 30, unidad: 'g', alimentoNombre: 'Mani' }],
+      alimentos: [
+        { alimentoId: 1, cantidad: 30, unidad: 'g', alimentoNombre: 'Mani' },
+      ],
     };
 
     const resultado = sut.validarAlternativa(ficha, alternativa);
 
     expect(resultado.criticas.length).toBeGreaterThan(0);
-    expect(resultado.criticas[0]).toMatchObject({ tipo: 'alergia', ingrediente: 'Mani' });
+    expect(resultado.criticas[0]).toMatchObject({
+      tipo: 'alergia',
+      ingrediente: 'Mani',
+    });
     expect(resultado.warnings).toHaveLength(0);
   });
 
@@ -37,7 +42,9 @@ describe('RestriccionesValidator.validarAlternativa', () => {
     } as never;
     const alternativa = {
       nombre: 'Omelette',
-      alimentos: [{ alimentoId: 1, cantidad: 100, unidad: 'g', alimentoNombre: 'Huevo' }],
+      alimentos: [
+        { alimentoId: 1, cantidad: 100, unidad: 'g', alimentoNombre: 'Huevo' },
+      ],
     };
 
     const resultado = sut.validarAlternativa(ficha, alternativa);
@@ -55,7 +62,14 @@ describe('RestriccionesValidator.validarAlternativa', () => {
     } as never;
     const alternativa = {
       nombre: 'Ensalada de espinaca',
-      alimentos: [{ alimentoId: 5, cantidad: 100, unidad: 'g', alimentoNombre: 'Espinaca' }],
+      alimentos: [
+        {
+          alimentoId: 5,
+          cantidad: 100,
+          unidad: 'g',
+          alimentoNombre: 'Espinaca',
+        },
+      ],
     };
 
     const resultado = sut.validarAlternativa(ficha, alternativa);
@@ -75,7 +89,14 @@ describe('RestriccionesValidator.validarAlternativa', () => {
     } as never;
     const alternativa = {
       nombre: 'Manzana',
-      alimentos: [{ alimentoId: 1, cantidad: 1, unidad: 'unidad', alimentoNombre: 'Manzana' }],
+      alimentos: [
+        {
+          alimentoId: 1,
+          cantidad: 1,
+          unidad: 'unidad',
+          alimentoNombre: 'Manzana',
+        },
+      ],
     };
 
     const resultado = sut.validarAlternativa(ficha, alternativa);
@@ -94,13 +115,18 @@ describe('RestriccionesValidator.validarAlternativa', () => {
     } as never;
     const alternativa = {
       nombre: 'Tostadas',
-      alimentos: [{ alimentoId: 2, cantidad: 50, unidad: 'g', alimentoNombre: 'Trigo' }],
+      alimentos: [
+        { alimentoId: 2, cantidad: 50, unidad: 'g', alimentoNombre: 'Trigo' },
+      ],
     };
 
     const resultado = sut.validarAlternativa(ficha, alternativa);
 
     expect(resultado.criticas).toHaveLength(1);
-    expect(resultado.criticas[0]).toMatchObject({ tipo: 'restriccion-dura', ingrediente: 'Trigo' });
+    expect(resultado.criticas[0]).toMatchObject({
+      tipo: 'restriccion-dura',
+      ingrediente: 'Trigo',
+    });
     expect(resultado.warnings).toHaveLength(0);
   });
 });

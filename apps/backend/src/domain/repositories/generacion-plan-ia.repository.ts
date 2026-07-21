@@ -38,8 +38,7 @@ export interface ActualizarGeneracionPlanIaInput {
   snapshotParcialJson?: unknown | null;
 }
 
-export interface ExpirarGeneracionesPlanIaVencidasInput
-  extends BuscarGeneracionActivaInput {
+export interface ExpirarGeneracionesPlanIaVencidasInput extends BuscarGeneracionActivaInput {
   fechaCorte: Date;
   mensajeEstado: string;
   errorMensaje: string;

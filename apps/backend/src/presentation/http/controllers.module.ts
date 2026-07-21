@@ -119,7 +119,8 @@ import { AuditoriaEntityRegistry } from 'src/infrastructure/services/auditoria/a
         reflector: Reflector,
         auditoriaService: AuditoriaService,
         entityRegistry: AuditoriaEntityRegistry,
-      ) => new AuditoriaInterceptor(reflector, auditoriaService, entityRegistry),
+      ) =>
+        new AuditoriaInterceptor(reflector, auditoriaService, entityRegistry),
       inject: [Reflector, AuditoriaService, AuditoriaEntityRegistry],
     },
   ],

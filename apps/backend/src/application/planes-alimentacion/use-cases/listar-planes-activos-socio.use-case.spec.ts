@@ -43,9 +43,19 @@ const tenantContextMock = {
  * valor. Útil para que el type-checker no se queje de que `Record<...>`
  * requiere todos los días.
  */
-function macrosPorDiaTodosDias(calorias: number): PlanAlimentacionDatosJson['macrosPorDia'] {
+function macrosPorDiaTodosDias(
+  calorias: number,
+): PlanAlimentacionDatosJson['macrosPorDia'] {
   return Object.values(DiaSemana).reduce<
-    Record<DiaSemana, { calorias: number; proteinas: number; carbohidratos: number; grasas: number }>
+    Record<
+      DiaSemana,
+      {
+        calorias: number;
+        proteinas: number;
+        carbohidratos: number;
+        grasas: number;
+      }
+    >
   >(
     (acc, dia) => {
       acc[dia as DiaSemana] = {
@@ -56,7 +66,15 @@ function macrosPorDiaTodosDias(calorias: number): PlanAlimentacionDatosJson['mac
       };
       return acc;
     },
-    {} as Record<DiaSemana, { calorias: number; proteinas: number; carbohidratos: number; grasas: number }>,
+    {} as Record<
+      DiaSemana,
+      {
+        calorias: number;
+        proteinas: number;
+        carbohidratos: number;
+        grasas: number;
+      }
+    >,
   );
 }
 
@@ -122,9 +140,7 @@ const planJsonValido: PlanAlimentacionDatosJson = {
   ],
   macrosPorDia: macrosPorDiaTodosDias(2000),
   razonamientoCumplimiento: {
-    restriccionesCumplidas: [
-      { restriccion: 'vegano', detalle: 'Cumplido' },
-    ],
+    restriccionesCumplidas: [{ restriccion: 'vegano', detalle: 'Cumplido' }],
     restriccionesNoCumplidas: [],
   },
 };
@@ -151,8 +167,14 @@ describe('ListarPlanesActivosSocioUseCase', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ListarPlanesActivosSocioUseCase,
-        { provide: getRepositoryToken(PlanAlimentacionOrmEntity), useValue: planRepoMock },
-        { provide: getRepositoryToken(SocioOrmEntity), useValue: socioRepoMock },
+        {
+          provide: getRepositoryToken(PlanAlimentacionOrmEntity),
+          useValue: planRepoMock,
+        },
+        {
+          provide: getRepositoryToken(SocioOrmEntity),
+          useValue: socioRepoMock,
+        },
         {
           provide: PLAN_ALIMENTACION_VERSION_REPOSITORY,
           useValue: planVersionRepoMock,

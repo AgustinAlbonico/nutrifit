@@ -93,7 +93,8 @@ export class VaciarContenidoPlanUseCase implements BaseUseCase {
 
     // Solo el nutricionista dueño o ADMIN puede vaciar
     if (usuario.rol !== Rol.ADMIN) {
-      const ownerId = plan.nutricionista.usuario?.idUsuario ?? plan.nutricionista.idPersona;
+      const ownerId =
+        plan.nutricionista.usuario?.idUsuario ?? plan.nutricionista.idPersona;
       if (ownerId !== nutricionistaUserId) {
         throw new ForbiddenError(
           'Solo el nutricionista responsable del plan puede vaciarlo.',
@@ -137,7 +138,15 @@ export class VaciarContenidoPlanUseCase implements BaseUseCase {
           acc[dia] = { calorias: 0, proteinas: 0, carbohidratos: 0, grasas: 0 };
           return acc;
         },
-        {} as Record<(typeof DIAS_PLAN)[number], { calorias: number; proteinas: number; carbohidratos: number; grasas: number }>,
+        {} as Record<
+          (typeof DIAS_PLAN)[number],
+          {
+            calorias: number;
+            proteinas: number;
+            carbohidratos: number;
+            grasas: number;
+          }
+        >,
       ),
       razonamientoCumplimiento: {
         restriccionesCumplidas: [],

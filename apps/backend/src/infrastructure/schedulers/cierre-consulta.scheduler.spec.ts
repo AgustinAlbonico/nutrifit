@@ -5,11 +5,16 @@ import { CierreConsultaScheduler } from './cierre-consulta.scheduler';
 import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/turno.entity';
 import { EstadoTurno } from 'src/domain/entities/Turno/EstadoTurno';
 import { FinalizarConsultaPorInactividadUseCase } from 'src/application/turnos/use-cases/finalizar-consulta-por-inactividad.use-case';
-import { POLITICA_OPERATIVA_REPOSITORY, IPoliticaOperativaRepository } from 'src/application/politicas/politica-operativa.repository';
+import {
+  POLITICA_OPERATIVA_REPOSITORY,
+  IPoliticaOperativaRepository,
+} from 'src/application/politicas/politica-operativa.repository';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
 import { TipoNotificacion } from 'src/domain/entities/Notificacion/tipo-notificacion.enum';
 
-function buildMockTurno(overrides: Partial<TurnoOrmEntity> = {}): TurnoOrmEntity {
+function buildMockTurno(
+  overrides: Partial<TurnoOrmEntity> = {},
+): TurnoOrmEntity {
   return {
     idTurno: 1,
     estadoTurno: EstadoTurno.EN_CURSO,
@@ -77,7 +82,9 @@ describe('CierreConsultaScheduler', () => {
     const turnoViejo = buildMockTurno({
       consultaIniciadaAt: new Date(Date.now() - 31 * 60 * 1000),
     });
-    (turnoRepo.createQueryBuilder as jest.Mock).mockReturnValue(createQbMock([turnoViejo]));
+    (turnoRepo.createQueryBuilder as jest.Mock).mockReturnValue(
+      createQbMock([turnoViejo]),
+    );
 
     await scheduler.ejecutarCierreAutomatico();
 
@@ -88,7 +95,9 @@ describe('CierreConsultaScheduler', () => {
     const turnoPreaviso = buildMockTurno({
       consultaIniciadaAt: new Date(Date.now() - 26 * 60 * 1000),
     });
-    (turnoRepo.createQueryBuilder as jest.Mock).mockReturnValue(createQbMock([turnoPreaviso]));
+    (turnoRepo.createQueryBuilder as jest.Mock).mockReturnValue(
+      createQbMock([turnoPreaviso]),
+    );
 
     await scheduler.ejecutarCierreAutomatico();
 
@@ -104,7 +113,9 @@ describe('CierreConsultaScheduler', () => {
     const turnoPreavisado = buildMockTurno({
       preavisoCierreAutoEnviadoEn: new Date(),
     });
-    (turnoRepo.createQueryBuilder as jest.Mock).mockReturnValue(createQbMock([turnoPreavisado]));
+    (turnoRepo.createQueryBuilder as jest.Mock).mockReturnValue(
+      createQbMock([turnoPreavisado]),
+    );
 
     await scheduler.ejecutarCierreAutomatico();
 
@@ -112,7 +123,9 @@ describe('CierreConsultaScheduler', () => {
   });
 
   it('no debe hacer nada si no hay turnos EN_CURSO', async () => {
-    (turnoRepo.createQueryBuilder as jest.Mock).mockReturnValue(createQbMock([]));
+    (turnoRepo.createQueryBuilder as jest.Mock).mockReturnValue(
+      createQbMock([]),
+    );
 
     await scheduler.ejecutarCierreAutomatico();
 

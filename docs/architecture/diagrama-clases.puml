@@ -1,0 +1,472 @@
+@startuml
+' NutriFit Supervisor — Diagrama de Clases del Modelo de Dominio (PlantUML)
+
+skinparam defaultFontName Consolas
+skinparam defaultFontSize 11
+skinparam classAttributeIconSize 0
+hide empty members
+
+' ============================================================
+' ENUMS
+' ============================================================
+enum Rol {
+  ADMIN
+  SUPERADMIN
+  NUTRICIONISTA
+  RECEPCIONISTA
+  SOCIO
+}
+
+enum EstadoTurno {
+  CONFIRMADO
+  PRESENTE
+  EN_CURSO
+  REALIZADO
+  CANCELADO
+  AUSENTE
+  NO_ASISTIO
+}
+
+enum EstadoPlan {
+  BORRADOR
+  ACTIVO
+  FINALIZADO
+}
+
+enum EstadoGeneracionIA {
+  PENDIENTE
+  GENERANDO
+  COMPLETADO
+  ERROR
+  CANCELADO
+}
+
+enum TipoFotoProgreso {
+  FRENTE
+  PERFIL
+  ESPALDA
+}
+
+enum TipoNotificacion {
+  INFO
+  WARNING
+  ERROR
+  RECORDATORIO
+  LOGRO
+  PLAN_REVISAR
+  PLAN_DISPONIBLE
+  PLAN_VALIDACION_WARNING
+}
+
+' ============================================================
+' CLASES BASE
+' ============================================================
+abstract class AuditableEntity {
+  # id: number
+  # created_at: Date
+  # updated_at: Date
+  # fecha_baja: Date
+}
+
+abstract class PersonaEntity {
+  # id: number
+  # id_gimnasio: number
+  # nombre: string
+  # apellido: string
+  # dni: string
+  # telefono: string
+  # fecha_nacimiento: Date
+  # genero: string
+  # direccion: string
+  # foto_url: string
+}
+
+' ============================================================
+' TENANT
+' ============================================================
+class GimnasioEntity {
+  id: number
+  nombre: string
+  direccion: string
+  telefono: string
+  email_contacto: string
+  logo_url: string
+  activo: boolean
+  plazo_maximo_cancelacion_hs: number
+  plazo_minimo_reserva_hs: number
+  plazo_maximo_reprogramacion_hs: number
+  max_ausencias_consecutivas: number
+}
+
+' ============================================================
+' PERSONAS
+' ============================================================
+class SocioEntity {
+  talla_calzado: number
+  objetivo: string
+}
+
+class NutricionistaEntity {
+  matricula_profesional: string
+  biografia: string
+}
+
+class EntrenadorEntity {
+  especialidad: string
+}
+
+class UsuarioEntity {
+  id: number
+  email: string
+  password_hash: string
+  rol: Rol
+  activo: boolean
+  ultimo_acceso: Date
+}
+
+' ============================================================
+' RBAC
+' ============================================================
+class GrupoPermisoEntity {
+  id: number
+  clave: string
+  nombre: string
+  descripcion: string
+  es_grupo_sistema: boolean
+}
+
+class AccionPermisoEntity {
+  id: number
+  codigo: string
+  nombre: string
+  descripcion: string
+  contexto: string
+}
+
+' ============================================================
+' AGENDA
+' ============================================================
+class AgendaEntity {
+  id: number
+  dia_semana: string
+  hora_inicio: string
+  hora_fin: string
+  duracion_turno_minutos: number
+  activo: boolean
+}
+
+class ExcepcionDisponibilidadEntity {
+  id: number
+  fecha_desde: Date
+  fecha_hasta: Date
+  hora_inicio: string
+  hora_fin: string
+  motivo: string
+  disponible: boolean
+}
+
+' ============================================================
+' TURNOS
+' ============================================================
+class TurnoEntity {
+  id: number
+  fecha_hora_inicio: Date
+  fecha_hora_fin: Date
+  estado: EstadoTurno
+  confirmado_por_socio: boolean
+  fecha_check_in: Date
+  fecha_consulta_inicio: Date
+  fecha_consulta_fin: Date
+  fecha_marcar_ausente: Date
+  fecha_cierre_automatico: Date
+  motivo_cancelacion: string
+  notas: string
+}
+
+class ObservacionClinicaEntity {
+  id: number
+  peso: number
+  altura: number
+  imc: number
+  comentario: string
+  es_publica: boolean
+  version: number
+}
+
+class MedicionEntity {
+  id: number
+  peso: number
+  altura: number
+  imc: number
+  perimetro_cintura: number
+  perimetro_cadera: number
+  perimetro_brazo: number
+  perimetro_muslo: number
+  perimetro_pecho: number
+  pliegue_tricipital: number
+  pliegue_bicipital: number
+  pliegue_subescapular: number
+  masa_grasa_porcentaje: number
+  masa_muscular_porcentaje: number
+  presion_sistolica: number
+  presion_diastolica: number
+  frecuencia_cardiaca: number
+}
+
+class AdjuntoClinicoEntity {
+  id: number
+  nombre_original: string
+  mime_type: string
+  size_bytes: number
+  object_key: string
+  es_post_cierre: boolean
+}
+
+' ============================================================
+' FICHA SALUD
+' ============================================================
+class FichaSaludEntity {
+  id: number
+  motivo_consulta: string
+  antecedentes_medicos: string
+  cirugias_previas: string
+  condiciones_medicas: string
+  medicacion_actual: string
+  fumador: string
+  actividad_fisica_previa: string
+  contacto_emergencia_nombre: string
+  contacto_emergencia_telefono: string
+  version_actual_id: number
+}
+
+class FichaSaludVersionEntity {
+  id: number
+  version: number
+  snapshot: object
+  id_creador: number
+  created_at: Date
+}
+
+' ============================================================
+' PLAN ALIMENTACION
+' ============================================================
+class PlanAlimentacionEntity {
+  id: number
+  nombre: string
+  estado: EstadoPlan
+  calorias_diarias: number
+  objetivo: string
+  observaciones: string
+  generado_por_ia: boolean
+}
+
+class DiaPlanEntity {
+  id: number
+  dia_semana: string
+  orden: number
+  notas: string
+}
+
+class OpcionComidaEntity {
+  id: number
+  nombre: string
+  tipo_comida: string
+  orden: number
+  preparacion: string
+}
+
+class ItemComidaEntity {
+  id: number
+  alimento_nombre: string
+  cantidad: number
+  unidad_medida: string
+  porcion_estimada: number
+}
+
+class AlimentoEntity {
+  id: number
+  nombre: string
+  categoria: string
+  calorias: number
+  proteinas: number
+  carbohidratos: number
+  grasas: number
+  fibra: number
+  sodio: number
+  azucar: number
+  grasas_saturadas: number
+  activo: boolean
+}
+
+class GrupoAlimenticioEntity {
+  id: number
+  nombre: string
+  descripcion: string
+}
+
+' ============================================================
+' GENERACION IA
+' ============================================================
+class GeneracionPlanIaEntity {
+  id: number
+  estado: EstadoGeneracionIA
+  solicitud: object
+  respuesta: object
+  metadatos: object
+  progreso: number
+  error_mensaje: string
+  intentos: number
+  usa_memoria: boolean
+}
+
+' ============================================================
+' PROGRESO
+' ============================================================
+class FotoProgresoEntity {
+  id: number
+  tipo_foto: TipoFotoProgreso
+  object_key: string
+  fecha_toma: Date
+}
+
+class ObjetivoEntity {
+  id: number
+  tipo_metrica: string
+  valor_inicial: number
+  valor_objetivo: number
+  valor_actual: number
+  estado: string
+  notas: string
+}
+
+' ============================================================
+' NOTIFICACIONES
+' ============================================================
+class NotificacionEntity {
+  id: number
+  tipo: TipoNotificacion
+  canal: string
+  titulo: string
+  cuerpo: string
+  metadata: object
+  estado: string
+  leida_en: Date
+}
+
+' ============================================================
+' TRAYECTORIA PROFESIONAL
+' ============================================================
+class FormacionAcademicaEntity {
+  id: number
+  titulo: string
+  institucion: string
+  fecha_obtencion: Date
+}
+
+class CertificacionEntity {
+  id: number
+  nombre: string
+  entidad_emisora: string
+  fecha_emision: Date
+  fecha_vencimiento: Date
+}
+
+class DiplomaEntity {
+  id: number
+  titulo: string
+  archivo_url: string
+  fecha_subida: Date
+}
+
+' ============================================================
+' RELACIONES DE HERENCIA
+' ============================================================
+AuditableEntity <|-- GimnasioEntity
+AuditableEntity <|-- PersonaEntity
+AuditableEntity <|-- TurnoEntity
+AuditableEntity <|-- ObservacionClinicaEntity
+AuditableEntity <|-- MedicionEntity
+AuditableEntity <|-- AdjuntoClinicoEntity
+AuditableEntity <|-- FichaSaludEntity
+AuditableEntity <|-- PlanAlimentacionEntity
+AuditableEntity <|-- DiaPlanEntity
+AuditableEntity <|-- OpcionComidaEntity
+AuditableEntity <|-- ItemComidaEntity
+AuditableEntity <|-- AlimentoEntity
+AuditableEntity <|-- GrupoAlimenticioEntity
+AuditableEntity <|-- FotoProgresoEntity
+AuditableEntity <|-- ObjetivoEntity
+AuditableEntity <|-- NotificacionEntity
+AuditableEntity <|-- AgendaEntity
+AuditableEntity <|-- ExcepcionDisponibilidadEntity
+AuditableEntity <|-- FormacionAcademicaEntity
+AuditableEntity <|-- CertificacionEntity
+AuditableEntity <|-- DiplomaEntity
+
+PersonaEntity <|-- SocioEntity
+PersonaEntity <|-- NutricionistaEntity
+PersonaEntity <|-- EntrenadorEntity
+
+' ============================================================
+' RELACIONES DE ASOCIACION
+' ============================================================
+
+' RBAC
+GrupoPermisoEntity "1" -- "*" AccionPermisoEntity : contiene
+GrupoPermisoEntity "1" --> "*" GrupoPermisoEntity : jerarquia
+
+' Tenant
+GimnasioEntity "1" --> "*" PersonaEntity
+GimnasioEntity "1" --> "*" TurnoEntity
+GimnasioEntity "1" --> "*" FichaSaludEntity
+
+' Usuario
+UsuarioEntity "1" --> "*" GrupoPermisoEntity : tiene
+UsuarioEntity "1" --> "*" AccionPermisoEntity : tiene
+UsuarioEntity "1" --> "0..1" PersonaEntity : pertenece a
+
+' Personas
+NutricionistaEntity "1" --> "*" AgendaEntity
+NutricionistaEntity "1" --> "*" TurnoEntity
+NutricionistaEntity "1" --> "*" PlanAlimentacionEntity
+
+SocioEntity "1" --> "*" TurnoEntity
+SocioEntity "1" --> "*" FichaSaludEntity
+SocioEntity "1" --> "*" PlanAlimentacionEntity
+SocioEntity "1" --> "*" FotoProgresoEntity
+SocioEntity "1" --> "*" ObjetivoEntity
+
+' Agenda
+AgendaEntity "1" --> "*" ExcepcionDisponibilidadEntity
+
+' Turnos
+TurnoEntity "1" --> "0..1" ObservacionClinicaEntity
+TurnoEntity "1" --> "*" MedicionEntity
+TurnoEntity "1" --> "*" AdjuntoClinicoEntity
+
+' Ficha Salud
+FichaSaludEntity "1" --> "*" FichaSaludVersionEntity
+
+' Plan Alimentacion
+PlanAlimentacionEntity "1" --> "*" DiaPlanEntity
+DiaPlanEntity "1" --> "*" OpcionComidaEntity
+OpcionComidaEntity "1" --> "*" ItemComidaEntity
+ItemComidaEntity "*" --> "1" AlimentoEntity
+
+' Alimentos
+AlimentoEntity "*" --> "*" GrupoAlimenticioEntity
+
+' Generacion IA
+PlanAlimentacionEntity "1" --> "*" GeneracionPlanIaEntity
+GeneracionPlanIaEntity "*" --> "1" SocioEntity
+GeneracionPlanIaEntity "*" --> "1" NutricionistaEntity
+
+' Notificaciones
+UsuarioEntity "1" --> "*" NotificacionEntity
+
+' Trayectoria
+NutricionistaEntity "1" --> "*" FormacionAcademicaEntity
+NutricionistaEntity "1" --> "*" CertificacionEntity
+NutricionistaEntity "1" --> "*" DiplomaEntity
+
+@enduml

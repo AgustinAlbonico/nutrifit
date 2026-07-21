@@ -301,7 +301,9 @@ export class EditarFichaPacienteNutricionistaUseCase implements BaseUseCase {
     return totalTurnos > 0;
   }
 
-  private construirSnapshot(ficha: FichaSaludOrmEntity): Record<string, unknown> {
+  private construirSnapshot(
+    ficha: FichaSaludOrmEntity,
+  ): Record<string, unknown> {
     return {
       altura: ficha.altura,
       peso: ficha.peso,
@@ -414,9 +416,7 @@ export class EditarFichaPacienteNutricionistaUseCase implements BaseUseCase {
   private normalizeNames(values: string[]): string[] {
     return Array.from(
       new Set(
-        values
-          .map((value) => value.trim())
-          .filter((value) => value.length > 0),
+        values.map((value) => value.trim()).filter((value) => value.length > 0),
       ),
     );
   }

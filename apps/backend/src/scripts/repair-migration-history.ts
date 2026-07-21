@@ -57,9 +57,9 @@ async function main(): Promise<void> {
       `,
     );
 
-    const recorded = (await dataSource.query(
+    const recorded = await dataSource.query(
       'SELECT timestamp, name FROM migrations ORDER BY timestamp',
-    )) as { timestamp: number; name: string }[];
+    );
 
     const recordedNames = new Set(recorded.map((r) => r.name));
 

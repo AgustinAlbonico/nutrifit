@@ -1,0 +1,72 @@
+@startuml
+' NutriFit Supervisor — Diagramas de Estado (PlantUML)
+' Entidades con ciclo de vida: Turno, Plan Alimentacion, Generacion IA
+
+skinparam defaultFontName Consolas
+skinparam defaultFontSize 11
+
+' ============================================================
+' TURNO
+' ============================================================
+
+state Turno {
+  [*] --> CONFIRMADO : Socio reserva
+
+  CONFIRMADO --> CANCELADO : Socio/nutricionista\ncancela
+  CONFIRMADO --> PRESENTE : Socio hace check-in
+  CONFIRMADO --> NO_ASISTIO : No se presenta\n+ pasa umbral
+
+  PRESENTE --> EN_CURSO : Nutricionista\ninicia consulta
+  PRESENTE --> AUSENTE : Nutricionista\nmarca ausente
+
+  EN_CURSO --> REALIZADO : Nutricionista\nfinaliza consulta
+
+  CANCELADO --> [*]
+  NO_ASISTIO --> [*]
+  AUSENTE --> [*]
+  REALIZADO --> [*]
+
+  note right of CONFIRMADO : Reprogramar = cancelar +\nreservar nuevo turno
+  note right of REALIZADO : Se puede adjuntar\narchivos post-cierre
+}
+
+' ============================================================
+' PLAN ALIMENTACION
+' ============================================================
+
+state PlanAlimentacion {
+  [*] --> BORRADOR : Nutricionista crea\nplan vacío
+
+  BORRADOR --> ACTIVO : Nutricionista\n  publica plan
+  BORRADOR -[#red]-> BORRADOR : Nutricionista\n  edita/itera
+
+  ACTIVO --> FINALIZADO : Nutricionista\n  finaliza plan
+  ACTIVO --> BORRADOR : Nutricionista\n  desactiva plan
+  ACTIVO : Socio ve plan\n  y recibe notif.
+
+  FINALIZADO --> [*]
+}
+
+' ============================================================
+' GENERACION PLAN IA
+' ============================================================
+
+state GeneracionIA {
+  [*] --> PENDIENTE : Nutricionista\n  solicita generacion
+
+  PENDIENTE --> GENERANDO : Worker recoge\n  solicitud
+  PENDIENTE --> CANCELADO : Nutricionista\n  cancela antes de\n  empezar
+
+  GENERANDO --> COMPLETADO : Generacion exitosa\n  + validacion pasa
+  GENERANDO -[#blue]-> GENERANDO : Loop correctivo:\n  corrige alimentos\n  inventados
+  GENERANDO --> ERROR : Timeout / JSON\n  inválido / fallo\n  en validacion
+  GENERANDO --> CANCELADO : Nutricionista\n  cancela durante\n  generacion
+  GENERANDO --> COMPLETO_CON_WARNINGS : Validacion pasa\n  con warnings\n  (macros fuera\n  de rango)
+
+  COMPLETO --> [*]
+  COMPLETO_CON_WARNINGS --> [*]
+  ERROR --> PENDIENTE : Reintento automático\n  (hasta N intentos)
+  CANCELADO --> [*]
+}
+
+@enduml

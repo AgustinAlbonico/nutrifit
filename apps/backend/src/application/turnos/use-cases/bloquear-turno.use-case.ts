@@ -141,7 +141,8 @@ export class BloquearTurnoUseCase implements BaseUseCase {
       },
       select: ['idPersona', 'duracionTurnoMin'],
     });
-    const duracionTurno = nutricionista?.duracionTurnoMin ?? agendaDelDia[0].duracionTurno;
+    const duracionTurno =
+      nutricionista?.duracionTurnoMin ?? agendaDelDia[0].duracionTurno;
 
     const turnoInicio = this.timeToMinutes(horaTurno);
 

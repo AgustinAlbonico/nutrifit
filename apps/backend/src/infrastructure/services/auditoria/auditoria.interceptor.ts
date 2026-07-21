@@ -27,7 +27,10 @@ export class AuditoriaInterceptor implements NestInterceptor {
     private readonly entityRegistry: AuditoriaEntityRegistry,
   ) {}
 
-  async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<unknown>> {
+  async intercept(
+    context: ExecutionContext,
+    next: CallHandler,
+  ): Promise<Observable<unknown>> {
     const opciones = this.reflector.getAllAndOverride<AuditOptions>(
       AUDITORIA_METADATA_KEY,
       [context.getHandler(), context.getClass()],
@@ -48,7 +51,14 @@ export class AuditoriaInterceptor implements NestInterceptor {
 
     return next.handle().pipe(
       tap((respuesta: unknown) => {
-        void this.registrarAuditoria(request, opciones, entidad, entidadIdInicial, valoresAntes, respuesta);
+        void this.registrarAuditoria(
+          request,
+          opciones,
+          entidad,
+          entidadIdInicial,
+          valoresAntes,
+          respuesta,
+        );
       }),
     );
   }
@@ -61,7 +71,8 @@ export class AuditoriaInterceptor implements NestInterceptor {
     valoresAntes: Record<string, unknown> | null,
     respuesta: unknown,
   ): Promise<void> {
-    const entidadId = entidadIdInicial ?? this.extraerEntidadIdDeRespuesta(respuesta);
+    const entidadId =
+      entidadIdInicial ?? this.extraerEntidadIdDeRespuesta(respuesta);
     const valoresDespues = await this.entityRegistry.cargar(entidad, entidadId);
     const origen = extraerOrigenRequest(request);
 
@@ -100,16 +111,22 @@ export class AuditoriaInterceptor implements NestInterceptor {
   ): number | string | null {
     const nombreParam = opciones.entidadIdParam ?? 'id';
     const valor = request.params[nombreParam] ?? request.params.turnoId;
-    return typeof valor === 'string' || typeof valor === 'number' ? valor : null;
+    return typeof valor === 'string' || typeof valor === 'number'
+      ? valor
+      : null;
   }
 
-  private extraerEntidadIdDeRespuesta(respuesta: unknown): number | string | null {
+  private extraerEntidadIdDeRespuesta(
+    respuesta: unknown,
+  ): number | string | null {
     if (!respuesta || typeof respuesta !== 'object') {
       return null;
     }
 
     const registro = respuesta as Record<string, unknown>;
     const valor = registro.idTurno ?? registro.id ?? null;
-    return typeof valor === 'number' || typeof valor === 'string' ? valor : null;
+    return typeof valor === 'number' || typeof valor === 'string'
+      ? valor
+      : null;
   }
 }

@@ -82,15 +82,48 @@ describe('PersistirPlanManualUseCase', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PersistirPlanManualUseCase,
-        { provide: getRepositoryToken(PlanAlimentacionOrmEntity), useValue: planRepo },
-        { provide: getRepositoryToken(DiaPlanOrmEntity), useValue: { save: jest.fn().mockImplementation(async (d) => d), remove: jest.fn().mockResolvedValue(undefined) } },
-        { provide: getRepositoryToken(OpcionComidaOrmEntity), useValue: { save: jest.fn().mockImplementation(async (o) => o), remove: jest.fn().mockResolvedValue(undefined) } },
-        { provide: getRepositoryToken(AlimentoOrmEntity), useValue: { findBy: jest.fn().mockResolvedValue([{ idAlimento: 1, nombre: 'Avena', unidadMedida: 'g', calorias: 350, proteinas: 12, carbohidratos: 60, grasas: 8 }]) } },
+        {
+          provide: getRepositoryToken(PlanAlimentacionOrmEntity),
+          useValue: planRepo,
+        },
+        {
+          provide: getRepositoryToken(DiaPlanOrmEntity),
+          useValue: {
+            save: jest.fn().mockImplementation(async (d) => d),
+            remove: jest.fn().mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: getRepositoryToken(OpcionComidaOrmEntity),
+          useValue: {
+            save: jest.fn().mockImplementation(async (o) => o),
+            remove: jest.fn().mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: getRepositoryToken(AlimentoOrmEntity),
+          useValue: {
+            findBy: jest.fn().mockResolvedValue([
+              {
+                idAlimento: 1,
+                nombre: 'Avena',
+                unidadMedida: 'g',
+                calorias: 350,
+                proteinas: 12,
+                carbohidratos: 60,
+                grasas: 8,
+              },
+            ]),
+          },
+        },
         { provide: getRepositoryToken(SocioOrmEntity), useValue: {} },
         { provide: getRepositoryToken(NutricionistaOrmEntity), useValue: {} },
         { provide: getRepositoryToken(UsuarioOrmEntity), useValue: {} },
         { provide: getRepositoryToken(ItemComidaOrmEntity), useValue: {} },
-        { provide: PLAN_ALIMENTACION_VERSION_REPOSITORY, useValue: planVersionRepo },
+        {
+          provide: PLAN_ALIMENTACION_VERSION_REPOSITORY,
+          useValue: planVersionRepo,
+        },
         {
           provide: DataSource,
           useValue: {
@@ -100,9 +133,18 @@ describe('PersistirPlanManualUseCase', () => {
               }),
           },
         },
-        { provide: AuditoriaService, useValue: { registrar: jest.fn().mockResolvedValue(undefined) } },
-        { provide: NotificacionesService, useValue: { crear: jest.fn().mockResolvedValue(undefined) } },
-        { provide: RestriccionesValidator, useValue: { generarIncidencias: jest.fn().mockResolvedValue([]) } },
+        {
+          provide: AuditoriaService,
+          useValue: { registrar: jest.fn().mockResolvedValue(undefined) },
+        },
+        {
+          provide: NotificacionesService,
+          useValue: { crear: jest.fn().mockResolvedValue(undefined) },
+        },
+        {
+          provide: RestriccionesValidator,
+          useValue: { generarIncidencias: jest.fn().mockResolvedValue([]) },
+        },
         { provide: TenantContextService, useValue: { gimnasioId: 1 } },
         { provide: APP_LOGGER_SERVICE, useValue: loggerMock },
       ],
@@ -139,7 +181,10 @@ describe('PersistirPlanManualUseCase', () => {
             {
               tipoComida: 'DESAYUNO' as const,
               alternativas: [
-                { nombre: 'Avena con frutas', alimentos: [{ alimentoId: 1, cantidad: 50, unidad: 'g' }] },
+                {
+                  nombre: 'Avena con frutas',
+                  alimentos: [{ alimentoId: 1, cantidad: 50, unidad: 'g' }],
+                },
               ],
             },
           ],
@@ -188,7 +233,10 @@ describe('PersistirPlanManualUseCase', () => {
             {
               tipoComida: 'DESAYUNO' as const,
               alternativas: [
-                { nombre: 'Avena con frutas', alimentos: [{ alimentoId: 1, cantidad: 50, unidad: 'g' }] },
+                {
+                  nombre: 'Avena con frutas',
+                  alimentos: [{ alimentoId: 1, cantidad: 50, unidad: 'g' }],
+                },
               ],
             },
           ],

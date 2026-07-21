@@ -134,13 +134,13 @@ describe('PromptRegeneracionBuilder', () => {
     expect(result.systemPrompt).toContain('Regenerá SOLO el día LUNES');
     expect(result.systemPrompt).toContain('CONTEXTO PRESERVADO');
     expect(result.systemPrompt).toContain('Día MARTES');
-    expect(result.systemPrompt).toContain(
-      'INSTRUCCIONES DEL NUTRICIONISTA',
-    );
+    expect(result.systemPrompt).toContain('INSTRUCCIONES DEL NUTRICIONISTA');
     expect(result.systemPrompt).toContain('prefiero opciones simples');
     expect(result.systemPrompt).toContain('evitar harinas');
     expect(result.systemPrompt).toContain('EJEMPLOS DE FEEDBACK');
-    expect(result.systemPrompt).toContain('[✓] POSITIVO: buen uso de legumbres');
+    expect(result.systemPrompt).toContain(
+      '[✓] POSITIVO: buen uso de legumbres',
+    );
     expect(result.userPrompt).toContain('maní');
     expect(result.userPrompt).toContain('vegano');
   });
@@ -248,6 +248,8 @@ describe('PromptRegeneracionBuilder', () => {
       scope: 'PLAN',
     });
 
-    expect(result.systemPrompt).not.toContain('INSTRUCCIONES DEL NUTRICIONISTA');
+    expect(result.systemPrompt).not.toContain(
+      'INSTRUCCIONES DEL NUTRICIONISTA',
+    );
   });
 });

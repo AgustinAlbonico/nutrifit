@@ -130,7 +130,10 @@ export class ResolvedorCatalogoIA {
           categoriasExistentes,
           categoriasPorDescripcion,
         );
-        const nuevo = await this.crearAlimento(declaracionFallback, idCategoriaFallback);
+        const nuevo = await this.crearAlimento(
+          declaracionFallback,
+          idCategoriaFallback,
+        );
         catalogoPorNombre.set(nombreNormalizado, {
           idAlimento: nuevo.idAlimento,
           nombre: nuevo.nombre,

@@ -86,16 +86,15 @@ describe('EditarFichaPacienteNutricionistaUseCase', () => {
     const fichaRepoManager = {
       save: jest.fn(async (entity: FichaSaludOrmEntity) => {
         if (!entity.idFichaSalud) {
-          (entity as FichaSaludOrmEntity & { idFichaSalud: number }).idFichaSalud =
-            500;
+          (
+            entity as FichaSaludOrmEntity & { idFichaSalud: number }
+          ).idFichaSalud = 500;
         }
         return entity;
       }),
     };
     const versionRepoManager = {
-      create: jest.fn(
-        (data: Partial<FichaSaludVersionOrmEntity>) => data,
-      ),
+      create: jest.fn((data: Partial<FichaSaludVersionOrmEntity>) => data),
       save: jest.fn(async (data: Partial<FichaSaludVersionOrmEntity>) => {
         if (versionSaveImpl) {
           return versionSaveImpl(data);
@@ -221,9 +220,7 @@ describe('EditarFichaPacienteNutricionistaUseCase', () => {
     });
 
     it('lanza ForbiddenError si el NUT no tiene turnos previos con el socio', async () => {
-      jest
-        .mocked(socioRepository.findOne)
-        .mockResolvedValue(buildMockSocio());
+      jest.mocked(socioRepository.findOne).mockResolvedValue(buildMockSocio());
       jest.mocked(turnoRepository.count).mockResolvedValue(0);
 
       await expect(
@@ -536,8 +533,7 @@ describe('EditarFichaPacienteNutricionistaUseCase', () => {
       );
 
       // Assert
-      const createCallArg = versionRepoManager.create.mock
-        .calls[0][0] as {
+      const createCallArg = versionRepoManager.create.mock.calls[0][0] as {
         version: number;
         createdBy: number;
       };
@@ -548,7 +544,10 @@ describe('EditarFichaPacienteNutricionistaUseCase', () => {
 
   describe('Validación DTO', () => {
     const validateDto = async (plain: unknown) => {
-      const instance = plainToInstance(EditarFichaPacienteNutricionistaDto, plain);
+      const instance = plainToInstance(
+        EditarFichaPacienteNutricionistaDto,
+        plain,
+      );
       return validateOrReject(instance as object);
     };
 

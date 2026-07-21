@@ -100,6 +100,7 @@ export function DialogDetalleComida({
         className="sm:max-w-2xl gap-0 overflow-hidden p-0"
         data-testid="dialog-detalle-comida"
         onPointerDownOutside={(e) => e.preventDefault()}
+        showCloseButton={false}
       >
         {alternativa && (
           <>

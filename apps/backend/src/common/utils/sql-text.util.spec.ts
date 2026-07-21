@@ -4,7 +4,7 @@ describe('stripAccentsLowerSql', () => {
   it('envuelve la columna en una cadena de REPLACE para los acentos del espanol', () => {
     const sql = stripAccentsLowerSql('LOWER(col)');
     expect(sql).toContain('LOWER(col)');
-    expect(sql).toContain("REPLACE(");
+    expect(sql).toContain('REPLACE(');
     expect(sql).toContain("'á', 'a'");
     expect(sql).toContain("'é', 'e'");
     expect(sql).toContain("'í', 'i'");

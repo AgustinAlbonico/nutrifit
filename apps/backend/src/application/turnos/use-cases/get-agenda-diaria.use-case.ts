@@ -85,7 +85,8 @@ export class GetAgendaDiariaUseCase implements BaseUseCase {
 
     // 3. Generar slots
     const slots: AgendaSlotDto[] = [];
-    const duracionTurno = nutricionista.duracionTurnoMin ?? agendas[0].duracionTurno;
+    const duracionTurno =
+      nutricionista.duracionTurnoMin ?? agendas[0].duracionTurno;
 
     for (const bloque of agendas) {
       let current = timeToMinutes(bloque.horaInicio);

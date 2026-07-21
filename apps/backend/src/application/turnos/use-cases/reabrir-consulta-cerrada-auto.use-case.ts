@@ -14,7 +14,10 @@ export class ReabrirConsultaCerradaAutoUseCase {
     private readonly turnoRepository: Repository<TurnoOrmEntity>,
   ) {}
 
-  async execute(turnoId: number, nutricionistaId: number): Promise<{ success: boolean; estado: string }> {
+  async execute(
+    turnoId: number,
+    nutricionistaId: number,
+  ): Promise<{ success: boolean; estado: string }> {
     const turno = await this.turnoRepository.findOne({
       where: { idTurno: turnoId },
       relations: { nutricionista: true },

@@ -53,7 +53,10 @@ describe('SlotComputationService', () => {
   });
 
   it('retorna duracionMin 0 y slots vacíos si el nutricionista no tiene bloques semanales', async () => {
-    nutriRepo.findOne.mockResolvedValue({ idPersona: 10, duracionTurnoMin: 30 });
+    nutriRepo.findOne.mockResolvedValue({
+      idPersona: 10,
+      duracionTurnoMin: 30,
+    });
     agendaRepo.find.mockResolvedValue([]);
     excepcionRepo.findVigentesEnVentana.mockResolvedValue([]);
     turnoRepo.find.mockResolvedValue([]);
@@ -90,7 +93,10 @@ describe('SlotComputationService', () => {
     // 5 días en el futuro
     const limiteSup = new Date(ahora.getTime() + 5 * 24 * 60 * 60 * 1000);
 
-    nutriRepo.findOne.mockResolvedValue({ idPersona: 10, duracionTurnoMin: 30 });
+    nutriRepo.findOne.mockResolvedValue({
+      idPersona: 10,
+      duracionTurnoMin: 30,
+    });
     excepcionRepo.findVigentesEnVentana.mockResolvedValue([]);
     turnoRepo.find.mockResolvedValue([]);
 

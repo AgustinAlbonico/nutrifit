@@ -59,6 +59,17 @@ export interface ContextoPromptPlanSemanal {
   grasasEstimados?: number;
   alimentosPreferidos?: string[];
   alimentosEvitados?: string[];
+  /**
+   * Proteína principal que la IA DEBE usar como fuente proteica de la
+   * alternativa #1. La asigna RotadorProteinasService para forzar
+   * rotación entre comidas. Si está ausente, la IA decide libremente.
+   */
+  proteinaPrincipalAsignada?: string;
+  /**
+   * Proteínas ya usadas en el plan (para que la IA tenga contexto de
+   * qué se generó antes). Es una guía suave, no una restricción dura.
+   */
+  proteinasUsadasEnPlan?: string[];
 }
 
 export interface PromptResultado {
@@ -96,12 +107,17 @@ export class PromptPlanSemanalBuilder {
       '5. Cada alternativa debe tener nombre, alimentos, calorías, proteínas, carbohidratos y grasas.',
       '6. Cada alimento debe usar alimentoNombre, cantidad y unidad.',
       '7. Si inventás alimentos, declará un resumen mínimo en alimentosNuevos; si no, devolvé alimentosNuevos como array vacío.',
+      contexto.proteinaPrincipalAsignada
+        ? `8. La alternativa #1 debe tener como fuente proteica principal: "${contexto.proteinaPrincipalAsignada}". Las alternativas #2 y #3 son libres (distintas de la #1 y entre sí).`
+        : null,
       '',
       'JSON DE SALIDA EXACTO:',
       this.construirEsquemaJsonComida(tipoComida),
       '',
       'IMPORTANTE: Respondé ÚNICAMENTE con el JSON solicitado, sin markdown, sin explicaciones, sin texto adicional.',
-    ].join('\n');
+    ]
+      .filter((linea): linea is string => linea !== null)
+      .join('\n');
 
     const lineasUsuario: string[] = [];
     lineasUsuario.push('CONTEXTO DEL SOCIO:');
@@ -133,14 +149,19 @@ export class PromptPlanSemanalBuilder {
         lineasUsuario.push(`- Proteínas: ${contexto.proteinasEstimadas} g`);
       }
       if (contexto.carbohidratosEstimados) {
-        lineasUsuario.push(`- Carbohidratos: ${contexto.carbohidratosEstimados} g`);
+        lineasUsuario.push(
+          `- Carbohidratos: ${contexto.carbohidratosEstimados} g`,
+        );
       }
       if (contexto.grasasEstimados) {
         lineasUsuario.push(`- Grasas: ${contexto.grasasEstimados} g`);
       }
     }
 
-    if (contexto.alimentosPreferidos && contexto.alimentosPreferidos.length > 0) {
+    if (
+      contexto.alimentosPreferidos &&
+      contexto.alimentosPreferidos.length > 0
+    ) {
       lineasUsuario.push('');
       lineasUsuario.push(
         `Alimentos a priorizar si encajan: ${contexto.alimentosPreferidos.join(', ')}`,
@@ -164,6 +185,25 @@ export class PromptPlanSemanalBuilder {
       lineasUsuario.push('');
       lineasUsuario.push('FEEDBACK PASADO A CONSIDERAR:');
       lineasUsuario.push(this.formatearEjemplos(contexto.ejemplosMemoria));
+    }
+
+    if (contexto.proteinaPrincipalAsignada) {
+      lineasUsuario.push('');
+      lineasUsuario.push('PROTEÍNA ASIGNADA PARA ESTA COMIDA (REGLA DURA):');
+      lineasUsuario.push(
+        `- La alternativa #1 debe usar "${contexto.proteinaPrincipalAsignada}" como fuente proteica principal.`,
+      );
+      lineasUsuario.push(
+        '- Nombrá el plato de forma descriptiva incluyendo la proteína y la guarnición (no repitas el nombre literal de la proteína).',
+      );
+      if (
+        contexto.proteinasUsadasEnPlan &&
+        contexto.proteinasUsadasEnPlan.length > 0
+      ) {
+        lineasUsuario.push(
+          `- Para variar, estas son proteínas ya usadas en otras comidas del plan: ${contexto.proteinasUsadasEnPlan.join(', ')}.`,
+        );
+      }
     }
 
     lineasUsuario.push('');
@@ -291,32 +331,55 @@ export class PromptPlanSemanalBuilder {
       `- Patologías: ${ctx.fichaClinica.patologias.length > 0 ? ctx.fichaClinica.patologias.join(', ') : 'Ninguna'}`,
     );
 
-    if (ctx.caloriasLimite || ctx.proteinasEstimadas || ctx.carbohidratosEstimados || ctx.grasasEstimados) {
+    if (
+      ctx.caloriasLimite ||
+      ctx.proteinasEstimadas ||
+      ctx.carbohidratosEstimados ||
+      ctx.grasasEstimados
+    ) {
       lineas.push('');
-      lineas.push('METAS DE MACRONUTRIENTES DIARIAS REQUERIDAS (Ajustar porciones para aproximarse a ellas):');
-      if (ctx.caloriasLimite) lineas.push(`- Límite Calórico Diario: EXACTAMENTE ${ctx.caloriasLimite} kcal (tolerancia ±5%)`);
-      if (ctx.proteinasEstimadas) lineas.push(`- Proteínas Diarias: ${ctx.proteinasEstimadas} g`);
-      if (ctx.carbohidratosEstimados) lineas.push(`- Carbohidratos Diarios: ${ctx.carbohidratosEstimados} g`);
-      if (ctx.grasasEstimados) lineas.push(`- Grasas Diarias: ${ctx.grasasEstimados} g`);
+      lineas.push(
+        'METAS DE MACRONUTRIENTES DIARIAS REQUERIDAS (Ajustar porciones para aproximarse a ellas):',
+      );
+      if (ctx.caloriasLimite)
+        lineas.push(
+          `- Límite Calórico Diario: EXACTAMENTE ${ctx.caloriasLimite} kcal (tolerancia ±5%)`,
+        );
+      if (ctx.proteinasEstimadas)
+        lineas.push(`- Proteínas Diarias: ${ctx.proteinasEstimadas} g`);
+      if (ctx.carbohidratosEstimados)
+        lineas.push(`- Carbohidratos Diarios: ${ctx.carbohidratosEstimados} g`);
+      if (ctx.grasasEstimados)
+        lineas.push(`- Grasas Diarias: ${ctx.grasasEstimados} g`);
     }
 
     if (ctx.alimentosPreferidos && ctx.alimentosPreferidos.length > 0) {
       lineas.push('');
-      lineas.push(`PREFERENCIAS DE ALIMENTOS DEL SOCIO (Priorizar su inclusión):`);
-      lineas.push(`- Ingredientes/Alimentos a priorizar: ${ctx.alimentosPreferidos.join(', ')}`);
+      lineas.push(
+        `PREFERENCIAS DE ALIMENTOS DEL SOCIO (Priorizar su inclusión):`,
+      );
+      lineas.push(
+        `- Ingredientes/Alimentos a priorizar: ${ctx.alimentosPreferidos.join(', ')}`,
+      );
     }
 
     if (ctx.alimentosEvitados && ctx.alimentosEvitados.length > 0) {
       lineas.push('');
-      lineas.push(`EXCLUSIONES DE ALIMENTOS DEL SOCIO (Excluir absolutamente):`);
-      lineas.push(`- Ingredientes/Alimentos a evitar: ${ctx.alimentosEvitados.join(', ')}`);
+      lineas.push(
+        `EXCLUSIONES DE ALIMENTOS DEL SOCIO (Excluir absolutamente):`,
+      );
+      lineas.push(
+        `- Ingredientes/Alimentos a evitar: ${ctx.alimentosEvitados.join(', ')}`,
+      );
     }
     lineas.push('');
     lineas.push('PARÁMETROS DEL PLAN:');
     lineas.push(`- Días a generar: ${diasSolicitados.length}`);
     lineas.push(`- Días exactos: ${diasSolicitados.join(', ')}`);
     lineas.push(`- Comidas por día: ${tiposComidaSolicitados.length}`);
-    lineas.push(`- Tipos exactos de comida: ${tiposComidaSolicitados.join(', ')}`);
+    lineas.push(
+      `- Tipos exactos de comida: ${tiposComidaSolicitados.join(', ')}`,
+    );
     lineas.push(`- Alternativas por comida: ${ctx.alternativasPorComida}`);
     lineas.push(
       `- Fecha de inicio: ${ctx.fechaInicio.toISOString().split('T')[0]}`,
@@ -347,7 +410,7 @@ export class PromptPlanSemanalBuilder {
           "tipo": "${ejemploTipo}",
           "alternativas": [
             {
-              "nombre": "string (ej: 'Pollo grillado con quinoa')",
+              "nombre": "string (nombre descriptivo del plato, formato: '[Proteína principal] con [guarnición]', ej: 'Merluza al horno con batata')",
               "alimentos": [
                 {
                   "alimentoNombre": "string (nombre exacto del alimento en español)",
@@ -411,7 +474,7 @@ Si inventás un alimento que no existe en el catálogo, declarálo en alimentosN
     "tipo": "${tipoComida}",
     "alternativas": [
       {
-        "nombre": "string (ej: 'Pollo grillado con quinoa')",
+        "nombre": "string (nombre descriptivo del plato, formato: '[Proteína principal] con [guarnición]', ej: 'Merluza al horno con batata')",
         "alimentos": [
           {
             "alimentoNombre": "string (nombre exacto del alimento en español)",
@@ -437,7 +500,9 @@ Si inventás un alimento que no existe en el catálogo, declarálo en alimentosN
     return TODOS_LOS_DIAS.slice(0, ctx.diasAGenerar);
   }
 
-  private obtenerTiposComidaSolicitados(ctx: ContextoPromptPlanSemanal): TipoComida[] {
+  private obtenerTiposComidaSolicitados(
+    ctx: ContextoPromptPlanSemanal,
+  ): TipoComida[] {
     if (ctx.tiposComidaEspecificos && ctx.tiposComidaEspecificos.length > 0) {
       return ctx.tiposComidaEspecificos;
     }

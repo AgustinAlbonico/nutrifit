@@ -155,7 +155,12 @@ export class GenerarIdeasComidaUseCase implements BaseUseCase {
       }. Intente con menos restricciones.`;
       this.logger.warn(mensaje);
 
-      await this.persistirSugerencia(socioId, input, null, SugerenciaEstado.ERROR);
+      await this.persistirSugerencia(
+        socioId,
+        input,
+        null,
+        SugerenciaEstado.ERROR,
+      );
 
       throw new BadRequestError(mensaje);
     }

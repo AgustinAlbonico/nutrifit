@@ -112,9 +112,7 @@ export class PersistirPlanManualUseCase implements BaseUseCase {
       throw new NotFoundError('Plan de alimentación', String(planId));
     }
     if ((plan as { estado?: string }).estado === 'FINALIZADO') {
-      throw new BadRequestError(
-        'El plan está finalizado. No se puede editar.',
-      );
+      throw new BadRequestError('El plan está finalizado. No se puede editar.');
     }
 
     // 2) Auth: NUT dueño o ADMIN del gimnasio
@@ -135,7 +133,8 @@ export class PersistirPlanManualUseCase implements BaseUseCase {
       );
     }
     const totalAlternativas = payload.dias.reduce(
-      (acc, d) => acc + d.comidas.reduce((a, c) => a + c.alternativas.length, 0),
+      (acc, d) =>
+        acc + d.comidas.reduce((a, c) => a + c.alternativas.length, 0),
       0,
     );
     if (totalAlternativas === 0) {
@@ -164,7 +163,8 @@ export class PersistirPlanManualUseCase implements BaseUseCase {
 
     // 5) Validar restricciones del paciente
     const socio = plan.socio as unknown as SocioOrmEntity;
-    const socioId = (socio as unknown as { idPersona: number | null }).idPersona;
+    const socioId = (socio as unknown as { idPersona: number | null })
+      .idPersona;
     if (socioId == null) {
       throw new NotFoundError('Socio', String(planId));
     }
@@ -201,8 +201,8 @@ export class PersistirPlanManualUseCase implements BaseUseCase {
     }
 
     // 6) Construir datosJson de la nueva versión
-    const estructura: PlanAlimentacionDatosJson['estructura'] = payload.dias.map(
-      (d) => ({
+    const estructura: PlanAlimentacionDatosJson['estructura'] =
+      payload.dias.map((d) => ({
         dia: d.dia,
         comidas: d.comidas.map((c) => ({
           tipo: c.tipoComida,
@@ -216,10 +216,11 @@ export class PersistirPlanManualUseCase implements BaseUseCase {
               const al = alimentoMap.get(i.alimentoId)!;
               const base = al.cantidad || 100;
               const factor = i.cantidad / base;
-              const cal = Math.round(((al.calorias ?? 0) * factor) * 100) / 100;
-              const pro = Math.round(((al.proteinas ?? 0) * factor) * 100) / 100;
-              const carb = Math.round(((al.carbohidratos ?? 0) * factor) * 100) / 100;
-              const gras = Math.round(((al.grasas ?? 0) * factor) * 100) / 100;
+              const cal = Math.round((al.calorias ?? 0) * factor * 100) / 100;
+              const pro = Math.round((al.proteinas ?? 0) * factor * 100) / 100;
+              const carb =
+                Math.round((al.carbohidratos ?? 0) * factor * 100) / 100;
+              const gras = Math.round((al.grasas ?? 0) * factor * 100) / 100;
 
               totalCal += cal;
               totalPro += pro;
@@ -248,12 +249,19 @@ export class PersistirPlanManualUseCase implements BaseUseCase {
             };
           }),
         })),
-      }),
-    );
+      }));
 
     // Resumen de macros (placeholder: 0; PlanAlimentacionVersion lo recalcula al activarse)
     const resumenMacros = estructura.reduce<
-      Record<string, { calorias: number; proteinas: number; carbohidratos: number; grasas: number }>
+      Record<
+        string,
+        {
+          calorias: number;
+          proteinas: number;
+          carbohidratos: number;
+          grasas: number;
+        }
+      >
     >((acc, d) => {
       acc[d.dia] = { calorias: 0, proteinas: 0, carbohidratos: 0, grasas: 0 };
       return acc;
@@ -269,10 +277,13 @@ export class PersistirPlanManualUseCase implements BaseUseCase {
     };
 
     // 7) Guardar o actualizar versión borrador (numeroVersion = 0)
-    const esCreacionInicial = (await this.planVersionRepo.listarPorPlan(planId)).length === 0;
+    const esCreacionInicial =
+      (await this.planVersionRepo.listarPorPlan(planId)).length === 0;
 
     const nuevaVersion = await this.dataSource.transaction(async (manager) => {
-      const versionRepo = manager.getRepository(PlanAlimentacionVersionOrmEntity);
+      const versionRepo = manager.getRepository(
+        PlanAlimentacionVersionOrmEntity,
+      );
       let orm = await versionRepo.findOne({
         where: {
           idPlanAlimentacion: planId,
@@ -282,7 +293,9 @@ export class PersistirPlanManualUseCase implements BaseUseCase {
 
       if (orm) {
         orm.datosJson = datosJson;
-        orm.motivoCambio = esCreacionInicial ? 'creacion_inicial' : 'edicion_manual';
+        orm.motivoCambio = esCreacionInicial
+          ? 'creacion_inicial'
+          : 'edicion_manual';
         orm.createdBy = userId;
         orm.createdAt = new Date();
       } else {
@@ -290,7 +303,9 @@ export class PersistirPlanManualUseCase implements BaseUseCase {
           idPlanAlimentacion: planId,
           numeroVersion: 0,
           datosJson,
-          motivoCambio: esCreacionInicial ? 'creacion_inicial' : 'edicion_manual',
+          motivoCambio: esCreacionInicial
+            ? 'creacion_inicial'
+            : 'edicion_manual',
           activa: false,
           createdBy: userId,
         });

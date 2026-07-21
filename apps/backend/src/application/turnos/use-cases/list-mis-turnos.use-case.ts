@@ -1,7 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { PaginatedData } from '@nutrifit/shared';
-import { calcularMeta, paginarQuery } from 'src/common/helpers/paginacion.helper';
+import {
+  calcularMeta,
+  paginarQuery,
+} from 'src/common/helpers/paginacion.helper';
 import { BaseUseCase } from 'src/application/shared/use-case.base';
 import {
   ListMisTurnosQueryDto,
@@ -51,7 +54,10 @@ export class ListMisTurnosUseCase implements BaseUseCase {
     if (query.especialidad?.trim()) {
       const normalized = query.especialidad.trim().toLowerCase();
       if (!'nutricionista'.includes(normalized)) {
-        return { data: [], pagination: calcularMeta(0, query.page ?? 1, query.limit ?? 10) };
+        return {
+          data: [],
+          pagination: calcularMeta(0, query.page ?? 1, query.limit ?? 10),
+        };
       }
     }
 
@@ -101,7 +107,10 @@ export class ListMisTurnosUseCase implements BaseUseCase {
 
     const [total, turnos] = await Promise.all([
       queryBuilder.getCount(),
-      queryBuilder.skip((page - 1) * limit).take(limit).getMany(),
+      queryBuilder
+        .skip((page - 1) * limit)
+        .take(limit)
+        .getMany(),
     ]);
 
     this.logger.log(

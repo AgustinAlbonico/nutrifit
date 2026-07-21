@@ -40,9 +40,7 @@ export class ListNutricionistasUseCase implements BaseUseCase {
           : nutricionistas.filter((n) => n.gimnasioId === gimnasioId);
     }
 
-    const filtrados = query
-      ? this.aplicarFiltros(base, query)
-      : base;
+    const filtrados = query ? this.aplicarFiltros(base, query) : base;
 
     const ordenados = query
       ? this.aplicarOrdenamiento(filtrados, query)
@@ -87,7 +85,11 @@ export class ListNutricionistasUseCase implements BaseUseCase {
       if (query.estado === 'ACTIVO' && n.fechaBaja) return false;
       if (query.estado === 'INACTIVO' && !n.fechaBaja) return false;
 
-      if (query.provincia && query.provincia !== 'TODAS' && n.provincia !== query.provincia)
+      if (
+        query.provincia &&
+        query.provincia !== 'TODAS' &&
+        n.provincia !== query.provincia
+      )
         return false;
 
       if (query.ciudad && query.ciudad !== 'TODAS' && n.ciudad !== query.ciudad)

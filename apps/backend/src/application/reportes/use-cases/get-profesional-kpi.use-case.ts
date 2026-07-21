@@ -59,7 +59,7 @@ export class GetProfesionalKpiUseCase {
     const rol = this.tenantContext.rol;
     const esSuperadmin = rol === Rol.SUPERADMIN;
     if (!esSuperadmin) {
-      queryBuilder.andWhere('turno.gimnasioId = :gimnasioId', {
+      queryBuilder.andWhere('turno.id_gimnasio = :gimnasioId', {
         gimnasioId: this.tenantContext.gimnasioId,
       });
     }

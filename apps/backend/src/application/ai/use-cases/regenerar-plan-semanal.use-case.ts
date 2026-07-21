@@ -107,7 +107,7 @@ import { PreparacionOrmEntity } from 'src/infrastructure/persistence/typeorm/ent
 /** Versión cruda del JSON de IA con campos adicionales (alimentoNombre, alimentosNuevos). */
 interface PlanSemanalRawJson extends PlanAlimentacionDatosJson {
   alimentosNuevos?: AlimentoNuevoDto[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   alimentos?: any[];
 }
 

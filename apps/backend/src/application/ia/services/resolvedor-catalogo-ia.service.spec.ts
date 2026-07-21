@@ -113,7 +113,9 @@ describe('ResolvedorCatalogoIA', () => {
         categoriasExistentes,
       );
       expect(resultado.mapa.get('AlimentoInventado')).toBeDefined();
-      expect(resultado.creados.some((c) => c.nombre === 'AlimentoInventado')).toBe(true);
+      expect(
+        resultado.creados.some((c) => c.nombre === 'AlimentoInventado'),
+      ).toBe(true);
     });
 
     it('debe reutilizar alimento existente aunque esté también en alimentosNuevos', async () => {

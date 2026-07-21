@@ -1,4 +1,10 @@
-import { IsOptional, IsString, IsEnum, IsDateString, MaxLength } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsEnum,
+  IsDateString,
+  MaxLength,
+} from 'class-validator';
 import { Genero } from 'src/domain/entities/Persona/Genero';
 
 export class ActualizarSocioDto {

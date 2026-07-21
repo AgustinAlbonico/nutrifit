@@ -4,25 +4,13 @@
  * o más planes activos (RF-010: N cards si tiene N nutricionistas).
  *
  * Composición:
- * - Header: nombre del NUT + fecha de inicio + EstadoPlanBadge
- * - Body: WeeklyPlanGrid V2 read-only (sin botones de regenerar)
+ * - Header: nombre del NUT + fecha de inicio + badge + botón PDF
+ * - Body: GrillaManualSlots read-only (misma grilla que ve el nutricionista)
  * - Body: RazonamientoCumplimiento read-only
- * - Footer: acciones secundarias útiles (marcar leído, contactar al NUT)
- *
- * Mejora v2 (ver `iteracion 1/errores/plan-alimentacion-validacion-playwright.md`):
- * - Reemplaza el botón "Descargar PDF" deshabilitado (que confundía al socio)
- *   por un footer con CTAs claros: marcar leído + contactar al NUT.
- * - Muestra el EstadoPlanBadge completo (BORRADOR/ACTIVO/FINALIZADO).
- * - Hint contextual sobre cuándo se inició el plan.
- *
- * Accesibilidad:
- * - El card usa `<section aria-labelledby>` para vincular el header
- * - Botones con aria-label descriptivo
- * - Contraste WCAG AA en todo el texto
+ * - Footer: texto informativo
  */
 
-import { Calendar, CheckCheck, FileDown, Mail, Sparkles } from 'lucide-react';
-import { useState } from 'react';
+import { Calendar, FileDown, Sparkles } from 'lucide-react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 
 import { Button } from '@/components/ui/button';
@@ -40,10 +28,9 @@ import {
   derivarEstadoPlan,
   type EstadoPlanVisual,
 } from '@/components/plan/estado-plan.types';
-import { WeeklyPlanGrid } from '@/components/plan/WeeklyPlanGrid';
+import { GrillaManualSlots } from '@/components/plan/GrillaManualSlots';
 import { DocumentoPlan } from '@/lib/pdf/plan-pdf';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
 import type {
   ComidaEnPlan,
   AlimentoEnComida,
@@ -88,22 +75,41 @@ function mapearPlanAComidas(estructura: EstructuraDiaFE[]): ComidaEnPlan[] {
       const primeraAlternativa = comida.alternativas[0];
       if (!primeraAlternativa) continue;
 
-      const alimentos: AlimentoEnComida[] = primeraAlternativa.alimentos.map(
-        (item) => ({
-          alimento: {
-            idAlimento: item.alimentoId,
-            nombre: item.nombre ?? 'Alimento',
-            cantidad: item.cantidad,
-            unidadMedida: item.unidad,
-            calorias: item.calorias ?? null,
-            proteinas: item.proteinas ?? null,
-            carbohidratos: item.carbohidratos ?? null,
-            grasas: item.grasas ?? null,
-            grupoAlimenticio: null,
-          },
+      const items = primeraAlternativa.alimentos;
+      const sumaCantidades = items.reduce((sum, item) => sum + item.cantidad, 0);
+
+      const alimentos: AlimentoEnComida[] = items.map((item) => ({
+        alimento: {
+          idAlimento: item.alimentoId,
+          nombre: item.nombre ?? 'Alimento',
           cantidad: item.cantidad,
-        }),
-      );
+          unidadMedida: item.unidad,
+          // Los macros por alimento individual pueden venir undefined.
+          // Distribuimos los totales de la alternativa proporcionalmente.
+          calorias:
+            item.calorias ??
+            (sumaCantidades > 0
+              ? (primeraAlternativa.calorias * item.cantidad) / sumaCantidades
+              : 0),
+          proteinas:
+            item.proteinas ??
+            (sumaCantidades > 0
+              ? (primeraAlternativa.proteinas * item.cantidad) / sumaCantidades
+              : 0),
+          carbohidratos:
+            item.carbohidratos ??
+            (sumaCantidades > 0
+              ? (primeraAlternativa.carbohidratos * item.cantidad) / sumaCantidades
+              : 0),
+          grasas:
+            item.grasas ??
+            (sumaCantidades > 0
+              ? (primeraAlternativa.grasas * item.cantidad) / sumaCantidades
+              : 0),
+          grupoAlimenticio: null,
+        },
+        cantidad: item.cantidad,
+      }));
 
       comidas.push({
         dia: dia.dia,
@@ -116,9 +122,6 @@ function mapearPlanAComidas(estructura: EstructuraDiaFE[]): ComidaEnPlan[] {
   return comidas;
 }
 
-const MENSAJE_CONFIRMACION =
-  'Plan marcado como leído. Te avisaremos cuando tu nutricionista lo actualice.';
-
 export function PlanSocioCard({
   plan,
   finalizadoAt,
@@ -126,7 +129,6 @@ export function PlanSocioCard({
 }: PropiedadesPlanSocioCard) {
   const headerId = `plan-socio-card-header-${plan.idPlanAlimentacion}`;
   const fechaInicioFormateada = formatearFecha(plan.fechaInicio);
-  const [marcadoLeido, setMarcadoLeido] = useState(false);
 
   // Estado visual: Activo, Borrador o Finalizado. Default Activo.
   // Aceptamos `finalizadoAt` como prop opcional además del campo del plan
@@ -142,13 +144,6 @@ export function PlanSocioCard({
         ? 'En revisión'
         : 'Finalizado';
 
-  const manejarMarcarLeido = () => {
-    setMarcadoLeido(true);
-    toast.success(MENSAJE_CONFIRMACION, {
-      description: `Última actualización: ${fechaInicioFormateada || 'hace unos días'}.`,
-    });
-  };
-
   return (
     <Card
       data-testid="plan-socio-card"
@@ -157,7 +152,7 @@ export function PlanSocioCard({
       aria-labelledby={headerId}
       className={cn('overflow-hidden', className)}
     >
-      <CardHeader className="flex-row items-start justify-between gap-3 space-y-0 border-b border-border/40 bg-muted/10">
+      <CardHeader className="flex-row items-start justify-between gap-3 space-y-0 border-b border-border/40">
         <div className="min-w-0 flex-1 space-y-1.5">
           <CardTitle
             id={headerId}
@@ -183,12 +178,42 @@ export function PlanSocioCard({
             </CardDescription>
           )}
         </div>
-        <EstadoPlanBadge estado={estado} className="shrink-0 self-start" />
+        <div className="flex items-center gap-2 shrink-0">
+          <PDFDownloadLink
+            document={
+              <DocumentoPlan
+                objetivoNutricional={plan.objetivoNutricional ?? 'Sin objetivo definido'}
+                comidas={mapearPlanAComidas(plan.plan.estructura)}
+                nombreSocio=""
+              />
+            }
+            fileName={`plan-alimentacion-${plan.nutricionistaNombre.replace(/\s+/g, '-')}.pdf`}
+          >
+            {({ loading }) => (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={loading}
+                aria-label="Descargar plan en PDF"
+                data-testid="boton-descargar-pdf"
+              >
+                <FileDown className="mr-1.5 size-4" aria-hidden="true" />
+                {loading ? 'Generando...' : 'Descargar PDF'}
+              </Button>
+            )}
+          </PDFDownloadLink>
+          <EstadoPlanBadge estado={estado} />
+        </div>
       </CardHeader>
 
       <CardContent className="space-y-5 pt-5">
-        {/* Grilla semanal read-only (sin botones de regen). */}
-        <WeeklyPlanGrid planV2={plan.plan} />
+        {/* Grilla semanal read-only — misma grilla que ve el nutricionista. */}
+        <GrillaManualSlots
+          estructura={plan.plan.estructura}
+          soloLectura
+          onChange={() => {}}
+        />
 
         {/* Razonamiento de cumplimiento de restricciones (read-only). */}
         <section
@@ -206,67 +231,11 @@ export function PlanSocioCard({
         </section>
       </CardContent>
 
-      <CardFooter className="flex flex-wrap items-center justify-between gap-3 border-t border-border/40 bg-muted/20 px-6 py-4">
+      <CardFooter className="border-t border-border/40 px-6 py-4">
         <p className="text-xs text-muted-foreground">
           Plan {etiquetaEstado.toLowerCase()}. Si querés cambios, contactá a
           tu nutricionista.
         </p>
-        <div className="flex flex-wrap items-center gap-2">
-          <PDFDownloadLink
-            document={
-              <DocumentoPlan
-                objetivoNutricional={plan.objetivoNutricional ?? 'Sin objetivo definido'}
-                comidas={mapearPlanAComidas(plan.plan.estructura)}
-                nombreSocio=""
-              />
-            }
-            fileName={`plan-alimentacion-${plan.nutricionistaNombre.replace(/\s+/g, '-')}.pdf`}
-          >
-            {({ loading }) => (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={loading}
-                aria-label="Descargar plan en PDF"
-                data-testid="boton-descargar-pdf"
-                className="text-muted-foreground"
-              >
-                <FileDown className="mr-1.5 size-4" aria-hidden="true" />
-                {loading ? 'Generando...' : 'Descargar PDF'}
-              </Button>
-            )}
-          </PDFDownloadLink>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={manejarMarcarLeido}
-            disabled={marcadoLeido}
-            aria-label="Marcar plan como leído"
-            data-testid="boton-marcar-leido"
-            className="text-muted-foreground"
-          >
-            <CheckCheck className="mr-1.5 size-4" aria-hidden="true" />
-            {marcadoLeido ? 'Leído' : 'Marcar leído'}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            asChild
-          >
-            <a
-              href={`mailto:?subject=${encodeURIComponent(
-                `Mi plan de alimentación con ${plan.nutricionistaNombre}`,
-              )}`}
-              data-testid="boton-contactar-nutricionista"
-            >
-              <Mail className="mr-1.5 size-4" aria-hidden="true" />
-              Contactar al NUT
-            </a>
-          </Button>
-        </div>
       </CardFooter>
     </Card>
   );

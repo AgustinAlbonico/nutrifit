@@ -25,12 +25,11 @@ const ESTADOS_ACTIVOS = ['PENDIENTE', 'GENERANDO'] as const;
 const CANTIDAD_MAXIMA_INTENTOS_DEADLOCK = 3;
 const ESPERA_BASE_DEADLOCK_MS = 50;
 
-type CambiosGeneracionPlanIa = QueryDeepPartialEntity<GeneracionPlanIaOrmEntity>;
+type CambiosGeneracionPlanIa =
+  QueryDeepPartialEntity<GeneracionPlanIaOrmEntity>;
 
 @Injectable()
-export class GeneracionPlanIaRepositoryImpl
-  implements GeneracionPlanIaRepository
-{
+export class GeneracionPlanIaRepositoryImpl implements GeneracionPlanIaRepository {
   constructor(
     @InjectRepository(GeneracionPlanIaOrmEntity)
     private readonly repo: Repository<GeneracionPlanIaOrmEntity>,
@@ -203,7 +202,9 @@ export class GeneracionPlanIaRepositoryImpl
   ): Promise<GeneracionPlanIaEntity> {
     const orm = await this.repo.findOne({ where: { idGeneracionPlanIa: id } });
     if (!orm) {
-      throw new Error(`Generación IA ${id} no encontrada después de actualizar`);
+      throw new Error(
+        `Generación IA ${id} no encontrada después de actualizar`,
+      );
     }
 
     orm.estado = input.estado;

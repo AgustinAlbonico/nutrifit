@@ -1,4 +1,7 @@
-import { NotFoundError, ForbiddenError } from 'src/domain/exceptions/custom-exceptions';
+import {
+  NotFoundError,
+  ForbiddenError,
+} from 'src/domain/exceptions/custom-exceptions';
 import { EstadoTurno } from 'src/domain/entities/Turno/EstadoTurno';
 import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities';
 
@@ -40,9 +43,7 @@ describe('GetHistorialTurnosPacienteUseCase (TDD)', () => {
       find: jest.fn().mockResolvedValue([]),
     };
 
-    const mod = await import(
-      './get-historial-turnos-paciente.use-case'
-    );
+    const mod = await import('./get-historial-turnos-paciente.use-case');
     const useCase = new mod.GetHistorialTurnosPacienteUseCase(
       turnoRepository as never,
       socioRepository as never,
@@ -52,12 +53,23 @@ describe('GetHistorialTurnosPacienteUseCase (TDD)', () => {
       logger as never,
     );
 
-    return { useCase, turnoRepository, socioRepository, nutricionistaRepository, fotoProgresoOrmRepository };
+    return {
+      useCase,
+      turnoRepository,
+      socioRepository,
+      nutricionistaRepository,
+      fotoProgresoOrmRepository,
+    };
   };
 
   it('retorna los turnos del par nutri-socio ordenados desc con flags clinicos', async () => {
-    const { useCase, turnoRepository, socioRepository, nutricionistaRepository, fotoProgresoOrmRepository } =
-      await buildUseCase();
+    const {
+      useCase,
+      turnoRepository,
+      socioRepository,
+      nutricionistaRepository,
+      fotoProgresoOrmRepository,
+    } = await buildUseCase();
     nutricionistaRepository.findById.mockResolvedValue({ idPersona: 5 });
     socioRepository.findOne.mockResolvedValue({ idPersona: 273 });
     turnoRepository.count.mockResolvedValue(3);
@@ -125,8 +137,13 @@ describe('GetHistorialTurnosPacienteUseCase (TDD)', () => {
   });
 
   it('filtra por la dupla nutricionista+socio y respeta el gimnasio del tenant', async () => {
-    const { useCase, turnoRepository, socioRepository, nutricionistaRepository, fotoProgresoOrmRepository } =
-      await buildUseCase();
+    const {
+      useCase,
+      turnoRepository,
+      socioRepository,
+      nutricionistaRepository,
+      fotoProgresoOrmRepository,
+    } = await buildUseCase();
     nutricionistaRepository.findById.mockResolvedValue({ idPersona: 5 });
     socioRepository.findOne.mockResolvedValue({ idPersona: 273 });
     turnoRepository.count.mockResolvedValue(1);
@@ -157,7 +174,8 @@ describe('GetHistorialTurnosPacienteUseCase (TDD)', () => {
   });
 
   it('lanza NotFoundError si el socio no existe', async () => {
-    const { useCase, nutricionistaRepository, socioRepository } = await buildUseCase();
+    const { useCase, nutricionistaRepository, socioRepository } =
+      await buildUseCase();
     nutricionistaRepository.findById.mockResolvedValue({ idPersona: 5 });
     socioRepository.findOne.mockResolvedValue(null);
 
@@ -165,18 +183,29 @@ describe('GetHistorialTurnosPacienteUseCase (TDD)', () => {
   });
 
   it('lanza ForbiddenError si el par nutri-socio no tiene vinculo previo', async () => {
-    const { useCase, nutricionistaRepository, socioRepository, turnoRepository } =
-      await buildUseCase();
+    const {
+      useCase,
+      nutricionistaRepository,
+      socioRepository,
+      turnoRepository,
+    } = await buildUseCase();
     nutricionistaRepository.findById.mockResolvedValue({ idPersona: 5 });
     socioRepository.findOne.mockResolvedValue({ idPersona: 273 });
     turnoRepository.count.mockResolvedValue(0);
 
-    await expect(useCase.execute(5, 273)).rejects.toBeInstanceOf(ForbiddenError);
+    await expect(useCase.execute(5, 273)).rejects.toBeInstanceOf(
+      ForbiddenError,
+    );
   });
 
   it('incluye turnos en cualquier estado (no solo cerradas)', async () => {
-    const { useCase, turnoRepository, socioRepository, nutricionistaRepository, fotoProgresoOrmRepository } =
-      await buildUseCase();
+    const {
+      useCase,
+      turnoRepository,
+      socioRepository,
+      nutricionistaRepository,
+      fotoProgresoOrmRepository,
+    } = await buildUseCase();
     nutricionistaRepository.findById.mockResolvedValue({ idPersona: 5 });
     socioRepository.findOne.mockResolvedValue({ idPersona: 273 });
     turnoRepository.count.mockResolvedValue(1);

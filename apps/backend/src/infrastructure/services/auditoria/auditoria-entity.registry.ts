@@ -13,7 +13,10 @@ interface ConfiguracionEntidadAuditable<T extends EntidadAuditable> {
 
 @Injectable()
 export class AuditoriaEntityRegistry {
-  private readonly entidades: Record<string, ConfiguracionEntidadAuditable<EntidadAuditable>>;
+  private readonly entidades: Record<
+    string,
+    ConfiguracionEntidadAuditable<EntidadAuditable>
+  >;
 
   constructor(
     @InjectRepository(TurnoOrmEntity)
@@ -24,7 +27,10 @@ export class AuditoriaEntityRegistry {
     };
   }
 
-  async cargar(entidad: string, entidadId: number | string | null): Promise<Record<string, unknown> | null> {
+  async cargar(
+    entidad: string,
+    entidadId: number | string | null,
+  ): Promise<Record<string, unknown> | null> {
     if (entidadId == null) {
       return null;
     }
@@ -41,13 +47,18 @@ export class AuditoriaEntityRegistry {
     return registro ? this.serializarEntidad(registro) : null;
   }
 
-  private serializarEntidad(entidad: EntidadAuditable): Record<string, unknown> {
-    return Object.entries(entidad).reduce<Record<string, unknown>>((acumulado, [campo, valor]) => {
-      if (this.esValorSerializable(valor)) {
-        acumulado[campo] = valor;
-      }
-      return acumulado;
-    }, {});
+  private serializarEntidad(
+    entidad: EntidadAuditable,
+  ): Record<string, unknown> {
+    return Object.entries(entidad).reduce<Record<string, unknown>>(
+      (acumulado, [campo, valor]) => {
+        if (this.esValorSerializable(valor)) {
+          acumulado[campo] = valor;
+        }
+        return acumulado;
+      },
+      {},
+    );
   }
 
   private esValorSerializable(valor: unknown): boolean {

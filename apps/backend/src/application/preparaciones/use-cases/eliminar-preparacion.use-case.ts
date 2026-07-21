@@ -2,7 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BaseUseCase } from 'src/application/shared/use-case.base';
-import { ForbiddenError, NotFoundError } from 'src/domain/exceptions/custom-exceptions';
+import {
+  ForbiddenError,
+  NotFoundError,
+} from 'src/domain/exceptions/custom-exceptions';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 import { PreparacionOrmEntity } from 'src/infrastructure/persistence/typeorm/entities';
 

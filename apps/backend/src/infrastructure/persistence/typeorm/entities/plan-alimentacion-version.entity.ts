@@ -12,10 +12,7 @@ import {
   PlanAlimentacionDatosJson,
   MotivoCambio,
 } from 'src/domain/entities/PlanAlimentacionVersion/plan-alimentacion-datos-json';
-import {
-  NutricionistaOrmEntity,
-  PersonaOrmEntity,
-} from './persona.entity';
+import { NutricionistaOrmEntity, PersonaOrmEntity } from './persona.entity';
 import { PlanAlimentacionOrmEntity } from './plan-alimentacion.entity';
 
 /**

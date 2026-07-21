@@ -166,7 +166,10 @@ export class CrearPlanManualVacioUseCase implements BaseUseCase {
 
     const planActivoExistente = await this.planRepo.findOne({
       where: {
-        socio: { idPersona: socioId, gimnasioId: this.tenantContext.gimnasioId },
+        socio: {
+          idPersona: socioId,
+          gimnasioId: this.tenantContext.gimnasioId,
+        },
         activo: true,
       },
     });
@@ -180,7 +183,8 @@ export class CrearPlanManualVacioUseCase implements BaseUseCase {
     plan.fechaCreacion = new Date();
     plan.objetivoNutricional = 'Plan de alimentación manual';
     plan.socio = socio as unknown as PlanAlimentacionOrmEntity['socio'];
-    plan.nutricionista = nutricionista as unknown as PlanAlimentacionOrmEntity['nutricionista'];
+    plan.nutricionista =
+      nutricionista as unknown as PlanAlimentacionOrmEntity['nutricionista'];
     plan.eliminadoEn = null;
     plan.motivoEliminacion = null;
     plan.motivoEdicion = null;
@@ -191,7 +195,15 @@ export class CrearPlanManualVacioUseCase implements BaseUseCase {
     const estructuraVacia = this.crearEstructuraVacia();
 
     const macrosPorDia = estructuraVacia.reduce<
-      Record<string, { calorias: number; proteinas: number; carbohidratos: number; grasas: number }>
+      Record<
+        string,
+        {
+          calorias: number;
+          proteinas: number;
+          carbohidratos: number;
+          grasas: number;
+        }
+      >
     >((acc, d) => {
       acc[d.dia] = { calorias: 0, proteinas: 0, carbohidratos: 0, grasas: 0 };
       return acc;
@@ -228,7 +240,10 @@ export class CrearPlanManualVacioUseCase implements BaseUseCase {
   ): Promise<PlanAlimentacionOrmEntity | null> {
     const planes = await this.planRepo.find({
       where: {
-        socio: { idPersona: socioId, gimnasioId: this.tenantContext.gimnasioId },
+        socio: {
+          idPersona: socioId,
+          gimnasioId: this.tenantContext.gimnasioId,
+        },
         nutricionista: {
           idPersona: nutricionistaId,
           gimnasioId: this.tenantContext.gimnasioId,
@@ -258,7 +273,8 @@ export class CrearPlanManualVacioUseCase implements BaseUseCase {
     if (activa) return activa;
 
     return (
-      [...versiones].sort((a, b) => b.numeroVersion - a.numeroVersion)[0] ?? null
+      [...versiones].sort((a, b) => b.numeroVersion - a.numeroVersion)[0] ??
+      null
     );
   }
 

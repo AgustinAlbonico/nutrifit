@@ -13,29 +13,44 @@ describe('crearParametrosPaginacion', () => {
   });
 
   it('lanza error si page es menor a 1', () => {
-    expect(() => crearParametrosPaginacion({ page: '0' })).toThrow(BadRequestError);
+    expect(() => crearParametrosPaginacion({ page: '0' })).toThrow(
+      BadRequestError,
+    );
   });
 
   it('lanza error si limit excede maxLimit', () => {
-    expect(() => crearParametrosPaginacion({ limit: '101' })).toThrow(BadRequestError);
+    expect(() => crearParametrosPaginacion({ limit: '101' })).toThrow(
+      BadRequestError,
+    );
   });
 
   it('lanza error si page no es número', () => {
-    expect(() => crearParametrosPaginacion({ page: 'abc' })).toThrow(BadRequestError);
+    expect(() => crearParametrosPaginacion({ page: 'abc' })).toThrow(
+      BadRequestError,
+    );
   });
 
   it('acepta maxLimit custom', () => {
-    expect(() => crearParametrosPaginacion({ limit: '50' }, { maxLimit: 25 })).toThrow(BadRequestError);
-    const result = crearParametrosPaginacion({ limit: '50' }, { maxLimit: 100 });
+    expect(() =>
+      crearParametrosPaginacion({ limit: '50' }, { maxLimit: 25 }),
+    ).toThrow(BadRequestError);
+    const result = crearParametrosPaginacion(
+      { limit: '50' },
+      { maxLimit: 100 },
+    );
     expect(result.limit).toBe(50);
   });
 
   it('lanza error si limit es 0', () => {
-    expect(() => crearParametrosPaginacion({ limit: '0' })).toThrow(BadRequestError);
+    expect(() => crearParametrosPaginacion({ limit: '0' })).toThrow(
+      BadRequestError,
+    );
   });
 
   it('lanza error si limit no es número', () => {
-    expect(() => crearParametrosPaginacion({ limit: 'abc' })).toThrow(BadRequestError);
+    expect(() => crearParametrosPaginacion({ limit: 'abc' })).toThrow(
+      BadRequestError,
+    );
   });
 });
 
@@ -43,8 +58,12 @@ describe('calcularMeta', () => {
   it('calcula meta básica correctamente', () => {
     const meta = calcularMeta(100, 1, 10);
     expect(meta).toEqual({
-      page: 1, limit: 10, total: 100, totalPages: 10,
-      hasNextPage: true, hasPreviousPage: false,
+      page: 1,
+      limit: 10,
+      total: 100,
+      totalPages: 10,
+      hasNextPage: true,
+      hasPreviousPage: false,
     });
   });
 

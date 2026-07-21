@@ -78,7 +78,11 @@ export class ListarSociosUseCase implements BaseUseCase {
       if (query.estado === 'ACTIVO' && s.fechaBaja) return false;
       if (query.estado === 'INACTIVO' && !s.fechaBaja) return false;
 
-      if (query.provincia && query.provincia !== 'TODAS' && s.provincia !== query.provincia)
+      if (
+        query.provincia &&
+        query.provincia !== 'TODAS' &&
+        s.provincia !== query.provincia
+      )
         return false;
 
       if (query.ciudad && query.ciudad !== 'TODAS' && s.ciudad !== query.ciudad)

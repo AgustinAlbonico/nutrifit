@@ -110,13 +110,21 @@ export class AuditoriaService {
     accion: AccionAuditoria | string,
     camposSensibles: string[] = [],
   ): { valoresAntes: ValorAuditoria; valoresDespues: ValorAuditoria } {
-    const antesSanitizado = this.sanitizer.sanitizar(valoresAntes, camposSensibles);
-    const despuesSanitizado = this.sanitizer.sanitizar(valoresDespues, camposSensibles);
+    const antesSanitizado = this.sanitizer.sanitizar(
+      valoresAntes,
+      camposSensibles,
+    );
+    const despuesSanitizado = this.sanitizer.sanitizar(
+      valoresDespues,
+      camposSensibles,
+    );
 
     if (accion === AccionAuditoria.UPDATE || accion === 'UPDATE') {
       return {
         valoresAntes: null,
-        valoresDespues: { cambios: this.calcularDiff(antesSanitizado, despuesSanitizado) },
+        valoresDespues: {
+          cambios: this.calcularDiff(antesSanitizado, despuesSanitizado),
+        },
       };
     }
 
@@ -150,7 +158,10 @@ export class AuditoriaService {
       descripcion: dto.descripcion ?? null,
       ip: dto.ip ?? dto.ipOrigen ?? null,
       userAgent: dto.userAgent ?? null,
-      metadataLegacy: this.sanitizer.sanitizar(dto.metadata ?? null, dto.camposSensibles),
+      metadataLegacy: this.sanitizer.sanitizar(
+        dto.metadata ?? null,
+        dto.camposSensibles,
+      ),
       valoresAntes: snapshot.valoresAntes,
       valoresDespues: snapshot.valoresDespues,
       gimnasioId,
@@ -182,13 +193,17 @@ export class AuditoriaService {
     formato: 'csv' | 'json',
   ): Promise<ExportarAuditoriaResultado> {
     const limite = filtros.limit ?? 1000;
-    const registros = await this.crearQueryFiltrada({ ...filtros, limit: undefined })
+    const registros = await this.crearQueryFiltrada({
+      ...filtros,
+      limit: undefined,
+    })
       .take(limite)
       .getMany();
     const reportes = registros.map((registro) => this.mapearReporte(registro));
-    const contenido = formato === 'json'
-      ? JSON.stringify(reportes, null, 2)
-      : this.convertirCsv(reportes);
+    const contenido =
+      formato === 'json'
+        ? JSON.stringify(reportes, null, 2)
+        : this.convertirCsv(reportes);
     const buffer = Buffer.from(contenido, 'utf8');
     const esStream = limite > 1000;
 
@@ -252,27 +267,39 @@ export class AuditoriaService {
       .orderBy('auditoria.fecha', filtros.orden ?? 'DESC');
 
     if (gimnasioId !== undefined && gimnasioId !== null) {
-      queryBuilder.andWhere('auditoria.gimnasioId = :gimnasioId', { gimnasioId });
+      queryBuilder.andWhere('auditoria.gimnasioId = :gimnasioId', {
+        gimnasioId,
+      });
     }
 
     if (filtros.fechaDesde) {
-      queryBuilder.andWhere('auditoria.fecha >= :fechaDesde', { fechaDesde: filtros.fechaDesde });
+      queryBuilder.andWhere('auditoria.fecha >= :fechaDesde', {
+        fechaDesde: filtros.fechaDesde,
+      });
     }
 
     if (filtros.fechaHasta) {
-      queryBuilder.andWhere('auditoria.fecha <= :fechaHasta', { fechaHasta: filtros.fechaHasta });
+      queryBuilder.andWhere('auditoria.fecha <= :fechaHasta', {
+        fechaHasta: filtros.fechaHasta,
+      });
     }
 
     if (filtros.modulo) {
-      queryBuilder.andWhere('auditoria.modulo = :modulo', { modulo: filtros.modulo });
+      queryBuilder.andWhere('auditoria.modulo = :modulo', {
+        modulo: filtros.modulo,
+      });
     }
 
     if (filtros.accion) {
-      queryBuilder.andWhere('auditoria.accion = :accion', { accion: filtros.accion });
+      queryBuilder.andWhere('auditoria.accion = :accion', {
+        accion: filtros.accion,
+      });
     }
 
     if (filtros.entidad) {
-      queryBuilder.andWhere('auditoria.entidad = :entidad', { entidad: filtros.entidad });
+      queryBuilder.andWhere('auditoria.entidad = :entidad', {
+        entidad: filtros.entidad,
+      });
     }
 
     if (filtros.entidadId != null) {
@@ -308,7 +335,9 @@ export class AuditoriaService {
     });
   }
 
-  private resolverGimnasioId(gimnasioId?: number | null): number | null | undefined {
+  private resolverGimnasioId(
+    gimnasioId?: number | null,
+  ): number | null | undefined {
     if (gimnasioId !== undefined) {
       return gimnasioId;
     }
@@ -332,7 +361,9 @@ export class AuditoriaService {
     return String(usuarioId);
   }
 
-  private mapearReporte(registro: AuditoriaOrmEntity): RegistroAuditoriaReporte {
+  private mapearReporte(
+    registro: AuditoriaOrmEntity,
+  ): RegistroAuditoriaReporte {
     return {
       id: registro.idAuditLog,
       fecha: registro.fecha,

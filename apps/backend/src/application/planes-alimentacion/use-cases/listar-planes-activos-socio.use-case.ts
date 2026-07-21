@@ -126,8 +126,9 @@ export class ListarPlanesActivosSocioUseCase implements BaseUseCase {
     // 3) Para cada plan, obtener la versión activa
     const resultado: PlanSocioActivoDTO[] = [];
     for (const plan of planesActivos) {
-      const versionActiva =
-        await this.planVersionRepo.obtenerActiva(plan.idPlanAlimentacion);
+      const versionActiva = await this.planVersionRepo.obtenerActiva(
+        plan.idPlanAlimentacion,
+      );
       if (!versionActiva) {
         // Plan marcado como activo pero sin versión activa: lo salteamos
         // (no debería pasar, pero es defensa en profundidad).

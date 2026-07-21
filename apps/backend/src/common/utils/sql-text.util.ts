@@ -43,7 +43,8 @@ const CARACTERES_LOWER_CON_TILDE: Array<readonly [string, string]> = [
  */
 export function stripAccentsLowerSql(column: string): string {
   return CARACTERES_LOWER_CON_TILDE.reduce<string>(
-    (expr, [conTilde, sinTilde]) => `REPLACE(${expr}, '${conTilde}', '${sinTilde}')`,
+    (expr, [conTilde, sinTilde]) =>
+      `REPLACE(${expr}, '${conTilde}', '${sinTilde}')`,
     column,
   );
 }

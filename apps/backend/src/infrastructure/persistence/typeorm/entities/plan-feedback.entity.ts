@@ -9,10 +9,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { VotoPlan } from 'src/domain/entities/PlanFeedback/plan-feedback.entity';
-import {
-  NutricionistaOrmEntity,
-  PersonaOrmEntity,
-} from './persona.entity';
+import { NutricionistaOrmEntity, PersonaOrmEntity } from './persona.entity';
 import { PlanAlimentacionVersionOrmEntity } from './plan-alimentacion-version.entity';
 
 /**

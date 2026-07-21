@@ -39,6 +39,7 @@ import { SuperAdminIaConfigPage } from '@/pages/admin/SuperAdminIaConfigPage';
 import { GimnasioWizardPage } from '@/pages/admin/GimnasioWizardPage';
 import { GimnasioDetailPage } from '@/pages/admin/GimnasioDetailPage';
 import { UsuarioPermisosPage } from '@/pages/admin/UsuarioPermisosPage';
+import { ReportesAdminPage } from '@/pages/admin/ReportesAdminPage';
 import { Recepcionistas } from '@/pages/Recepcionistas';
 import { MiPerfilNutricionista } from '@/pages/MiPerfilNutricionista';
 import { AsignarTurnoPage } from '@/pages/AsignarTurnoPage';
@@ -393,6 +394,12 @@ const usuarioPermisosRoute = createRoute({
   component: UsuarioPermisosPage,
 });
 
+const reportesAdminRoute = createRoute({
+  getParentRoute: () => authLayoutRoute,
+  path: '/admin/reportes',
+  component: ReportesAdminPage,
+});
+
 // Registro público de suscripción
 const registroRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -482,6 +489,7 @@ const routeTree = rootRoute.addChildren([
     gimnasioDetalleRoute,
     iaConfiguracionRoute,
     usuarioPermisosRoute,
+    reportesAdminRoute,
   ]),
 ]);
 

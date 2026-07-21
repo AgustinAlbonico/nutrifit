@@ -4,10 +4,11 @@ import type { PaginatedData, PaginationParams } from '@nutrifit/shared';
 import { Readable, Transform } from 'stream';
 import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 
-import { calcularMeta, paginarQuery } from 'src/common/helpers/paginacion.helper';
 import {
-  AuditLogOrmEntity,
-} from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
+  calcularMeta,
+  paginarQuery,
+} from 'src/common/helpers/paginacion.helper';
+import { AuditLogOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
 import { LoginAuditOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/login-audit.entity';
 import {
   FiltrosAuditoria,
@@ -59,9 +60,10 @@ export class AuditoriaReporteService {
 
     if (!usarStream) {
       const registros = await this.listarTodosParaExportar(filtros, limite);
-      const contenido = formato === 'json'
-        ? JSON.stringify(registros, null, 2)
-        : this.convertirCsv(registros);
+      const contenido =
+        formato === 'json'
+          ? JSON.stringify(registros, null, 2)
+          : this.convertirCsv(registros);
 
       return this.crearResultadoExportacion(
         Buffer.from(contenido, 'utf8'),
@@ -70,9 +72,10 @@ export class AuditoriaReporteService {
       );
     }
 
-    const contenido = filtros.modulo === 'auth'
-      ? await this.crearStreamAuth(filtros, formato)
-      : await this.crearStreamAuditLog(filtros, formato);
+    const contenido =
+      filtros.modulo === 'auth'
+        ? await this.crearStreamAuth(filtros, formato)
+        : await this.crearStreamAuditLog(filtros, formato);
 
     return this.crearResultadoExportacion(contenido, formato, true);
   }
@@ -123,7 +126,10 @@ export class AuditoriaReporteService {
     limite: number,
   ): Promise<RegistroAuditoriaReporte[]> {
     if (filtros.modulo === 'auth') {
-      const auditQuery = this.crearQueryAuditLog({ ...filtros, modulo: 'auth' });
+      const auditQuery = this.crearQueryAuditLog({
+        ...filtros,
+        modulo: 'auth',
+      });
       const loginQuery = this.crearQueryLoginAudit(filtros);
 
       const [registrosAudit, registrosLogin] = await Promise.all([
@@ -139,7 +145,9 @@ export class AuditoriaReporteService {
       return todos.slice(0, limite);
     }
 
-    const registros = await this.crearQueryAuditLog(filtros).take(limite).getMany();
+    const registros = await this.crearQueryAuditLog(filtros)
+      .take(limite)
+      .getMany();
     return registros.map((registro) => this.mapearAuditLog(registro));
   }
 
@@ -168,23 +176,33 @@ export class AuditoriaReporteService {
     }
 
     if (filtros.fechaDesde) {
-      queryBuilder.andWhere('auditoria.fecha >= :fechaDesde', { fechaDesde: filtros.fechaDesde });
+      queryBuilder.andWhere('auditoria.fecha >= :fechaDesde', {
+        fechaDesde: filtros.fechaDesde,
+      });
     }
 
     if (filtros.fechaHasta) {
-      queryBuilder.andWhere('auditoria.fecha <= :fechaHasta', { fechaHasta: filtros.fechaHasta });
+      queryBuilder.andWhere('auditoria.fecha <= :fechaHasta', {
+        fechaHasta: filtros.fechaHasta,
+      });
     }
 
     if (filtros.modulo) {
-      queryBuilder.andWhere('auditoria.modulo = :modulo', { modulo: filtros.modulo });
+      queryBuilder.andWhere('auditoria.modulo = :modulo', {
+        modulo: filtros.modulo,
+      });
     }
 
     if (filtros.accion) {
-      queryBuilder.andWhere('auditoria.accion = :accion', { accion: filtros.accion });
+      queryBuilder.andWhere('auditoria.accion = :accion', {
+        accion: filtros.accion,
+      });
     }
 
     if (filtros.entidad) {
-      queryBuilder.andWhere('auditoria.entidad = :entidad', { entidad: filtros.entidad });
+      queryBuilder.andWhere('auditoria.entidad = :entidad', {
+        entidad: filtros.entidad,
+      });
     }
 
     if (filtros.entidadId != null) {
@@ -227,20 +245,28 @@ export class AuditoriaReporteService {
     }
 
     if (filtros.fechaDesde) {
-      queryBuilder.andWhere('login.fecha >= :fechaDesde', { fechaDesde: filtros.fechaDesde });
+      queryBuilder.andWhere('login.fecha >= :fechaDesde', {
+        fechaDesde: filtros.fechaDesde,
+      });
     }
 
     if (filtros.fechaHasta) {
-      queryBuilder.andWhere('login.fecha <= :fechaHasta', { fechaHasta: filtros.fechaHasta });
+      queryBuilder.andWhere('login.fecha <= :fechaHasta', {
+        fechaHasta: filtros.fechaHasta,
+      });
     }
 
     // En login_audit, la "accion" del reporte es el `resultado`.
     if (filtros.accion) {
-      queryBuilder.andWhere('login.resultado = :resultado', { resultado: filtros.accion });
+      queryBuilder.andWhere('login.resultado = :resultado', {
+        resultado: filtros.accion,
+      });
     }
 
     if (filtros.usuarioId != null) {
-      queryBuilder.andWhere('login.usuarioId = :usuarioId', { usuarioId: filtros.usuarioId });
+      queryBuilder.andWhere('login.usuarioId = :usuarioId', {
+        usuarioId: filtros.usuarioId,
+      });
     }
 
     return queryBuilder;
@@ -250,32 +276,33 @@ export class AuditoriaReporteService {
     filtros: FiltrosAuditoria,
     formato: 'csv' | 'json',
   ): Promise<Readable> {
-    const queryBuilder = this.crearQueryAuditLog(filtros)
-      .select([
-        'auditoria.idAuditLog',
-        'auditoria.fecha',
-        'auditoria.gimnasioId',
-        'auditoria.usuarioId',
-        'auditoria.modulo',
-        'auditoria.accion',
-        'auditoria.entidad',
-        'auditoria.entidadId',
-        'auditoria.tipoAccion',
-        'auditoria.descripcion',
-        'auditoria.ip',
-        'auditoria.userAgent',
-        'auditoria.valoresAntes',
-        'auditoria.valoresDespues',
-      ]);
+    const queryBuilder = this.crearQueryAuditLog(filtros).select([
+      'auditoria.idAuditLog',
+      'auditoria.fecha',
+      'auditoria.gimnasioId',
+      'auditoria.usuarioId',
+      'auditoria.modulo',
+      'auditoria.accion',
+      'auditoria.entidad',
+      'auditoria.entidadId',
+      'auditoria.tipoAccion',
+      'auditoria.descripcion',
+      'auditoria.ip',
+      'auditoria.userAgent',
+      'auditoria.valoresAntes',
+      'auditoria.valoresDespues',
+    ]);
 
     if (filtros.limit !== undefined) {
       queryBuilder.limit(filtros.limit);
     }
 
     const stream = await queryBuilder.stream();
-    return stream.pipe(this.crearTransformExportacion(formato, (fila) =>
-      this.mapearRawAuditLogStream(fila),
-    ));
+    return stream.pipe(
+      this.crearTransformExportacion(formato, (fila) =>
+        this.mapearRawAuditLogStream(fila),
+      ),
+    );
   }
 
   /**
@@ -353,12 +380,15 @@ export class AuditoriaReporteService {
     return {
       contenido,
       nombreArchivo: formato === 'json' ? 'auditoria.json' : 'auditoria.csv',
-      contentType: formato === 'json' ? 'application/json' : 'text/csv; charset=utf-8',
+      contentType:
+        formato === 'json' ? 'application/json' : 'text/csv; charset=utf-8',
       esStream,
     };
   }
 
-  private mapearAuditLog(registro: AuditLogOrmEntity): RegistroAuditoriaReporte {
+  private mapearAuditLog(
+    registro: AuditLogOrmEntity,
+  ): RegistroAuditoriaReporte {
     return {
       kind: 'audit_log',
       id: registro.idAuditLog,
@@ -378,7 +408,9 @@ export class AuditoriaReporteService {
     };
   }
 
-  private mapearLoginAudit(registro: LoginAuditOrmEntity): RegistroAuditoriaReporte {
+  private mapearLoginAudit(
+    registro: LoginAuditOrmEntity,
+  ): RegistroAuditoriaReporte {
     const idString = String(registro.idLoginAudit);
     const descripcion = `Evento de autenticacion: ${registro.resultado}`;
 
@@ -404,21 +436,38 @@ export class AuditoriaReporteService {
     };
   }
 
-  private mapearRawAuditLogStream(fila: FilaAuditoriaRaw): RegistroAuditoriaReporte {
+  private mapearRawAuditLogStream(
+    fila: FilaAuditoriaRaw,
+  ): RegistroAuditoriaReporte {
     return {
       kind: 'audit_log',
       id: Number(fila.auditoria_id_audit_log),
       fecha: this.mapearFecha(fila.auditoria_fecha),
       gimnasioId: this.mapearNumeroNullable(fila.auditoria_id_gimnasio),
-      usuarioId: fila.auditoria_id_usuario == null ? null : String(fila.auditoria_id_usuario),
+      usuarioId:
+        fila.auditoria_id_usuario == null
+          ? null
+          : String(fila.auditoria_id_usuario),
       modulo: String(fila.auditoria_modulo),
       accion: String(fila.auditoria_accion),
       entidad: String(fila.auditoria_entidad),
-      entidadId: fila.auditoria_entidad_id == null ? null : String(fila.auditoria_entidad_id),
-      tipoAccion: fila.auditoria_tipo_accion == null ? null : String(fila.auditoria_tipo_accion),
-      descripcion: fila.auditoria_descripcion == null ? null : String(fila.auditoria_descripcion),
+      entidadId:
+        fila.auditoria_entidad_id == null
+          ? null
+          : String(fila.auditoria_entidad_id),
+      tipoAccion:
+        fila.auditoria_tipo_accion == null
+          ? null
+          : String(fila.auditoria_tipo_accion),
+      descripcion:
+        fila.auditoria_descripcion == null
+          ? null
+          : String(fila.auditoria_descripcion),
       ip: fila.auditoria_ip == null ? null : String(fila.auditoria_ip),
-      userAgent: fila.auditoria_user_agent == null ? null : String(fila.auditoria_user_agent),
+      userAgent:
+        fila.auditoria_user_agent == null
+          ? null
+          : String(fila.auditoria_user_agent),
       valoresAntes: this.mapearJsonNullable(fila.auditoria_valores_antes),
       valoresDespues: this.mapearJsonNullable(fila.auditoria_valores_despues),
     };
@@ -466,7 +515,9 @@ export class AuditoriaReporteService {
       registro.tipoAccion ?? '',
       this.serializarJsonCsv(registro.valoresAntes),
       this.serializarJsonCsv(registro.valoresDespues),
-    ].map((valor) => this.escaparCsv(String(valor))).join(',');
+    ]
+      .map((valor) => this.escaparCsv(String(valor)))
+      .join(',');
   }
 
   private escaparCsv(valor: string): string {
@@ -499,7 +550,9 @@ export class AuditoriaReporteService {
       return valor as Record<string, unknown>;
     }
 
-    const texto = Buffer.isBuffer(valor) ? valor.toString('utf8') : String(valor);
+    const texto = Buffer.isBuffer(valor)
+      ? valor.toString('utf8')
+      : String(valor);
     if (texto === '') {
       return null;
     }

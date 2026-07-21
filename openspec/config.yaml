@@ -1,0 +1,80 @@
+# openspec/config.yaml — NutriFit Supervisor SDD configuration
+schema: spec-driven
+
+context: |
+  Tech stack: NestJS + TypeORM + MySQL (backend), React 19 + Vite 7 + Tailwind v4 + shadcn/ui (frontend)
+  Architecture: Clean Architecture (backend), Hook-first component pattern (frontend)
+  Testing: Jest (backend), Vitest (frontend), Playwright (E2E), all with coverage
+  Style: Spanish code/naming everywhere, @/ alias (frontend), src/ absolute paths (backend)
+  Persistence: hybrid (Engram + openspec files)
+  Monorepo: npm workspaces — apps/backend, apps/frontend, packages/shared
+
+strict_tdd: false
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+  apply:
+    - Follow existing code patterns (Spanish naming, Clean Architecture backend)
+    tdd: false
+    test_command: ""
+  verify:
+    test_command: ""
+    build_command: ""
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas
+
+testing:
+  backend:
+    runner: jest
+    command: npm run test --workspace=apps/backend
+    coverage_command: npm run test:cov --workspace=apps/backend
+    layers:
+      unit: true
+      integration: true
+      e2e: true
+  frontend:
+    runner: vitest
+    command: npm run test --workspace=apps/frontend
+    coverage_command: npm run test:coverage --workspace=apps/frontend
+    layers:
+      unit: true
+      integration: true
+      e2e: false
+  e2e:
+    runner: playwright
+    command: npm run test:e2e
+    layers:
+      unit: false
+      integration: false
+      e2e: true
+
+conventions:
+  language: Spanish (ALL code — variables, functions, components, types, UI copy)
+  naming:
+    components_files: PascalCase
+    functions_variables: camelCase
+    constants: UPPER_SNAKE_CASE
+  imports:
+    frontend: "@/" alias (e.g. @/components, @/lib, @/types)
+    backend: "src/" absolute paths, grouped (framework → domain → infrastructure)
+  typescript: strict mode enabled, no any
+  backend_arch: Clean Architecture (domain/, application/, infrastructure/, presentation/)
+  frontend_pattern: Hook-first, presentational components
+  auth: JWT with role guards (ADMIN, NUTRICIONISTA, SOCIO)
+
+warnings:
+  - NEVER start dev servers (backend/frontend). User starts them manually. If ports are down, ask user to start.
+  - Frontend uses Tailwind CSS v4 (NOT v3) — @theme inline pattern, not theme.extend
+  - Frontend ESLint uses flat config — formatting rules in ESLint, no standalone Prettier
+  - OpenSpec was already bootstrapped in previous session — config.yaml overwritten, specs/ and archive/ preserved

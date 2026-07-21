@@ -33,7 +33,9 @@ export class CierreConsultaScheduler {
 
   @Cron('*/5 * * * *')
   async ejecutarCierreAutomatico(): Promise<void> {
-    this.logger.log('Ejecutando verificación de cierre automático de consultas...');
+    this.logger.log(
+      'Ejecutando verificación de cierre automático de consultas...',
+    );
 
     const ahora = new Date();
 
@@ -49,12 +51,17 @@ export class CierreConsultaScheduler {
     for (const turno of turnos) {
       try {
         const gimnasioId = turno.gimnasio?.idGimnasio ?? 1;
-        const umbralMin = await this.politicaRepository.getUmbralCierreConsultaMin(gimnasioId);
-        const preavisoMin = await this.politicaRepository.getPreavisoCierreConsultaMin(gimnasioId);
-        const minutosTranscurridos = (ahora.getTime() - turno.consultaIniciadaAt!.getTime()) / 60_000;
+        const umbralMin =
+          await this.politicaRepository.getUmbralCierreConsultaMin(gimnasioId);
+        const preavisoMin =
+          await this.politicaRepository.getPreavisoCierreConsultaMin(
+            gimnasioId,
+          );
+        const minutosTranscurridos =
+          (ahora.getTime() - turno.consultaIniciadaAt!.getTime()) / 60_000;
 
         if (
-          minutosTranscurridos >= (umbralMin - preavisoMin) &&
+          minutosTranscurridos >= umbralMin - preavisoMin &&
           minutosTranscurridos < umbralMin &&
           !turno.preavisoCierreAutoEnviadoEn
         ) {
@@ -85,7 +92,10 @@ export class CierreConsultaScheduler {
               tipo: TipoNotificacion.CONSULTA_PREAVISO_CIERRE_AUTO,
               titulo: 'Cierre automático próximo',
               mensaje: `La consulta #${turno.idTurno} se cerrará automáticamente en ${preavisoMin} min. Finalizala para cargar los datos clínicos.`,
-              metadata: { turnoId: turno.idTurno, motivo: 'PREAVISO_CIERRE_AUTO' },
+              metadata: {
+                turnoId: turno.idTurno,
+                motivo: 'PREAVISO_CIERRE_AUTO',
+              },
             });
           }
           this.logger.log(`Preaviso enviado para turno ${turno.idTurno}`);
@@ -114,7 +124,9 @@ export class CierreConsultaScheduler {
               cierreAutomatico: true,
             },
           });
-          this.logger.log(`Turno ${turno.idTurno} cerrado automáticamente por inactividad`);
+          this.logger.log(
+            `Turno ${turno.idTurno} cerrado automáticamente por inactividad`,
+          );
         }
       } catch (error) {
         this.logger.error(

@@ -20,7 +20,7 @@ export function CtaFinalSeccion() {
         className="pointer-events-none absolute inset-0"
         style={{
           backgroundImage:
-            'radial-gradient(ellipse 70% 60% at 50% 100%, oklch(0.84 0.21 128 / 0.25), transparent 70%)',
+            'radial-gradient(ellipse 70% 60% at 50% 100%, oklch(0.71 0.19 50 / 0.25), transparent 70%)',
         }}
         aria-hidden
       />
@@ -29,13 +29,13 @@ export function CtaFinalSeccion() {
       <div className="relative mx-auto max-w-6xl px-6 lg:px-10">
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-16">
           <div className="flex flex-col justify-center">
-            <span className="font-display text-sm font-semibold uppercase tracking-[0.2em] text-landing-lima">
+            <span className="font-display text-sm font-semibold uppercase tracking-[0.2em] text-landing-naranja">
               Agendá tu demo
             </span>
             <h2 className="mt-4 font-display text-4xl font-bold leading-[1.05] tracking-tight text-landing-cream sm:text-5xl lg:text-[3.75rem]">
               Tu gimnasio,
               <br />
-              <span className="text-landing-lima">operando en semanas.</span>
+              <span className="text-landing-naranja">operando en semanas.</span>
             </h2>
             <p className="mt-6 max-w-md text-lg leading-relaxed text-landing-cream/70">
               30 minutos de demo, sin compromiso. Te mostramos el flujo completo,
@@ -49,7 +49,7 @@ export function CtaFinalSeccion() {
                 'Plan de rollout sin lock-in',
               ].map((item) => (
                 <li key={item} className="flex items-center gap-3 text-sm text-landing-cream/80">
-                  <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-landing-lima" strokeWidth={2} />
+                  <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-landing-naranja" strokeWidth={2} />
                   {item}
                 </li>
               ))}
@@ -60,14 +60,14 @@ export function CtaFinalSeccion() {
                 href="mailto:ventas@nutrifitsupervisor.com"
                 className="landing-kinetic-line inline-flex w-fit items-center gap-2 hover:text-landing-cream"
               >
-                <Mail className="h-4 w-4 text-landing-lima" />
+                <Mail className="h-4 w-4 text-landing-naranja" />
                 ventas@nutrifitsupervisor.com
               </a>
               <a
                 href="tel:+541100000000"
                 className="landing-kinetic-line inline-flex w-fit items-center gap-2 hover:text-landing-cream"
               >
-                <Phone className="h-4 w-4 text-landing-lima" />
+                <Phone className="h-4 w-4 text-landing-naranja" />
                 +54 11 0000-0000
               </a>
             </div>
@@ -77,7 +77,7 @@ export function CtaFinalSeccion() {
             <div className="w-full rounded-2xl border border-landing-line-dark bg-landing-ink-soft/60 p-7 backdrop-blur-md lg:p-9">
               {enviado ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <span className="flex h-16 w-16 items-center justify-center rounded-full bg-landing-lima text-landing-ink">
+                  <span className="flex h-16 w-16 items-center justify-center rounded-full bg-landing-naranja text-landing-ink">
                     <CheckCircle2 className="h-8 w-8" strokeWidth={2} />
                   </span>
                   <h3 className="mt-5 font-display text-2xl font-bold text-landing-cream">
@@ -98,7 +98,7 @@ export function CtaFinalSeccion() {
                       name="nombre"
                       required
                       placeholder="¿Cómo te llamás?"
-                      className="border-landing-line-dark bg-landing-ink/60 text-landing-cream placeholder:text-landing-cream/30 focus-visible:border-landing-lima focus-visible:ring-landing-lima/30"
+                      className="border-landing-line-dark bg-landing-ink/60 text-landing-cream placeholder:text-landing-cream/30 focus-visible:border-landing-naranja focus-visible:ring-landing-naranja/30"
                     />
                   </div>
 
@@ -112,7 +112,7 @@ export function CtaFinalSeccion() {
                       type="email"
                       required
                       placeholder="vos@gimnasio.com"
-                      className="border-landing-line-dark bg-landing-ink/60 text-landing-cream placeholder:text-landing-cream/30 focus-visible:border-landing-lima focus-visible:ring-landing-lima/30"
+                      className="border-landing-line-dark bg-landing-ink/60 text-landing-cream placeholder:text-landing-cream/30 focus-visible:border-landing-naranja focus-visible:ring-landing-naranja/30"
                     />
                   </div>
 
@@ -127,7 +127,7 @@ export function CtaFinalSeccion() {
                         name="gimnasio"
                         required
                         placeholder="Nombre del gimnasio"
-                        className="border-landing-line-dark bg-landing-ink/60 pl-9 text-landing-cream placeholder:text-landing-cream/30 focus-visible:border-landing-lima focus-visible:ring-landing-lima/30"
+                        className="border-landing-line-dark bg-landing-ink/60 pl-9 text-landing-cream placeholder:text-landing-cream/30 focus-visible:border-landing-naranja focus-visible:ring-landing-naranja/30"
                       />
                     </div>
                   </div>
@@ -142,14 +142,14 @@ export function CtaFinalSeccion() {
                       type="number"
                       min={1}
                       defaultValue={1}
-                      className="border-landing-line-dark bg-landing-ink/60 text-landing-cream placeholder:text-landing-cream/30 focus-visible:border-landing-lima focus-visible:ring-landing-lima/30"
+                      className="border-landing-line-dark bg-landing-ink/60 text-landing-cream placeholder:text-landing-cream/30 focus-visible:border-landing-naranja focus-visible:ring-landing-naranja/30"
                     />
                   </div>
 
                   <Button
                     type="submit"
                     size="lg"
-                    className="group mt-2 w-full bg-landing-lima text-landing-ink hover:bg-landing-lima-bright"
+                    className="group mt-2 w-full bg-landing-naranja text-landing-ink hover:bg-landing-naranja-bright"
                   >
                     Solicitar demo
                     <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />

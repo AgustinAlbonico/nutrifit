@@ -30,23 +30,28 @@ export class SuscripcionController {
   ) {}
 
   @Post('registro')
-  @ApiOperation({ summary: 'Registro público de gimnasio + admin + suscripción' })
-  async registrar(@Body() body: {
-    gimnasio: {
-      nombre: string;
-      direccion: string;
-      ciudad?: string;
-      provincia?: string;
-      telefono?: string;
-    };
-    admin: {
-      nombre: string;
-      apellido: string;
-      email: string;
-      telefono: string;
-      password: string;
-    };
-  }) {
+  @ApiOperation({
+    summary: 'Registro público de gimnasio + admin + suscripción',
+  })
+  async registrar(
+    @Body()
+    body: {
+      gimnasio: {
+        nombre: string;
+        direccion: string;
+        ciudad?: string;
+        provincia?: string;
+        telefono?: string;
+      };
+      admin: {
+        nombre: string;
+        apellido: string;
+        email: string;
+        telefono: string;
+        password: string;
+      };
+    },
+  ) {
     return this.iniciarRegistroUseCase.execute(body);
   }
 

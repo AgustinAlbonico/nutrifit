@@ -88,12 +88,14 @@ describe('FinalizarPlanAlimentacionUseCase', () => {
     );
   });
 
-  function setupMocks(opts: {
-    estado?: 'BORRADOR' | 'ACTIVO' | 'FINALIZADO';
-    planNutId?: number;
-    planGymId?: number | null;
-    socioUserId?: number;
-  } = {}) {
+  function setupMocks(
+    opts: {
+      estado?: 'BORRADOR' | 'ACTIVO' | 'FINALIZADO';
+      planNutId?: number;
+      planGymId?: number | null;
+      socioUserId?: number;
+    } = {},
+  ) {
     planRepoMock.findOne.mockResolvedValue({
       idPlanAlimentacion: 100,
       socio: {
@@ -137,13 +139,11 @@ describe('FinalizarPlanAlimentacionUseCase', () => {
     // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(notificacionesMock.crear).toHaveBeenCalledTimes(2);
     expect(
-      // eslint-disable-next-line @typescript-eslint/unbound-method
       notificacionesMock.crear.mock.calls.some(
         (c) => c[0].tipo === 'PLAN_FINALIZADO' && c[0].destinatarioId === 100,
       ),
     ).toBe(true);
     expect(
-      // eslint-disable-next-line @typescript-eslint/unbound-method
       notificacionesMock.crear.mock.calls.some(
         (c) => c[0].tipo === 'PLAN_FINALIZADO' && c[0].destinatarioId === 200,
       ),

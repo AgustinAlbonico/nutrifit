@@ -56,7 +56,8 @@ const FUENTES_LIBRES: Record<TipoFoto, Record<EtapaVisual, FuenteLibre>> = {
   espalda: {
     inicial: {
       url: 'https://upload.wikimedia.org/wikipedia/commons/4/40/Bodybuilder_Eugene_Rapin_from_behind_flexing_biceps_Wellcome_L0038400.jpg',
-      credito: 'Wikimedia Commons - Bodybuilder Eugene Rapin from behind flexing biceps',
+      credito:
+        'Wikimedia Commons - Bodybuilder Eugene Rapin from behind flexing biceps',
     },
     media: {
       url: 'https://upload.wikimedia.org/wikipedia/commons/9/9b/Fisicoculturismo_argentino_AFCA_1%C2%AA_lugar_Torneo_Mr_Valentin_Alsina_1970_categoria_Novicios.jpg_altura_1%2C85_mts_peso_89_kilos%2Cpose_de_espalda.jpg',
@@ -64,7 +65,8 @@ const FUENTES_LIBRES: Record<TipoFoto, Record<EtapaVisual, FuenteLibre>> = {
     },
     final: {
       url: 'https://upload.wikimedia.org/wikipedia/commons/7/78/Male_bodybuilder%2C_a_product_of_physical_culture%2C_c._1906_Wellcome_L0039140.jpg',
-      credito: 'Wikimedia Commons - Male bodybuilder, a product of physical culture',
+      credito:
+        'Wikimedia Commons - Male bodybuilder, a product of physical culture',
     },
   },
   otro: {
@@ -74,11 +76,13 @@ const FUENTES_LIBRES: Record<TipoFoto, Record<EtapaVisual, FuenteLibre>> = {
     },
     media: {
       url: 'https://upload.wikimedia.org/wikipedia/commons/4/43/African_american_bodybuilder_tony_pearson_posing.jpg',
-      credito: 'Wikimedia Commons - African american bodybuilder Tony Pearson posing',
+      credito:
+        'Wikimedia Commons - African american bodybuilder Tony Pearson posing',
     },
     final: {
       url: 'https://upload.wikimedia.org/wikipedia/commons/3/3a/Bodybuilder_Emile_Royer_in_bicep-curling_pose_Wellcome_L0038399.jpg',
-      credito: 'Wikimedia Commons - Bodybuilder Emile Royer in bicep-curling pose',
+      credito:
+        'Wikimedia Commons - Bodybuilder Emile Royer in bicep-curling pose',
     },
   },
 };
@@ -140,7 +144,9 @@ function resolverUrlDescarga(url: string): string {
 }
 
 function descargarConCurl(urlDescarga: string): Buffer {
-  const directorioTemporal = mkdtempSync(join(tmpdir(), 'nutrifit-martin-fotos-'));
+  const directorioTemporal = mkdtempSync(
+    join(tmpdir(), 'nutrifit-martin-fotos-'),
+  );
   const archivoTemporal = join(directorioTemporal, 'imagen.jpg');
 
   try {
@@ -219,7 +225,7 @@ async function run(): Promise<void> {
     await dataSource.initialize();
     await asegurarBucketExiste(minioClient, bucketName);
 
-    const socioRows = (await dataSource.query(
+    const socioRows = await dataSource.query(
       `
         SELECT p.id_persona AS socioId
         FROM usuario u
@@ -228,14 +234,14 @@ async function run(): Promise<void> {
         LIMIT 1
       `,
       ['martin-evolucion@nutrifit.com'],
-    )) as Array<{ socioId: number }>;
+    );
 
     const socioId = socioRows[0]?.socioId;
     if (!socioId) {
       throw new Error('No se encontró a martin-evolucion@nutrifit.com');
     }
 
-    const turnos = (await dataSource.query(
+    const turnos = await dataSource.query(
       `
         SELECT id_turno AS turnoId, fecha AS fechaTurno, hora_turno AS horaTurno
         FROM turno
@@ -243,16 +249,16 @@ async function run(): Promise<void> {
         ORDER BY fecha ASC, hora_turno ASC
       `,
       [socioId],
-    )) as TurnoMartin[];
+    );
 
     if (turnos.length === 0) {
       throw new Error('Martín no tiene turnos para asociar fotos');
     }
 
-    const fotosExistentes = (await dataSource.query(
+    const fotosExistentes = await dataSource.query(
       `SELECT id_foto, object_key AS objectKey FROM foto_progreso WHERE id_socio = ?`,
       [socioId],
-    )) as Array<{ id_foto: number; objectKey: string }>;
+    );
 
     for (const foto of fotosExistentes) {
       try {
@@ -262,14 +268,18 @@ async function run(): Promise<void> {
       }
     }
 
-    await dataSource.query(`DELETE FROM foto_progreso WHERE id_socio = ?`, [socioId]);
+    await dataSource.query(`DELETE FROM foto_progreso WHERE id_socio = ?`, [
+      socioId,
+    ]);
 
     for (let indice = 0; indice < turnos.length; indice += 1) {
       const turno = turnos[indice];
       const etapa = resolverEtapaVisual(indice, turnos.length);
       const fechaISO = formatearFechaISO(turno.fechaTurno);
       const horaLimpia = turno.horaTurno.slice(0, 5).replace(':', '-');
-      const fechaFoto = new Date(`${fechaISO}T${turno.horaTurno.slice(0, 5)}:00`);
+      const fechaFoto = new Date(
+        `${fechaISO}T${turno.horaTurno.slice(0, 5)}:00`,
+      );
 
       for (const tipo of Object.keys(FUENTES_LIBRES) as TipoFoto[]) {
         const fuente = FUENTES_LIBRES[tipo][etapa];
@@ -282,9 +292,15 @@ async function run(): Promise<void> {
 
         const objectKey = `progreso/seed/martin-evolucion/${tipo}/${fechaISO}_${horaLimpia}_${turno.turnoId}_${etapa}.jpg`;
 
-        await minioClient.putObject(bucketName, objectKey, buffer, buffer.length, {
-          'Content-Type': 'image/jpeg',
-        });
+        await minioClient.putObject(
+          bucketName,
+          objectKey,
+          buffer,
+          buffer.length,
+          {
+            'Content-Type': 'image/jpeg',
+          },
+        );
 
         await dataSource.query(
           `

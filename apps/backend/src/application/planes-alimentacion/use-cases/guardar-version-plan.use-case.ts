@@ -124,10 +124,17 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
     // 1) Cargar plan
     const plan = await this.planRepo.findOne({
       where: { idPlanAlimentacion: planAlimentacionId },
-      relations: { socio: true, nutricionista: { usuario: true }, dias: { opcionesComida: { items: true } } },
+      relations: {
+        socio: true,
+        nutricionista: { usuario: true },
+        dias: { opcionesComida: { items: true } },
+      },
     });
     if (!plan) {
-      throw new NotFoundError('Plan de alimentación', String(planAlimentacionId));
+      throw new NotFoundError(
+        'Plan de alimentación',
+        String(planAlimentacionId),
+      );
     }
 
     // 2) Multi-tenant
@@ -167,10 +174,13 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
     });
 
     // 5) Buscar versión borrador (numeroVersion = 0)
-    const versionesExistentes = await this.planVersionRepo.listarPorPlan(planAlimentacionId);
+    const versionesExistentes =
+      await this.planVersionRepo.listarPorPlan(planAlimentacionId);
     const borrador = versionesExistentes.find((v) => v.numeroVersion === 0);
     if (!borrador) {
-      throw new BadRequestError('No hay cambios pendientes de guardar en este plan (borrador no encontrado).');
+      throw new BadRequestError(
+        'No hay cambios pendientes de guardar en este plan (borrador no encontrado).',
+      );
     }
 
     const { datosJson, motivoCambio } = borrador;
@@ -199,7 +209,9 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
 
     // 8) Transacción atómica
     const nuevaVersion = await this.dataSource.transaction(async (manager) => {
-      const versionRepo = manager.getRepository(PlanAlimentacionVersionOrmEntity);
+      const versionRepo = manager.getRepository(
+        PlanAlimentacionVersionOrmEntity,
+      );
       const planRepoTx = manager.getRepository(PlanAlimentacionOrmEntity);
       const diaRepoTx = manager.getRepository(DiaPlanOrmEntity);
       const opcionRepoTx = manager.getRepository(OpcionComidaOrmEntity);
@@ -213,7 +225,7 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
         activa: true,
         createdBy: plan.nutricionista.idPersona ?? 0,
       });
-      const savedVersion = (await versionRepo.save(versionCreada)) as PlanAlimentacionVersionOrmEntity;
+      const savedVersion = await versionRepo.save(versionCreada);
 
       // 8b) Desactivar todas las versiones anteriores del plan
       await versionRepo
@@ -269,9 +281,8 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
               item.alimentoId = al.idAlimento;
               item.alimentoNombre = al.nombre;
               item.cantidad = ali.cantidad;
-              const unidadNormalizada = GuardarVersionPlanUseCase.normalizarUnidad(
-                ali.unidad,
-              );
+              const unidadNormalizada =
+                GuardarVersionPlanUseCase.normalizarUnidad(ali.unidad);
               if (ali.unidad && !unidadNormalizada) {
                 this.logger.warn(
                   `unidad invalida "${ali.unidad}" para alimentoId=${ali.alimentoId}; fallback a "${al.unidadMedida}".`,
@@ -299,8 +310,9 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
 
     // 9) Notificación al socio
     try {
-      const socioPersonaId = (plan.socio as unknown as { idPersona: number | null })
-        .idPersona;
+      const socioPersonaId = (
+        plan.socio as unknown as { idPersona: number | null }
+      ).idPersona;
       if (socioPersonaId) {
         const socio = await this.socioRepo.findOne({
           where: { idPersona: socioPersonaId },
@@ -314,7 +326,7 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
             mensaje: `Tu nutricionista guardó una nueva versión del plan. Revisala en la app.`,
             metadata: {
               planId: plan.idPlanAlimentacion,
-              versionId: nuevaVersion!.idPlanAlimentacionVersion,
+              versionId: nuevaVersion.idPlanAlimentacionVersion,
               numeroVersion: nuevoNumeroVersion,
             },
           });
@@ -335,9 +347,9 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
         usuarioId: nutricionistaUserId,
         gimnasioId: gimnasioId,
         metadata: {
-          versionId: nuevaVersion!.idPlanAlimentacionVersion,
+          versionId: nuevaVersion.idPlanAlimentacionVersion,
           numeroVersion: nuevoNumeroVersion,
-          motivoCambio: nuevaVersion!.motivoCambio,
+          motivoCambio: nuevaVersion.motivoCambio,
         },
       });
     } catch (error) {
@@ -363,14 +375,16 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
       objetivoMacros,
     );
     const validacion = RestriccionesValidatorV2.validarPlanCompleto(
-      datosJson as unknown as Parameters<typeof RestriccionesValidatorV2.validarPlanCompleto>[0],
+      datosJson as unknown as Parameters<
+        typeof RestriccionesValidatorV2.validarPlanCompleto
+      >[0],
       fichaClinicaValidacion,
     );
 
     return {
       idPlanAlimentacion: planAlimentacionId,
       planAlimentacionId,
-      versionId: nuevaVersion!.idPlanAlimentacionVersion,
+      versionId: nuevaVersion.idPlanAlimentacionVersion,
       numeroVersion: nuevoNumeroVersion,
       motivoCambio,
       plan: datosJson as unknown as RespuestaGuardarVersionDto['plan'],

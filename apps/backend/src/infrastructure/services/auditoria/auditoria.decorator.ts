@@ -1,5 +1,8 @@
 import { SetMetadata } from '@nestjs/common';
-import type { AccionAuditoria, TipoAccionAuditoria } from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
+import type {
+  AccionAuditoria,
+  TipoAccionAuditoria,
+} from 'src/infrastructure/persistence/typeorm/entities/auditoria.entity';
 
 export const AUDITORIA_METADATA_KEY = 'auditoria:metadata';
 

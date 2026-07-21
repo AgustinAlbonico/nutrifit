@@ -350,7 +350,8 @@ export class CrearTurnoEnNombreDeSocioUseCase {
       await this.emailService.enviarNotificacionTurnoParaSocio({
         email,
         nombreSocio: `${socio.nombre} ${socio.apellido}`.trim(),
-        nombreNutricionista: `${nutricionista.nombre} ${nutricionista.apellido}`.trim(),
+        nombreNutricionista:
+          `${nutricionista.nombre} ${nutricionista.apellido}`.trim(),
         fecha: formatArgentinaDate(turno.fechaTurno),
         hora: normalizeTimeToHHmm(turno.horaTurno),
         gimnasioId,

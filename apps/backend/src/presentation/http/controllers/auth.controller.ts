@@ -57,7 +57,10 @@ export class AuthController {
   @Post('login')
   async login(@Body() body: LoginDto, @Req() request: Request) {
     this.logger.log(`Intentando loguear al usuario con email: ${body.email}`);
-    const res = await this.loginUseCase.execute(body, extraerOrigenRequest(request));
+    const res = await this.loginUseCase.execute(
+      body,
+      extraerOrigenRequest(request),
+    );
     this.logger.log(
       `Login correcto para el usuario con email: ${body.email}, tiene el rol de ${res.rol}`,
     );
@@ -86,7 +89,10 @@ export class AuthController {
     @CurrentUser() user: UsuarioAutenticadoPayload,
     @Req() request: Request,
   ) {
-    return this.refreshTokenUseCase.execute(user, extraerOrigenRequest(request));
+    return this.refreshTokenUseCase.execute(
+      user,
+      extraerOrigenRequest(request),
+    );
   }
 
   @Post('solicitar-recuperacion')

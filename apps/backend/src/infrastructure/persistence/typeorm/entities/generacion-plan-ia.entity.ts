@@ -51,10 +51,20 @@ export class GeneracionPlanIaOrmEntity {
   @Column({ name: 'solicitud_json', type: 'json' })
   solicitudJson: unknown;
 
-  @Column({ name: 'proveedor_actual', type: 'varchar', length: 50, nullable: true })
+  @Column({
+    name: 'proveedor_actual',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
   proveedorActual: string | null;
 
-  @Column({ name: 'mensaje_estado', type: 'varchar', length: 500, nullable: true })
+  @Column({
+    name: 'mensaje_estado',
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+  })
   mensajeEstado: string | null;
 
   @Column({ name: 'error_mensaje', type: 'text', nullable: true })
@@ -72,7 +82,12 @@ export class GeneracionPlanIaOrmEntity {
   @Column({ name: 'dia_actual', type: 'varchar', length: 32, nullable: true })
   diaActual: string | null;
 
-  @Column({ name: 'comida_actual', type: 'varchar', length: 64, nullable: true })
+  @Column({
+    name: 'comida_actual',
+    type: 'varchar',
+    length: 64,
+    nullable: true,
+  })
   comidaActual: string | null;
 
   @Column({ name: 'snapshot_parcial_json', type: 'json', nullable: true })

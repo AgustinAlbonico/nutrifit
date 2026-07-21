@@ -56,14 +56,20 @@ export class ActualizarPreparacionUseCase implements BaseUseCase {
     // Actualizar items si vienen
     if (dto.items !== undefined) {
       if (dto.items.length === 0) {
-        throw new BadRequestError('La preparación debe tener al menos un ingrediente.');
+        throw new BadRequestError(
+          'La preparación debe tener al menos un ingrediente.',
+        );
       }
 
       // Validar alimentos
       const alimentoIds = [...new Set(dto.items.map((i) => i.alimentoId))];
-      const alimentos = await this.alimentoRepo.findBy({ idAlimento: In(alimentoIds) });
+      const alimentos = await this.alimentoRepo.findBy({
+        idAlimento: In(alimentoIds),
+      });
       if (alimentos.length !== alimentoIds.length) {
-        throw new NotFoundError('Uno o más alimentos no existen en el sistema.');
+        throw new NotFoundError(
+          'Uno o más alimentos no existen en el sistema.',
+        );
       }
 
       // Borrar items anteriores y crear nuevos

@@ -25,7 +25,9 @@ import { TablaEvolucionPaciente } from '@/components/progreso/TablaEvolucionPaci
 import { TimelineEvolucionClinica } from '@/components/progreso/TimelineEvolucionClinica';
 import { AlertasClinicasProgreso } from '@/components/progreso/AlertasClinicasProgreso';
 import { ComparadorMediciones } from '@/components/progreso/ComparadorMediciones';
+import { ResumenReporteEvolucionClinica } from '@/components/progreso/ResumenReporteEvolucionClinica';
 import { useProgresoData } from '@/components/progreso/useProgresoData';
+import { useReporteEvolucionPaciente } from '@/components/progreso/useReporteEvolucionPaciente';
 import { derivarSeriesEvolucion } from '@/components/progreso/useSeriesEvolucion';
 import { RangoSaludableBadge } from '@/components/progreso/IndicadoresProgreso';
 
@@ -77,6 +79,11 @@ export function DashboardProgreso({
   const { historial, resumen, isError } = useProgresoData({
     socioId,
     nutricionistaId,
+    token,
+  });
+  const reporteEvolucion = useReporteEvolucionPaciente({
+    socioId,
+    nutricionistaId: esVistaNutricionista ? nutricionistaId : undefined,
     token,
   });
 
@@ -303,6 +310,14 @@ export function DashboardProgreso({
       {tabActivo === 'resumen' && (
         <div className="space-y-6">
           <AlertasClinicasProgreso alertas={resumen?.alertasClinicas ?? []} />
+
+          {esVistaNutricionista && (
+            <ResumenReporteEvolucionClinica
+              reporte={reporteEvolucion.data}
+              cargando={reporteEvolucion.isLoading}
+              error={reporteEvolucion.error}
+            />
+          )}
 
           <Suspense fallback={<Skeleton className="h-80" />}>
             <GraficoPrincipalEvolucion

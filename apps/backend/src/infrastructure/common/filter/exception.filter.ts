@@ -107,7 +107,6 @@ export class AppErrorFilter implements ExceptionFilter {
         `[UNHANDLED_EXCEPTION] ${e.name}: ${e.message}`,
         this.formatUnknownException(e),
       );
-
     }
 
     // ===== Respuesta JSON unificada =====

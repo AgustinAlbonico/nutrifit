@@ -7,13 +7,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import {
-  IsEnum,
-  IsInt,
-  IsOptional,
-  Max,
-  Min,
-} from 'class-validator';
+import { IsEnum, IsInt, IsOptional, Max, Min } from 'class-validator';
 import { DiaSemana } from 'src/domain/entities/DiaPlan/DiaSemana';
 import { TipoComida } from 'src/domain/entities/OpcionComida/TipoComida';
 import { GenerarIdeasComidaUseCase } from 'src/application/planes-alimentacion/use-cases/generar-ideas-comida.use-case';
@@ -23,9 +17,7 @@ import { RolesGuard } from 'src/infrastructure/auth/guards/roles.guard';
 import { Rol as RolEnum } from 'src/domain/entities/Usuario/Rol';
 import { Actions } from 'src/infrastructure/auth/decorators/actions.decorator';
 import { Rol } from 'src/infrastructure/auth/decorators/role.decorator';
-import {
-  CurrentUser,
-} from 'src/infrastructure/auth/decorators/current-user.decorator';
+import { CurrentUser } from 'src/infrastructure/auth/decorators/current-user.decorator';
 import { ACCIONES } from '@nutrifit/shared';
 import {
   APP_LOGGER_SERVICE,
@@ -77,4 +69,3 @@ export class IdeasComidaController {
     });
   }
 }
-

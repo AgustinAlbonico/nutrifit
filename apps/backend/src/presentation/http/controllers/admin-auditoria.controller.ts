@@ -1,4 +1,11 @@
-import { Controller, ForbiddenException, Get, Query, Res, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  ForbiddenException,
+  Get,
+  Query,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import type { PaginatedData } from '@nutrifit/shared';
 import type { Response } from 'express';
 import { Rol as RolEnum } from 'src/domain/entities/Usuario/Rol';
@@ -39,7 +46,9 @@ interface ExportarAuditoriaDto extends FiltrosAuditoriaDto {
 @Controller('admin/auditoria')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AdminAuditoriaController {
-  constructor(private readonly auditoriaReporteService: AuditoriaReporteService) {}
+  constructor(
+    private readonly auditoriaReporteService: AuditoriaReporteService,
+  ) {}
 
   @Get()
   @Rol(RolEnum.ADMIN, RolEnum.SUPERADMIN)
@@ -84,12 +93,15 @@ export class AdminAuditoriaController {
     usuario: UsuarioAutenticadoPayload,
     paginar: boolean,
   ): FiltrosAuditoria {
-    const gimnasioId = this.resolverGimnasioAuditable(filtros.gimnasioId, usuario);
+    const gimnasioId = this.resolverGimnasioAuditable(
+      filtros.gimnasioId,
+      usuario,
+    );
 
     return {
       page: this.parsearEntero(filtros.page) ?? 1,
       limit: paginar
-        ? this.parsearEntero(filtros.pageSize ?? filtros.limit) ?? 50
+        ? (this.parsearEntero(filtros.pageSize ?? filtros.limit) ?? 50)
         : this.parsearEntero(filtros.pageSize ?? filtros.limit),
       fechaDesde: filtros.fechaDesde ? new Date(filtros.fechaDesde) : undefined,
       fechaHasta: filtros.fechaHasta ? new Date(filtros.fechaHasta) : undefined,
@@ -115,14 +127,18 @@ export class AdminAuditoriaController {
     }
 
     if (usuario.gimnasioId == null) {
-      throw new ForbiddenException('Seleccioná un gimnasio antes de consultar auditoría.');
+      throw new ForbiddenException(
+        'Seleccioná un gimnasio antes de consultar auditoría.',
+      );
     }
 
     if (
       gimnasioIdSolicitado !== undefined &&
       gimnasioIdSolicitado !== usuario.gimnasioId
     ) {
-      throw new ForbiddenException('No tenés permisos para consultar ese gimnasio.');
+      throw new ForbiddenException(
+        'No tenés permisos para consultar ese gimnasio.',
+      );
     }
 
     return usuario.gimnasioId;

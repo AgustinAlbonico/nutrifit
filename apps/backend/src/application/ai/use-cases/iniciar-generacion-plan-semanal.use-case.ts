@@ -15,8 +15,7 @@ import {
   obtenerFechaCorteGeneracionPlanIaVencida,
 } from '../constants/generacion-plan-ia.constants';
 
-export interface IniciarGeneracionPlanSemanalInput
-  extends SolicitudPlanSemanal {
+export interface IniciarGeneracionPlanSemanalInput extends SolicitudPlanSemanal {
   planAlimentacionId?: number | null;
 }
 

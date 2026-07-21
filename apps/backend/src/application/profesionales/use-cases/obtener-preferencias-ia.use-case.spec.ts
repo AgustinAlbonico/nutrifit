@@ -56,10 +56,11 @@ describe('ObtenerPreferenciasIaUseCase', () => {
       findByMatricula: jest.fn(),
     } as unknown as jest.Mocked<NutricionistaRepository>;
 
-    useCase = new ObtenerPreferenciasIaUseCase(
-      nutricionistaRepository,
-      { log: jest.fn(), warn: jest.fn(), error: jest.fn() } as any,
-    );
+    useCase = new ObtenerPreferenciasIaUseCase(nutricionistaRepository, {
+      log: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+    } as any);
   });
 
   it('retorna el string de preferencias cuando el nutricionista tiene notas', async () => {
@@ -88,8 +89,8 @@ describe('ObtenerPreferenciasIaUseCase', () => {
   it('lanza NotFoundError cuando el nutricionista no existe', async () => {
     nutricionistaRepository.findById.mockResolvedValue(null);
 
-    await expect(
-      useCase.execute({ nutricionistaId: 999 }),
-    ).rejects.toThrow(NotFoundError);
+    await expect(useCase.execute({ nutricionistaId: 999 })).rejects.toThrow(
+      NotFoundError,
+    );
   });
 });

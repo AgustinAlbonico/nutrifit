@@ -42,7 +42,14 @@ export class GetTurnosRecepcionDiaUseCase implements BaseUseCase {
       })
       .andWhere('DATE(turno.fechaTurno) = :targetDate', { targetDate })
       .andWhere('turno.estadoTurno IN (:...estados)', {
-        estados: ['CONFIRMADO', 'PRESENTE', 'EN_CURSO', 'AUSENTE', 'REALIZADO', 'CANCELADO'],
+        estados: [
+          'CONFIRMADO',
+          'PRESENTE',
+          'EN_CURSO',
+          'AUSENTE',
+          'REALIZADO',
+          'CANCELADO',
+        ],
       })
       .orderBy('turno.horaTurno', 'ASC');
 

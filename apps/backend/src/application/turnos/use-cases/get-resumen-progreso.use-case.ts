@@ -310,7 +310,9 @@ export class GetResumenProgresoUseCase {
 
     if (medicionAnterior) {
       const cambioPeso = parseFloat(
-        (Number(ultimaMedicion.peso) - Number(medicionAnterior.peso)).toFixed(2),
+        (Number(ultimaMedicion.peso) - Number(medicionAnterior.peso)).toFixed(
+          2,
+        ),
       );
 
       if (Math.abs(cambioPeso) >= 5) {

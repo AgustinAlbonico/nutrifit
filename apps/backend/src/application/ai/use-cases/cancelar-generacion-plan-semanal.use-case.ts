@@ -53,7 +53,9 @@ export class CancelarGeneracionPlanSemanalUseCase {
   private async obtenerGeneracionDelGimnasio(
     input: CancelarGeneracionPlanSemanalInput,
   ): Promise<GeneracionPlanIaEntity> {
-    const generacion = await this.generacionRepo.obtenerPorId(input.generacionId);
+    const generacion = await this.generacionRepo.obtenerPorId(
+      input.generacionId,
+    );
 
     if (!generacion || generacion.gimnasioId !== input.gimnasioId) {
       throw new NotFoundError('Generación IA', String(input.generacionId));

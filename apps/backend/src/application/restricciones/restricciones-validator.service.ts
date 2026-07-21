@@ -3,7 +3,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { FichaSaludOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/ficha-salud.entity';
 
-const PROTEINAS_ANIMALES = ['carne', 'pollo', 'res', 'cerdo', 'pescado', 'huevo'];
+const PROTEINAS_ANIMALES = [
+  'carne',
+  'pollo',
+  'res',
+  'cerdo',
+  'pescado',
+  'huevo',
+];
 const LACTOS = ['leche', 'queso', 'yogur', 'manteca'];
 const MIEL = ['miel'];
 const GLUTEN = ['trigo', 'avena', 'cebada', 'centeno'];
@@ -222,7 +229,10 @@ export class RestriccionesValidator {
     return token;
   }
 
-  private _contieneAlgunaDe(nombreAlimento: string, listaNegra: string[]): boolean {
+  private _contieneAlgunaDe(
+    nombreAlimento: string,
+    listaNegra: string[],
+  ): boolean {
     return listaNegra.some((a) => nombreAlimento.toLowerCase().includes(a));
   }
 
@@ -471,9 +481,11 @@ export class RestriccionesValidator {
     // 1. Alergias (critico)
     if (ficha.alergias?.length) {
       for (const nombre of nombresAlimentos) {
-        if (ficha.alergias.some((a) =>
-          nombre.toLowerCase().includes(a.toLowerCase()),
-        )) {
+        if (
+          ficha.alergias.some((a) =>
+            nombre.toLowerCase().includes(a.toLowerCase()),
+          )
+        ) {
           criticas.push({
             tipo: 'alergia',
             ingrediente: nombre,
@@ -486,9 +498,10 @@ export class RestriccionesValidator {
     // 2. Restricciones alimentarias (critico si vegano/TACC/etc)
     const restricciones = (ficha.restriccionesAlimentarias ?? '').toLowerCase();
     const isVegano = restricciones.includes('vegano');
-    const isSinTACC = restricciones.includes('tacc')
-      || restricciones.includes('celiac')
-      || restricciones.includes('gluten');
+    const isSinTACC =
+      restricciones.includes('tacc') ||
+      restricciones.includes('celiac') ||
+      restricciones.includes('gluten');
 
     if (isVegano) {
       const animalYLeche = [...PROTEINAS_ANIMALES, ...LACTOS, ...MIEL];
@@ -499,7 +512,8 @@ export class RestriccionesValidator {
         criticas.push({
           tipo: 'restriccion-dura',
           ingrediente: infractor,
-          mensaje: 'La idea incluye productos animales y la restriccion es vegana.',
+          mensaje:
+            'La idea incluye productos animales y la restriccion es vegana.',
         });
       }
     }
@@ -519,7 +533,10 @@ export class RestriccionesValidator {
 
     // 3. Medicacion (warning, no critico)
     const medicacion = (ficha.medicacionActual ?? '').toLowerCase();
-    if (medicacion.includes('warfarina') || medicacion.includes('anticoagulante')) {
+    if (
+      medicacion.includes('warfarina') ||
+      medicacion.includes('anticoagulante')
+    ) {
       const altoVitK = ['espinaca', 'brocoli', 'col rizada', 'acelga'];
       if (nombresAlimentos.some((n) => this._contieneAlgunaDe(n, altoVitK))) {
         warnings.push(

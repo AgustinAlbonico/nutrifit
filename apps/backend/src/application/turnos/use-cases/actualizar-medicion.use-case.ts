@@ -46,7 +46,9 @@ export class ActualizarMedicionUseCase {
     }
 
     if (turno.nutricionista.idPersona !== this.tenantContext.personaId) {
-      throw new ForbiddenError('No podés editar mediciones de otro nutricionista');
+      throw new ForbiddenError(
+        'No podés editar mediciones de otro nutricionista',
+      );
     }
 
     if (turno.consultaFinalizadaAt !== null) {
@@ -85,13 +87,15 @@ export class ActualizarMedicionUseCase {
     medicion.peso = peso;
     medicion.altura = altura;
     medicion.imc = imc;
-    medicion.perimetroCintura = dto.perimetroCintura ?? medicion.perimetroCintura;
+    medicion.perimetroCintura =
+      dto.perimetroCintura ?? medicion.perimetroCintura;
     medicion.perimetroCadera = dto.perimetroCadera ?? medicion.perimetroCadera;
     medicion.perimetroBrazo = dto.perimetroBrazo ?? medicion.perimetroBrazo;
     medicion.perimetroMuslo = dto.perimetroMuslo ?? medicion.perimetroMuslo;
     medicion.perimetroPecho = dto.perimetroPecho ?? medicion.perimetroPecho;
     medicion.pliegueTriceps = dto.pliegueTriceps ?? medicion.pliegueTriceps;
-    medicion.pliegueAbdominal = dto.pliegueAbdominal ?? medicion.pliegueAbdominal;
+    medicion.pliegueAbdominal =
+      dto.pliegueAbdominal ?? medicion.pliegueAbdominal;
     medicion.pliegueMuslo = dto.pliegueMuslo ?? medicion.pliegueMuslo;
     medicion.porcentajeGrasa = dto.porcentajeGrasa ?? medicion.porcentajeGrasa;
     medicion.masaMagra = this.calcularMasaMagra(peso, medicion.porcentajeGrasa);

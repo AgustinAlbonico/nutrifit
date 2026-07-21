@@ -51,12 +51,17 @@ export class PoliticaOperativaRepositoryImpl implements IPoliticaOperativaReposi
 
   async getUmbralCierreConsultaMin(gimnasioId: number): Promise<number> {
     const politica = await this.findByGimnasioId(gimnasioId);
-    return politica?.umbralCierreConsultaMin ?? DEFAULT_UMBRAL_CIERRE_CONSULTA_MIN;
+    return (
+      politica?.umbralCierreConsultaMin ?? DEFAULT_UMBRAL_CIERRE_CONSULTA_MIN
+    );
   }
 
   async getPreavisoCierreConsultaMin(gimnasioId: number): Promise<number> {
     const politica = await this.findByGimnasioId(gimnasioId);
-    return politica?.preavisoCierreConsultaMin ?? DEFAULT_PREAVISO_CIERRE_CONSULTA_MIN;
+    return (
+      politica?.preavisoCierreConsultaMin ??
+      DEFAULT_PREAVISO_CIERRE_CONSULTA_MIN
+    );
   }
 
   private toDomain(orm: PoliticaOperativaOrmEntity): PoliticaOperativaEntity {

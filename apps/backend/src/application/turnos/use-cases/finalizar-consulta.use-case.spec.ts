@@ -15,7 +15,9 @@ describe('FinalizarConsultaUseCase', () => {
   let useCase: FinalizarConsultaUseCase;
   let turnoRepository: jest.Mocked<Repository<TurnoOrmEntity>>;
   let medicionRepository: jest.Mocked<Repository<MedicionOrmEntity>>;
-  let observacionRepository: jest.Mocked<Repository<ObservacionClinicaOrmEntity>>;
+  let observacionRepository: jest.Mocked<
+    Repository<ObservacionClinicaOrmEntity>
+  >;
   let notificacionesService: jest.Mocked<NotificacionesService>;
   let auditoriaService: jest.Mocked<AuditoriaService>;
 
@@ -70,9 +72,8 @@ describe('FinalizarConsultaUseCase', () => {
     notificacionesService = module.get<jest.Mocked<NotificacionesService>>(
       NotificacionesService,
     );
-    auditoriaService = module.get<jest.Mocked<AuditoriaService>>(
-      AuditoriaService,
-    );
+    auditoriaService =
+      module.get<jest.Mocked<AuditoriaService>>(AuditoriaService);
   });
 
   it('debe finalizar consulta desde estado EN_CURSO', async () => {

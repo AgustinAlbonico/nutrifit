@@ -33,7 +33,9 @@ function crearSut() {
     findOne: jest.fn().mockResolvedValue({ idPersona: 5, gimnasioId: 1 }),
   };
   const usuarioRepo = {
-    findOne: jest.fn().mockResolvedValue({ idUsuario: 5, rol: Rol.NUTRICIONISTA }),
+    findOne: jest
+      .fn()
+      .mockResolvedValue({ idUsuario: 5, rol: Rol.NUTRICIONISTA }),
   };
   const version = {
     idPlanAlimentacionVersion: 101,
@@ -111,7 +113,9 @@ describe('CrearPlanManualVacioUseCase', () => {
     expect(input.datosJson.estructura).toHaveLength(7);
     expect(input.datosJson.estructura[0].comidas).toHaveLength(5);
     expect(input.datosJson.estructura[0].comidas).toEqual(
-      expect.arrayContaining([expect.objectContaining({ tipo: TipoComida.COLACION })]),
+      expect.arrayContaining([
+        expect.objectContaining({ tipo: TipoComida.COLACION }),
+      ]),
     );
   });
 });

@@ -38,13 +38,13 @@ export function ComoFuncionaSeccion() {
     >
       <div className="relative mx-auto max-w-7xl px-6 lg:px-10">
         <div className="max-w-3xl">
-          <span className="font-display text-sm font-semibold uppercase tracking-[0.2em] text-landing-lima">
+          <span className="font-display text-sm font-semibold uppercase tracking-[0.2em] text-landing-naranja">
             Cómo funciona
           </span>
           <h2 className="mt-4 font-display text-4xl font-bold leading-tight tracking-tight text-landing-cream sm:text-5xl lg:text-[3.5rem]">
             De cero a operando
             <br />
-            <span className="text-landing-lima">en menos de un mes.</span>
+            <span className="text-landing-naranja">en menos de un mes.</span>
           </h2>
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-landing-cream/70">
             Acompañamos cada etapa. No te dejamos solo con un software y un manual.
@@ -56,17 +56,17 @@ export function ComoFuncionaSeccion() {
             <div key={paso.numero} className="relative">
               {indice < PASOS.length - 1 && (
                 <div
-                  className="absolute left-[3.25rem] top-16 hidden h-px w-[calc(100%-3rem)] bg-gradient-to-r from-landing-lima/40 to-transparent lg:block"
+                  className="absolute left-[3.25rem] top-16 hidden h-px w-[calc(100%-3rem)] bg-gradient-to-r from-landing-naranja/40 to-transparent lg:block"
                   aria-hidden
                 />
               )}
               <article className="relative flex flex-col rounded-2xl border border-landing-line-dark bg-landing-ink-soft/40 p-7">
                 <div className="flex items-center gap-4">
-                  <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-landing-lima text-landing-ink">
+                  <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-landing-naranja text-landing-ink">
                     <paso.icono className="h-7 w-7" strokeWidth={1.75} />
                   </span>
                   <div>
-                    <span className="font-display text-xs font-semibold uppercase tracking-wider text-landing-lima">
+                    <span className="font-display text-xs font-semibold uppercase tracking-wider text-landing-naranja">
                       Paso {paso.numero}
                     </span>
                     <h3 className="font-display text-2xl font-bold text-landing-cream">
@@ -86,7 +86,7 @@ export function ComoFuncionaSeccion() {
                 <ul className="mt-5 space-y-2 border-t border-landing-line-dark pt-5">
                   {paso.entregables.map((entregable) => (
                     <li key={entregable} className="flex items-center gap-2 text-sm text-landing-cream/70">
-                      <span className="h-1.5 w-1.5 rounded-full bg-landing-lima" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-landing-naranja" />
                       {entregable}
                     </li>
                   ))}

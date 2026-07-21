@@ -1,5 +1,14 @@
-import { PaginationParams, PaginationMeta, PaginatedData } from '@nutrifit/shared';
-import { SelectQueryBuilder, Repository, FindManyOptions, ObjectLiteral } from 'typeorm';
+import {
+  PaginationParams,
+  PaginationMeta,
+  PaginatedData,
+} from '@nutrifit/shared';
+import {
+  SelectQueryBuilder,
+  Repository,
+  FindManyOptions,
+  ObjectLiteral,
+} from 'typeorm';
 import { BadRequestError } from 'src/domain/exceptions/custom-exceptions';
 
 export function crearParametrosPaginacion(
@@ -23,7 +32,11 @@ export function crearParametrosPaginacion(
   return { page, limit };
 }
 
-export function calcularMeta(total: number, page: number, limit: number): PaginationMeta {
+export function calcularMeta(
+  total: number,
+  page: number,
+  limit: number,
+): PaginationMeta {
   const totalPages = Math.max(1, Math.ceil(total / limit));
   return {
     page,
@@ -41,7 +54,10 @@ export async function paginarQuery<T extends ObjectLiteral>(
 ): Promise<PaginatedData<T>> {
   const [total, data] = await Promise.all([
     qb.getCount(),
-    qb.skip((params.page - 1) * params.limit).take(params.limit).getMany(),
+    qb
+      .skip((params.page - 1) * params.limit)
+      .take(params.limit)
+      .getMany(),
   ]);
 
   return {

@@ -149,7 +149,8 @@ export class ValidacionesCreacionTurno {
       select: ['idPersona', 'duracionTurnoMin'],
     });
 
-    const duracionTurno = nutricionista?.duracionTurnoMin ?? agendaDelDia[0].duracionTurno;
+    const duracionTurno =
+      nutricionista?.duracionTurnoMin ?? agendaDelDia[0].duracionTurno;
 
     const turnoInicio = timeToMinutes(horaTurno);
 

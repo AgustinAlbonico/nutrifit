@@ -114,7 +114,7 @@ export function SlotComidaManual({
       ref={setNodeRef}
       className={[
         'rounded-lg border p-2.5 transition-all duration-200 group/slot min-h-[110px] flex flex-col',
-        edicionBloqueada ? 'opacity-60' : '',
+        '',
         isOver
           ? 'border-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/20'
           : 'border-border/60 bg-card/50 hover:bg-card/90 hover:border-border',
@@ -127,32 +127,34 @@ export function SlotComidaManual({
         <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
           {dia} · {tipoComida}
         </span>
-        <div className="flex items-center gap-0.5 opacity-60 group-hover/slot:opacity-100 transition-opacity">
-          <Button
-            size="icon"
-            variant="ghost"
-            className="size-5 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/10 rounded-md"
-            onClick={abrirEdicionNueva}
-            disabled={edicionBloqueada}
-            aria-label={`Agregar comida manual en ${dia} ${tipoComida}`}
-            data-testid={`add-manual-${slotKey}`}
-          >
-            <Plus className="size-3.5" />
-          </Button>
-          {onSelectForIa && (
+        {!edicionBloqueada && (
+          <div className="flex items-center gap-0.5 opacity-60 group-hover/slot:opacity-100 transition-opacity">
             <Button
               size="icon"
               variant="ghost"
-              className="size-5 text-fuchsia-500 hover:text-fuchsia-600 hover:bg-fuchsia-500/10 rounded-md"
-              onClick={onSelectForIa}
+              className="size-5 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/10 rounded-md"
+              onClick={abrirEdicionNueva}
               disabled={edicionBloqueada}
-              aria-label={`Generar sugerencias para ${dia} ${tipoComida}`}
-              data-testid={`select-ia-${slotKey}`}
+              aria-label={`Agregar comida manual en ${dia} ${tipoComida}`}
+              data-testid={`add-manual-${slotKey}`}
             >
-              <Sparkles className="size-3" />
+              <Plus className="size-3.5" />
             </Button>
-          )}
-        </div>
+            {onSelectForIa && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="size-5 text-fuchsia-500 hover:text-fuchsia-600 hover:bg-fuchsia-500/10 rounded-md"
+                onClick={onSelectForIa}
+                disabled={edicionBloqueada}
+                aria-label={`Generar sugerencias para ${dia} ${tipoComida}`}
+                data-testid={`select-ia-${slotKey}`}
+              >
+                <Sparkles className="size-3" />
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex-1 flex flex-col justify-center">
@@ -249,50 +251,52 @@ function SlotAlternativaItem({
             {Math.round(alternativa.grasas * 10) / 10}g
           </p>
         </div>
-        <div className="flex items-center gap-0.5 opacity-40 group-hover/item:opacity-100 transition-opacity shrink-0">
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit(alternativa);
-            }}
-            disabled={deshabilitado}
-            aria-label="Editar comida"
-            className="size-5 rounded-md hover:bg-background"
-            data-testid="btn-editar"
-          >
-            <Pencil className="size-2.5" />
-          </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDuplicate(alternativa);
-            }}
-            disabled={deshabilitado}
-            aria-label="Duplicar comida"
-            className="size-5 rounded-md hover:bg-background"
-            data-testid="btn-duplicar"
-          >
-            <Copy className="size-2.5" />
-          </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(alternativa.id);
-            }}
-            disabled={deshabilitado}
-            aria-label="Eliminar comida"
-            className="size-5 rounded-md hover:bg-destructive/10 text-destructive"
-            data-testid="btn-eliminar"
-          >
-            <Trash2 className="size-2.5" />
-          </Button>
-        </div>
+        {!deshabilitado && (
+          <div className="flex items-center gap-0.5 opacity-40 group-hover/item:opacity-100 transition-opacity shrink-0">
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(alternativa);
+              }}
+              disabled={deshabilitado}
+              aria-label="Editar comida"
+              className="size-5 rounded-md hover:bg-background"
+              data-testid="btn-editar"
+            >
+              <Pencil className="size-2.5" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDuplicate(alternativa);
+              }}
+              disabled={deshabilitado}
+              aria-label="Duplicar comida"
+              className="size-5 rounded-md hover:bg-background"
+              data-testid="btn-duplicar"
+            >
+              <Copy className="size-2.5" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(alternativa.id);
+              }}
+              disabled={deshabilitado}
+              aria-label="Eliminar comida"
+              className="size-5 rounded-md hover:bg-background"
+              data-testid="btn-eliminar"
+            >
+              <Trash2 className="size-2.5" />
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

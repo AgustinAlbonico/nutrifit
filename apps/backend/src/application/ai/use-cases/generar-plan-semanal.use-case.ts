@@ -86,6 +86,7 @@ import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditori
 import { SeleccionarEjemplosMemoriaUseCase } from 'src/application/ia-memoria/use-cases/seleccionar-ejemplos-memoria.use-case';
 import { ResolvedorCatalogoIA } from 'src/application/ia/services/resolvedor-catalogo-ia.service';
 import { CreadorPreparacionesIA } from 'src/application/ia/services/creador-preparaciones-ia.service';
+import { RotadorProteinasService } from 'src/application/ia/services/rotador-proteinas.service';
 import type { AlimentoNuevoDto } from 'src/application/ai/dto/alimento-nuevo.dto';
 import { AlimentoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/alimento.entity';
 import { GrupoAlimenticioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/grupo-alimenticio.entity';
@@ -100,7 +101,7 @@ import { UnidadMedida } from 'src/domain/entities/Alimento/UnidadMedida';
  */
 interface PlanSemanalRawJson extends PlanAlimentacionDatosJson {
   alimentosNuevos?: AlimentoNuevoDto[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   alimentos?: any[];
 }
 
@@ -219,6 +220,7 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
     private readonly auditoriaService: AuditoriaService,
     private readonly resolvedorCatalogoIA: ResolvedorCatalogoIA,
     private readonly creadorPreparacionesIA: CreadorPreparacionesIA,
+    private readonly rotadorProteinas: RotadorProteinasService,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
   ) {}
@@ -313,8 +315,10 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
       alimentosEvitados: alimentosEvitadosCurados,
     };
 
-    const objetivoMacros: ObjetivoNutricional =
-      this.calcularObjetivoMacros(fichaClinica, solicitud);
+    const objetivoMacros: ObjetivoNutricional = this.calcularObjetivoMacros(
+      fichaClinica,
+      solicitud,
+    );
 
     // 6) Loop de generación con reintentos
     let planJson: PlanAlimentacionDatosJson | null = null;
@@ -660,6 +664,16 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
       tiposComidaEsperados.map((tipoComida) => ({ dia, tipoComida })),
     );
 
+    // Asignación determinística de proteína principal por {dia, tipoComida}
+    // para evitar que la IA ancle la alternativa #1 en una sola proteína
+    // (bug histórico: "Pollo grillado con quinoa" repetido 13 veces).
+    // El mapa filtra el pool por alergias/restricciones/evitados del socio.
+    const proteinasAsignadas = this.rotadorProteinas.asignar(
+      tareasGeneracion,
+      params.contextoPromptBase.fichaClinica,
+      params.contextoPromptBase.alimentosEvitados ?? [],
+    );
+
     const resultadosPorComida: Array<{
       dia: DiaSemana;
       tipoComida: TipoComida;
@@ -667,19 +681,20 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
       generacionComida: ComidaGeneradaJson;
     }> = [];
 
-    const construirEstructuraParcial = (): PlanAlimentacionDatosJson['estructura'] =>
-      params.diasEsperados.map((dia) => ({
-        dia,
-        comidas: tiposComidaEsperados.flatMap((tipoComida) => {
-          const resultado = resultadosPorComida.find(
-            (comidaGenerada) =>
-              comidaGenerada.dia === dia &&
-              comidaGenerada.tipoComida === tipoComida,
-          );
+    const construirEstructuraParcial =
+      (): PlanAlimentacionDatosJson['estructura'] =>
+        params.diasEsperados.map((dia) => ({
+          dia,
+          comidas: tiposComidaEsperados.flatMap((tipoComida) => {
+            const resultado = resultadosPorComida.find(
+              (comidaGenerada) =>
+                comidaGenerada.dia === dia &&
+                comidaGenerada.tipoComida === tipoComida,
+            );
 
-          return resultado ? [resultado.comidaGenerada] : [];
-        }),
-      }));
+            return resultado ? [resultado.comidaGenerada] : [];
+          }),
+        }));
 
     for (
       let i = 0;
@@ -692,29 +707,35 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
       );
       const resultadosLote = await Promise.all(
         loteComidas.map(async ({ dia, tipoComida }) => {
-          const { systemPrompt, userPrompt } = this.promptBuilder.construirComida({
-            ...params.contextoPromptBase,
-            diasAGenerar: 1,
-            diasEspecificos: [dia],
-            comidasPorDia: 1,
-            tiposComidaEspecificos: [tipoComida],
-            caloriasLimite: this.dividirObjetivoComida(
-              params.contextoPromptBase.caloriasLimite,
-              params.comidasPorDia,
-            ),
-            proteinasEstimadas: this.dividirObjetivoComida(
-              params.contextoPromptBase.proteinasEstimadas,
-              params.comidasPorDia,
-            ),
-            carbohidratosEstimados: this.dividirObjetivoComida(
-              params.contextoPromptBase.carbohidratosEstimados,
-              params.comidasPorDia,
-            ),
-            grasasEstimados: this.dividirObjetivoComida(
-              params.contextoPromptBase.grasasEstimados,
-              params.comidasPorDia,
-            ),
-          });
+          const claveComida = this.construirClaveComida(dia, tipoComida);
+          const proteinaAsignada = proteinasAsignadas.get(claveComida);
+          const { systemPrompt, userPrompt } =
+            this.promptBuilder.construirComida({
+              ...params.contextoPromptBase,
+              diasAGenerar: 1,
+              diasEspecificos: [dia],
+              comidasPorDia: 1,
+              tiposComidaEspecificos: [tipoComida],
+              caloriasLimite: this.dividirObjetivoComida(
+                params.contextoPromptBase.caloriasLimite,
+                params.comidasPorDia,
+              ),
+              proteinasEstimadas: this.dividirObjetivoComida(
+                params.contextoPromptBase.proteinasEstimadas,
+                params.comidasPorDia,
+              ),
+              carbohidratosEstimados: this.dividirObjetivoComida(
+                params.contextoPromptBase.carbohidratosEstimados,
+                params.comidasPorDia,
+              ),
+              grasasEstimados: this.dividirObjetivoComida(
+                params.contextoPromptBase.grasasEstimados,
+                params.comidasPorDia,
+              ),
+              ...(proteinaAsignada
+                ? { proteinaPrincipalAsignada: proteinaAsignada }
+                : {}),
+            });
 
           const generacionComida = await this.generarComidaConReintentos({
             systemPrompt,
@@ -756,8 +777,8 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
         resultado.comidaGenerada,
       );
 
-      for (const alimentoNuevo of
-        resultado.generacionComida.alimentosNuevos ?? []) {
+      for (const alimentoNuevo of resultado.generacionComida.alimentosNuevos ??
+        []) {
         alimentosNuevosPorNombre.set(
           alimentoNuevo.nombre.trim().toLowerCase(),
           alimentoNuevo,
@@ -931,7 +952,10 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
     tipoComida: TipoComida;
     alternativasPorComida: number;
   }): Promise<ComidaGeneradaJson> {
-    const promptBase = this.combinarPrompts(params.systemPrompt, params.userPrompt);
+    const promptBase = this.combinarPrompts(
+      params.systemPrompt,
+      params.userPrompt,
+    );
     let promptActual = promptBase;
 
     for (
@@ -1309,16 +1333,18 @@ No omitas días, comidas ni alternativas aunque el JSON sea largo.`;
   }
 
   private calcularObjetivoMacros(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     ficha: FichaClinicaParaValidacion,
     solicitud: SolicitudPlanSemanal,
   ): ObjetivoNutricional {
     // Heurística simple basada en objetivoPersonal. Si hay valores específicos
     // en la solicitud, se usan de forma prioritaria.
     const calorias = solicitud.caloriasLimite ?? 2000;
-    const proteinas = solicitud.proteinasEstimadas ?? Math.round((calorias * 0.25) / 4);
-    const carbohidratos = solicitud.carbohidratosEstimados ?? Math.round((calorias * 0.5) / 4);
-    const grasas = solicitud.grasasEstimados ?? Math.round((calorias * 0.25) / 9);
+    const proteinas =
+      solicitud.proteinasEstimadas ?? Math.round((calorias * 0.25) / 4);
+    const carbohidratos =
+      solicitud.carbohidratosEstimados ?? Math.round((calorias * 0.5) / 4);
+    const grasas =
+      solicitud.grasasEstimados ?? Math.round((calorias * 0.25) / 9);
 
     return {
       caloriasDiarias: calorias,
@@ -1468,9 +1494,7 @@ No omitas días, comidas ni alternativas aunque el JSON sea largo.`;
     };
   }
 
-  private async buscarOCrearAlimentos(
-    nombres?: string[],
-  ): Promise<string[]> {
+  private async buscarOCrearAlimentos(nombres?: string[]): Promise<string[]> {
     if (!nombres || nombres.length === 0) {
       return [];
     }

@@ -33,7 +33,10 @@ import { GimnasioRepositoryImplementation } from 'src/infrastructure/persistence
     IniciarRegistroSuscripcionUseCase,
     ProcesarPagoSimuladoUseCase,
     VerEstadoSuscripcionUseCase,
-    { provide: GIMNASIO_REPOSITORY, useClass: GimnasioRepositoryImplementation },
+    {
+      provide: GIMNASIO_REPOSITORY,
+      useClass: GimnasioRepositoryImplementation,
+    },
   ],
   exports: [
     IniciarRegistroSuscripcionUseCase,

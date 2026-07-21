@@ -71,9 +71,7 @@ export class GetFichaSaludPacienteUseCase implements BaseUseCase {
     }
 
     if (!socio.fichaSalud) {
-      this.logger.log(
-        `Socio ${socioId} no tiene ficha de salud cargada.`,
-      );
+      this.logger.log(`Socio ${socioId} no tiene ficha de salud cargada.`);
       return null;
     }
 

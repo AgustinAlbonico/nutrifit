@@ -26,7 +26,13 @@ export class PreparacionItemOrmEntity {
   @Column({ name: 'id_alimento', type: 'int' })
   alimentoId: number;
 
-  @Column({ name: 'cantidad_default', type: 'decimal', precision: 8, scale: 2, transformer: decimalTransformer })
+  @Column({
+    name: 'cantidad_default',
+    type: 'decimal',
+    precision: 8,
+    scale: 2,
+    transformer: decimalTransformer,
+  })
   cantidadDefault: number;
 
   @Column({ name: 'unidad_default', type: 'enum', enum: UnidadMedida })

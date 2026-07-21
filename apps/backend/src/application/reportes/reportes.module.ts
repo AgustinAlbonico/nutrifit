@@ -14,6 +14,7 @@ import { GetSociosKpiUseCase } from './use-cases/get-socios-kpi.use-case';
 import { GetProfesionalKpiUseCase } from './use-cases/get-profesional-kpi.use-case';
 import { GetIaUsoKpiUseCase } from './use-cases/get-ia-uso-kpi.use-case';
 import { GetKpiCompletoUseCase } from './use-cases/get-kpi-completo.use-case';
+import { GetReporteAsistenciaProfesionalesUseCase } from './use-cases/get-reporte-asistencia-profesionales.use-case';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { GetKpiCompletoUseCase } from './use-cases/get-kpi-completo.use-case';
     GetProfesionalKpiUseCase,
     GetIaUsoKpiUseCase,
     GetKpiCompletoUseCase,
+    GetReporteAsistenciaProfesionalesUseCase,
   ],
   exports: [
     GetTurnosKpiUseCase,
@@ -40,6 +42,7 @@ import { GetKpiCompletoUseCase } from './use-cases/get-kpi-completo.use-case';
     GetProfesionalKpiUseCase,
     GetIaUsoKpiUseCase,
     GetKpiCompletoUseCase,
+    GetReporteAsistenciaProfesionalesUseCase,
   ],
 })
 export class ReportesModule {}

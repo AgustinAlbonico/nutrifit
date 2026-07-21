@@ -35,11 +35,11 @@ export function FooterSeccion() {
         <div className="grid grid-cols-2 gap-10 md:grid-cols-4 lg:grid-cols-5">
           <div className="col-span-2 lg:col-span-2">
             <a href="#top" className="flex items-center gap-2.5 text-landing-cream">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-landing-lima text-landing-ink">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-landing-naranja text-landing-ink">
                 <Activity className="h-5 w-5" strokeWidth={2.5} />
               </span>
               <span className="font-display text-lg font-semibold tracking-tight">
-                NutriFit<span className="text-landing-lima"> Supervisor</span>
+                NutriFit<span className="text-landing-naranja"> Supervisor</span>
               </span>
             </a>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-landing-cream/55">
@@ -58,7 +58,7 @@ export function FooterSeccion() {
                   <li key={enlace.label}>
                     <a
                       href={enlace.href}
-                      className="text-sm text-landing-cream/70 transition-colors hover:text-landing-lima"
+                      className="text-sm text-landing-cream/70 transition-colors hover:text-landing-naranja"
                     >
                       {enlace.label}
                     </a>

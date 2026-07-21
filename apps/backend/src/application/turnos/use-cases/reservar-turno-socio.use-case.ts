@@ -151,7 +151,8 @@ export class ReservarTurnoSocioUseCase implements BaseUseCase {
         await this.emailService.enviarNotificacionTurnoParaSocio({
           email: socio.usuario.email,
           nombreSocio: `${socio.nombre} ${socio.apellido}`.trim(),
-          nombreNutricionista: `${nutricionistaOrm.nombre} ${nutricionistaOrm.apellido}`.trim(),
+          nombreNutricionista:
+            `${nutricionistaOrm.nombre} ${nutricionistaOrm.apellido}`.trim(),
           fecha: formatArgentinaDate(turnoCreado.fechaTurno),
           hora: normalizeTimeToHHmm(turnoCreado.horaTurno),
           gimnasioId: socio.gimnasioId ?? undefined,

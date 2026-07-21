@@ -146,9 +146,10 @@ export function minutesToTime(minutes: number): string {
  * siguiente a las 00:00 AR. Los Date devueltos son absolutos, comparables
  * directamente con timestamps de la DB.
  */
-export function getArgentinaMonthRange(
-  referenceDate: Date | string,
-): { inicioMes: Date; finMes: Date } {
+export function getArgentinaMonthRange(referenceDate: Date | string): {
+  inicioMes: Date;
+  finMes: Date;
+} {
   const ref = resolveDateInput(referenceDate);
   const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone: ARGENTINA_TIMEZONE,

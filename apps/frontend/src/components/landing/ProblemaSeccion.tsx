@@ -29,13 +29,13 @@ export function ProblemaSeccion() {
     >
       <div className="relative mx-auto max-w-7xl px-6 lg:px-10">
         <div className="max-w-3xl">
-          <span className="font-display text-sm font-semibold uppercase tracking-[0.2em] text-landing-lima-deep">
+          <span className="font-display text-sm font-semibold uppercase tracking-[0.2em] text-landing-naranja-deep">
             El problema
           </span>
           <h2 className="mt-4 font-display text-4xl font-bold leading-tight tracking-tight text-landing-ink sm:text-5xl lg:text-[3.5rem]">
             Los gimnasios compiten por precio.
             <br />
-            <span className="text-landing-lima-deep">La nutrición es retención.</span>
+            <span className="text-landing-naranja-deep">La nutrición es retención.</span>
           </h2>
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-landing-ink/70">
             Hoy la mayoría de los gimnasios ofrecen acceso a máquinas y clases grupales.
@@ -48,7 +48,7 @@ export function ProblemaSeccion() {
         <div className="mt-16 grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-landing-line bg-landing-line md:grid-cols-3">
           {STATS.map((stat) => (
             <div key={stat.titulo} className="bg-landing-cream p-8 lg:p-10">
-              <stat.icono className="h-7 w-7 text-landing-lima-deep" strokeWidth={1.75} />
+              <stat.icono className="h-7 w-7 text-landing-naranja-deep" strokeWidth={1.75} />
               <p className="mt-6 font-display text-5xl font-bold tracking-tight text-landing-ink lg:text-6xl">
                 {stat.valor}
               </p>
@@ -62,7 +62,7 @@ export function ProblemaSeccion() {
           ))}
         </div>
 
-        <p className="mt-10 max-w-2xl border-l-2 border-landing-lima pl-5 text-base italic leading-relaxed text-landing-ink/70">
+        <p className="mt-10 max-w-2xl border-l-2 border-landing-naranja pl-5 text-base italic leading-relaxed text-landing-ink/70">
           NutriFit Supervisor convierte ese diferencial en un proceso operativo: turnos,
           fichas clínicas, planes y seguimiento — todo en una plataforma B2B pensada
           para escalar por sede.

@@ -1,6 +1,4 @@
-export type FaltanteCierreConsulta =
-  | 'MEDICION_BASE'
-  | 'COMENTARIO_CLINICO';
+export type FaltanteCierreConsulta = 'MEDICION_BASE' | 'COMENTARIO_CLINICO';
 
 export interface EntradaValidarCierreConsulta {
   tieneMedicionBase: boolean;

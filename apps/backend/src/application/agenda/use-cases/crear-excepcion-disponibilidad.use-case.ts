@@ -29,7 +29,10 @@ import {
 } from 'src/domain/services/logger.service';
 import { TurnoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
-import { formatArgentinaDate, getArgentinaNow } from 'src/common/utils/argentina-datetime.util';
+import {
+  formatArgentinaDate,
+  getArgentinaNow,
+} from 'src/common/utils/argentina-datetime.util';
 
 const VENTANA_MAXIMA_DIAS = 60;
 const MOTIVO_MAX_LENGTH = 255;

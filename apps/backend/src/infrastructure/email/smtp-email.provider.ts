@@ -14,7 +14,9 @@ export class SmtpEmailProvider implements IEmailProvider {
   constructor(private readonly configService: ConfigService) {
     this.transporter = nodemailer.createTransport({
       host: this.configService.get<string>('SMTP_HOST', 'localhost'),
-      port: this.parsePort(this.configService.get<string | number>('SMTP_PORT')),
+      port: this.parsePort(
+        this.configService.get<string | number>('SMTP_PORT'),
+      ),
       secure: this.parseSecure(
         this.configService.get<string | boolean>('SMTP_SECURE'),
       ),

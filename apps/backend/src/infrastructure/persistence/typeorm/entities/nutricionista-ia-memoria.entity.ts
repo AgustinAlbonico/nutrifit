@@ -8,10 +8,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { TipoEjemploIA } from 'src/domain/entities/NutricionistaIAPreferencias/nutricionista-ia-memoria.entity';
-import {
-  NutricionistaOrmEntity,
-  PersonaOrmEntity,
-} from './persona.entity';
+import { NutricionistaOrmEntity, PersonaOrmEntity } from './persona.entity';
 import { PlanAlimentacionVersionOrmEntity } from './plan-alimentacion-version.entity';
 
 /**
@@ -30,11 +27,7 @@ import { PlanAlimentacionVersionOrmEntity } from './plan-alimentacion-version.en
  * test), la memoria queda huérfana pero NO se pierde el aprendizaje.
  */
 @Entity('nutricionista_ia_memoria')
-@Index('idx_memoria_seleccion', [
-  'idNutricionista',
-  'tipoEjemplo',
-  'archivada',
-])
+@Index('idx_memoria_seleccion', ['idNutricionista', 'tipoEjemplo', 'archivada'])
 export class NutricionistaIAMemoriaOrmEntity {
   @PrimaryGeneratedColumn({
     name: 'id_nutricionista_ia_memoria',

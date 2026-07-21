@@ -7,7 +7,10 @@ import {
   PreparacionOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
-import { BadRequestError, NotFoundError } from 'src/domain/exceptions/custom-exceptions';
+import {
+  BadRequestError,
+  NotFoundError,
+} from 'src/domain/exceptions/custom-exceptions';
 import { UnidadMedida } from 'src/domain/entities/Alimento/UnidadMedida';
 
 describe('CrearPreparacionUseCase', () => {
@@ -19,7 +22,9 @@ describe('CrearPreparacionUseCase', () => {
   beforeEach(async () => {
     preparacionRepo = {
       create: jest.fn().mockImplementation((val) => val),
-      save: jest.fn().mockImplementation(async (val) => ({ idPreparacion: 123, ...val })),
+      save: jest
+        .fn()
+        .mockImplementation(async (val) => ({ idPreparacion: 123, ...val })),
       findOne: jest.fn().mockImplementation(async () => ({
         idPreparacion: 123,
         nombre: 'Pollo con Puré',
@@ -109,7 +114,13 @@ describe('CrearPreparacionUseCase', () => {
     await expect(
       sut.execute({
         nombre: '',
-        items: [{ alimentoId: 1, cantidadDefault: 100, unidadDefault: UnidadMedida.GRAMO }],
+        items: [
+          {
+            alimentoId: 1,
+            cantidadDefault: 100,
+            unidadDefault: UnidadMedida.GRAMO,
+          },
+        ],
       }),
     ).rejects.toThrow(BadRequestError);
   });
@@ -128,7 +139,13 @@ describe('CrearPreparacionUseCase', () => {
     await expect(
       sut.execute({
         nombre: 'Pollo',
-        items: [{ alimentoId: 999, cantidadDefault: 100, unidadDefault: UnidadMedida.GRAMO }],
+        items: [
+          {
+            alimentoId: 999,
+            cantidadDefault: 100,
+            unidadDefault: UnidadMedida.GRAMO,
+          },
+        ],
       }),
     ).rejects.toThrow(NotFoundError);
   });

@@ -12,7 +12,9 @@ export function extraerOrigenRequest(request: Request): OrigenRequest {
     : forwardedFor?.split(',')[0];
 
   return {
-    ip: limpiarIp(ipForwarded ?? request.ip ?? request.socket.remoteAddress ?? null),
+    ip: limpiarIp(
+      ipForwarded ?? request.ip ?? request.socket.remoteAddress ?? null,
+    ),
     userAgent: request.headers['user-agent'] ?? null,
   };
 }

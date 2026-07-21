@@ -192,9 +192,7 @@ export class ProfesionalController {
   async obtenerPreferenciasIa(
     @CurrentUserId() usuarioId: number,
   ): Promise<{ preferencias: string }> {
-    this.logger.log(
-      `Obteniendo preferencias IA para usuario ${usuarioId}`,
-    );
+    this.logger.log(`Obteniendo preferencias IA para usuario ${usuarioId}`);
     const nutricionista =
       await this.getMiPerfilNutricionistaUseCase.execute(usuarioId);
     return this.obtenerPreferenciasIaUseCase.execute({
@@ -214,9 +212,7 @@ export class ProfesionalController {
     @Body() dto: ActualizarPreferenciasIaDto,
     @CurrentUserId() usuarioId: number,
   ): Promise<{ preferencias: string }> {
-    this.logger.log(
-      `Actualizando preferencias IA para usuario ${usuarioId}`,
-    );
+    this.logger.log(`Actualizando preferencias IA para usuario ${usuarioId}`);
     const nutricionista =
       await this.getMiPerfilNutricionistaUseCase.execute(usuarioId);
     return this.actualizarPreferenciasIaUseCase.execute({

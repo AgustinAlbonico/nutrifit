@@ -212,14 +212,21 @@ describe('TurnosController — mediciones editables', () => {
         idMedicion: 5,
       }),
     };
-    const controller = Object.assign(Object.create(TurnosController.prototype), {
-      actualizarMedicionUseCase,
-      logger: { log: jest.fn() },
-    }) as Pick<TurnosController, 'actualizarMedicion'>;
+    const controller = Object.assign(
+      Object.create(TurnosController.prototype),
+      {
+        actualizarMedicionUseCase,
+        logger: { log: jest.fn() },
+      },
+    ) as Pick<TurnosController, 'actualizarMedicion'>;
 
     const resultado = await controller.actualizarMedicion(1, 5, payload);
 
-    expect(actualizarMedicionUseCase.execute).toHaveBeenCalledWith(1, 5, payload);
+    expect(actualizarMedicionUseCase.execute).toHaveBeenCalledWith(
+      1,
+      5,
+      payload,
+    );
     expect(resultado).toEqual({ success: true, imc: 22.22, idMedicion: 5 });
   });
 });

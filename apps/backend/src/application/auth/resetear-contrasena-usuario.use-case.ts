@@ -46,7 +46,8 @@ export class ResetearContrasenaUsuarioUseCase implements BaseUseCase {
     }
 
     const usuarioTarget = await this.usuarioRepository.findByEmail(
-      (await this.usuarioRepository.findPerfilByUserId(targetUserId))?.email ?? '',
+      (await this.usuarioRepository.findPerfilByUserId(targetUserId))?.email ??
+        '',
     );
     if (!usuarioTarget) {
       throw new NotFoundError('No se encontró el usuario a resetear.');
@@ -56,7 +57,8 @@ export class ResetearContrasenaUsuarioUseCase implements BaseUseCase {
     if (admin.rol !== Rol.SUPERADMIN) {
       const targetGymId = usuarioTarget.persona?.gimnasioId;
       const adminGymId = admin.idPersona
-        ? (await this.usuarioRepository.findByEmail(admin.email))?.persona?.gimnasioId
+        ? (await this.usuarioRepository.findByEmail(admin.email))?.persona
+            ?.gimnasioId
         : null;
 
       if (!targetGymId || !adminGymId || targetGymId !== adminGymId) {
@@ -80,7 +82,10 @@ export class ResetearContrasenaUsuarioUseCase implements BaseUseCase {
     usuarioTarget.tokenRecuperacion = null;
     usuarioTarget.tokenRecuperacionExpiracion = null;
 
-    await this.usuarioRepository.update(usuarioTarget.idUsuario!, usuarioTarget);
+    await this.usuarioRepository.update(
+      usuarioTarget.idUsuario!,
+      usuarioTarget,
+    );
 
     this.logger.log(
       `ResetearContrasenaUsuarioUseCase: Clave reseteada con éxito para el usuario ID ${targetUserId}. Flag debeCambiarPassword activado.`,

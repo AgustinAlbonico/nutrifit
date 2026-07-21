@@ -20,6 +20,7 @@ import {
   UserCog,
   Apple,
   Sparkles,
+  BarChart3,
 } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -184,6 +185,12 @@ export function Sidebar() {
       label: 'Configuración IA',
       icon: Sparkles,
       roles: ['SUPERADMIN'],
+    },
+    {
+      to: '/admin/reportes',
+      label: 'Reportes',
+      icon: BarChart3,
+      roles: ['ADMIN', 'SUPERADMIN'],
     },
   ];
 

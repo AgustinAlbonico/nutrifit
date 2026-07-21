@@ -1,270 +1,691 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class InitSchema1783630101366 implements MigrationInterface {
-    name = 'InitSchema1783630101366'
+  name = 'InitSchema1783630101366';
 
-    public async up(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`CREATE TABLE \`formacion_academica\` (\`fecha_baja\` datetime(6) NULL, \`id_formacion_academica\` int NOT NULL AUTO_INCREMENT, \`titulo\` varchar(255) NOT NULL, \`institucion\` varchar(255) NOT NULL, \`anio_inicio\` int NOT NULL, \`anio_fin\` int NULL, \`nivel\` enum ('GRADO', 'POSGRADO', 'MAESTRIA', 'DOCTORADO', 'ESPECIALIZACION', 'DIPLOMATURA', 'CURSO') NOT NULL, \`id_nutricionista\` int NOT NULL, PRIMARY KEY (\`id_formacion_academica\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`usuario_grupo_permiso\` (\`id_usuario_grupo_permiso\` int NOT NULL AUTO_INCREMENT, \`id_gimnasio\` int NULL, \`fecha_asignacion\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`usuarioIdUsuario\` int NULL, \`grupoPermisoId\` int NULL, PRIMARY KEY (\`id_usuario_grupo_permiso\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`grupo_permiso\` (\`id_grupo_permiso\` int NOT NULL AUTO_INCREMENT, \`clave\` varchar(100) NOT NULL, \`nombre\` varchar(120) NOT NULL, \`descripcion\` varchar(255) NULL, \`es_grupo_sistema\` tinyint NOT NULL DEFAULT 0, UNIQUE INDEX \`IDX_69cee8a317e94a61ef5c583949\` (\`clave\`), PRIMARY KEY (\`id_grupo_permiso\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`accion\` (\`fecha_baja\` datetime(6) NULL, \`id_accion\` int NOT NULL AUTO_INCREMENT, \`clave\` varchar(120) NOT NULL, \`nombre\` varchar(120) NOT NULL, \`descripcion\` varchar(255) NULL, UNIQUE INDEX \`IDX_2aecffe3ca3cfe9ba5c856ad23\` (\`clave\`), PRIMARY KEY (\`id_accion\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`usuario\` (\`id_usuario\` int NOT NULL AUTO_INCREMENT, \`email\` varchar(255) NOT NULL, \`contrasenia\` varchar(255) NOT NULL, \`debe_cambiar_password\` tinyint(1) NOT NULL DEFAULT '0', \`token_recuperacion\` varchar(255) NULL, \`token_recuperacion_expiracion\` datetime NULL, \`fecha_hora_alta\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP, \`rol\` enum ('ADMIN', 'SUPERADMIN', 'NUTRICIONISTA', 'RECEPCIONISTA', 'SOCIO') NOT NULL, \`id_persona\` int NULL, UNIQUE INDEX \`IDX_2863682842e688ca198eb25c12\` (\`email\`), UNIQUE INDEX \`REL_1fbc7de91b8e96937ed27739e8\` (\`id_persona\`), PRIMARY KEY (\`id_usuario\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`ficha_salud_version\` (\`id_ficha_salud_version\` int NOT NULL AUTO_INCREMENT, \`id_ficha_salud\` int NOT NULL, \`id_socio\` int NOT NULL, \`version\` int NOT NULL, \`datos_json\` text NOT NULL, \`created_at\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, \`created_by\` int NULL, INDEX \`idx_fsv_created_at\` (\`created_at\`), INDEX \`idx_fsv_socio\` (\`id_socio\`), PRIMARY KEY (\`id_ficha_salud_version\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`ficha_salud\` (\`fecha_baja\` datetime(6) NULL, \`id_ficha_salud\` int NOT NULL AUTO_INCREMENT, \`altura\` int NOT NULL, \`peso\` decimal(5,2) NOT NULL, \`fecha_creacion\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, \`objetivo_personal\` varchar(255) NULL, \`nivel_actividad_fisica\` enum ('SEDENTARIO', 'LIGERO', 'MODERADO', 'INTENSO', 'MUY_INTENSO') NOT NULL, \`medicacion_actual\` text NULL, \`suplementos_actuales\` text NULL, \`cirugias_previas\` text NULL, \`antecedentes_familiares\` text NULL, \`frecuencia_comidas\` enum ('1-2 comidas', '3 comidas', '4-5 comidas', '6 o más comidas') NULL, \`consumo_agua_diario\` decimal(4,1) NULL, \`restricciones_alimentarias\` text NULL, \`consumo_alcohol\` enum ('Nunca', 'Ocasional', 'Moderado', 'Frecuente') NULL, \`fuma_tabaco\` tinyint NOT NULL DEFAULT 0, \`horas_sueno\` int NULL, \`contacto_emergencia_nombre\` varchar(100) NULL, \`contacto_emergencia_telefono\` varchar(20) NULL, \`completada\` tinyint NOT NULL DEFAULT 0, \`completada_at\` datetime NULL, \`actualizada_at\` datetime NULL, \`consent_at\` datetime NULL, \`version_actual_id\` int NULL, \`revisada_por_nutricionista_at\` datetime NULL, INDEX \`idx_fs_completada\` (\`completada\`), PRIMARY KEY (\`id_ficha_salud\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`patologia\` (\`fecha_baja\` datetime(6) NULL, \`id_patologia\` int NOT NULL AUTO_INCREMENT, \`nombre\` varchar(100) NOT NULL, PRIMARY KEY (\`id_patologia\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`alergia\` (\`fecha_baja\` datetime(6) NULL, \`id_alergia\` int NOT NULL AUTO_INCREMENT, \`nombre\` varchar(100) NOT NULL, PRIMARY KEY (\`id_alergia\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`grupo_alimenticio\` (\`fecha_baja\` datetime(6) NULL, \`id_grupo_alimenticio\` int NOT NULL AUTO_INCREMENT, \`descripcion\` varchar(255) NOT NULL, PRIMARY KEY (\`id_grupo_alimenticio\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`alimento\` (\`fecha_baja\` datetime(6) NULL, \`id_alimento\` int NOT NULL AUTO_INCREMENT, \`nombre\` varchar(255) NOT NULL, \`cantidad\` decimal(8,2) NOT NULL, \`calorias\` decimal(8,2) NULL, \`proteinas\` decimal(8,2) NULL, \`carbohidratos\` decimal(8,2) NULL, \`grasas\` decimal(8,2) NULL, \`hidratos_de_carbono\` decimal(8,2) NULL, \`colesterol\` decimal(8,2) NULL, \`fibra_alimentaria\` decimal(8,2) NULL, \`sodio\` decimal(8,2) NULL, \`agua\` decimal(8,2) NULL, \`vitamina_a\` decimal(8,2) NULL, \`vitamina_b6\` decimal(8,2) NULL, \`vitamina_b12\` decimal(8,2) NULL, \`vitamina_c\` decimal(8,2) NULL, \`vitamina_d\` decimal(8,2) NULL, \`vitamina_e\` decimal(8,2) NULL, \`vitamina_k\` decimal(8,2) NULL, \`almidon\` decimal(8,2) NULL, \`lactosa\` decimal(8,2) NULL, \`alcohol\` decimal(8,2) NULL, \`cafeina\` decimal(8,2) NULL, \`azucares\` decimal(8,2) NULL, \`calcio\` decimal(8,2) NULL, \`hierro\` decimal(8,2) NULL, \`magnesio\` decimal(8,2) NULL, \`fosforo\` decimal(8,2) NULL, \`potasio\` decimal(8,2) NULL, \`cinc\` decimal(8,2) NULL, \`cobre\` decimal(8,2) NULL, \`fluor\` decimal(8,2) NULL, \`manganeso\` decimal(8,2) NULL, \`selenio\` decimal(8,2) NULL, \`tiamina\` decimal(8,2) NULL, \`riboflavina\` decimal(8,2) NULL, \`niacina\` decimal(8,2) NULL, \`acido_pantotenico\` decimal(8,2) NULL, \`folato\` decimal(8,2) NULL, \`acido_folico\` decimal(8,2) NULL, \`grasas_trans\` decimal(8,2) NULL, \`grasas_saturadas\` decimal(8,2) NULL, \`grasas_monoinsaturadas\` decimal(8,2) NULL, \`grasas_poliinsaturadas\` decimal(8,2) NULL, \`cloruro\` decimal(8,2) NULL, \`unidad_medida\` enum ('gramo', 'kilogramo', 'mililitro', 'litro', 'miligramo', 'taza', 'cucharada', 'cucharadita', 'unidad') NOT NULL, UNIQUE INDEX \`uq_alimento_nombre\` (\`nombre\`), PRIMARY KEY (\`id_alimento\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`item_comida\` (\`fecha_baja\` datetime(6) NULL, \`id_item_comida\` int NOT NULL AUTO_INCREMENT, \`id_opcion_comida\` int NOT NULL, \`id_alimento\` int NOT NULL, \`alimento_nombre\` varchar(255) NOT NULL, \`cantidad\` int NOT NULL, \`unidad_medida\` enum ('gramo', 'kilogramo', 'mililitro', 'litro', 'miligramo', 'taza', 'cucharada', 'cucharadita', 'unidad') NOT NULL, \`notas\` varchar(255) NULL, \`calorias\` decimal(8,2) NULL, \`proteinas\` decimal(8,2) NULL, \`carbohidratos\` decimal(8,2) NULL, \`grasas\` decimal(8,2) NULL, PRIMARY KEY (\`id_item_comida\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`opcion_comida\` (\`fecha_baja\` datetime(6) NULL, \`id_opcion_comida\` int NOT NULL AUTO_INCREMENT, \`comentarios\` varchar(255) NULL, \`tipo_comida\` enum ('DESAYUNO', 'ALMUERZO', 'MERIENDA', 'CENA', 'COLACION') NOT NULL, \`id_dia_plan\` int NULL, PRIMARY KEY (\`id_opcion_comida\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`dia_plan\` (\`fecha_baja\` datetime(6) NULL, \`id_dia_plan\` int NOT NULL AUTO_INCREMENT, \`dia\` enum ('LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO') NOT NULL, \`orden\` int NOT NULL, \`id_plan_alimentacion\` int NOT NULL, PRIMARY KEY (\`id_dia_plan\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`plan_alimentacion\` (\`id_plan_alimentacion\` int NOT NULL AUTO_INCREMENT, \`fechaCreacion\` date NOT NULL, \`objetivo_nutricional\` varchar(255) NOT NULL, \`activo\` tinyint NOT NULL DEFAULT 0, \`estado\` varchar(20) NOT NULL DEFAULT 'BORRADOR', \`finalizado_at\` datetime NULL, \`eliminado_en\` datetime NULL, \`motivo_eliminacion\` varchar(255) NULL, \`motivo_edicion\` varchar(255) NULL, \`ultima_edicion\` datetime NULL, \`notas_generacion\` varchar(1000) NULL, \`id_socio\` int NOT NULL, \`id_nutricionista\` int NOT NULL, PRIMARY KEY (\`id_plan_alimentacion\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`gimnasio\` (\`fecha_baja\` datetime(6) NULL, \`id_gimnasio\` int NOT NULL AUTO_INCREMENT, \`nombre\` varchar(100) NOT NULL, \`direccion\` varchar(255) NOT NULL, \`telefono\` varchar(15) NOT NULL, \`ciudad\` varchar(100) NOT NULL, \`logo_url\` varchar(500) NULL, \`color_primario\` varchar(7) NULL, \`color_secundario\` varchar(7) NULL, \`plazo_cancelacion_horas\` int NOT NULL DEFAULT '24', \`plazo_reprogramacion_horas\` int NOT NULL DEFAULT '12', \`antelacion_minima_reserva_horas\` int NOT NULL DEFAULT '2', \`umbral_ausente_minutos\` int NOT NULL DEFAULT '15', \`email_notificaciones\` varchar(255) NULL, \`email_habilitado\` tinyint NOT NULL DEFAULT 0, PRIMARY KEY (\`id_gimnasio\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`observacion_clinica\` (\`fecha_baja\` datetime(6) NULL, \`id_observacion\` int NOT NULL AUTO_INCREMENT, \`version\` int NOT NULL, \`comentario\` varchar(255) NOT NULL, \`peso\` decimal(5,2) NOT NULL, \`altura\` int NOT NULL, \`imc\` decimal(5,2) NOT NULL, \`sugerencias\` varchar(255) NULL, \`habitos_socio\` varchar(255) NULL, \`objetivos_socio\` varchar(255) NULL, \`es_publica\` tinyint NOT NULL DEFAULT 0, PRIMARY KEY (\`id_observacion\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`medicion\` (\`fecha_baja\` datetime(6) NULL, \`id_medicion\` int NOT NULL AUTO_INCREMENT, \`peso\` decimal(5,2) NOT NULL, \`altura\` int NOT NULL, \`imc\` decimal(5,2) NOT NULL, \`perimetro_cintura\` decimal(5,2) NULL, \`perimetro_cadera\` decimal(5,2) NULL, \`perimetro_brazo\` decimal(5,2) NULL, \`perimetro_muslo\` decimal(5,2) NULL, \`perimetro_pecho\` decimal(5,2) NULL, \`pliegue_triceps\` decimal(5,2) NULL, \`pliegue_abdominal\` decimal(5,2) NULL, \`pliegue_muslo\` decimal(5,2) NULL, \`porcentaje_grasa\` decimal(5,2) NULL, \`masa_magra\` decimal(5,2) NULL, \`frecuencia_cardiaca\` int NULL, \`tension_sistolica\` int NULL, \`tension_diastolica\` int NULL, \`notas_medicion\` text NULL, \`created_at\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`id_turno\` int NOT NULL, PRIMARY KEY (\`id_medicion\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`adjunto_clinico\` (\`fecha_baja\` datetime(6) NULL, \`id_adjunto\` int NOT NULL AUTO_INCREMENT, \`nombre_original\` varchar(255) NOT NULL, \`mime_type\` varchar(100) NOT NULL, \`size_bytes\` int NOT NULL, \`object_key\` varchar(500) NOT NULL, \`id_turno\` int NOT NULL, \`id_usuario_subio\` int NOT NULL, \`es_post_cierre\` tinyint NOT NULL DEFAULT 0, \`created_at\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), INDEX \`idx_adjunto_clinico_turno\` (\`id_turno\`), PRIMARY KEY (\`id_adjunto\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`turno\` (\`fecha_baja\` datetime(6) NULL, \`id_turno\` int NOT NULL AUTO_INCREMENT, \`fecha\` date NOT NULL, \`hora_turno\` varchar(10) NOT NULL, \`estado\` enum ('CONFIRMADO', 'PRESENTE', 'EN_CURSO', 'REALIZADO', 'CANCELADO', 'AUSENTE') NOT NULL, \`creado_por\` varchar(20) NOT NULL DEFAULT 'SOCIO', \`check_in_at\` datetime NULL, \`consulta_iniciada_at\` datetime NULL, \`consulta_finalizada_at\` datetime NULL, \`cierre_automatico\` tinyint NOT NULL DEFAULT 0, \`motivo_cierre_automatico\` varchar(50) NULL, \`cierre_automatico_en\` datetime NULL, \`preaviso_cierre_auto_enviado_en\` datetime NULL, \`reabierta_por_cierre_auto\` tinyint NOT NULL DEFAULT 0, \`ausente_at\` datetime NULL, \`ausente_motivo\` varchar(500) NULL, \`motivo_cancelacion\` varchar(500) NULL, \`fecha_original\` datetime NULL, \`llegada_tarde_min\` int NULL, \`token_confirmacion\` varchar(255) NULL, \`id_observacion\` int NULL, \`id_socio\` int NULL, \`id_nutricionista\` int NOT NULL, \`id_gimnasio\` int NULL, UNIQUE INDEX \`IDX_80f84d1cb7340c833fcba54dbc\` (\`token_confirmacion\`), UNIQUE INDEX \`REL_9be9fbc2d26ef165f67571ef12\` (\`id_observacion\`), PRIMARY KEY (\`id_turno\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`certificacion\` (\`fecha_baja\` datetime(6) NULL, \`id_certificacion\` int NOT NULL AUTO_INCREMENT, \`nombre\` varchar(255) NOT NULL, \`entidad\` varchar(255) NOT NULL, \`anio\` int NULL, \`carga_horaria\` int NULL, \`nivel\` varchar(50) NULL, \`id_nutricionista\` int NOT NULL, PRIMARY KEY (\`id_certificacion\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`diploma\` (\`fecha_baja\` datetime(6) NULL, \`id_diploma\` int NOT NULL AUTO_INCREMENT, \`id_nutricionista\` int NOT NULL, \`document_key\` varchar(255) NOT NULL, \`nombre_original\` varchar(255) NULL, \`mime_type\` varchar(100) NULL, \`creado_en\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY (\`id_diploma\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`persona\` (\`fecha_baja\` datetime(6) NULL, \`id_persona\` int NOT NULL AUTO_INCREMENT, \`nombre\` varchar(100) NOT NULL, \`apellido\` varchar(100) NOT NULL, \`fecha_nacimiento\` date NOT NULL, \`genero\` enum ('MASCULINO', 'FEMENINO', 'OTRO') NOT NULL, \`telefono\` varchar(30) NOT NULL, \`direccion\` varchar(255) NOT NULL, \`ciudad\` varchar(100) NOT NULL, \`provincia\` varchar(100) NOT NULL, \`dni\` varchar(20) NULL, \`foto_perfil_key\` varchar(255) NULL, \`observaciones\` text NULL, \`id_gimnasio\` int NULL, \`fecha_alta\` date NULL, \`matricula\` varchar(50) NULL, \`anios_experiencia\` int NULL, \`tarifa_sesion\` decimal(10,2) NULL, \`presentacion\` text NULL, \`duracion_turno_min\` int NULL DEFAULT '30', \`matricula_documento_key\` varchar(255) NULL, \`preferencias_ia\` text NULL, \`tipo_persona\` varchar(255) NOT NULL, \`id_ficha_salud\` int NULL, UNIQUE INDEX \`IDX_b9000711e4ac11ef438c9f405d\` (\`matricula\`), UNIQUE INDEX \`REL_db90e04e1d41b8184641cd0c43\` (\`id_ficha_salud\`), INDEX \`IDX_36e1631311d9cb31089523a5c8\` (\`tipo_persona\`), PRIMARY KEY (\`id_persona\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`agenda\` (\`fecha_baja\` datetime(6) NULL, \`id_agenda\` int NOT NULL AUTO_INCREMENT, \`dia\` enum ('Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo') NOT NULL, \`hora_inicio\` time NOT NULL, \`hora_fin\` time NOT NULL, \`duracion_turno\` int NOT NULL, \`id_nutricionista\` int NOT NULL, UNIQUE INDEX \`UQ_AGENDA_NUTRI_DIA_HORARIO\` (\`id_nutricionista\`, \`dia\`, \`hora_inicio\`, \`hora_fin\`), PRIMARY KEY (\`id_agenda\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`generacion_plan_ia\` (\`id_generacion_plan_ia\` int NOT NULL AUTO_INCREMENT, \`id_socio\` int NOT NULL, \`id_nutricionista\` int NOT NULL, \`id_gimnasio\` int NOT NULL, \`id_plan_alimentacion\` int NULL, \`estado\` varchar(20) NOT NULL DEFAULT 'PENDIENTE', \`solicitud_json\` json NOT NULL, \`proveedor_actual\` varchar(50) NULL, \`mensaje_estado\` varchar(500) NULL, \`error_mensaje\` text NULL, \`respuesta_json\` json NULL, \`progreso_actual\` int NULL, \`progreso_total\` int NULL, \`dia_actual\` varchar(32) NULL, \`comida_actual\` varchar(64) NULL, \`snapshot_parcial_json\` json NULL, \`creado_en\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`actualizado_en\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), \`iniciado_en\` datetime NULL, \`finalizado_en\` datetime NULL, INDEX \`idx_generacion_plan_ia_plan\` (\`id_plan_alimentacion\`, \`estado\`), INDEX \`idx_generacion_plan_ia_activa\` (\`id_socio\`, \`id_gimnasio\`, \`estado\`), PRIMARY KEY (\`id_generacion_plan_ia\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`ia_configuracion\` (\`id_ia_configuracion\` int NOT NULL AUTO_INCREMENT, \`provider\` varchar(50) NOT NULL, \`api_key_encrypted\` text NULL, \`model\` varchar(255) NULL, \`base_url\` varchar(500) NULL, \`max_tokens\` int NULL, \`temperature\` decimal(4,3) NULL, \`timeout_ms\` int NULL, \`habilitado\` tinyint NOT NULL DEFAULT 1, \`orden\` int NOT NULL DEFAULT '0', \`gimnasio_id\` int NULL, \`creado_en\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`actualizado_en\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), INDEX \`idx_ia_configuracion_orden\` (\`habilitado\`, \`orden\`), UNIQUE INDEX \`uq_ia_configuracion_provider_gimnasio\` (\`provider\`, \`gimnasio_id\`), PRIMARY KEY (\`id_ia_configuracion\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`plan_alimentacion_version\` (\`id_plan_alimentacion_version\` int NOT NULL AUTO_INCREMENT, \`id_plan_alimentacion\` int NOT NULL, \`numero_version\` int NOT NULL, \`datos_json\` json NOT NULL, \`motivo_cambio\` varchar(255) NULL, \`activa\` tinyint NOT NULL DEFAULT 0, \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`created_by\` int NOT NULL, INDEX \`idx_plan_version_activa\` (\`id_plan_alimentacion\`, \`activa\`), UNIQUE INDEX \`uk_plan_version_numero\` (\`id_plan_alimentacion\`, \`numero_version\`), PRIMARY KEY (\`id_plan_alimentacion_version\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`plan_feedback\` (\`id_plan_feedback\` int NOT NULL AUTO_INCREMENT, \`id_plan_alimentacion_version\` int NOT NULL, \`id_nutricionista\` int NOT NULL, \`voto\` enum ('POSITIVO', 'NEGATIVO') NOT NULL, \`comentario\` varchar(500) NULL, \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updated_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), UNIQUE INDEX \`uk_feedback_version\` (\`id_plan_alimentacion_version\`), PRIMARY KEY (\`id_plan_feedback\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`nutricionista_ia_memoria\` (\`id_nutricionista_ia_memoria\` int NOT NULL AUTO_INCREMENT, \`id_nutricionista\` int NOT NULL, \`tipo_ejemplo\` enum ('POSITIVO', 'NEGATIVO') NOT NULL, \`comentario\` varchar(500) NOT NULL, \`id_plan_alimentacion_version\` int NULL, \`archivada\` tinyint NOT NULL DEFAULT 0, \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), INDEX \`idx_memoria_seleccion\` (\`id_nutricionista\`, \`tipo_ejemplo\`, \`archivada\`), PRIMARY KEY (\`id_nutricionista_ia_memoria\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`foto_progreso\` (\`fecha_baja\` datetime(6) NULL, \`id_foto\` int NOT NULL AUTO_INCREMENT, \`tipo_foto\` enum ('frente', 'perfil', 'espalda', 'otro') NOT NULL, \`object_key\` varchar(255) NOT NULL, \`mime_type\` varchar(120) NOT NULL, \`notas\` text NULL, \`fecha\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`id_socio\` int NOT NULL, \`id_turno\` int NULL, PRIMARY KEY (\`id_foto\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`objetivo\` (\`fecha_baja\` datetime(6) NULL, \`id_objetivo\` int NOT NULL AUTO_INCREMENT, \`id_socio\` int NOT NULL, \`tipo_metrica\` enum ('PESO', 'CINTURA', 'CADERA', 'BRAZO', 'MUSLO', 'PECHO') NOT NULL, \`valor_inicial\` decimal(10,2) NOT NULL, \`valor_objetivo\` decimal(10,2) NOT NULL, \`valor_actual\` decimal(10,2) NOT NULL, \`estado\` enum ('ACTIVO', 'COMPLETADO', 'ABANDONADO') NOT NULL, \`fecha_inicio\` datetime NOT NULL, \`fecha_objetivo\` datetime NULL, \`created_at\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updated_at\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), PRIMARY KEY (\`id_objetivo\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`notificacion\` (\`fecha_baja\` datetime(6) NULL, \`id_notificacion\` int NOT NULL AUTO_INCREMENT, \`destinatario_id\` int NOT NULL, \`tipo\` enum ('TURNO_RESERVADO', 'TURNO_CONFIRMADO', 'TURNO_CANCELADO', 'TURNO_REPROGRAMADO', 'CHECK_IN', 'TURNO_AUSENTE', 'TURNO_AUSENTE_AUTO', 'TURNO_AVISO_LLEGADA_TARDE', 'TURNO_INASISTENCIA_AVISO', 'PLAN_CREADO', 'PLAN_EDITADO', 'PLAN_ELIMINADO', 'PLAN_REVISAR', 'PLAN_ACTIVO', 'PLAN_FINALIZADO', 'PLAN_VALIDACION_WARNING', 'PLAN_MACROS_FUERA_RANGO', 'CONSULTA_FINALIZADA', 'CONSULTA_PREAVISO_CIERRE_AUTO', 'CONSULTA_CERRADA_AUTO', 'NUTRICIONISTA_DESACTIVADO', 'SOCIO_DESACTIVADO', 'TURNO_CREADO_POR_RECEPCION', 'TURNO_CREADO_POR_ADMIN', 'TURNO_CREADO_POR_NUTRICIONISTA') NOT NULL, \`titulo\` varchar(150) NOT NULL, \`mensaje\` varchar(500) NOT NULL, \`estado\` enum ('NO_LEIDA', 'LEIDA') NOT NULL, \`metadata\` json NULL, \`leida_en\` datetime NULL, \`created_at\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updated_at\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), PRIMARY KEY (\`id_notificacion\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`audit_log\` (\`id_audit_log\` int NOT NULL AUTO_INCREMENT, \`fecha\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`id_gimnasio\` int NULL, \`id_usuario\` varchar(50) NULL, \`modulo\` varchar(100) NOT NULL DEFAULT 'legacy', \`accion\` varchar(100) NOT NULL, \`entidad\` varchar(100) NOT NULL, \`entidad_id\` varchar(100) NULL, \`tipo_accion\` varchar(50) NULL, \`descripcion\` varchar(500) NULL, \`ip\` varchar(45) NULL, \`user_agent\` varchar(500) NULL, \`metadata_legacy\` json NULL, \`valores_antes\` json NULL, \`valores_despues\` json NULL, INDEX \`idx_audit_log_gimnasio_fecha\` (\`id_gimnasio\`, \`fecha\`), INDEX \`idx_audit_log_entidad\` (\`entidad\`, \`entidad_id\`), INDEX \`idx_audit_log_modulo\` (\`modulo\`), INDEX \`idx_audit_log_accion\` (\`accion\`), INDEX \`idx_audit_log_usuario\` (\`id_usuario\`), INDEX \`idx_audit_log_fecha\` (\`fecha\`), PRIMARY KEY (\`id_audit_log\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`login_audit\` (\`id_login_audit\` int NOT NULL AUTO_INCREMENT, \`fecha\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`id_usuario\` int NULL, \`email_intentado\` varchar(255) NULL, \`resultado\` varchar(20) NOT NULL, \`ip\` varchar(45) NULL, \`user_agent\` varchar(500) NULL, \`id_gimnasio\` int NULL, INDEX \`idx_login_audit_gimnasio_fecha\` (\`id_gimnasio\`, \`fecha\`), INDEX \`idx_login_audit_resultado\` (\`resultado\`), INDEX \`idx_login_audit_email\` (\`email_intentado\`), INDEX \`idx_login_audit_usuario\` (\`id_usuario\`), INDEX \`idx_login_audit_fecha\` (\`fecha\`), PRIMARY KEY (\`id_login_audit\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`recordatorio_enviado\` (\`fecha_baja\` datetime(6) NULL, \`id_recordatorio_enviado\` int NOT NULL AUTO_INCREMENT, \`turno_id\` int NOT NULL, \`tipo_recordatorio\` enum ('REMINDER_24H', 'REMINDER_48H') NOT NULL, \`enviado_en\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), UNIQUE INDEX \`uq_recordatorio_turno_tipo\` (\`turno_id\`, \`tipo_recordatorio\`), PRIMARY KEY (\`id_recordatorio_enviado\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`sugerencia_ia\` (\`id_sugerencia\` int NOT NULL AUTO_INCREMENT, \`id_socio\` int NOT NULL, \`objetivo\` varchar(500) NOT NULL, \`restricciones\` json NULL, \`info_extra\` text NOT NULL, \`propuesta\` json NULL, \`estado\` enum ('GENERADA', 'DESCARTADA', 'INCORPORADA', 'ERROR') NOT NULL, \`creada_en\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`usada_en\` timestamp NULL, \`socioIdPersona\` int NOT NULL, PRIMARY KEY (\`id_sugerencia\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`turno_confirmacion_token\` (\`fecha_baja\` datetime(6) NULL, \`id_turno_confirmacion_token\` int NOT NULL AUTO_INCREMENT, \`turno_id\` int NOT NULL, \`token_hash\` varchar(255) NOT NULL, \`expira_en\` datetime NOT NULL, \`usado_en\` datetime NULL, \`created_at\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), UNIQUE INDEX \`IDX_08a3f0fb0ce8fede2d26241692\` (\`token_hash\`), PRIMARY KEY (\`id_turno_confirmacion_token\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`excepcion_disponibilidad\` (\`fecha_baja\` datetime(6) NULL, \`id_excepcion\` int NOT NULL AUTO_INCREMENT, \`fecha_inicio\` datetime NOT NULL, \`fecha_fin\` datetime NOT NULL, \`motivo\` varchar(255) NULL, \`id_nutricionista\` int NOT NULL, PRIMARY KEY (\`id_excepcion\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`politica_operativa\` (\`id_politica\` int NOT NULL AUTO_INCREMENT, \`id_gimnasio\` int NOT NULL, \`plazo_cancelacion_horas\` int NOT NULL, \`plazo_reprogramacion_horas\` int NOT NULL, \`umbral_ausente_minutos\` int NOT NULL, \`umbral_cierre_consulta_min\` int NULL, \`preaviso_cierre_consulta_min\` int NULL, \`gimnasioIdGimnasio\` int NULL, PRIMARY KEY (\`id_politica\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`preparacion_item\` (\`id_preparacion_item\` int NOT NULL AUTO_INCREMENT, \`id_preparacion\` int NOT NULL, \`id_alimento\` int NOT NULL, \`cantidad_default\` decimal(8,2) NOT NULL, \`unidad_default\` enum ('gramo', 'kilogramo', 'mililitro', 'litro', 'miligramo', 'taza', 'cucharada', 'cucharadita', 'unidad') NOT NULL, PRIMARY KEY (\`id_preparacion_item\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`preparacion\` (\`fecha_baja\` datetime(6) NULL, \`id_preparacion\` int NOT NULL AUTO_INCREMENT, \`nombre\` varchar(255) NOT NULL, \`id_gimnasio\` int NOT NULL, \`creado_por_id\` int NOT NULL, PRIMARY KEY (\`id_preparacion\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`grupo_permiso_accion\` (\`id_grupo_permiso\` int NOT NULL, \`id_accion\` int NOT NULL, INDEX \`IDX_eb3928c922662556af141aa071\` (\`id_grupo_permiso\`), INDEX \`IDX_0b6d118106b4192c1bc600bb84\` (\`id_accion\`), PRIMARY KEY (\`id_grupo_permiso\`, \`id_accion\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`grupo_permiso_hijo\` (\`id_grupo_padre\` int NOT NULL, \`id_grupo_hijo\` int NOT NULL, INDEX \`IDX_3b141c09cd53c0be773b6cc8c9\` (\`id_grupo_padre\`), INDEX \`IDX_8de98489ae05d0036f33b6244a\` (\`id_grupo_hijo\`), PRIMARY KEY (\`id_grupo_padre\`, \`id_grupo_hijo\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`usuario_accion\` (\`id_usuario\` int NOT NULL, \`id_accion\` int NOT NULL, INDEX \`IDX_4b5976bcda3babe35b746244fe\` (\`id_usuario\`), INDEX \`IDX_3f7ace650b842c6d90546c7c20\` (\`id_accion\`), PRIMARY KEY (\`id_usuario\`, \`id_accion\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`ficha_salud_patologias\` (\`id_ficha_salud\` int NOT NULL, \`id_patologia\` int NOT NULL, INDEX \`IDX_5bf46ddbfe209c294727edc541\` (\`id_ficha_salud\`), INDEX \`IDX_a8ad649ae6b21f3fd7b8bae27b\` (\`id_patologia\`), PRIMARY KEY (\`id_ficha_salud\`, \`id_patologia\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`ficha_salud_alergias\` (\`id_ficha_salud\` int NOT NULL, \`id_alergia\` int NOT NULL, INDEX \`IDX_3e5f971871c73f7fc57d65cbb2\` (\`id_ficha_salud\`), INDEX \`IDX_8ed1bd229d8da6c417607331b2\` (\`id_alergia\`), PRIMARY KEY (\`id_ficha_salud\`, \`id_alergia\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`CREATE TABLE \`alimento_grupo_alimenticio\` (\`id_alimento\` int NOT NULL, \`id_grupo_alimenticio\` int NOT NULL, INDEX \`IDX_8a4cc7b70ebc5506fac6139ee9\` (\`id_alimento\`), INDEX \`IDX_a356657e838536adea1e2b5e4c\` (\`id_grupo_alimenticio\`), PRIMARY KEY (\`id_alimento\`, \`id_grupo_alimenticio\`)) ENGINE=InnoDB`);
-        await queryRunner.query(`ALTER TABLE \`formacion_academica\` ADD CONSTRAINT \`FK_1ef35a7b9797cede5e8a8f1d041\` FOREIGN KEY (\`id_nutricionista\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`usuario_grupo_permiso\` ADD CONSTRAINT \`FK_557a54cc3273c4a5fe4cd4db756\` FOREIGN KEY (\`usuarioIdUsuario\`) REFERENCES \`usuario\`(\`id_usuario\`) ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`usuario_grupo_permiso\` ADD CONSTRAINT \`FK_b05d9e941b2b1eb1a6b828c22c6\` FOREIGN KEY (\`grupoPermisoId\`) REFERENCES \`grupo_permiso\`(\`id_grupo_permiso\`) ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`usuario\` ADD CONSTRAINT \`FK_1fbc7de91b8e96937ed27739e8f\` FOREIGN KEY (\`id_persona\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`ficha_salud_version\` ADD CONSTRAINT \`FK_ed4d54de162f70d92e6087b917f\` FOREIGN KEY (\`id_ficha_salud\`) REFERENCES \`ficha_salud\`(\`id_ficha_salud\`) ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`ficha_salud_version\` ADD CONSTRAINT \`FK_1caa0f0e58e9c20ae1c11670745\` FOREIGN KEY (\`id_socio\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE RESTRICT ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`ficha_salud_version\` ADD CONSTRAINT \`FK_e7f6e29979ccff9b9abbd82acfd\` FOREIGN KEY (\`created_by\`) REFERENCES \`usuario\`(\`id_usuario\`) ON DELETE SET NULL ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`ficha_salud\` ADD CONSTRAINT \`FK_0e51af052a5aefbe8adcd2536f6\` FOREIGN KEY (\`version_actual_id\`) REFERENCES \`ficha_salud_version\`(\`id_ficha_salud_version\`) ON DELETE RESTRICT ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`item_comida\` ADD CONSTRAINT \`FK_8d70603ce7b5f1c10f666cc6713\` FOREIGN KEY (\`id_opcion_comida\`) REFERENCES \`opcion_comida\`(\`id_opcion_comida\`) ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`item_comida\` ADD CONSTRAINT \`FK_b27b2bf32d884bf61eddb63a47e\` FOREIGN KEY (\`id_alimento\`) REFERENCES \`alimento\`(\`id_alimento\`) ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`opcion_comida\` ADD CONSTRAINT \`FK_e1aa3d0030e334f5837db322dc1\` FOREIGN KEY (\`id_dia_plan\`) REFERENCES \`dia_plan\`(\`id_dia_plan\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`dia_plan\` ADD CONSTRAINT \`FK_7e1c76e9348c4ca696723061dfc\` FOREIGN KEY (\`id_plan_alimentacion\`) REFERENCES \`plan_alimentacion\`(\`id_plan_alimentacion\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`plan_alimentacion\` ADD CONSTRAINT \`FK_8fc31e3c4ec5684f52acd5c653f\` FOREIGN KEY (\`id_socio\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`plan_alimentacion\` ADD CONSTRAINT \`FK_001ae7206a911557d5e2867dd03\` FOREIGN KEY (\`id_nutricionista\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`medicion\` ADD CONSTRAINT \`FK_b3ffdccbab84d3fb6ceee2992b3\` FOREIGN KEY (\`id_turno\`) REFERENCES \`turno\`(\`id_turno\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`adjunto_clinico\` ADD CONSTRAINT \`FK_1408a6c8890ec3bee139f38f020\` FOREIGN KEY (\`id_turno\`) REFERENCES \`turno\`(\`id_turno\`) ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`adjunto_clinico\` ADD CONSTRAINT \`FK_e5f4ac8e14a591dd4c552c6dfbb\` FOREIGN KEY (\`id_usuario_subio\`) REFERENCES \`usuario\`(\`id_usuario\`) ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`turno\` ADD CONSTRAINT \`FK_9be9fbc2d26ef165f67571ef123\` FOREIGN KEY (\`id_observacion\`) REFERENCES \`observacion_clinica\`(\`id_observacion\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`turno\` ADD CONSTRAINT \`FK_86edec0569d10a7679e7c1f27d7\` FOREIGN KEY (\`id_socio\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`turno\` ADD CONSTRAINT \`FK_62c7eeed5943b2d4d67124f78aa\` FOREIGN KEY (\`id_nutricionista\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`turno\` ADD CONSTRAINT \`FK_9eb32d9a30b4a5dd1054a9b0779\` FOREIGN KEY (\`id_gimnasio\`) REFERENCES \`gimnasio\`(\`id_gimnasio\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`certificacion\` ADD CONSTRAINT \`FK_84902ff31106ccdd4affa82ee5c\` FOREIGN KEY (\`id_nutricionista\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`diploma\` ADD CONSTRAINT \`FK_15678f9150057e3d84db5b4fff9\` FOREIGN KEY (\`id_nutricionista\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`persona\` ADD CONSTRAINT \`FK_db90e04e1d41b8184641cd0c435\` FOREIGN KEY (\`id_ficha_salud\`) REFERENCES \`ficha_salud\`(\`id_ficha_salud\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`agenda\` ADD CONSTRAINT \`FK_316839d84a9fa0a50fbf6d7652c\` FOREIGN KEY (\`id_nutricionista\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`generacion_plan_ia\` ADD CONSTRAINT \`FK_9607933b8b3531d889d2675893e\` FOREIGN KEY (\`id_socio\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`generacion_plan_ia\` ADD CONSTRAINT \`FK_1f291f6bcce982e066f35a38c7c\` FOREIGN KEY (\`id_nutricionista\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`generacion_plan_ia\` ADD CONSTRAINT \`FK_eb4251aec918925a50ab5834139\` FOREIGN KEY (\`id_plan_alimentacion\`) REFERENCES \`plan_alimentacion\`(\`id_plan_alimentacion\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`plan_alimentacion_version\` ADD CONSTRAINT \`FK_59b37dfc3a041f586780af71dab\` FOREIGN KEY (\`id_plan_alimentacion\`) REFERENCES \`plan_alimentacion\`(\`id_plan_alimentacion\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`plan_alimentacion_version\` ADD CONSTRAINT \`FK_717670299024883f7da3430f343\` FOREIGN KEY (\`created_by\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`plan_feedback\` ADD CONSTRAINT \`FK_0ba127f94cf11274864f13c61a5\` FOREIGN KEY (\`id_plan_alimentacion_version\`) REFERENCES \`plan_alimentacion_version\`(\`id_plan_alimentacion_version\`) ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`plan_feedback\` ADD CONSTRAINT \`FK_e30864f43f864411533533a0cd7\` FOREIGN KEY (\`id_nutricionista\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`nutricionista_ia_memoria\` ADD CONSTRAINT \`FK_86b392d99a26e103785f36f40e4\` FOREIGN KEY (\`id_nutricionista\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`nutricionista_ia_memoria\` ADD CONSTRAINT \`FK_240f625161dfcb0b7606e49e694\` FOREIGN KEY (\`id_plan_alimentacion_version\`) REFERENCES \`plan_alimentacion_version\`(\`id_plan_alimentacion_version\`) ON DELETE SET NULL ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`foto_progreso\` ADD CONSTRAINT \`FK_2012dce408963a234f72b8d6ee4\` FOREIGN KEY (\`id_socio\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`foto_progreso\` ADD CONSTRAINT \`FK_35421796484c3d73dc44e88ddd9\` FOREIGN KEY (\`id_turno\`) REFERENCES \`turno\`(\`id_turno\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`objetivo\` ADD CONSTRAINT \`FK_799c70a3191ad115394a67cab00\` FOREIGN KEY (\`id_socio\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`notificacion\` ADD CONSTRAINT \`FK_f6d99c80cb2e50139559edf8ed8\` FOREIGN KEY (\`destinatario_id\`) REFERENCES \`usuario\`(\`id_usuario\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`sugerencia_ia\` ADD CONSTRAINT \`FK_fa6f491da2b1d59a6fcd12d6ec2\` FOREIGN KEY (\`socioIdPersona\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`turno_confirmacion_token\` ADD CONSTRAINT \`FK_68df31c7da13a0edf974629749b\` FOREIGN KEY (\`turno_id\`) REFERENCES \`turno\`(\`id_turno\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`excepcion_disponibilidad\` ADD CONSTRAINT \`FK_2459d2fa3015cb09845c1a62a01\` FOREIGN KEY (\`id_nutricionista\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`politica_operativa\` ADD CONSTRAINT \`FK_912be7b5396717600e74cc0190f\` FOREIGN KEY (\`gimnasioIdGimnasio\`) REFERENCES \`gimnasio\`(\`id_gimnasio\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`preparacion_item\` ADD CONSTRAINT \`FK_d4a67aab15302a1be58d4e99f28\` FOREIGN KEY (\`id_preparacion\`) REFERENCES \`preparacion\`(\`id_preparacion\`) ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`preparacion_item\` ADD CONSTRAINT \`FK_4c153fba12e4eb8ce440a39e7b7\` FOREIGN KEY (\`id_alimento\`) REFERENCES \`alimento\`(\`id_alimento\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`preparacion\` ADD CONSTRAINT \`FK_bfb301fa5fdbf03b958960b55fb\` FOREIGN KEY (\`id_gimnasio\`) REFERENCES \`gimnasio\`(\`id_gimnasio\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`preparacion\` ADD CONSTRAINT \`FK_d535bcaa65b4f48b26520f36c3c\` FOREIGN KEY (\`creado_por_id\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`grupo_permiso_accion\` ADD CONSTRAINT \`FK_eb3928c922662556af141aa0715\` FOREIGN KEY (\`id_grupo_permiso\`) REFERENCES \`grupo_permiso\`(\`id_grupo_permiso\`) ON DELETE CASCADE ON UPDATE CASCADE`);
-        await queryRunner.query(`ALTER TABLE \`grupo_permiso_accion\` ADD CONSTRAINT \`FK_0b6d118106b4192c1bc600bb84a\` FOREIGN KEY (\`id_accion\`) REFERENCES \`accion\`(\`id_accion\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`grupo_permiso_hijo\` ADD CONSTRAINT \`FK_3b141c09cd53c0be773b6cc8c91\` FOREIGN KEY (\`id_grupo_padre\`) REFERENCES \`grupo_permiso\`(\`id_grupo_permiso\`) ON DELETE CASCADE ON UPDATE CASCADE`);
-        await queryRunner.query(`ALTER TABLE \`grupo_permiso_hijo\` ADD CONSTRAINT \`FK_8de98489ae05d0036f33b6244a2\` FOREIGN KEY (\`id_grupo_hijo\`) REFERENCES \`grupo_permiso\`(\`id_grupo_permiso\`) ON DELETE CASCADE ON UPDATE CASCADE`);
-        await queryRunner.query(`ALTER TABLE \`usuario_accion\` ADD CONSTRAINT \`FK_4b5976bcda3babe35b746244fe6\` FOREIGN KEY (\`id_usuario\`) REFERENCES \`usuario\`(\`id_usuario\`) ON DELETE CASCADE ON UPDATE CASCADE`);
-        await queryRunner.query(`ALTER TABLE \`usuario_accion\` ADD CONSTRAINT \`FK_3f7ace650b842c6d90546c7c205\` FOREIGN KEY (\`id_accion\`) REFERENCES \`accion\`(\`id_accion\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE \`ficha_salud_patologias\` ADD CONSTRAINT \`FK_5bf46ddbfe209c294727edc5410\` FOREIGN KEY (\`id_ficha_salud\`) REFERENCES \`ficha_salud\`(\`id_ficha_salud\`) ON DELETE CASCADE ON UPDATE CASCADE`);
-        await queryRunner.query(`ALTER TABLE \`ficha_salud_patologias\` ADD CONSTRAINT \`FK_a8ad649ae6b21f3fd7b8bae27be\` FOREIGN KEY (\`id_patologia\`) REFERENCES \`patologia\`(\`id_patologia\`) ON DELETE CASCADE ON UPDATE CASCADE`);
-        await queryRunner.query(`ALTER TABLE \`ficha_salud_alergias\` ADD CONSTRAINT \`FK_3e5f971871c73f7fc57d65cbb28\` FOREIGN KEY (\`id_ficha_salud\`) REFERENCES \`ficha_salud\`(\`id_ficha_salud\`) ON DELETE CASCADE ON UPDATE CASCADE`);
-        await queryRunner.query(`ALTER TABLE \`ficha_salud_alergias\` ADD CONSTRAINT \`FK_8ed1bd229d8da6c417607331b28\` FOREIGN KEY (\`id_alergia\`) REFERENCES \`alergia\`(\`id_alergia\`) ON DELETE CASCADE ON UPDATE CASCADE`);
-        await queryRunner.query(`ALTER TABLE \`alimento_grupo_alimenticio\` ADD CONSTRAINT \`FK_8a4cc7b70ebc5506fac6139ee92\` FOREIGN KEY (\`id_alimento\`) REFERENCES \`alimento\`(\`id_alimento\`) ON DELETE CASCADE ON UPDATE CASCADE`);
-        await queryRunner.query(`ALTER TABLE \`alimento_grupo_alimenticio\` ADD CONSTRAINT \`FK_a356657e838536adea1e2b5e4cd\` FOREIGN KEY (\`id_grupo_alimenticio\`) REFERENCES \`grupo_alimenticio\`(\`id_grupo_alimenticio\`) ON DELETE CASCADE ON UPDATE CASCADE`);
-    }
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(
+      `CREATE TABLE \`formacion_academica\` (\`fecha_baja\` datetime(6) NULL, \`id_formacion_academica\` int NOT NULL AUTO_INCREMENT, \`titulo\` varchar(255) NOT NULL, \`institucion\` varchar(255) NOT NULL, \`anio_inicio\` int NOT NULL, \`anio_fin\` int NULL, \`nivel\` enum ('GRADO', 'POSGRADO', 'MAESTRIA', 'DOCTORADO', 'ESPECIALIZACION', 'DIPLOMATURA', 'CURSO') NOT NULL, \`id_nutricionista\` int NOT NULL, PRIMARY KEY (\`id_formacion_academica\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`usuario_grupo_permiso\` (\`id_usuario_grupo_permiso\` int NOT NULL AUTO_INCREMENT, \`id_gimnasio\` int NULL, \`fecha_asignacion\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`usuarioIdUsuario\` int NULL, \`grupoPermisoId\` int NULL, PRIMARY KEY (\`id_usuario_grupo_permiso\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`grupo_permiso\` (\`id_grupo_permiso\` int NOT NULL AUTO_INCREMENT, \`clave\` varchar(100) NOT NULL, \`nombre\` varchar(120) NOT NULL, \`descripcion\` varchar(255) NULL, \`es_grupo_sistema\` tinyint NOT NULL DEFAULT 0, UNIQUE INDEX \`IDX_69cee8a317e94a61ef5c583949\` (\`clave\`), PRIMARY KEY (\`id_grupo_permiso\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`accion\` (\`fecha_baja\` datetime(6) NULL, \`id_accion\` int NOT NULL AUTO_INCREMENT, \`clave\` varchar(120) NOT NULL, \`nombre\` varchar(120) NOT NULL, \`descripcion\` varchar(255) NULL, UNIQUE INDEX \`IDX_2aecffe3ca3cfe9ba5c856ad23\` (\`clave\`), PRIMARY KEY (\`id_accion\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`usuario\` (\`id_usuario\` int NOT NULL AUTO_INCREMENT, \`email\` varchar(255) NOT NULL, \`contrasenia\` varchar(255) NOT NULL, \`debe_cambiar_password\` tinyint(1) NOT NULL DEFAULT '0', \`token_recuperacion\` varchar(255) NULL, \`token_recuperacion_expiracion\` datetime NULL, \`fecha_hora_alta\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP, \`rol\` enum ('ADMIN', 'SUPERADMIN', 'NUTRICIONISTA', 'RECEPCIONISTA', 'SOCIO') NOT NULL, \`id_persona\` int NULL, UNIQUE INDEX \`IDX_2863682842e688ca198eb25c12\` (\`email\`), UNIQUE INDEX \`REL_1fbc7de91b8e96937ed27739e8\` (\`id_persona\`), PRIMARY KEY (\`id_usuario\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`ficha_salud_version\` (\`id_ficha_salud_version\` int NOT NULL AUTO_INCREMENT, \`id_ficha_salud\` int NOT NULL, \`id_socio\` int NOT NULL, \`version\` int NOT NULL, \`datos_json\` text NOT NULL, \`created_at\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, \`created_by\` int NULL, INDEX \`idx_fsv_created_at\` (\`created_at\`), INDEX \`idx_fsv_socio\` (\`id_socio\`), PRIMARY KEY (\`id_ficha_salud_version\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`ficha_salud\` (\`fecha_baja\` datetime(6) NULL, \`id_ficha_salud\` int NOT NULL AUTO_INCREMENT, \`altura\` int NOT NULL, \`peso\` decimal(5,2) NOT NULL, \`fecha_creacion\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, \`objetivo_personal\` varchar(255) NULL, \`nivel_actividad_fisica\` enum ('SEDENTARIO', 'LIGERO', 'MODERADO', 'INTENSO', 'MUY_INTENSO') NOT NULL, \`medicacion_actual\` text NULL, \`suplementos_actuales\` text NULL, \`cirugias_previas\` text NULL, \`antecedentes_familiares\` text NULL, \`frecuencia_comidas\` enum ('1-2 comidas', '3 comidas', '4-5 comidas', '6 o más comidas') NULL, \`consumo_agua_diario\` decimal(4,1) NULL, \`restricciones_alimentarias\` text NULL, \`consumo_alcohol\` enum ('Nunca', 'Ocasional', 'Moderado', 'Frecuente') NULL, \`fuma_tabaco\` tinyint NOT NULL DEFAULT 0, \`horas_sueno\` int NULL, \`contacto_emergencia_nombre\` varchar(100) NULL, \`contacto_emergencia_telefono\` varchar(20) NULL, \`completada\` tinyint NOT NULL DEFAULT 0, \`completada_at\` datetime NULL, \`actualizada_at\` datetime NULL, \`consent_at\` datetime NULL, \`version_actual_id\` int NULL, \`revisada_por_nutricionista_at\` datetime NULL, INDEX \`idx_fs_completada\` (\`completada\`), PRIMARY KEY (\`id_ficha_salud\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`patologia\` (\`fecha_baja\` datetime(6) NULL, \`id_patologia\` int NOT NULL AUTO_INCREMENT, \`nombre\` varchar(100) NOT NULL, PRIMARY KEY (\`id_patologia\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`alergia\` (\`fecha_baja\` datetime(6) NULL, \`id_alergia\` int NOT NULL AUTO_INCREMENT, \`nombre\` varchar(100) NOT NULL, PRIMARY KEY (\`id_alergia\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`grupo_alimenticio\` (\`fecha_baja\` datetime(6) NULL, \`id_grupo_alimenticio\` int NOT NULL AUTO_INCREMENT, \`descripcion\` varchar(255) NOT NULL, PRIMARY KEY (\`id_grupo_alimenticio\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`alimento\` (\`fecha_baja\` datetime(6) NULL, \`id_alimento\` int NOT NULL AUTO_INCREMENT, \`nombre\` varchar(255) NOT NULL, \`cantidad\` decimal(8,2) NOT NULL, \`calorias\` decimal(8,2) NULL, \`proteinas\` decimal(8,2) NULL, \`carbohidratos\` decimal(8,2) NULL, \`grasas\` decimal(8,2) NULL, \`hidratos_de_carbono\` decimal(8,2) NULL, \`colesterol\` decimal(8,2) NULL, \`fibra_alimentaria\` decimal(8,2) NULL, \`sodio\` decimal(8,2) NULL, \`agua\` decimal(8,2) NULL, \`vitamina_a\` decimal(8,2) NULL, \`vitamina_b6\` decimal(8,2) NULL, \`vitamina_b12\` decimal(8,2) NULL, \`vitamina_c\` decimal(8,2) NULL, \`vitamina_d\` decimal(8,2) NULL, \`vitamina_e\` decimal(8,2) NULL, \`vitamina_k\` decimal(8,2) NULL, \`almidon\` decimal(8,2) NULL, \`lactosa\` decimal(8,2) NULL, \`alcohol\` decimal(8,2) NULL, \`cafeina\` decimal(8,2) NULL, \`azucares\` decimal(8,2) NULL, \`calcio\` decimal(8,2) NULL, \`hierro\` decimal(8,2) NULL, \`magnesio\` decimal(8,2) NULL, \`fosforo\` decimal(8,2) NULL, \`potasio\` decimal(8,2) NULL, \`cinc\` decimal(8,2) NULL, \`cobre\` decimal(8,2) NULL, \`fluor\` decimal(8,2) NULL, \`manganeso\` decimal(8,2) NULL, \`selenio\` decimal(8,2) NULL, \`tiamina\` decimal(8,2) NULL, \`riboflavina\` decimal(8,2) NULL, \`niacina\` decimal(8,2) NULL, \`acido_pantotenico\` decimal(8,2) NULL, \`folato\` decimal(8,2) NULL, \`acido_folico\` decimal(8,2) NULL, \`grasas_trans\` decimal(8,2) NULL, \`grasas_saturadas\` decimal(8,2) NULL, \`grasas_monoinsaturadas\` decimal(8,2) NULL, \`grasas_poliinsaturadas\` decimal(8,2) NULL, \`cloruro\` decimal(8,2) NULL, \`unidad_medida\` enum ('gramo', 'kilogramo', 'mililitro', 'litro', 'miligramo', 'taza', 'cucharada', 'cucharadita', 'unidad') NOT NULL, UNIQUE INDEX \`uq_alimento_nombre\` (\`nombre\`), PRIMARY KEY (\`id_alimento\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`item_comida\` (\`fecha_baja\` datetime(6) NULL, \`id_item_comida\` int NOT NULL AUTO_INCREMENT, \`id_opcion_comida\` int NOT NULL, \`id_alimento\` int NOT NULL, \`alimento_nombre\` varchar(255) NOT NULL, \`cantidad\` int NOT NULL, \`unidad_medida\` enum ('gramo', 'kilogramo', 'mililitro', 'litro', 'miligramo', 'taza', 'cucharada', 'cucharadita', 'unidad') NOT NULL, \`notas\` varchar(255) NULL, \`calorias\` decimal(8,2) NULL, \`proteinas\` decimal(8,2) NULL, \`carbohidratos\` decimal(8,2) NULL, \`grasas\` decimal(8,2) NULL, PRIMARY KEY (\`id_item_comida\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`opcion_comida\` (\`fecha_baja\` datetime(6) NULL, \`id_opcion_comida\` int NOT NULL AUTO_INCREMENT, \`comentarios\` varchar(255) NULL, \`tipo_comida\` enum ('DESAYUNO', 'ALMUERZO', 'MERIENDA', 'CENA', 'COLACION') NOT NULL, \`id_dia_plan\` int NULL, PRIMARY KEY (\`id_opcion_comida\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`dia_plan\` (\`fecha_baja\` datetime(6) NULL, \`id_dia_plan\` int NOT NULL AUTO_INCREMENT, \`dia\` enum ('LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO') NOT NULL, \`orden\` int NOT NULL, \`id_plan_alimentacion\` int NOT NULL, PRIMARY KEY (\`id_dia_plan\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`plan_alimentacion\` (\`id_plan_alimentacion\` int NOT NULL AUTO_INCREMENT, \`fechaCreacion\` date NOT NULL, \`objetivo_nutricional\` varchar(255) NOT NULL, \`activo\` tinyint NOT NULL DEFAULT 0, \`estado\` varchar(20) NOT NULL DEFAULT 'BORRADOR', \`finalizado_at\` datetime NULL, \`eliminado_en\` datetime NULL, \`motivo_eliminacion\` varchar(255) NULL, \`motivo_edicion\` varchar(255) NULL, \`ultima_edicion\` datetime NULL, \`notas_generacion\` varchar(1000) NULL, \`id_socio\` int NOT NULL, \`id_nutricionista\` int NOT NULL, PRIMARY KEY (\`id_plan_alimentacion\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`gimnasio\` (\`fecha_baja\` datetime(6) NULL, \`id_gimnasio\` int NOT NULL AUTO_INCREMENT, \`nombre\` varchar(100) NOT NULL, \`direccion\` varchar(255) NOT NULL, \`telefono\` varchar(15) NOT NULL, \`ciudad\` varchar(100) NOT NULL, \`logo_url\` varchar(500) NULL, \`color_primario\` varchar(7) NULL, \`color_secundario\` varchar(7) NULL, \`plazo_cancelacion_horas\` int NOT NULL DEFAULT '24', \`plazo_reprogramacion_horas\` int NOT NULL DEFAULT '12', \`antelacion_minima_reserva_horas\` int NOT NULL DEFAULT '2', \`umbral_ausente_minutos\` int NOT NULL DEFAULT '15', \`email_notificaciones\` varchar(255) NULL, \`email_habilitado\` tinyint NOT NULL DEFAULT 0, PRIMARY KEY (\`id_gimnasio\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`observacion_clinica\` (\`fecha_baja\` datetime(6) NULL, \`id_observacion\` int NOT NULL AUTO_INCREMENT, \`version\` int NOT NULL, \`comentario\` varchar(255) NOT NULL, \`peso\` decimal(5,2) NOT NULL, \`altura\` int NOT NULL, \`imc\` decimal(5,2) NOT NULL, \`sugerencias\` varchar(255) NULL, \`habitos_socio\` varchar(255) NULL, \`objetivos_socio\` varchar(255) NULL, \`es_publica\` tinyint NOT NULL DEFAULT 0, PRIMARY KEY (\`id_observacion\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`medicion\` (\`fecha_baja\` datetime(6) NULL, \`id_medicion\` int NOT NULL AUTO_INCREMENT, \`peso\` decimal(5,2) NOT NULL, \`altura\` int NOT NULL, \`imc\` decimal(5,2) NOT NULL, \`perimetro_cintura\` decimal(5,2) NULL, \`perimetro_cadera\` decimal(5,2) NULL, \`perimetro_brazo\` decimal(5,2) NULL, \`perimetro_muslo\` decimal(5,2) NULL, \`perimetro_pecho\` decimal(5,2) NULL, \`pliegue_triceps\` decimal(5,2) NULL, \`pliegue_abdominal\` decimal(5,2) NULL, \`pliegue_muslo\` decimal(5,2) NULL, \`porcentaje_grasa\` decimal(5,2) NULL, \`masa_magra\` decimal(5,2) NULL, \`frecuencia_cardiaca\` int NULL, \`tension_sistolica\` int NULL, \`tension_diastolica\` int NULL, \`notas_medicion\` text NULL, \`created_at\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`id_turno\` int NOT NULL, PRIMARY KEY (\`id_medicion\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`adjunto_clinico\` (\`fecha_baja\` datetime(6) NULL, \`id_adjunto\` int NOT NULL AUTO_INCREMENT, \`nombre_original\` varchar(255) NOT NULL, \`mime_type\` varchar(100) NOT NULL, \`size_bytes\` int NOT NULL, \`object_key\` varchar(500) NOT NULL, \`id_turno\` int NOT NULL, \`id_usuario_subio\` int NOT NULL, \`es_post_cierre\` tinyint NOT NULL DEFAULT 0, \`created_at\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), INDEX \`idx_adjunto_clinico_turno\` (\`id_turno\`), PRIMARY KEY (\`id_adjunto\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`turno\` (\`fecha_baja\` datetime(6) NULL, \`id_turno\` int NOT NULL AUTO_INCREMENT, \`fecha\` date NOT NULL, \`hora_turno\` varchar(10) NOT NULL, \`estado\` enum ('CONFIRMADO', 'PRESENTE', 'EN_CURSO', 'REALIZADO', 'CANCELADO', 'AUSENTE') NOT NULL, \`creado_por\` varchar(20) NOT NULL DEFAULT 'SOCIO', \`check_in_at\` datetime NULL, \`consulta_iniciada_at\` datetime NULL, \`consulta_finalizada_at\` datetime NULL, \`cierre_automatico\` tinyint NOT NULL DEFAULT 0, \`motivo_cierre_automatico\` varchar(50) NULL, \`cierre_automatico_en\` datetime NULL, \`preaviso_cierre_auto_enviado_en\` datetime NULL, \`reabierta_por_cierre_auto\` tinyint NOT NULL DEFAULT 0, \`ausente_at\` datetime NULL, \`ausente_motivo\` varchar(500) NULL, \`motivo_cancelacion\` varchar(500) NULL, \`fecha_original\` datetime NULL, \`llegada_tarde_min\` int NULL, \`token_confirmacion\` varchar(255) NULL, \`id_observacion\` int NULL, \`id_socio\` int NULL, \`id_nutricionista\` int NOT NULL, \`id_gimnasio\` int NULL, UNIQUE INDEX \`IDX_80f84d1cb7340c833fcba54dbc\` (\`token_confirmacion\`), UNIQUE INDEX \`REL_9be9fbc2d26ef165f67571ef12\` (\`id_observacion\`), PRIMARY KEY (\`id_turno\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`certificacion\` (\`fecha_baja\` datetime(6) NULL, \`id_certificacion\` int NOT NULL AUTO_INCREMENT, \`nombre\` varchar(255) NOT NULL, \`entidad\` varchar(255) NOT NULL, \`anio\` int NULL, \`carga_horaria\` int NULL, \`nivel\` varchar(50) NULL, \`id_nutricionista\` int NOT NULL, PRIMARY KEY (\`id_certificacion\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`diploma\` (\`fecha_baja\` datetime(6) NULL, \`id_diploma\` int NOT NULL AUTO_INCREMENT, \`id_nutricionista\` int NOT NULL, \`document_key\` varchar(255) NOT NULL, \`nombre_original\` varchar(255) NULL, \`mime_type\` varchar(100) NULL, \`creado_en\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), PRIMARY KEY (\`id_diploma\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`persona\` (\`fecha_baja\` datetime(6) NULL, \`id_persona\` int NOT NULL AUTO_INCREMENT, \`nombre\` varchar(100) NOT NULL, \`apellido\` varchar(100) NOT NULL, \`fecha_nacimiento\` date NOT NULL, \`genero\` enum ('MASCULINO', 'FEMENINO', 'OTRO') NOT NULL, \`telefono\` varchar(30) NOT NULL, \`direccion\` varchar(255) NOT NULL, \`ciudad\` varchar(100) NOT NULL, \`provincia\` varchar(100) NOT NULL, \`dni\` varchar(20) NULL, \`foto_perfil_key\` varchar(255) NULL, \`observaciones\` text NULL, \`id_gimnasio\` int NULL, \`fecha_alta\` date NULL, \`matricula\` varchar(50) NULL, \`anios_experiencia\` int NULL, \`tarifa_sesion\` decimal(10,2) NULL, \`presentacion\` text NULL, \`duracion_turno_min\` int NULL DEFAULT '30', \`matricula_documento_key\` varchar(255) NULL, \`preferencias_ia\` text NULL, \`tipo_persona\` varchar(255) NOT NULL, \`id_ficha_salud\` int NULL, UNIQUE INDEX \`IDX_b9000711e4ac11ef438c9f405d\` (\`matricula\`), UNIQUE INDEX \`REL_db90e04e1d41b8184641cd0c43\` (\`id_ficha_salud\`), INDEX \`IDX_36e1631311d9cb31089523a5c8\` (\`tipo_persona\`), PRIMARY KEY (\`id_persona\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`agenda\` (\`fecha_baja\` datetime(6) NULL, \`id_agenda\` int NOT NULL AUTO_INCREMENT, \`dia\` enum ('Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo') NOT NULL, \`hora_inicio\` time NOT NULL, \`hora_fin\` time NOT NULL, \`duracion_turno\` int NOT NULL, \`id_nutricionista\` int NOT NULL, UNIQUE INDEX \`UQ_AGENDA_NUTRI_DIA_HORARIO\` (\`id_nutricionista\`, \`dia\`, \`hora_inicio\`, \`hora_fin\`), PRIMARY KEY (\`id_agenda\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`generacion_plan_ia\` (\`id_generacion_plan_ia\` int NOT NULL AUTO_INCREMENT, \`id_socio\` int NOT NULL, \`id_nutricionista\` int NOT NULL, \`id_gimnasio\` int NOT NULL, \`id_plan_alimentacion\` int NULL, \`estado\` varchar(20) NOT NULL DEFAULT 'PENDIENTE', \`solicitud_json\` json NOT NULL, \`proveedor_actual\` varchar(50) NULL, \`mensaje_estado\` varchar(500) NULL, \`error_mensaje\` text NULL, \`respuesta_json\` json NULL, \`progreso_actual\` int NULL, \`progreso_total\` int NULL, \`dia_actual\` varchar(32) NULL, \`comida_actual\` varchar(64) NULL, \`snapshot_parcial_json\` json NULL, \`creado_en\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`actualizado_en\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), \`iniciado_en\` datetime NULL, \`finalizado_en\` datetime NULL, INDEX \`idx_generacion_plan_ia_plan\` (\`id_plan_alimentacion\`, \`estado\`), INDEX \`idx_generacion_plan_ia_activa\` (\`id_socio\`, \`id_gimnasio\`, \`estado\`), PRIMARY KEY (\`id_generacion_plan_ia\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`ia_configuracion\` (\`id_ia_configuracion\` int NOT NULL AUTO_INCREMENT, \`provider\` varchar(50) NOT NULL, \`api_key_encrypted\` text NULL, \`model\` varchar(255) NULL, \`base_url\` varchar(500) NULL, \`max_tokens\` int NULL, \`temperature\` decimal(4,3) NULL, \`timeout_ms\` int NULL, \`habilitado\` tinyint NOT NULL DEFAULT 1, \`orden\` int NOT NULL DEFAULT '0', \`gimnasio_id\` int NULL, \`creado_en\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`actualizado_en\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), INDEX \`idx_ia_configuracion_orden\` (\`habilitado\`, \`orden\`), UNIQUE INDEX \`uq_ia_configuracion_provider_gimnasio\` (\`provider\`, \`gimnasio_id\`), PRIMARY KEY (\`id_ia_configuracion\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`plan_alimentacion_version\` (\`id_plan_alimentacion_version\` int NOT NULL AUTO_INCREMENT, \`id_plan_alimentacion\` int NOT NULL, \`numero_version\` int NOT NULL, \`datos_json\` json NOT NULL, \`motivo_cambio\` varchar(255) NULL, \`activa\` tinyint NOT NULL DEFAULT 0, \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`created_by\` int NOT NULL, INDEX \`idx_plan_version_activa\` (\`id_plan_alimentacion\`, \`activa\`), UNIQUE INDEX \`uk_plan_version_numero\` (\`id_plan_alimentacion\`, \`numero_version\`), PRIMARY KEY (\`id_plan_alimentacion_version\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`plan_feedback\` (\`id_plan_feedback\` int NOT NULL AUTO_INCREMENT, \`id_plan_alimentacion_version\` int NOT NULL, \`id_nutricionista\` int NOT NULL, \`voto\` enum ('POSITIVO', 'NEGATIVO') NOT NULL, \`comentario\` varchar(500) NULL, \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updated_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), UNIQUE INDEX \`uk_feedback_version\` (\`id_plan_alimentacion_version\`), PRIMARY KEY (\`id_plan_feedback\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`nutricionista_ia_memoria\` (\`id_nutricionista_ia_memoria\` int NOT NULL AUTO_INCREMENT, \`id_nutricionista\` int NOT NULL, \`tipo_ejemplo\` enum ('POSITIVO', 'NEGATIVO') NOT NULL, \`comentario\` varchar(500) NOT NULL, \`id_plan_alimentacion_version\` int NULL, \`archivada\` tinyint NOT NULL DEFAULT 0, \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), INDEX \`idx_memoria_seleccion\` (\`id_nutricionista\`, \`tipo_ejemplo\`, \`archivada\`), PRIMARY KEY (\`id_nutricionista_ia_memoria\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`foto_progreso\` (\`fecha_baja\` datetime(6) NULL, \`id_foto\` int NOT NULL AUTO_INCREMENT, \`tipo_foto\` enum ('frente', 'perfil', 'espalda', 'otro') NOT NULL, \`object_key\` varchar(255) NOT NULL, \`mime_type\` varchar(120) NOT NULL, \`notas\` text NULL, \`fecha\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`id_socio\` int NOT NULL, \`id_turno\` int NULL, PRIMARY KEY (\`id_foto\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`objetivo\` (\`fecha_baja\` datetime(6) NULL, \`id_objetivo\` int NOT NULL AUTO_INCREMENT, \`id_socio\` int NOT NULL, \`tipo_metrica\` enum ('PESO', 'CINTURA', 'CADERA', 'BRAZO', 'MUSLO', 'PECHO') NOT NULL, \`valor_inicial\` decimal(10,2) NOT NULL, \`valor_objetivo\` decimal(10,2) NOT NULL, \`valor_actual\` decimal(10,2) NOT NULL, \`estado\` enum ('ACTIVO', 'COMPLETADO', 'ABANDONADO') NOT NULL, \`fecha_inicio\` datetime NOT NULL, \`fecha_objetivo\` datetime NULL, \`created_at\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updated_at\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), PRIMARY KEY (\`id_objetivo\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`notificacion\` (\`fecha_baja\` datetime(6) NULL, \`id_notificacion\` int NOT NULL AUTO_INCREMENT, \`destinatario_id\` int NOT NULL, \`tipo\` enum ('TURNO_RESERVADO', 'TURNO_CONFIRMADO', 'TURNO_CANCELADO', 'TURNO_REPROGRAMADO', 'CHECK_IN', 'TURNO_AUSENTE', 'TURNO_AUSENTE_AUTO', 'TURNO_AVISO_LLEGADA_TARDE', 'TURNO_INASISTENCIA_AVISO', 'PLAN_CREADO', 'PLAN_EDITADO', 'PLAN_ELIMINADO', 'PLAN_REVISAR', 'PLAN_ACTIVO', 'PLAN_FINALIZADO', 'PLAN_VALIDACION_WARNING', 'PLAN_MACROS_FUERA_RANGO', 'CONSULTA_FINALIZADA', 'CONSULTA_PREAVISO_CIERRE_AUTO', 'CONSULTA_CERRADA_AUTO', 'NUTRICIONISTA_DESACTIVADO', 'SOCIO_DESACTIVADO', 'TURNO_CREADO_POR_RECEPCION', 'TURNO_CREADO_POR_ADMIN', 'TURNO_CREADO_POR_NUTRICIONISTA') NOT NULL, \`titulo\` varchar(150) NOT NULL, \`mensaje\` varchar(500) NOT NULL, \`estado\` enum ('NO_LEIDA', 'LEIDA') NOT NULL, \`metadata\` json NULL, \`leida_en\` datetime NULL, \`created_at\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updated_at\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), PRIMARY KEY (\`id_notificacion\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`audit_log\` (\`id_audit_log\` int NOT NULL AUTO_INCREMENT, \`fecha\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`id_gimnasio\` int NULL, \`id_usuario\` varchar(50) NULL, \`modulo\` varchar(100) NOT NULL DEFAULT 'legacy', \`accion\` varchar(100) NOT NULL, \`entidad\` varchar(100) NOT NULL, \`entidad_id\` varchar(100) NULL, \`tipo_accion\` varchar(50) NULL, \`descripcion\` varchar(500) NULL, \`ip\` varchar(45) NULL, \`user_agent\` varchar(500) NULL, \`metadata_legacy\` json NULL, \`valores_antes\` json NULL, \`valores_despues\` json NULL, INDEX \`idx_audit_log_gimnasio_fecha\` (\`id_gimnasio\`, \`fecha\`), INDEX \`idx_audit_log_entidad\` (\`entidad\`, \`entidad_id\`), INDEX \`idx_audit_log_modulo\` (\`modulo\`), INDEX \`idx_audit_log_accion\` (\`accion\`), INDEX \`idx_audit_log_usuario\` (\`id_usuario\`), INDEX \`idx_audit_log_fecha\` (\`fecha\`), PRIMARY KEY (\`id_audit_log\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`login_audit\` (\`id_login_audit\` int NOT NULL AUTO_INCREMENT, \`fecha\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`id_usuario\` int NULL, \`email_intentado\` varchar(255) NULL, \`resultado\` varchar(20) NOT NULL, \`ip\` varchar(45) NULL, \`user_agent\` varchar(500) NULL, \`id_gimnasio\` int NULL, INDEX \`idx_login_audit_gimnasio_fecha\` (\`id_gimnasio\`, \`fecha\`), INDEX \`idx_login_audit_resultado\` (\`resultado\`), INDEX \`idx_login_audit_email\` (\`email_intentado\`), INDEX \`idx_login_audit_usuario\` (\`id_usuario\`), INDEX \`idx_login_audit_fecha\` (\`fecha\`), PRIMARY KEY (\`id_login_audit\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`recordatorio_enviado\` (\`fecha_baja\` datetime(6) NULL, \`id_recordatorio_enviado\` int NOT NULL AUTO_INCREMENT, \`turno_id\` int NOT NULL, \`tipo_recordatorio\` enum ('REMINDER_24H', 'REMINDER_48H') NOT NULL, \`enviado_en\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), UNIQUE INDEX \`uq_recordatorio_turno_tipo\` (\`turno_id\`, \`tipo_recordatorio\`), PRIMARY KEY (\`id_recordatorio_enviado\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`sugerencia_ia\` (\`id_sugerencia\` int NOT NULL AUTO_INCREMENT, \`id_socio\` int NOT NULL, \`objetivo\` varchar(500) NOT NULL, \`restricciones\` json NULL, \`info_extra\` text NOT NULL, \`propuesta\` json NULL, \`estado\` enum ('GENERADA', 'DESCARTADA', 'INCORPORADA', 'ERROR') NOT NULL, \`creada_en\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`usada_en\` timestamp NULL, \`socioIdPersona\` int NOT NULL, PRIMARY KEY (\`id_sugerencia\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`turno_confirmacion_token\` (\`fecha_baja\` datetime(6) NULL, \`id_turno_confirmacion_token\` int NOT NULL AUTO_INCREMENT, \`turno_id\` int NOT NULL, \`token_hash\` varchar(255) NOT NULL, \`expira_en\` datetime NOT NULL, \`usado_en\` datetime NULL, \`created_at\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), UNIQUE INDEX \`IDX_08a3f0fb0ce8fede2d26241692\` (\`token_hash\`), PRIMARY KEY (\`id_turno_confirmacion_token\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`excepcion_disponibilidad\` (\`fecha_baja\` datetime(6) NULL, \`id_excepcion\` int NOT NULL AUTO_INCREMENT, \`fecha_inicio\` datetime NOT NULL, \`fecha_fin\` datetime NOT NULL, \`motivo\` varchar(255) NULL, \`id_nutricionista\` int NOT NULL, PRIMARY KEY (\`id_excepcion\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`politica_operativa\` (\`id_politica\` int NOT NULL AUTO_INCREMENT, \`id_gimnasio\` int NOT NULL, \`plazo_cancelacion_horas\` int NOT NULL, \`plazo_reprogramacion_horas\` int NOT NULL, \`umbral_ausente_minutos\` int NOT NULL, \`umbral_cierre_consulta_min\` int NULL, \`preaviso_cierre_consulta_min\` int NULL, \`gimnasioIdGimnasio\` int NULL, PRIMARY KEY (\`id_politica\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`preparacion_item\` (\`id_preparacion_item\` int NOT NULL AUTO_INCREMENT, \`id_preparacion\` int NOT NULL, \`id_alimento\` int NOT NULL, \`cantidad_default\` decimal(8,2) NOT NULL, \`unidad_default\` enum ('gramo', 'kilogramo', 'mililitro', 'litro', 'miligramo', 'taza', 'cucharada', 'cucharadita', 'unidad') NOT NULL, PRIMARY KEY (\`id_preparacion_item\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`preparacion\` (\`fecha_baja\` datetime(6) NULL, \`id_preparacion\` int NOT NULL AUTO_INCREMENT, \`nombre\` varchar(255) NOT NULL, \`id_gimnasio\` int NOT NULL, \`creado_por_id\` int NOT NULL, PRIMARY KEY (\`id_preparacion\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`grupo_permiso_accion\` (\`id_grupo_permiso\` int NOT NULL, \`id_accion\` int NOT NULL, INDEX \`IDX_eb3928c922662556af141aa071\` (\`id_grupo_permiso\`), INDEX \`IDX_0b6d118106b4192c1bc600bb84\` (\`id_accion\`), PRIMARY KEY (\`id_grupo_permiso\`, \`id_accion\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`grupo_permiso_hijo\` (\`id_grupo_padre\` int NOT NULL, \`id_grupo_hijo\` int NOT NULL, INDEX \`IDX_3b141c09cd53c0be773b6cc8c9\` (\`id_grupo_padre\`), INDEX \`IDX_8de98489ae05d0036f33b6244a\` (\`id_grupo_hijo\`), PRIMARY KEY (\`id_grupo_padre\`, \`id_grupo_hijo\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`usuario_accion\` (\`id_usuario\` int NOT NULL, \`id_accion\` int NOT NULL, INDEX \`IDX_4b5976bcda3babe35b746244fe\` (\`id_usuario\`), INDEX \`IDX_3f7ace650b842c6d90546c7c20\` (\`id_accion\`), PRIMARY KEY (\`id_usuario\`, \`id_accion\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`ficha_salud_patologias\` (\`id_ficha_salud\` int NOT NULL, \`id_patologia\` int NOT NULL, INDEX \`IDX_5bf46ddbfe209c294727edc541\` (\`id_ficha_salud\`), INDEX \`IDX_a8ad649ae6b21f3fd7b8bae27b\` (\`id_patologia\`), PRIMARY KEY (\`id_ficha_salud\`, \`id_patologia\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`ficha_salud_alergias\` (\`id_ficha_salud\` int NOT NULL, \`id_alergia\` int NOT NULL, INDEX \`IDX_3e5f971871c73f7fc57d65cbb2\` (\`id_ficha_salud\`), INDEX \`IDX_8ed1bd229d8da6c417607331b2\` (\`id_alergia\`), PRIMARY KEY (\`id_ficha_salud\`, \`id_alergia\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE \`alimento_grupo_alimenticio\` (\`id_alimento\` int NOT NULL, \`id_grupo_alimenticio\` int NOT NULL, INDEX \`IDX_8a4cc7b70ebc5506fac6139ee9\` (\`id_alimento\`), INDEX \`IDX_a356657e838536adea1e2b5e4c\` (\`id_grupo_alimenticio\`), PRIMARY KEY (\`id_alimento\`, \`id_grupo_alimenticio\`)) ENGINE=InnoDB`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`formacion_academica\` ADD CONSTRAINT \`FK_1ef35a7b9797cede5e8a8f1d041\` FOREIGN KEY (\`id_nutricionista\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`usuario_grupo_permiso\` ADD CONSTRAINT \`FK_557a54cc3273c4a5fe4cd4db756\` FOREIGN KEY (\`usuarioIdUsuario\`) REFERENCES \`usuario\`(\`id_usuario\`) ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`usuario_grupo_permiso\` ADD CONSTRAINT \`FK_b05d9e941b2b1eb1a6b828c22c6\` FOREIGN KEY (\`grupoPermisoId\`) REFERENCES \`grupo_permiso\`(\`id_grupo_permiso\`) ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`usuario\` ADD CONSTRAINT \`FK_1fbc7de91b8e96937ed27739e8f\` FOREIGN KEY (\`id_persona\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`ficha_salud_version\` ADD CONSTRAINT \`FK_ed4d54de162f70d92e6087b917f\` FOREIGN KEY (\`id_ficha_salud\`) REFERENCES \`ficha_salud\`(\`id_ficha_salud\`) ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`ficha_salud_version\` ADD CONSTRAINT \`FK_1caa0f0e58e9c20ae1c11670745\` FOREIGN KEY (\`id_socio\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE RESTRICT ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`ficha_salud_version\` ADD CONSTRAINT \`FK_e7f6e29979ccff9b9abbd82acfd\` FOREIGN KEY (\`created_by\`) REFERENCES \`usuario\`(\`id_usuario\`) ON DELETE SET NULL ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`ficha_salud\` ADD CONSTRAINT \`FK_0e51af052a5aefbe8adcd2536f6\` FOREIGN KEY (\`version_actual_id\`) REFERENCES \`ficha_salud_version\`(\`id_ficha_salud_version\`) ON DELETE RESTRICT ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`item_comida\` ADD CONSTRAINT \`FK_8d70603ce7b5f1c10f666cc6713\` FOREIGN KEY (\`id_opcion_comida\`) REFERENCES \`opcion_comida\`(\`id_opcion_comida\`) ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`item_comida\` ADD CONSTRAINT \`FK_b27b2bf32d884bf61eddb63a47e\` FOREIGN KEY (\`id_alimento\`) REFERENCES \`alimento\`(\`id_alimento\`) ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`opcion_comida\` ADD CONSTRAINT \`FK_e1aa3d0030e334f5837db322dc1\` FOREIGN KEY (\`id_dia_plan\`) REFERENCES \`dia_plan\`(\`id_dia_plan\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`dia_plan\` ADD CONSTRAINT \`FK_7e1c76e9348c4ca696723061dfc\` FOREIGN KEY (\`id_plan_alimentacion\`) REFERENCES \`plan_alimentacion\`(\`id_plan_alimentacion\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`plan_alimentacion\` ADD CONSTRAINT \`FK_8fc31e3c4ec5684f52acd5c653f\` FOREIGN KEY (\`id_socio\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`plan_alimentacion\` ADD CONSTRAINT \`FK_001ae7206a911557d5e2867dd03\` FOREIGN KEY (\`id_nutricionista\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`medicion\` ADD CONSTRAINT \`FK_b3ffdccbab84d3fb6ceee2992b3\` FOREIGN KEY (\`id_turno\`) REFERENCES \`turno\`(\`id_turno\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`adjunto_clinico\` ADD CONSTRAINT \`FK_1408a6c8890ec3bee139f38f020\` FOREIGN KEY (\`id_turno\`) REFERENCES \`turno\`(\`id_turno\`) ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`adjunto_clinico\` ADD CONSTRAINT \`FK_e5f4ac8e14a591dd4c552c6dfbb\` FOREIGN KEY (\`id_usuario_subio\`) REFERENCES \`usuario\`(\`id_usuario\`) ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`turno\` ADD CONSTRAINT \`FK_9be9fbc2d26ef165f67571ef123\` FOREIGN KEY (\`id_observacion\`) REFERENCES \`observacion_clinica\`(\`id_observacion\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`turno\` ADD CONSTRAINT \`FK_86edec0569d10a7679e7c1f27d7\` FOREIGN KEY (\`id_socio\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`turno\` ADD CONSTRAINT \`FK_62c7eeed5943b2d4d67124f78aa\` FOREIGN KEY (\`id_nutricionista\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`turno\` ADD CONSTRAINT \`FK_9eb32d9a30b4a5dd1054a9b0779\` FOREIGN KEY (\`id_gimnasio\`) REFERENCES \`gimnasio\`(\`id_gimnasio\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`certificacion\` ADD CONSTRAINT \`FK_84902ff31106ccdd4affa82ee5c\` FOREIGN KEY (\`id_nutricionista\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`diploma\` ADD CONSTRAINT \`FK_15678f9150057e3d84db5b4fff9\` FOREIGN KEY (\`id_nutricionista\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`persona\` ADD CONSTRAINT \`FK_db90e04e1d41b8184641cd0c435\` FOREIGN KEY (\`id_ficha_salud\`) REFERENCES \`ficha_salud\`(\`id_ficha_salud\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`agenda\` ADD CONSTRAINT \`FK_316839d84a9fa0a50fbf6d7652c\` FOREIGN KEY (\`id_nutricionista\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`generacion_plan_ia\` ADD CONSTRAINT \`FK_9607933b8b3531d889d2675893e\` FOREIGN KEY (\`id_socio\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`generacion_plan_ia\` ADD CONSTRAINT \`FK_1f291f6bcce982e066f35a38c7c\` FOREIGN KEY (\`id_nutricionista\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`generacion_plan_ia\` ADD CONSTRAINT \`FK_eb4251aec918925a50ab5834139\` FOREIGN KEY (\`id_plan_alimentacion\`) REFERENCES \`plan_alimentacion\`(\`id_plan_alimentacion\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`plan_alimentacion_version\` ADD CONSTRAINT \`FK_59b37dfc3a041f586780af71dab\` FOREIGN KEY (\`id_plan_alimentacion\`) REFERENCES \`plan_alimentacion\`(\`id_plan_alimentacion\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`plan_alimentacion_version\` ADD CONSTRAINT \`FK_717670299024883f7da3430f343\` FOREIGN KEY (\`created_by\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`plan_feedback\` ADD CONSTRAINT \`FK_0ba127f94cf11274864f13c61a5\` FOREIGN KEY (\`id_plan_alimentacion_version\`) REFERENCES \`plan_alimentacion_version\`(\`id_plan_alimentacion_version\`) ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`plan_feedback\` ADD CONSTRAINT \`FK_e30864f43f864411533533a0cd7\` FOREIGN KEY (\`id_nutricionista\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`nutricionista_ia_memoria\` ADD CONSTRAINT \`FK_86b392d99a26e103785f36f40e4\` FOREIGN KEY (\`id_nutricionista\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`nutricionista_ia_memoria\` ADD CONSTRAINT \`FK_240f625161dfcb0b7606e49e694\` FOREIGN KEY (\`id_plan_alimentacion_version\`) REFERENCES \`plan_alimentacion_version\`(\`id_plan_alimentacion_version\`) ON DELETE SET NULL ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`foto_progreso\` ADD CONSTRAINT \`FK_2012dce408963a234f72b8d6ee4\` FOREIGN KEY (\`id_socio\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`foto_progreso\` ADD CONSTRAINT \`FK_35421796484c3d73dc44e88ddd9\` FOREIGN KEY (\`id_turno\`) REFERENCES \`turno\`(\`id_turno\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`objetivo\` ADD CONSTRAINT \`FK_799c70a3191ad115394a67cab00\` FOREIGN KEY (\`id_socio\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`notificacion\` ADD CONSTRAINT \`FK_f6d99c80cb2e50139559edf8ed8\` FOREIGN KEY (\`destinatario_id\`) REFERENCES \`usuario\`(\`id_usuario\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`sugerencia_ia\` ADD CONSTRAINT \`FK_fa6f491da2b1d59a6fcd12d6ec2\` FOREIGN KEY (\`socioIdPersona\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`turno_confirmacion_token\` ADD CONSTRAINT \`FK_68df31c7da13a0edf974629749b\` FOREIGN KEY (\`turno_id\`) REFERENCES \`turno\`(\`id_turno\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`excepcion_disponibilidad\` ADD CONSTRAINT \`FK_2459d2fa3015cb09845c1a62a01\` FOREIGN KEY (\`id_nutricionista\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`politica_operativa\` ADD CONSTRAINT \`FK_912be7b5396717600e74cc0190f\` FOREIGN KEY (\`gimnasioIdGimnasio\`) REFERENCES \`gimnasio\`(\`id_gimnasio\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`preparacion_item\` ADD CONSTRAINT \`FK_d4a67aab15302a1be58d4e99f28\` FOREIGN KEY (\`id_preparacion\`) REFERENCES \`preparacion\`(\`id_preparacion\`) ON DELETE CASCADE ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`preparacion_item\` ADD CONSTRAINT \`FK_4c153fba12e4eb8ce440a39e7b7\` FOREIGN KEY (\`id_alimento\`) REFERENCES \`alimento\`(\`id_alimento\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`preparacion\` ADD CONSTRAINT \`FK_bfb301fa5fdbf03b958960b55fb\` FOREIGN KEY (\`id_gimnasio\`) REFERENCES \`gimnasio\`(\`id_gimnasio\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`preparacion\` ADD CONSTRAINT \`FK_d535bcaa65b4f48b26520f36c3c\` FOREIGN KEY (\`creado_por_id\`) REFERENCES \`persona\`(\`id_persona\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`grupo_permiso_accion\` ADD CONSTRAINT \`FK_eb3928c922662556af141aa0715\` FOREIGN KEY (\`id_grupo_permiso\`) REFERENCES \`grupo_permiso\`(\`id_grupo_permiso\`) ON DELETE CASCADE ON UPDATE CASCADE`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`grupo_permiso_accion\` ADD CONSTRAINT \`FK_0b6d118106b4192c1bc600bb84a\` FOREIGN KEY (\`id_accion\`) REFERENCES \`accion\`(\`id_accion\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`grupo_permiso_hijo\` ADD CONSTRAINT \`FK_3b141c09cd53c0be773b6cc8c91\` FOREIGN KEY (\`id_grupo_padre\`) REFERENCES \`grupo_permiso\`(\`id_grupo_permiso\`) ON DELETE CASCADE ON UPDATE CASCADE`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`grupo_permiso_hijo\` ADD CONSTRAINT \`FK_8de98489ae05d0036f33b6244a2\` FOREIGN KEY (\`id_grupo_hijo\`) REFERENCES \`grupo_permiso\`(\`id_grupo_permiso\`) ON DELETE CASCADE ON UPDATE CASCADE`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`usuario_accion\` ADD CONSTRAINT \`FK_4b5976bcda3babe35b746244fe6\` FOREIGN KEY (\`id_usuario\`) REFERENCES \`usuario\`(\`id_usuario\`) ON DELETE CASCADE ON UPDATE CASCADE`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`usuario_accion\` ADD CONSTRAINT \`FK_3f7ace650b842c6d90546c7c205\` FOREIGN KEY (\`id_accion\`) REFERENCES \`accion\`(\`id_accion\`) ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`ficha_salud_patologias\` ADD CONSTRAINT \`FK_5bf46ddbfe209c294727edc5410\` FOREIGN KEY (\`id_ficha_salud\`) REFERENCES \`ficha_salud\`(\`id_ficha_salud\`) ON DELETE CASCADE ON UPDATE CASCADE`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`ficha_salud_patologias\` ADD CONSTRAINT \`FK_a8ad649ae6b21f3fd7b8bae27be\` FOREIGN KEY (\`id_patologia\`) REFERENCES \`patologia\`(\`id_patologia\`) ON DELETE CASCADE ON UPDATE CASCADE`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`ficha_salud_alergias\` ADD CONSTRAINT \`FK_3e5f971871c73f7fc57d65cbb28\` FOREIGN KEY (\`id_ficha_salud\`) REFERENCES \`ficha_salud\`(\`id_ficha_salud\`) ON DELETE CASCADE ON UPDATE CASCADE`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`ficha_salud_alergias\` ADD CONSTRAINT \`FK_8ed1bd229d8da6c417607331b28\` FOREIGN KEY (\`id_alergia\`) REFERENCES \`alergia\`(\`id_alergia\`) ON DELETE CASCADE ON UPDATE CASCADE`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`alimento_grupo_alimenticio\` ADD CONSTRAINT \`FK_8a4cc7b70ebc5506fac6139ee92\` FOREIGN KEY (\`id_alimento\`) REFERENCES \`alimento\`(\`id_alimento\`) ON DELETE CASCADE ON UPDATE CASCADE`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`alimento_grupo_alimenticio\` ADD CONSTRAINT \`FK_a356657e838536adea1e2b5e4cd\` FOREIGN KEY (\`id_grupo_alimenticio\`) REFERENCES \`grupo_alimenticio\`(\`id_grupo_alimenticio\`) ON DELETE CASCADE ON UPDATE CASCADE`,
+    );
+  }
 
-    public async down(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`ALTER TABLE \`alimento_grupo_alimenticio\` DROP FOREIGN KEY \`FK_a356657e838536adea1e2b5e4cd\``);
-        await queryRunner.query(`ALTER TABLE \`alimento_grupo_alimenticio\` DROP FOREIGN KEY \`FK_8a4cc7b70ebc5506fac6139ee92\``);
-        await queryRunner.query(`ALTER TABLE \`ficha_salud_alergias\` DROP FOREIGN KEY \`FK_8ed1bd229d8da6c417607331b28\``);
-        await queryRunner.query(`ALTER TABLE \`ficha_salud_alergias\` DROP FOREIGN KEY \`FK_3e5f971871c73f7fc57d65cbb28\``);
-        await queryRunner.query(`ALTER TABLE \`ficha_salud_patologias\` DROP FOREIGN KEY \`FK_a8ad649ae6b21f3fd7b8bae27be\``);
-        await queryRunner.query(`ALTER TABLE \`ficha_salud_patologias\` DROP FOREIGN KEY \`FK_5bf46ddbfe209c294727edc5410\``);
-        await queryRunner.query(`ALTER TABLE \`usuario_accion\` DROP FOREIGN KEY \`FK_3f7ace650b842c6d90546c7c205\``);
-        await queryRunner.query(`ALTER TABLE \`usuario_accion\` DROP FOREIGN KEY \`FK_4b5976bcda3babe35b746244fe6\``);
-        await queryRunner.query(`ALTER TABLE \`grupo_permiso_hijo\` DROP FOREIGN KEY \`FK_8de98489ae05d0036f33b6244a2\``);
-        await queryRunner.query(`ALTER TABLE \`grupo_permiso_hijo\` DROP FOREIGN KEY \`FK_3b141c09cd53c0be773b6cc8c91\``);
-        await queryRunner.query(`ALTER TABLE \`grupo_permiso_accion\` DROP FOREIGN KEY \`FK_0b6d118106b4192c1bc600bb84a\``);
-        await queryRunner.query(`ALTER TABLE \`grupo_permiso_accion\` DROP FOREIGN KEY \`FK_eb3928c922662556af141aa0715\``);
-        await queryRunner.query(`ALTER TABLE \`preparacion\` DROP FOREIGN KEY \`FK_d535bcaa65b4f48b26520f36c3c\``);
-        await queryRunner.query(`ALTER TABLE \`preparacion\` DROP FOREIGN KEY \`FK_bfb301fa5fdbf03b958960b55fb\``);
-        await queryRunner.query(`ALTER TABLE \`preparacion_item\` DROP FOREIGN KEY \`FK_4c153fba12e4eb8ce440a39e7b7\``);
-        await queryRunner.query(`ALTER TABLE \`preparacion_item\` DROP FOREIGN KEY \`FK_d4a67aab15302a1be58d4e99f28\``);
-        await queryRunner.query(`ALTER TABLE \`politica_operativa\` DROP FOREIGN KEY \`FK_912be7b5396717600e74cc0190f\``);
-        await queryRunner.query(`ALTER TABLE \`excepcion_disponibilidad\` DROP FOREIGN KEY \`FK_2459d2fa3015cb09845c1a62a01\``);
-        await queryRunner.query(`ALTER TABLE \`turno_confirmacion_token\` DROP FOREIGN KEY \`FK_68df31c7da13a0edf974629749b\``);
-        await queryRunner.query(`ALTER TABLE \`sugerencia_ia\` DROP FOREIGN KEY \`FK_fa6f491da2b1d59a6fcd12d6ec2\``);
-        await queryRunner.query(`ALTER TABLE \`notificacion\` DROP FOREIGN KEY \`FK_f6d99c80cb2e50139559edf8ed8\``);
-        await queryRunner.query(`ALTER TABLE \`objetivo\` DROP FOREIGN KEY \`FK_799c70a3191ad115394a67cab00\``);
-        await queryRunner.query(`ALTER TABLE \`foto_progreso\` DROP FOREIGN KEY \`FK_35421796484c3d73dc44e88ddd9\``);
-        await queryRunner.query(`ALTER TABLE \`foto_progreso\` DROP FOREIGN KEY \`FK_2012dce408963a234f72b8d6ee4\``);
-        await queryRunner.query(`ALTER TABLE \`nutricionista_ia_memoria\` DROP FOREIGN KEY \`FK_240f625161dfcb0b7606e49e694\``);
-        await queryRunner.query(`ALTER TABLE \`nutricionista_ia_memoria\` DROP FOREIGN KEY \`FK_86b392d99a26e103785f36f40e4\``);
-        await queryRunner.query(`ALTER TABLE \`plan_feedback\` DROP FOREIGN KEY \`FK_e30864f43f864411533533a0cd7\``);
-        await queryRunner.query(`ALTER TABLE \`plan_feedback\` DROP FOREIGN KEY \`FK_0ba127f94cf11274864f13c61a5\``);
-        await queryRunner.query(`ALTER TABLE \`plan_alimentacion_version\` DROP FOREIGN KEY \`FK_717670299024883f7da3430f343\``);
-        await queryRunner.query(`ALTER TABLE \`plan_alimentacion_version\` DROP FOREIGN KEY \`FK_59b37dfc3a041f586780af71dab\``);
-        await queryRunner.query(`ALTER TABLE \`generacion_plan_ia\` DROP FOREIGN KEY \`FK_eb4251aec918925a50ab5834139\``);
-        await queryRunner.query(`ALTER TABLE \`generacion_plan_ia\` DROP FOREIGN KEY \`FK_1f291f6bcce982e066f35a38c7c\``);
-        await queryRunner.query(`ALTER TABLE \`generacion_plan_ia\` DROP FOREIGN KEY \`FK_9607933b8b3531d889d2675893e\``);
-        await queryRunner.query(`ALTER TABLE \`agenda\` DROP FOREIGN KEY \`FK_316839d84a9fa0a50fbf6d7652c\``);
-        await queryRunner.query(`ALTER TABLE \`persona\` DROP FOREIGN KEY \`FK_db90e04e1d41b8184641cd0c435\``);
-        await queryRunner.query(`ALTER TABLE \`diploma\` DROP FOREIGN KEY \`FK_15678f9150057e3d84db5b4fff9\``);
-        await queryRunner.query(`ALTER TABLE \`certificacion\` DROP FOREIGN KEY \`FK_84902ff31106ccdd4affa82ee5c\``);
-        await queryRunner.query(`ALTER TABLE \`turno\` DROP FOREIGN KEY \`FK_9eb32d9a30b4a5dd1054a9b0779\``);
-        await queryRunner.query(`ALTER TABLE \`turno\` DROP FOREIGN KEY \`FK_62c7eeed5943b2d4d67124f78aa\``);
-        await queryRunner.query(`ALTER TABLE \`turno\` DROP FOREIGN KEY \`FK_86edec0569d10a7679e7c1f27d7\``);
-        await queryRunner.query(`ALTER TABLE \`turno\` DROP FOREIGN KEY \`FK_9be9fbc2d26ef165f67571ef123\``);
-        await queryRunner.query(`ALTER TABLE \`adjunto_clinico\` DROP FOREIGN KEY \`FK_e5f4ac8e14a591dd4c552c6dfbb\``);
-        await queryRunner.query(`ALTER TABLE \`adjunto_clinico\` DROP FOREIGN KEY \`FK_1408a6c8890ec3bee139f38f020\``);
-        await queryRunner.query(`ALTER TABLE \`medicion\` DROP FOREIGN KEY \`FK_b3ffdccbab84d3fb6ceee2992b3\``);
-        await queryRunner.query(`ALTER TABLE \`plan_alimentacion\` DROP FOREIGN KEY \`FK_001ae7206a911557d5e2867dd03\``);
-        await queryRunner.query(`ALTER TABLE \`plan_alimentacion\` DROP FOREIGN KEY \`FK_8fc31e3c4ec5684f52acd5c653f\``);
-        await queryRunner.query(`ALTER TABLE \`dia_plan\` DROP FOREIGN KEY \`FK_7e1c76e9348c4ca696723061dfc\``);
-        await queryRunner.query(`ALTER TABLE \`opcion_comida\` DROP FOREIGN KEY \`FK_e1aa3d0030e334f5837db322dc1\``);
-        await queryRunner.query(`ALTER TABLE \`item_comida\` DROP FOREIGN KEY \`FK_b27b2bf32d884bf61eddb63a47e\``);
-        await queryRunner.query(`ALTER TABLE \`item_comida\` DROP FOREIGN KEY \`FK_8d70603ce7b5f1c10f666cc6713\``);
-        await queryRunner.query(`ALTER TABLE \`ficha_salud\` DROP FOREIGN KEY \`FK_0e51af052a5aefbe8adcd2536f6\``);
-        await queryRunner.query(`ALTER TABLE \`ficha_salud_version\` DROP FOREIGN KEY \`FK_e7f6e29979ccff9b9abbd82acfd\``);
-        await queryRunner.query(`ALTER TABLE \`ficha_salud_version\` DROP FOREIGN KEY \`FK_1caa0f0e58e9c20ae1c11670745\``);
-        await queryRunner.query(`ALTER TABLE \`ficha_salud_version\` DROP FOREIGN KEY \`FK_ed4d54de162f70d92e6087b917f\``);
-        await queryRunner.query(`ALTER TABLE \`usuario\` DROP FOREIGN KEY \`FK_1fbc7de91b8e96937ed27739e8f\``);
-        await queryRunner.query(`ALTER TABLE \`usuario_grupo_permiso\` DROP FOREIGN KEY \`FK_b05d9e941b2b1eb1a6b828c22c6\``);
-        await queryRunner.query(`ALTER TABLE \`usuario_grupo_permiso\` DROP FOREIGN KEY \`FK_557a54cc3273c4a5fe4cd4db756\``);
-        await queryRunner.query(`ALTER TABLE \`formacion_academica\` DROP FOREIGN KEY \`FK_1ef35a7b9797cede5e8a8f1d041\``);
-        await queryRunner.query(`DROP INDEX \`IDX_a356657e838536adea1e2b5e4c\` ON \`alimento_grupo_alimenticio\``);
-        await queryRunner.query(`DROP INDEX \`IDX_8a4cc7b70ebc5506fac6139ee9\` ON \`alimento_grupo_alimenticio\``);
-        await queryRunner.query(`DROP TABLE \`alimento_grupo_alimenticio\``);
-        await queryRunner.query(`DROP INDEX \`IDX_8ed1bd229d8da6c417607331b2\` ON \`ficha_salud_alergias\``);
-        await queryRunner.query(`DROP INDEX \`IDX_3e5f971871c73f7fc57d65cbb2\` ON \`ficha_salud_alergias\``);
-        await queryRunner.query(`DROP TABLE \`ficha_salud_alergias\``);
-        await queryRunner.query(`DROP INDEX \`IDX_a8ad649ae6b21f3fd7b8bae27b\` ON \`ficha_salud_patologias\``);
-        await queryRunner.query(`DROP INDEX \`IDX_5bf46ddbfe209c294727edc541\` ON \`ficha_salud_patologias\``);
-        await queryRunner.query(`DROP TABLE \`ficha_salud_patologias\``);
-        await queryRunner.query(`DROP INDEX \`IDX_3f7ace650b842c6d90546c7c20\` ON \`usuario_accion\``);
-        await queryRunner.query(`DROP INDEX \`IDX_4b5976bcda3babe35b746244fe\` ON \`usuario_accion\``);
-        await queryRunner.query(`DROP TABLE \`usuario_accion\``);
-        await queryRunner.query(`DROP INDEX \`IDX_8de98489ae05d0036f33b6244a\` ON \`grupo_permiso_hijo\``);
-        await queryRunner.query(`DROP INDEX \`IDX_3b141c09cd53c0be773b6cc8c9\` ON \`grupo_permiso_hijo\``);
-        await queryRunner.query(`DROP TABLE \`grupo_permiso_hijo\``);
-        await queryRunner.query(`DROP INDEX \`IDX_0b6d118106b4192c1bc600bb84\` ON \`grupo_permiso_accion\``);
-        await queryRunner.query(`DROP INDEX \`IDX_eb3928c922662556af141aa071\` ON \`grupo_permiso_accion\``);
-        await queryRunner.query(`DROP TABLE \`grupo_permiso_accion\``);
-        await queryRunner.query(`DROP TABLE \`preparacion\``);
-        await queryRunner.query(`DROP TABLE \`preparacion_item\``);
-        await queryRunner.query(`DROP TABLE \`politica_operativa\``);
-        await queryRunner.query(`DROP TABLE \`excepcion_disponibilidad\``);
-        await queryRunner.query(`DROP INDEX \`IDX_08a3f0fb0ce8fede2d26241692\` ON \`turno_confirmacion_token\``);
-        await queryRunner.query(`DROP TABLE \`turno_confirmacion_token\``);
-        await queryRunner.query(`DROP TABLE \`sugerencia_ia\``);
-        await queryRunner.query(`DROP INDEX \`uq_recordatorio_turno_tipo\` ON \`recordatorio_enviado\``);
-        await queryRunner.query(`DROP TABLE \`recordatorio_enviado\``);
-        await queryRunner.query(`DROP INDEX \`idx_login_audit_fecha\` ON \`login_audit\``);
-        await queryRunner.query(`DROP INDEX \`idx_login_audit_usuario\` ON \`login_audit\``);
-        await queryRunner.query(`DROP INDEX \`idx_login_audit_email\` ON \`login_audit\``);
-        await queryRunner.query(`DROP INDEX \`idx_login_audit_resultado\` ON \`login_audit\``);
-        await queryRunner.query(`DROP INDEX \`idx_login_audit_gimnasio_fecha\` ON \`login_audit\``);
-        await queryRunner.query(`DROP TABLE \`login_audit\``);
-        await queryRunner.query(`DROP INDEX \`idx_audit_log_fecha\` ON \`audit_log\``);
-        await queryRunner.query(`DROP INDEX \`idx_audit_log_usuario\` ON \`audit_log\``);
-        await queryRunner.query(`DROP INDEX \`idx_audit_log_accion\` ON \`audit_log\``);
-        await queryRunner.query(`DROP INDEX \`idx_audit_log_modulo\` ON \`audit_log\``);
-        await queryRunner.query(`DROP INDEX \`idx_audit_log_entidad\` ON \`audit_log\``);
-        await queryRunner.query(`DROP INDEX \`idx_audit_log_gimnasio_fecha\` ON \`audit_log\``);
-        await queryRunner.query(`DROP TABLE \`audit_log\``);
-        await queryRunner.query(`DROP TABLE \`notificacion\``);
-        await queryRunner.query(`DROP TABLE \`objetivo\``);
-        await queryRunner.query(`DROP TABLE \`foto_progreso\``);
-        await queryRunner.query(`DROP INDEX \`idx_memoria_seleccion\` ON \`nutricionista_ia_memoria\``);
-        await queryRunner.query(`DROP TABLE \`nutricionista_ia_memoria\``);
-        await queryRunner.query(`DROP INDEX \`uk_feedback_version\` ON \`plan_feedback\``);
-        await queryRunner.query(`DROP TABLE \`plan_feedback\``);
-        await queryRunner.query(`DROP INDEX \`uk_plan_version_numero\` ON \`plan_alimentacion_version\``);
-        await queryRunner.query(`DROP INDEX \`idx_plan_version_activa\` ON \`plan_alimentacion_version\``);
-        await queryRunner.query(`DROP TABLE \`plan_alimentacion_version\``);
-        await queryRunner.query(`DROP INDEX \`uq_ia_configuracion_provider_gimnasio\` ON \`ia_configuracion\``);
-        await queryRunner.query(`DROP INDEX \`idx_ia_configuracion_orden\` ON \`ia_configuracion\``);
-        await queryRunner.query(`DROP TABLE \`ia_configuracion\``);
-        await queryRunner.query(`DROP INDEX \`idx_generacion_plan_ia_activa\` ON \`generacion_plan_ia\``);
-        await queryRunner.query(`DROP INDEX \`idx_generacion_plan_ia_plan\` ON \`generacion_plan_ia\``);
-        await queryRunner.query(`DROP TABLE \`generacion_plan_ia\``);
-        await queryRunner.query(`DROP INDEX \`UQ_AGENDA_NUTRI_DIA_HORARIO\` ON \`agenda\``);
-        await queryRunner.query(`DROP TABLE \`agenda\``);
-        await queryRunner.query(`DROP INDEX \`IDX_36e1631311d9cb31089523a5c8\` ON \`persona\``);
-        await queryRunner.query(`DROP INDEX \`REL_db90e04e1d41b8184641cd0c43\` ON \`persona\``);
-        await queryRunner.query(`DROP INDEX \`IDX_b9000711e4ac11ef438c9f405d\` ON \`persona\``);
-        await queryRunner.query(`DROP TABLE \`persona\``);
-        await queryRunner.query(`DROP TABLE \`diploma\``);
-        await queryRunner.query(`DROP TABLE \`certificacion\``);
-        await queryRunner.query(`DROP INDEX \`REL_9be9fbc2d26ef165f67571ef12\` ON \`turno\``);
-        await queryRunner.query(`DROP INDEX \`IDX_80f84d1cb7340c833fcba54dbc\` ON \`turno\``);
-        await queryRunner.query(`DROP TABLE \`turno\``);
-        await queryRunner.query(`DROP INDEX \`idx_adjunto_clinico_turno\` ON \`adjunto_clinico\``);
-        await queryRunner.query(`DROP TABLE \`adjunto_clinico\``);
-        await queryRunner.query(`DROP TABLE \`medicion\``);
-        await queryRunner.query(`DROP TABLE \`observacion_clinica\``);
-        await queryRunner.query(`DROP TABLE \`gimnasio\``);
-        await queryRunner.query(`DROP TABLE \`plan_alimentacion\``);
-        await queryRunner.query(`DROP TABLE \`dia_plan\``);
-        await queryRunner.query(`DROP TABLE \`opcion_comida\``);
-        await queryRunner.query(`DROP TABLE \`item_comida\``);
-        await queryRunner.query(`DROP INDEX \`uq_alimento_nombre\` ON \`alimento\``);
-        await queryRunner.query(`DROP TABLE \`alimento\``);
-        await queryRunner.query(`DROP TABLE \`grupo_alimenticio\``);
-        await queryRunner.query(`DROP TABLE \`alergia\``);
-        await queryRunner.query(`DROP TABLE \`patologia\``);
-        await queryRunner.query(`DROP INDEX \`idx_fs_completada\` ON \`ficha_salud\``);
-        await queryRunner.query(`DROP TABLE \`ficha_salud\``);
-        await queryRunner.query(`DROP INDEX \`idx_fsv_socio\` ON \`ficha_salud_version\``);
-        await queryRunner.query(`DROP INDEX \`idx_fsv_created_at\` ON \`ficha_salud_version\``);
-        await queryRunner.query(`DROP TABLE \`ficha_salud_version\``);
-        await queryRunner.query(`DROP INDEX \`REL_1fbc7de91b8e96937ed27739e8\` ON \`usuario\``);
-        await queryRunner.query(`DROP INDEX \`IDX_2863682842e688ca198eb25c12\` ON \`usuario\``);
-        await queryRunner.query(`DROP TABLE \`usuario\``);
-        await queryRunner.query(`DROP INDEX \`IDX_2aecffe3ca3cfe9ba5c856ad23\` ON \`accion\``);
-        await queryRunner.query(`DROP TABLE \`accion\``);
-        await queryRunner.query(`DROP INDEX \`IDX_69cee8a317e94a61ef5c583949\` ON \`grupo_permiso\``);
-        await queryRunner.query(`DROP TABLE \`grupo_permiso\``);
-        await queryRunner.query(`DROP TABLE \`usuario_grupo_permiso\``);
-        await queryRunner.query(`DROP TABLE \`formacion_academica\``);
-    }
-
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(
+      `ALTER TABLE \`alimento_grupo_alimenticio\` DROP FOREIGN KEY \`FK_a356657e838536adea1e2b5e4cd\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`alimento_grupo_alimenticio\` DROP FOREIGN KEY \`FK_8a4cc7b70ebc5506fac6139ee92\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`ficha_salud_alergias\` DROP FOREIGN KEY \`FK_8ed1bd229d8da6c417607331b28\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`ficha_salud_alergias\` DROP FOREIGN KEY \`FK_3e5f971871c73f7fc57d65cbb28\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`ficha_salud_patologias\` DROP FOREIGN KEY \`FK_a8ad649ae6b21f3fd7b8bae27be\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`ficha_salud_patologias\` DROP FOREIGN KEY \`FK_5bf46ddbfe209c294727edc5410\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`usuario_accion\` DROP FOREIGN KEY \`FK_3f7ace650b842c6d90546c7c205\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`usuario_accion\` DROP FOREIGN KEY \`FK_4b5976bcda3babe35b746244fe6\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`grupo_permiso_hijo\` DROP FOREIGN KEY \`FK_8de98489ae05d0036f33b6244a2\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`grupo_permiso_hijo\` DROP FOREIGN KEY \`FK_3b141c09cd53c0be773b6cc8c91\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`grupo_permiso_accion\` DROP FOREIGN KEY \`FK_0b6d118106b4192c1bc600bb84a\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`grupo_permiso_accion\` DROP FOREIGN KEY \`FK_eb3928c922662556af141aa0715\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`preparacion\` DROP FOREIGN KEY \`FK_d535bcaa65b4f48b26520f36c3c\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`preparacion\` DROP FOREIGN KEY \`FK_bfb301fa5fdbf03b958960b55fb\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`preparacion_item\` DROP FOREIGN KEY \`FK_4c153fba12e4eb8ce440a39e7b7\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`preparacion_item\` DROP FOREIGN KEY \`FK_d4a67aab15302a1be58d4e99f28\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`politica_operativa\` DROP FOREIGN KEY \`FK_912be7b5396717600e74cc0190f\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`excepcion_disponibilidad\` DROP FOREIGN KEY \`FK_2459d2fa3015cb09845c1a62a01\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`turno_confirmacion_token\` DROP FOREIGN KEY \`FK_68df31c7da13a0edf974629749b\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`sugerencia_ia\` DROP FOREIGN KEY \`FK_fa6f491da2b1d59a6fcd12d6ec2\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`notificacion\` DROP FOREIGN KEY \`FK_f6d99c80cb2e50139559edf8ed8\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`objetivo\` DROP FOREIGN KEY \`FK_799c70a3191ad115394a67cab00\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`foto_progreso\` DROP FOREIGN KEY \`FK_35421796484c3d73dc44e88ddd9\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`foto_progreso\` DROP FOREIGN KEY \`FK_2012dce408963a234f72b8d6ee4\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`nutricionista_ia_memoria\` DROP FOREIGN KEY \`FK_240f625161dfcb0b7606e49e694\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`nutricionista_ia_memoria\` DROP FOREIGN KEY \`FK_86b392d99a26e103785f36f40e4\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`plan_feedback\` DROP FOREIGN KEY \`FK_e30864f43f864411533533a0cd7\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`plan_feedback\` DROP FOREIGN KEY \`FK_0ba127f94cf11274864f13c61a5\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`plan_alimentacion_version\` DROP FOREIGN KEY \`FK_717670299024883f7da3430f343\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`plan_alimentacion_version\` DROP FOREIGN KEY \`FK_59b37dfc3a041f586780af71dab\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`generacion_plan_ia\` DROP FOREIGN KEY \`FK_eb4251aec918925a50ab5834139\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`generacion_plan_ia\` DROP FOREIGN KEY \`FK_1f291f6bcce982e066f35a38c7c\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`generacion_plan_ia\` DROP FOREIGN KEY \`FK_9607933b8b3531d889d2675893e\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`agenda\` DROP FOREIGN KEY \`FK_316839d84a9fa0a50fbf6d7652c\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`persona\` DROP FOREIGN KEY \`FK_db90e04e1d41b8184641cd0c435\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`diploma\` DROP FOREIGN KEY \`FK_15678f9150057e3d84db5b4fff9\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`certificacion\` DROP FOREIGN KEY \`FK_84902ff31106ccdd4affa82ee5c\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`turno\` DROP FOREIGN KEY \`FK_9eb32d9a30b4a5dd1054a9b0779\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`turno\` DROP FOREIGN KEY \`FK_62c7eeed5943b2d4d67124f78aa\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`turno\` DROP FOREIGN KEY \`FK_86edec0569d10a7679e7c1f27d7\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`turno\` DROP FOREIGN KEY \`FK_9be9fbc2d26ef165f67571ef123\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`adjunto_clinico\` DROP FOREIGN KEY \`FK_e5f4ac8e14a591dd4c552c6dfbb\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`adjunto_clinico\` DROP FOREIGN KEY \`FK_1408a6c8890ec3bee139f38f020\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`medicion\` DROP FOREIGN KEY \`FK_b3ffdccbab84d3fb6ceee2992b3\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`plan_alimentacion\` DROP FOREIGN KEY \`FK_001ae7206a911557d5e2867dd03\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`plan_alimentacion\` DROP FOREIGN KEY \`FK_8fc31e3c4ec5684f52acd5c653f\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`dia_plan\` DROP FOREIGN KEY \`FK_7e1c76e9348c4ca696723061dfc\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`opcion_comida\` DROP FOREIGN KEY \`FK_e1aa3d0030e334f5837db322dc1\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`item_comida\` DROP FOREIGN KEY \`FK_b27b2bf32d884bf61eddb63a47e\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`item_comida\` DROP FOREIGN KEY \`FK_8d70603ce7b5f1c10f666cc6713\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`ficha_salud\` DROP FOREIGN KEY \`FK_0e51af052a5aefbe8adcd2536f6\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`ficha_salud_version\` DROP FOREIGN KEY \`FK_e7f6e29979ccff9b9abbd82acfd\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`ficha_salud_version\` DROP FOREIGN KEY \`FK_1caa0f0e58e9c20ae1c11670745\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`ficha_salud_version\` DROP FOREIGN KEY \`FK_ed4d54de162f70d92e6087b917f\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`usuario\` DROP FOREIGN KEY \`FK_1fbc7de91b8e96937ed27739e8f\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`usuario_grupo_permiso\` DROP FOREIGN KEY \`FK_b05d9e941b2b1eb1a6b828c22c6\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`usuario_grupo_permiso\` DROP FOREIGN KEY \`FK_557a54cc3273c4a5fe4cd4db756\``,
+    );
+    await queryRunner.query(
+      `ALTER TABLE \`formacion_academica\` DROP FOREIGN KEY \`FK_1ef35a7b9797cede5e8a8f1d041\``,
+    );
+    await queryRunner.query(
+      `DROP INDEX \`IDX_a356657e838536adea1e2b5e4c\` ON \`alimento_grupo_alimenticio\``,
+    );
+    await queryRunner.query(
+      `DROP INDEX \`IDX_8a4cc7b70ebc5506fac6139ee9\` ON \`alimento_grupo_alimenticio\``,
+    );
+    await queryRunner.query(`DROP TABLE \`alimento_grupo_alimenticio\``);
+    await queryRunner.query(
+      `DROP INDEX \`IDX_8ed1bd229d8da6c417607331b2\` ON \`ficha_salud_alergias\``,
+    );
+    await queryRunner.query(
+      `DROP INDEX \`IDX_3e5f971871c73f7fc57d65cbb2\` ON \`ficha_salud_alergias\``,
+    );
+    await queryRunner.query(`DROP TABLE \`ficha_salud_alergias\``);
+    await queryRunner.query(
+      `DROP INDEX \`IDX_a8ad649ae6b21f3fd7b8bae27b\` ON \`ficha_salud_patologias\``,
+    );
+    await queryRunner.query(
+      `DROP INDEX \`IDX_5bf46ddbfe209c294727edc541\` ON \`ficha_salud_patologias\``,
+    );
+    await queryRunner.query(`DROP TABLE \`ficha_salud_patologias\``);
+    await queryRunner.query(
+      `DROP INDEX \`IDX_3f7ace650b842c6d90546c7c20\` ON \`usuario_accion\``,
+    );
+    await queryRunner.query(
+      `DROP INDEX \`IDX_4b5976bcda3babe35b746244fe\` ON \`usuario_accion\``,
+    );
+    await queryRunner.query(`DROP TABLE \`usuario_accion\``);
+    await queryRunner.query(
+      `DROP INDEX \`IDX_8de98489ae05d0036f33b6244a\` ON \`grupo_permiso_hijo\``,
+    );
+    await queryRunner.query(
+      `DROP INDEX \`IDX_3b141c09cd53c0be773b6cc8c9\` ON \`grupo_permiso_hijo\``,
+    );
+    await queryRunner.query(`DROP TABLE \`grupo_permiso_hijo\``);
+    await queryRunner.query(
+      `DROP INDEX \`IDX_0b6d118106b4192c1bc600bb84\` ON \`grupo_permiso_accion\``,
+    );
+    await queryRunner.query(
+      `DROP INDEX \`IDX_eb3928c922662556af141aa071\` ON \`grupo_permiso_accion\``,
+    );
+    await queryRunner.query(`DROP TABLE \`grupo_permiso_accion\``);
+    await queryRunner.query(`DROP TABLE \`preparacion\``);
+    await queryRunner.query(`DROP TABLE \`preparacion_item\``);
+    await queryRunner.query(`DROP TABLE \`politica_operativa\``);
+    await queryRunner.query(`DROP TABLE \`excepcion_disponibilidad\``);
+    await queryRunner.query(
+      `DROP INDEX \`IDX_08a3f0fb0ce8fede2d26241692\` ON \`turno_confirmacion_token\``,
+    );
+    await queryRunner.query(`DROP TABLE \`turno_confirmacion_token\``);
+    await queryRunner.query(`DROP TABLE \`sugerencia_ia\``);
+    await queryRunner.query(
+      `DROP INDEX \`uq_recordatorio_turno_tipo\` ON \`recordatorio_enviado\``,
+    );
+    await queryRunner.query(`DROP TABLE \`recordatorio_enviado\``);
+    await queryRunner.query(
+      `DROP INDEX \`idx_login_audit_fecha\` ON \`login_audit\``,
+    );
+    await queryRunner.query(
+      `DROP INDEX \`idx_login_audit_usuario\` ON \`login_audit\``,
+    );
+    await queryRunner.query(
+      `DROP INDEX \`idx_login_audit_email\` ON \`login_audit\``,
+    );
+    await queryRunner.query(
+      `DROP INDEX \`idx_login_audit_resultado\` ON \`login_audit\``,
+    );
+    await queryRunner.query(
+      `DROP INDEX \`idx_login_audit_gimnasio_fecha\` ON \`login_audit\``,
+    );
+    await queryRunner.query(`DROP TABLE \`login_audit\``);
+    await queryRunner.query(
+      `DROP INDEX \`idx_audit_log_fecha\` ON \`audit_log\``,
+    );
+    await queryRunner.query(
+      `DROP INDEX \`idx_audit_log_usuario\` ON \`audit_log\``,
+    );
+    await queryRunner.query(
+      `DROP INDEX \`idx_audit_log_accion\` ON \`audit_log\``,
+    );
+    await queryRunner.query(
+      `DROP INDEX \`idx_audit_log_modulo\` ON \`audit_log\``,
+    );
+    await queryRunner.query(
+      `DROP INDEX \`idx_audit_log_entidad\` ON \`audit_log\``,
+    );
+    await queryRunner.query(
+      `DROP INDEX \`idx_audit_log_gimnasio_fecha\` ON \`audit_log\``,
+    );
+    await queryRunner.query(`DROP TABLE \`audit_log\``);
+    await queryRunner.query(`DROP TABLE \`notificacion\``);
+    await queryRunner.query(`DROP TABLE \`objetivo\``);
+    await queryRunner.query(`DROP TABLE \`foto_progreso\``);
+    await queryRunner.query(
+      `DROP INDEX \`idx_memoria_seleccion\` ON \`nutricionista_ia_memoria\``,
+    );
+    await queryRunner.query(`DROP TABLE \`nutricionista_ia_memoria\``);
+    await queryRunner.query(
+      `DROP INDEX \`uk_feedback_version\` ON \`plan_feedback\``,
+    );
+    await queryRunner.query(`DROP TABLE \`plan_feedback\``);
+    await queryRunner.query(
+      `DROP INDEX \`uk_plan_version_numero\` ON \`plan_alimentacion_version\``,
+    );
+    await queryRunner.query(
+      `DROP INDEX \`idx_plan_version_activa\` ON \`plan_alimentacion_version\``,
+    );
+    await queryRunner.query(`DROP TABLE \`plan_alimentacion_version\``);
+    await queryRunner.query(
+      `DROP INDEX \`uq_ia_configuracion_provider_gimnasio\` ON \`ia_configuracion\``,
+    );
+    await queryRunner.query(
+      `DROP INDEX \`idx_ia_configuracion_orden\` ON \`ia_configuracion\``,
+    );
+    await queryRunner.query(`DROP TABLE \`ia_configuracion\``);
+    await queryRunner.query(
+      `DROP INDEX \`idx_generacion_plan_ia_activa\` ON \`generacion_plan_ia\``,
+    );
+    await queryRunner.query(
+      `DROP INDEX \`idx_generacion_plan_ia_plan\` ON \`generacion_plan_ia\``,
+    );
+    await queryRunner.query(`DROP TABLE \`generacion_plan_ia\``);
+    await queryRunner.query(
+      `DROP INDEX \`UQ_AGENDA_NUTRI_DIA_HORARIO\` ON \`agenda\``,
+    );
+    await queryRunner.query(`DROP TABLE \`agenda\``);
+    await queryRunner.query(
+      `DROP INDEX \`IDX_36e1631311d9cb31089523a5c8\` ON \`persona\``,
+    );
+    await queryRunner.query(
+      `DROP INDEX \`REL_db90e04e1d41b8184641cd0c43\` ON \`persona\``,
+    );
+    await queryRunner.query(
+      `DROP INDEX \`IDX_b9000711e4ac11ef438c9f405d\` ON \`persona\``,
+    );
+    await queryRunner.query(`DROP TABLE \`persona\``);
+    await queryRunner.query(`DROP TABLE \`diploma\``);
+    await queryRunner.query(`DROP TABLE \`certificacion\``);
+    await queryRunner.query(
+      `DROP INDEX \`REL_9be9fbc2d26ef165f67571ef12\` ON \`turno\``,
+    );
+    await queryRunner.query(
+      `DROP INDEX \`IDX_80f84d1cb7340c833fcba54dbc\` ON \`turno\``,
+    );
+    await queryRunner.query(`DROP TABLE \`turno\``);
+    await queryRunner.query(
+      `DROP INDEX \`idx_adjunto_clinico_turno\` ON \`adjunto_clinico\``,
+    );
+    await queryRunner.query(`DROP TABLE \`adjunto_clinico\``);
+    await queryRunner.query(`DROP TABLE \`medicion\``);
+    await queryRunner.query(`DROP TABLE \`observacion_clinica\``);
+    await queryRunner.query(`DROP TABLE \`gimnasio\``);
+    await queryRunner.query(`DROP TABLE \`plan_alimentacion\``);
+    await queryRunner.query(`DROP TABLE \`dia_plan\``);
+    await queryRunner.query(`DROP TABLE \`opcion_comida\``);
+    await queryRunner.query(`DROP TABLE \`item_comida\``);
+    await queryRunner.query(
+      `DROP INDEX \`uq_alimento_nombre\` ON \`alimento\``,
+    );
+    await queryRunner.query(`DROP TABLE \`alimento\``);
+    await queryRunner.query(`DROP TABLE \`grupo_alimenticio\``);
+    await queryRunner.query(`DROP TABLE \`alergia\``);
+    await queryRunner.query(`DROP TABLE \`patologia\``);
+    await queryRunner.query(
+      `DROP INDEX \`idx_fs_completada\` ON \`ficha_salud\``,
+    );
+    await queryRunner.query(`DROP TABLE \`ficha_salud\``);
+    await queryRunner.query(
+      `DROP INDEX \`idx_fsv_socio\` ON \`ficha_salud_version\``,
+    );
+    await queryRunner.query(
+      `DROP INDEX \`idx_fsv_created_at\` ON \`ficha_salud_version\``,
+    );
+    await queryRunner.query(`DROP TABLE \`ficha_salud_version\``);
+    await queryRunner.query(
+      `DROP INDEX \`REL_1fbc7de91b8e96937ed27739e8\` ON \`usuario\``,
+    );
+    await queryRunner.query(
+      `DROP INDEX \`IDX_2863682842e688ca198eb25c12\` ON \`usuario\``,
+    );
+    await queryRunner.query(`DROP TABLE \`usuario\``);
+    await queryRunner.query(
+      `DROP INDEX \`IDX_2aecffe3ca3cfe9ba5c856ad23\` ON \`accion\``,
+    );
+    await queryRunner.query(`DROP TABLE \`accion\``);
+    await queryRunner.query(
+      `DROP INDEX \`IDX_69cee8a317e94a61ef5c583949\` ON \`grupo_permiso\``,
+    );
+    await queryRunner.query(`DROP TABLE \`grupo_permiso\``);
+    await queryRunner.query(`DROP TABLE \`usuario_grupo_permiso\``);
+    await queryRunner.query(`DROP TABLE \`formacion_academica\``);
+  }
 }

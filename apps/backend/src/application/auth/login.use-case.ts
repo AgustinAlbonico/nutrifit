@@ -43,7 +43,10 @@ export class LoginUseCase implements BaseUseCase {
     private readonly loginAuditService: LoginAuditService,
   ) {}
 
-  async execute(payload: LoginDto, origen: LoginOrigenDto = {}): Promise<{
+  async execute(
+    payload: LoginDto,
+    origen: LoginOrigenDto = {},
+  ): Promise<{
     token: string;
     rol: Rol;
     acciones: string[];
@@ -57,7 +60,11 @@ export class LoginUseCase implements BaseUseCase {
 
     const user = await this.userRepository.findByEmail(email);
     if (!user) {
-      await this.registrarIntentoLogin(email, ResultadoLoginAudit.FAILURE, origen);
+      await this.registrarIntentoLogin(
+        email,
+        ResultadoLoginAudit.FAILURE,
+        origen,
+      );
       throw new UnauthorizedError('No se encontró el usuario');
     }
 
@@ -66,7 +73,11 @@ export class LoginUseCase implements BaseUseCase {
       user.contraseña,
     );
     if (!isPasswordValid) {
-      await this.registrarIntentoLogin(email, ResultadoLoginAudit.FAILURE, origen);
+      await this.registrarIntentoLogin(
+        email,
+        ResultadoLoginAudit.FAILURE,
+        origen,
+      );
       throw new UnauthorizedError('Contraseña incorrecta');
     }
 

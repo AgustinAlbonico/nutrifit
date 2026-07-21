@@ -33,26 +33,27 @@ export class EjecutarGeneracionPlanSemanalBackgroundService {
         return;
       }
 
-      const generacionEnEjecucion = await this.generacionRepo.actualizarSiActiva(
-        generacion.id,
-        {
+      const generacionEnEjecucion =
+        await this.generacionRepo.actualizarSiActiva(generacion.id, {
           estado: 'GENERANDO',
           mensajeEstado: 'Generando plan con IA',
           proveedorActual: 'automático',
           iniciadoEn: new Date(),
-        },
-      );
+        });
 
       if (!generacionEnEjecucion) {
         return;
       }
 
       const solicitud = this.construirSolicitud(generacionEnEjecucion);
-      const respuesta = await this.generarPlanSemanalUseCase.execute(solicitud, {
-        onProgreso: async (progreso) => {
-          await this.persistirProgreso(generacion.id, progreso);
+      const respuesta = await this.generarPlanSemanalUseCase.execute(
+        solicitud,
+        {
+          onProgreso: async (progreso) => {
+            await this.persistirProgreso(generacion.id, progreso);
+          },
         },
-      });
+      );
 
       await this.generacionRepo.actualizarSiActiva(generacion.id, {
         estado: 'COMPLETADO',
@@ -247,7 +248,10 @@ export class EjecutarGeneracionPlanSemanalBackgroundService {
       return undefined;
     }
 
-    if (!Array.isArray(value) || !value.every((item) => typeof item === 'string')) {
+    if (
+      !Array.isArray(value) ||
+      !value.every((item) => typeof item === 'string')
+    ) {
       throw new Error(`La solicitud persistida no incluye ${key} válido`);
     }
 

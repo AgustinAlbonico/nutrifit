@@ -78,10 +78,7 @@ export class ActualizarPreferenciasIaUseCase implements BaseUseCase {
     const nutricionista =
       await this.nutricionistaRepository.findById(nutricionistaId);
     if (!nutricionista) {
-      throw new NotFoundError(
-        'Nutricionista',
-        String(nutricionistaId),
-      );
+      throw new NotFoundError('Nutricionista', String(nutricionistaId));
     }
 
     const preferenciasAnteriores = nutricionista.preferenciasIa;

@@ -12,18 +12,18 @@ describe('GetResumenProgresoUseCase - Riesgo Cardiovascular por genero', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         GetResumenProgresoUseCase,
-          {
-            provide: getRepositoryToken(MedicionOrmEntity),
-            useValue: {
-              createQueryBuilder: jest.fn().mockReturnValue({
-                innerJoin: jest.fn().mockReturnThis(),
-                where: jest.fn().mockReturnThis(),
-                andWhere: jest.fn().mockReturnThis(),
-                orderBy: jest.fn().mockReturnThis(),
-                getMany: jest.fn().mockResolvedValue([]),
-              }),
-            },
+        {
+          provide: getRepositoryToken(MedicionOrmEntity),
+          useValue: {
+            createQueryBuilder: jest.fn().mockReturnValue({
+              innerJoin: jest.fn().mockReturnThis(),
+              where: jest.fn().mockReturnThis(),
+              andWhere: jest.fn().mockReturnThis(),
+              orderBy: jest.fn().mockReturnThis(),
+              getMany: jest.fn().mockResolvedValue([]),
+            }),
           },
+        },
         {
           provide: getRepositoryToken(SocioOrmEntity),
           useValue: {
@@ -81,12 +81,16 @@ describe('GetResumenProgresoUseCase - Riesgo Cardiovascular por genero', () => {
     mediciones: MedicionOrmEntity[],
   ) => {
     const useCase = await buildUseCase();
-    (useCase as unknown as { socioRepository: { findOne: jest.Mock } }).socioRepository.findOne.mockResolvedValue(
-      socioConGenero(genero),
-    );
-    (useCase as unknown as { medicionRepository: { createQueryBuilder: jest.Mock } }).medicionRepository.createQueryBuilder().getMany.mockResolvedValue(
-      mediciones,
-    );
+    (
+      useCase as unknown as { socioRepository: { findOne: jest.Mock } }
+    ).socioRepository.findOne.mockResolvedValue(socioConGenero(genero));
+    (
+      useCase as unknown as {
+        medicionRepository: { createQueryBuilder: jest.Mock };
+      }
+    ).medicionRepository
+      .createQueryBuilder()
+      .getMany.mockResolvedValue(mediciones);
 
     return useCase;
   };
@@ -102,11 +106,16 @@ describe('GetResumenProgresoUseCase - Riesgo Cardiovascular por genero', () => {
     'clasifica correctamente por sexo y relacion ($genero, $relacion)',
     async ({ genero, relacion, esperado }) => {
       const useCase = await buildUseCase();
-      (useCase as unknown as { socioRepository: { findOne: jest.Mock } }).socioRepository.findOne.mockResolvedValue(
-        socioConGenero(genero),
-      );
-      (useCase as unknown as { medicionRepository: { createQueryBuilder: jest.Mock } }).medicionRepository.createQueryBuilder().getMany.mockResolvedValue(
-        [
+      (
+        useCase as unknown as { socioRepository: { findOne: jest.Mock } }
+      ).socioRepository.findOne.mockResolvedValue(socioConGenero(genero));
+      (
+        useCase as unknown as {
+          medicionRepository: { createQueryBuilder: jest.Mock };
+        }
+      ).medicionRepository
+        .createQueryBuilder()
+        .getMany.mockResolvedValue([
           {
             idMedicion: 1,
             createdAt: new Date('2026-01-10T10:00:00.000Z'),
@@ -151,21 +160,27 @@ describe('GetResumenProgresoUseCase - Riesgo Cardiovascular por genero', () => {
             notasMedicion: null,
             turno: { nutricionista: { idPersona: 5 } },
           },
-        ],
-      );
+        ]);
 
       const resultado = await useCase.execute(1);
-      expect(resultado.relacionCinturaCadera.riesgoCardiovascular).toBe(esperado);
+      expect(resultado.relacionCinturaCadera.riesgoCardiovascular).toBe(
+        esperado,
+      );
     },
   );
 
   it('no clasifica el riesgo cuando el genero es OTRO', async () => {
     const useCase = await buildUseCase();
-    (useCase as unknown as { socioRepository: { findOne: jest.Mock } }).socioRepository.findOne.mockResolvedValue(
-      socioConGenero(Genero.Otro),
-    );
-    (useCase as unknown as { medicionRepository: { createQueryBuilder: jest.Mock } }).medicionRepository.createQueryBuilder().getMany.mockResolvedValue(
-      [
+    (
+      useCase as unknown as { socioRepository: { findOne: jest.Mock } }
+    ).socioRepository.findOne.mockResolvedValue(socioConGenero(Genero.Otro));
+    (
+      useCase as unknown as {
+        medicionRepository: { createQueryBuilder: jest.Mock };
+      }
+    ).medicionRepository
+      .createQueryBuilder()
+      .getMany.mockResolvedValue([
         {
           idMedicion: 1,
           createdAt: new Date('2026-06-15T10:00:00.000Z'),
@@ -188,8 +203,7 @@ describe('GetResumenProgresoUseCase - Riesgo Cardiovascular por genero', () => {
           notasMedicion: null,
           turno: { nutricionista: { idPersona: 5 } },
         },
-      ],
-    );
+      ]);
 
     const resultado = await useCase.execute(1);
     expect(resultado.relacionCinturaCadera.riesgoCardiovascular).toBeNull();
@@ -197,11 +211,16 @@ describe('GetResumenProgresoUseCase - Riesgo Cardiovascular por genero', () => {
 
   it('no clasifica el riesgo cuando el genero es null', async () => {
     const useCase = await buildUseCase();
-    (useCase as unknown as { socioRepository: { findOne: jest.Mock } }).socioRepository.findOne.mockResolvedValue(
-      socioConGenero(null),
-    );
-    (useCase as unknown as { medicionRepository: { createQueryBuilder: jest.Mock } }).medicionRepository.createQueryBuilder().getMany.mockResolvedValue(
-      [
+    (
+      useCase as unknown as { socioRepository: { findOne: jest.Mock } }
+    ).socioRepository.findOne.mockResolvedValue(socioConGenero(null));
+    (
+      useCase as unknown as {
+        medicionRepository: { createQueryBuilder: jest.Mock };
+      }
+    ).medicionRepository
+      .createQueryBuilder()
+      .getMany.mockResolvedValue([
         {
           idMedicion: 1,
           createdAt: new Date('2026-06-15T10:00:00.000Z'),
@@ -224,8 +243,7 @@ describe('GetResumenProgresoUseCase - Riesgo Cardiovascular por genero', () => {
           notasMedicion: null,
           turno: { nutricionista: { idPersona: 5 } },
         },
-      ],
-    );
+      ]);
 
     const resultado = await useCase.execute(1);
     expect(resultado.relacionCinturaCadera.riesgoCardiovascular).toBeNull();
@@ -247,7 +265,8 @@ describe('GetResumenProgresoUseCase - Riesgo Cardiovascular por genero', () => {
     expect(resultado.alertasClinicas).toContainEqual({
       severidad: 'critica',
       titulo: 'Riesgo cardiovascular alto',
-      mensaje: 'La relacion cintura/cadera actual indica riesgo cardiovascular alto.',
+      mensaje:
+        'La relacion cintura/cadera actual indica riesgo cardiovascular alto.',
       metrica: 'relacion_cintura_cadera',
       valor: 1.02,
     });
@@ -269,7 +288,8 @@ describe('GetResumenProgresoUseCase - Riesgo Cardiovascular por genero', () => {
     expect(resultado.alertasClinicas).toContainEqual({
       severidad: 'importante',
       titulo: 'IMC en rango de obesidad',
-      mensaje: 'El IMC actual esta en rango de obesidad y requiere seguimiento clinico.',
+      mensaje:
+        'El IMC actual esta en rango de obesidad y requiere seguimiento clinico.',
       metrica: 'imc',
       valor: 31.2,
     });

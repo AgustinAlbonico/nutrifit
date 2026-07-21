@@ -64,7 +64,11 @@ export class ListRecepcionistasUseCase implements BaseUseCase {
       if (query.estado === 'ACTIVO' && !r.activo) return false;
       if (query.estado === 'INACTIVO' && r.activo) return false;
 
-      if (query.provincia && query.provincia !== 'TODAS' && r.provincia !== query.provincia)
+      if (
+        query.provincia &&
+        query.provincia !== 'TODAS' &&
+        r.provincia !== query.provincia
+      )
         return false;
 
       if (query.ciudad && query.ciudad !== 'TODAS' && r.ciudad !== query.ciudad)

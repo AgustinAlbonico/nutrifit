@@ -94,16 +94,19 @@ export class FinalizarPlanAlimentacionUseCase implements BaseUseCase {
     }
 
     // 3) NUT dueño
-    const ownerId = plan.nutricionista.usuario?.idUsuario ?? plan.nutricionista.idPersona;
+    const ownerId =
+      plan.nutricionista.usuario?.idUsuario ?? plan.nutricionista.idPersona;
     if (ownerId !== solicitud.nutricionistaUserId) {
       throw new ForbiddenError(
         'Solo el nutricionista dueño del plan puede finalizarlo',
       );
     }
 
-    const socioPersonaId = (plan.socio as unknown as {
-      idPersona: number | null;
-    }).idPersona;
+    const socioPersonaId = (
+      plan.socio as unknown as {
+        idPersona: number | null;
+      }
+    ).idPersona;
     if (socioPersonaId == null) {
       throw new NotFoundError('Socio', String(solicitud.planAlimentacionId));
     }

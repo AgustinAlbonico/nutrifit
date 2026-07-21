@@ -113,8 +113,7 @@ describe('sanitizarTextoPlano', () => {
     });
 
     it('maneja texto con HTML, markdown y saltos múltiples', () => {
-      const texto =
-        '<div>**Nota:**</div>\n\n\n\nUsar `console.log`\n\n\n\nFin';
+      const texto = '<div>**Nota:**</div>\n\n\n\nUsar `console.log`\n\n\n\nFin';
       const resultado = sanitizarTextoPlano(texto);
       expect(resultado.texto).toBe('Nota:\n\nUsar console.log\n\nFin');
     });

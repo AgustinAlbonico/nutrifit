@@ -2,7 +2,11 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
 import { UnauthorizedError } from 'src/domain/exceptions/custom-exceptions';
-import { IJwtService, JWT_SERVICE, JwtPayload } from 'src/domain/services/jwt.service';
+import {
+  IJwtService,
+  JWT_SERVICE,
+  JwtPayload,
+} from 'src/domain/services/jwt.service';
 import { UsuarioAutenticadoPayload } from 'src/infrastructure/auth/decorators/current-user.decorator';
 import { OrigenRequest } from 'src/infrastructure/common/http/request-origin.helper';
 import {
@@ -48,7 +52,12 @@ export class RefreshTokenUseCase {
 
       return { token };
     } catch (error) {
-      await this.registrarRefresh(null, null, ResultadoLoginAudit.REFRESH_FAILURE, origen);
+      await this.registrarRefresh(
+        null,
+        null,
+        ResultadoLoginAudit.REFRESH_FAILURE,
+        origen,
+      );
       throw error instanceof UnauthorizedError
         ? error
         : new UnauthorizedError('Token invalido o expirado');

@@ -39,16 +39,44 @@ export class ItemComidaOrmEntity extends AuditableOrmEntity {
   @Column({ name: 'notas', type: 'varchar', length: 255, nullable: true })
   notas: string | null;
 
-  @Column({ name: 'calorias', type: 'decimal', precision: 8, scale: 2, nullable: true, transformer: decimalTransformer })
+  @Column({
+    name: 'calorias',
+    type: 'decimal',
+    precision: 8,
+    scale: 2,
+    nullable: true,
+    transformer: decimalTransformer,
+  })
   calorias: number | null;
 
-  @Column({ name: 'proteinas', type: 'decimal', precision: 8, scale: 2, nullable: true, transformer: decimalTransformer })
+  @Column({
+    name: 'proteinas',
+    type: 'decimal',
+    precision: 8,
+    scale: 2,
+    nullable: true,
+    transformer: decimalTransformer,
+  })
   proteinas: number | null;
 
-  @Column({ name: 'carbohidratos', type: 'decimal', precision: 8, scale: 2, nullable: true, transformer: decimalTransformer })
+  @Column({
+    name: 'carbohidratos',
+    type: 'decimal',
+    precision: 8,
+    scale: 2,
+    nullable: true,
+    transformer: decimalTransformer,
+  })
   carbohidratos: number | null;
 
-  @Column({ name: 'grasas', type: 'decimal', precision: 8, scale: 2, nullable: true, transformer: decimalTransformer })
+  @Column({
+    name: 'grasas',
+    type: 'decimal',
+    precision: 8,
+    scale: 2,
+    nullable: true,
+    transformer: decimalTransformer,
+  })
   grasas: number | null;
 
   @ManyToOne(() => OpcionComidaOrmEntity, {

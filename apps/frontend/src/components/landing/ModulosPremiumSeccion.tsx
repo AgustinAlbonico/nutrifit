@@ -48,13 +48,13 @@ export function ModulosPremiumSeccion() {
 
       <div className="relative mx-auto max-w-7xl px-6 lg:px-10">
         <div className="max-w-3xl">
-          <span className="font-display text-sm font-semibold uppercase tracking-[0.2em] text-landing-lima">
+          <span className="font-display text-sm font-semibold uppercase tracking-[0.2em] text-landing-naranja">
             Módulos premium
           </span>
           <h2 className="mt-4 font-display text-4xl font-bold leading-tight tracking-tight text-landing-cream sm:text-5xl lg:text-[3.5rem]">
             Cuando tu gimnasio
             <br />
-            <span className="text-landing-lima">quiera ir más lejos.</span>
+            <span className="text-landing-naranja">quiera ir más lejos.</span>
           </h2>
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-landing-cream/70">
             Capas opcionales que se activan sobre el plan base. Cada una se cotiza por
@@ -66,7 +66,7 @@ export function ModulosPremiumSeccion() {
           {MODULOS.map((modulo) => (
             <article key={modulo.nombre} className="bg-landing-ink-soft/40 p-8 lg:p-10">
               <div className="flex items-center gap-4">
-                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-landing-lima-soft text-landing-lima">
+                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-landing-naranja-soft text-landing-naranja">
                   <modulo.icono className="h-6 w-6" strokeWidth={1.75} />
                 </span>
                 <h3 className="font-display text-2xl font-bold text-landing-cream">

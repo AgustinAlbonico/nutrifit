@@ -26,7 +26,10 @@ import { RecepcionistaOrmEntity } from 'src/infrastructure/persistence/typeorm/e
     PasswordEncrypterModule,
   ],
   providers: [
-    { provide: GIMNASIO_REPOSITORY, useClass: GimnasioRepositoryImplementation },
+    {
+      provide: GIMNASIO_REPOSITORY,
+      useClass: GimnasioRepositoryImplementation,
+    },
   ],
   controllers: [SuscripcionController],
 })

@@ -93,7 +93,10 @@ describe('AusenciaTurnoScheduler', () => {
     const ahora = new Date(`${hoyArgentina}T14:00:00-03:00`);
     jest.useFakeTimers().setSystemTime(ahora);
     jest
-      .spyOn(require('src/common/utils/argentina-datetime.util'), 'getArgentinaNow')
+      .spyOn(
+        require('src/common/utils/argentina-datetime.util'),
+        'getArgentinaNow',
+      )
       .mockReturnValue(ahora);
 
     jest.spyOn(turnoRepository, 'save').mockResolvedValue({
@@ -142,7 +145,10 @@ describe('AusenciaTurnoScheduler', () => {
     const ahora = new Date(`${hoyArgentina}T14:00:00-03:00`);
     jest.useFakeTimers().setSystemTime(ahora);
     jest
-      .spyOn(require('src/common/utils/argentina-datetime.util'), 'getArgentinaNow')
+      .spyOn(
+        require('src/common/utils/argentina-datetime.util'),
+        'getArgentinaNow',
+      )
       .mockReturnValue(ahora);
 
     await scheduler.marcarAusentesAutomaticos();

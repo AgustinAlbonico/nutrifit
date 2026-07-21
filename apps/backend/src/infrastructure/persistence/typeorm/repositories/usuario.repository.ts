@@ -251,7 +251,8 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
     usuarioOrmEntity.fechaHoraAlta = new Date();
     usuarioOrmEntity.debeCambiarPassword = entity.debeCambiarPassword;
     usuarioOrmEntity.tokenRecuperacion = entity.tokenRecuperacion;
-    usuarioOrmEntity.tokenRecuperacionExpiracion = entity.tokenRecuperacionExpiracion;
+    usuarioOrmEntity.tokenRecuperacionExpiracion =
+      entity.tokenRecuperacionExpiracion;
 
     if (entity.persona) {
       usuarioOrmEntity.persona = {
@@ -453,9 +454,7 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
     );
   }
 
-  async findByTokenRecuperacion(
-    token: string,
-  ): Promise<UsuarioEntity | null> {
+  async findByTokenRecuperacion(token: string): Promise<UsuarioEntity | null> {
     if (!token) return null;
 
     const user = await this.userRepository.findOne({

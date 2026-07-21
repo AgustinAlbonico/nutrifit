@@ -106,7 +106,8 @@ export class AiProviderOrchestratorService implements IAiProviderService {
 
   private esErrorTransitorioProveedor(error: unknown): boolean {
     return (
-      error instanceof AIRateLimitError || error instanceof ServiceUnavailableError
+      error instanceof AIRateLimitError ||
+      error instanceof ServiceUnavailableError
     );
   }
 }

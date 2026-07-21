@@ -64,40 +64,40 @@ export class TurnoReminderScheduler {
       return;
     }
 
-      try {
-        await this.emailService.enviarRecordatorio(
-          {
-            email,
-            nombreSocio: turno.socio?.nombre ?? 'Socio',
-            nombreProfesional: turno.nutricionista?.nombre ?? 'Profesional',
-            fecha: formatArgentinaDate(turno.fechaTurno),
-            hora: turno.horaTurno,
-            enlaceConfirmacion: `${process.env.FRONTEND_URL ?? ''}/turnos/${turno.idTurno}/confirmar`,
-            enlaceCancelacion: `${process.env.FRONTEND_URL ?? ''}/turnos/${turno.idTurno}/cancelar`,
-          },
-          tipo,
-        );
+    try {
+      await this.emailService.enviarRecordatorio(
+        {
+          email,
+          nombreSocio: turno.socio?.nombre ?? 'Socio',
+          nombreProfesional: turno.nutricionista?.nombre ?? 'Profesional',
+          fecha: formatArgentinaDate(turno.fechaTurno),
+          hora: turno.horaTurno,
+          enlaceConfirmacion: `${process.env.FRONTEND_URL ?? ''}/turnos/${turno.idTurno}/confirmar`,
+          enlaceCancelacion: `${process.env.FRONTEND_URL ?? ''}/turnos/${turno.idTurno}/cancelar`,
+        },
+        tipo,
+      );
 
-        try {
-          await this.recordatoriosRepo.save(
-            this.recordatoriosRepo.create({
-              turnoId: turno.idTurno,
-              tipoRecordatorio: tipo,
-            }),
+      try {
+        await this.recordatoriosRepo.save(
+          this.recordatoriosRepo.create({
+            turnoId: turno.idTurno,
+            tipoRecordatorio: tipo,
+          }),
+        );
+      } catch (saveError: unknown) {
+        if (
+          saveError instanceof Error &&
+          (saveError as { code?: string }).code === 'ER_DUP_ENTRY'
+        ) {
+          this.logger.warn(
+            `Recordatorio duplicado ignorado para turno ${turno.idTurno} (${tipo})`,
           );
-        } catch (saveError: unknown) {
-          if (
-            saveError instanceof Error &&
-            (saveError as { code?: string }).code === 'ER_DUP_ENTRY'
-          ) {
-            this.logger.warn(
-              `Recordatorio duplicado ignorado para turno ${turno.idTurno} (${tipo})`,
-            );
-          } else {
-            throw saveError;
-          }
+        } else {
+          throw saveError;
         }
-      } catch (error) {
+      }
+    } catch (error) {
       this.logger.error(
         `Error enviando recordatorio para turno ${turno.idTurno}`,
         error as Error,

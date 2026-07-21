@@ -8,7 +8,9 @@ import { ConflictError } from 'src/domain/exceptions/custom-exceptions';
 import { NotFoundError } from 'src/domain/exceptions/custom-exceptions';
 import { ForbiddenError } from 'src/domain/exceptions/custom-exceptions';
 
-function buildMockTurno(overrides: Partial<TurnoOrmEntity> = {}): TurnoOrmEntity {
+function buildMockTurno(
+  overrides: Partial<TurnoOrmEntity> = {},
+): TurnoOrmEntity {
   return {
     idTurno: 1,
     estadoTurno: EstadoTurno.REALIZADO,

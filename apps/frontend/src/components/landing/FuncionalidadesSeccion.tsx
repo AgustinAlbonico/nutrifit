@@ -64,13 +64,13 @@ export function FuncionalidadesSeccion() {
       <div className="relative mx-auto max-w-7xl px-6 lg:px-10">
         <div className="flex flex-col items-start justify-between gap-6 lg:flex-row lg:items-end">
           <div className="max-w-2xl">
-            <span className="font-display text-sm font-semibold uppercase tracking-[0.2em] text-landing-lima-deep">
+            <span className="font-display text-sm font-semibold uppercase tracking-[0.2em] text-landing-naranja-deep">
               Funcionalidades
             </span>
             <h2 className="mt-4 font-display text-4xl font-bold leading-tight tracking-tight text-landing-ink sm:text-5xl lg:text-[3.5rem]">
               El stack operativo
               <br />
-              <span className="text-landing-lima-deep">de un gimnasio que vende salud.</span>
+              <span className="text-landing-naranja-deep">de un gimnasio que vende salud.</span>
             </h2>
           </div>
           <p className="max-w-sm text-base leading-relaxed text-landing-ink/60">
@@ -86,12 +86,12 @@ export function FuncionalidadesSeccion() {
               className={[
                 'landing-card-hover group relative flex flex-col overflow-hidden rounded-2xl border p-7',
                 func.destacado
-                  ? 'border-landing-lima/40 bg-landing-ink text-landing-cream md:col-span-2 lg:col-span-1'
-                  : 'border-landing-line bg-landing-cream hover:border-landing-lima-deep/30',
+                  ? 'border-landing-naranja/40 bg-landing-ink text-landing-cream md:col-span-2 lg:col-span-1'
+                  : 'border-landing-line bg-landing-cream hover:border-landing-naranja-deep/30',
               ].join(' ')}
             >
               {func.destacado && (
-                <div className="absolute right-5 top-5 rounded-full bg-landing-lima-soft px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-landing-lima">
+                <div className="absolute right-5 top-5 rounded-full bg-landing-naranja-soft px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-landing-naranja">
                   Core
                 </div>
               )}
@@ -99,8 +99,8 @@ export function FuncionalidadesSeccion() {
                 className={[
                   'flex h-12 w-12 items-center justify-center rounded-xl transition-colors',
                   func.destacado
-                    ? 'bg-landing-lima text-landing-ink'
-                    : 'bg-landing-lima-soft text-landing-lima-deep group-hover:bg-landing-lima group-hover:text-landing-ink',
+                    ? 'bg-landing-naranja text-landing-ink'
+                    : 'bg-landing-naranja-soft text-landing-naranja-deep group-hover:bg-landing-naranja group-hover:text-landing-ink',
                 ].join(' ')}
               >
                 <func.icono className="h-6 w-6" strokeWidth={1.75} />

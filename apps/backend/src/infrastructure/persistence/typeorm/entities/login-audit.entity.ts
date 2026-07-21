@@ -1,4 +1,10 @@
-import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
 export enum ResultadoLoginAudit {
   SUCCESS = 'SUCCESS',
@@ -25,7 +31,12 @@ export class LoginAuditOrmEntity {
   @Column({ name: 'id_usuario', type: 'int', nullable: true })
   usuarioId: number | null;
 
-  @Column({ name: 'email_intentado', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'email_intentado',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   emailIntentado: string | null;
 
   @Column({ name: 'resultado', type: 'varchar', length: 20 })

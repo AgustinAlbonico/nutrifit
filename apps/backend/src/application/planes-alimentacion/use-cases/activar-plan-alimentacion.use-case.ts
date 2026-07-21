@@ -132,7 +132,8 @@ export class ActivarPlanAlimentacionUseCase implements BaseUseCase {
     }
 
     // 4) NUT dueño
-    const ownerId = plan.nutricionista.usuario?.idUsuario ?? plan.nutricionista.idPersona;
+    const ownerId =
+      plan.nutricionista.usuario?.idUsuario ?? plan.nutricionista.idPersona;
     if (ownerId !== solicitud.nutricionistaUserId) {
       throw new ForbiddenError(
         'Solo el nutricionista dueño del plan puede activarlo',
@@ -152,7 +153,9 @@ export class ActivarPlanAlimentacionUseCase implements BaseUseCase {
     });
 
     // 5) Cargar versión y validar que pertenece al plan
-    const version = await this.planVersionRepo.obtenerPorId(solicitud.versionId);
+    const version = await this.planVersionRepo.obtenerPorId(
+      solicitud.versionId,
+    );
     if (!version) {
       throw new NotFoundError('Versión de plan', String(solicitud.versionId));
     }
@@ -163,9 +166,7 @@ export class ActivarPlanAlimentacionUseCase implements BaseUseCase {
     }
 
     // 6) Re-validar macros sobre la versión a activar
-    const fichaClinica = await this.cargarFichaClinica(
-      socioId,
-    );
+    const fichaClinica = await this.cargarFichaClinica(socioId);
     const objetivoMacros = this.calcularObjetivoMacros(fichaClinica);
     const validacionMacros = MacrosValidator.validar(
       version.datosJson,
@@ -225,8 +226,9 @@ export class ActivarPlanAlimentacionUseCase implements BaseUseCase {
 
     // 8) Notificación al socio titular
     try {
-      const socioPersonaId = (plan.socio as unknown as { idPersona: number | null })
-        .idPersona;
+      const socioPersonaId = (
+        plan.socio as unknown as { idPersona: number | null }
+      ).idPersona;
       if (socioPersonaId) {
         const socio = await this.socioRepo.findOne({
           where: { idPersona: socioPersonaId },

@@ -214,8 +214,7 @@ export class AiController {
   @Rol(RolEnum.NUTRICIONISTA, RolEnum.ADMIN, RolEnum.SUPERADMIN)
   @Actions(ACCIONES.PLANES_IA_REGENERAR)
   @ApiOperation({
-    summary:
-      'Regenerar parte de un plan semanal con IA (PLAN/DIA/ALTERNATIVA)',
+    summary: 'Regenerar parte de un plan semanal con IA (PLAN/DIA/ALTERNATIVA)',
   })
   @ApiResponse({
     status: 201,
@@ -293,7 +292,10 @@ export class AiController {
     return this.generarIdeasComidaUseCase.execute(socioId, dto);
   }
 
-  private parsearEnteroQuery(value: string | undefined, nombre: string): number {
+  private parsearEnteroQuery(
+    value: string | undefined,
+    nombre: string,
+  ): number {
     const parsed = Number(value);
     if (!value || !Number.isInteger(parsed) || parsed < 1) {
       throw new BadRequestError(`${nombre} debe ser un entero positivo`);

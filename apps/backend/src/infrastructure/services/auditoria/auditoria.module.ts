@@ -11,7 +11,13 @@ import { TenantContextService } from 'src/infrastructure/auth/tenant-context.ser
 import { AuditoriaEntityRegistry } from './auditoria-entity.registry';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([AuditoriaOrmEntity, LoginAuditOrmEntity, TurnoOrmEntity])],
+  imports: [
+    TypeOrmModule.forFeature([
+      AuditoriaOrmEntity,
+      LoginAuditOrmEntity,
+      TurnoOrmEntity,
+    ]),
+  ],
   providers: [
     AuditoriaService,
     AuditoriaReporteService,
