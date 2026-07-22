@@ -45,7 +45,20 @@ export function escaparHtml(valor: string | number | null | undefined): string {
   );
 }
 
+/**
+ * Construye la URL pública del logo del frontend.
+ * Requiere FRONTEND_URL accesible desde internet (los clientes de mail
+ * descargan la imagen; localhost no sirve en prod).
+ */
+export function construirUrlLogo(): string {
+  const baseUrl = process.env.FRONTEND_URL?.trim() || 'http://localhost:5173';
+  const normalizedBaseUrl = baseUrl.replace(/\/+$/, '');
+  return `${normalizedBaseUrl}/logo.png`;
+}
+
 export function baseTemplate(data: BaseTemplateData): string {
+  const logoUrl = escaparHtml(construirUrlLogo());
+
   return `
 <!DOCTYPE html>
 <html lang="es">
@@ -72,7 +85,7 @@ export function baseTemplate(data: BaseTemplateData): string {
                     <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto">
                       <tr>
                         <td style="vertical-align:middle;padding-right:12px">
-                          <div style="display:inline-block;width:42px;height:42px;background-color:${MARCA.blanco};border-radius:11px;text-align:center;line-height:42px;font-size:22px;font-weight:800;color:${MARCA.carmesi};letter-spacing:-1px">N</div>
+                          <img src="${logoUrl}" alt="NutriFit" width="34" height="30" style="display:block;width:34px;height:30px;background-color:${MARCA.blanco};border-radius:9px;padding:6px;border:0;outline:none;text-decoration:none" />
                         </td>
                         <td style="vertical-align:middle;text-align:left">
                           <p style="margin:0;font-size:21px;font-weight:700;color:${MARCA.blanco};letter-spacing:-0.5px;line-height:1.1">NutriFit</p>
