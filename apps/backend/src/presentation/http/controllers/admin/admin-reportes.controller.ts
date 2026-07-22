@@ -2,13 +2,14 @@ import { Controller, Get, Query, Res, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
 import { JwtAuthGuard } from 'src/infrastructure/auth/guards/auth.guard';
 import { RolesGuard } from 'src/infrastructure/auth/guards/roles.guard';
+import { GimnasioRequeridoGuard } from 'src/infrastructure/auth/guards/gimnasio-requerido.guard';
 import { Rol } from 'src/infrastructure/auth/decorators/role.decorator';
 import { Rol as RolEnum } from 'src/domain/entities/Usuario/Rol';
 import { GetKpiCompletoUseCase } from 'src/application/reportes/use-cases/get-kpi-completo.use-case';
 import { KpiCompletoDto } from 'src/application/reportes/dtos/kpi-completo.dto';
 
 @Controller('admin/reportes')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, GimnasioRequeridoGuard)
 export class AdminReportesController {
   constructor(private readonly getKpiCompletoUseCase: GetKpiCompletoUseCase) {}
 
