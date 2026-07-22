@@ -95,12 +95,15 @@ export class LoginUseCase implements BaseUseCase {
     }
 
     // Extraer gimnasioId según el rol:
-    // - SUPERADMIN sin persona: null (operar cross-tenant)
+    // - SUPERADMIN: SIEMPRE null. Aunque su persona tenga gimnasioId, el
+    //   contrato es que opera cross-tenant hasta impersonar. Si quiere
+    //   trabajar con un gimnasio especifico, usa POST /gimnasios/:id/impersonar
+    //   que genera un JWT nuevo con gimnasioId y impersonatedBy seteados.
     // - Cualquier otro rol: requerido, sino error (estado inconsistente)
     let gimnasioId: number | null;
 
     if (user.rol === Rol.SUPERADMIN) {
-      gimnasioId = persona?.gimnasioId ?? null;
+      gimnasioId = null;
     } else {
       if (persona?.gimnasioId === undefined || persona?.gimnasioId === null) {
         this.loggerService.error(
