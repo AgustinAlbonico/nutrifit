@@ -191,6 +191,7 @@ export function Sidebar() {
       label: 'Reportes',
       icon: BarChart3,
       roles: ['ADMIN', 'SUPERADMIN'],
+      requiereImpersonacion: true,
     },
   ];
 
@@ -204,7 +205,17 @@ export function Sidebar() {
   ];
 
   const filterLinks = (items: typeof links) =>
-    items.filter((link) => link.roles.includes(rol || ''));
+    items.filter((link) => {
+      if (!link.roles.includes(rol || '')) return false;
+      if (
+        link.requiereImpersonacion &&
+        rol === 'SUPERADMIN' &&
+        !estaImpersonando
+      ) {
+        return false;
+      }
+      return true;
+    });
 
   const mainLinks = filterLinks(links);
   const footerLinks = filterLinks(bottomLinks);
