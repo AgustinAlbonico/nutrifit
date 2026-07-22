@@ -35,6 +35,7 @@ import { NutricionistaOwnershipGuard } from 'src/infrastructure/auth/guards/nutr
 import { RolesGuard } from 'src/infrastructure/auth/guards/roles.guard';
 import { SocioResourceAccessGuard } from 'src/infrastructure/auth/guards/socio-resource-access.guard';
 import { TurnoNutricionistaAccessGuard } from 'src/infrastructure/auth/guards/turno-nutricionista-access.guard';
+import { GimnasioRequeridoGuard } from 'src/infrastructure/auth/guards/gimnasio-requerido.guard';
 import { AlimentosSyncService } from 'src/infrastructure/alimentos/alimentos-sync.service';
 import { CrearAlimentoUseCase } from 'src/application/alimentos/use-cases/crear-alimento.use-case';
 import { ActualizarAlimentoUseCase } from 'src/application/alimentos/use-cases/actualizar-alimento.use-case';
@@ -101,6 +102,7 @@ import { AuditoriaEntityRegistry } from 'src/infrastructure/services/auditoria/a
     NutricionistaOwnershipGuard,
     SocioResourceAccessGuard,
     TurnoNutricionistaAccessGuard,
+    GimnasioRequeridoGuard,
     AlimentosSyncService,
     CrearAlimentoUseCase,
     ActualizarAlimentoUseCase,
