@@ -59,7 +59,15 @@ export class OpenCodeZenService implements IAiProviderService {
         { timeout: timeoutMs },
       );
 
-      const choice = response.choices[0];
+      const choice = response.choices?.[0];
+
+      if (!choice) {
+        throw new ServiceUnavailableError(
+          'La API de OpenCode Zen devolvió una respuesta inválida (sin choices). Verificá la base URL y el modelo configurados.',
+          { proveedor: 'opencode' },
+        );
+      }
+
       const content = choice.message?.content;
       const finishReason = choice.finish_reason;
 
