@@ -218,20 +218,22 @@ export function EditorTrayectoriaProfesional({
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2 md:col-span-2">
-                    <Label>Título</Label>
+                    <Label>Título <span className="text-destructive">*</span></Label>
                     <Input
                       value={formacion.titulo}
                       disabled={deshabilitado}
+                      required
                       onChange={(e) =>
                         actualizarFormacion(indice, { titulo: e.target.value })
                       }
                     />
                   </div>
                   <div className="space-y-2 md:col-span-2">
-                    <Label>Institución</Label>
+                    <Label>Institución <span className="text-destructive">*</span></Label>
                     <Input
                       value={formacion.institucion}
                       disabled={deshabilitado}
+                      required
                       onChange={(e) =>
                         actualizarFormacion(indice, { institucion: e.target.value })
                       }
@@ -360,20 +362,22 @@ export function EditorTrayectoriaProfesional({
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2 md:col-span-2">
-                    <Label>Nombre</Label>
+                    <Label>Nombre <span className="text-destructive">*</span></Label>
                     <Input
                       value={certificacion.nombre}
                       disabled={deshabilitado}
+                      required
                       onChange={(e) =>
                         actualizarCertificacion(indice, { nombre: e.target.value })
                       }
                     />
                   </div>
                   <div className="space-y-2 md:col-span-2">
-                    <Label>Entidad</Label>
+                    <Label>Entidad <span className="text-destructive">*</span></Label>
                     <Input
                       value={certificacion.entidad}
                       disabled={deshabilitado}
+                      required
                       onChange={(e) =>
                         actualizarCertificacion(indice, { entidad: e.target.value })
                       }
