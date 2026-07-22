@@ -1,3 +1,29 @@
+/**
+ * Paleta de marca NutriFit (alineada con el logo y el design system del frontend).
+ * Source of truth para todos los templates de email.
+ * Hex absoluto (no oklch) porque los clientes de mail no soportan oklch.
+ */
+export const MARCA = {
+  carmesi: '#dc4249',
+  carmesiProfundo: '#b8363c',
+  carmesiSuave: '#fbe9ea',
+  verde: '#64bc62',
+  verdeProfundo: '#4f9e4d',
+  verdeSuave: '#e8f5e9',
+  carbon: '#2f2826',
+  carbonSuave: '#5a4f4b',
+  carbonMuted: '#8a7d77',
+  cream: '#faf7f2',
+  blanco: '#ffffff',
+  borde: '#ece4dc',
+  bordeFuerte: '#e0d6cb',
+  texto: '#2f2826',
+  textoMuted: '#8a7d77',
+  alertaBg: '#fff4e0',
+  alertaBorde: '#f0a93b',
+  alertaTexto: '#8a5a12',
+} as const;
+
 export interface BaseTemplateData {
   titulo: string;
   contenido: string;
@@ -26,44 +52,66 @@ export function baseTemplate(data: BaseTemplateData): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="x-apple-disable-message-reformatting" />
+  <meta name="color-scheme" content="light only" />
+  <meta name="supported-color-schemes" content="light only" />
   <title>${escaparHtml(data.titulo)}</title>
 </head>
-<body style="margin:0;padding:0;background-color:#f5f5f5;font-family:'Segoe UI',Helvetica,Arial,sans-serif">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f5f5;padding:32px 16px">
+<body style="margin:0;padding:0;background-color:${MARCA.cream};font-family:'Segoe UI',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${MARCA.cream};padding:32px 16px">
     <tr>
       <td align="center">
-        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:${MARCA.blanco};border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(47,40,38,0.08)">
 
           <!-- Header -->
           <tr>
-            <td style="background-color:#212121;border-radius:8px 8px 0 0;padding:28px 40px;text-align:center">
+            <td style="background-color:${MARCA.carmesi};padding:30px 40px 26px;text-align:center">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td align="center">
-                    <div style="display:inline-block;width:48px;height:48px;background:rgba(255,255,255,0.1);border-radius:50%;line-height:48px;font-size:22px;margin-bottom:4px">&#x1F34A;</div>
-                    <h1 style="margin:4px 0 0;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.3px">NutriFit</h1>
-                    <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.55);font-weight:400">Supervisor</p>
+                    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto">
+                      <tr>
+                        <td style="vertical-align:middle;padding-right:12px">
+                          <div style="display:inline-block;width:42px;height:42px;background-color:${MARCA.blanco};border-radius:11px;text-align:center;line-height:42px;font-size:22px;font-weight:800;color:${MARCA.carmesi};letter-spacing:-1px">N</div>
+                        </td>
+                        <td style="vertical-align:middle;text-align:left">
+                          <p style="margin:0;font-size:21px;font-weight:700;color:${MARCA.blanco};letter-spacing:-0.5px;line-height:1.1">NutriFit</p>
+                          <p style="margin:2px 0 0;font-size:10px;font-weight:600;color:${MARCA.verdeSuave};text-transform:uppercase;letter-spacing:2.5px">Supervisor</p>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
 
+          <!-- Acento verde de marca -->
+          <tr>
+            <td style="background-color:${MARCA.verde};font-size:0;line-height:0;height:4px">&nbsp;</td>
+          </tr>
+
           <!-- Content -->
           <tr>
-            <td style="background:#ffffff;padding:36px 40px;border-radius:0 0 8px 8px;box-shadow:0 1px 3px rgba(0,0,0,0.08)">
-              <p style="margin:0 0 20px;font-size:15px;color:#212121;line-height:1.6">
-                Hola <strong>${escaparHtml(data.nombreDestinatario)}</strong>,
+            <td style="background-color:${MARCA.blanco};padding:38px 44px 8px">
+              <p style="margin:0 0 22px;font-size:15px;color:${MARCA.texto};line-height:1.65">
+                Hola <strong style="color:${MARCA.texto}">${escaparHtml(data.nombreDestinatario)}</strong>,
               </p>
               ${data.contenido}
             </td>
           </tr>
 
+          <!-- Espaciado inferior del contenido -->
+          <tr>
+            <td style="background-color:${MARCA.blanco};padding:8px 44px 34px;font-size:0;line-height:0">&nbsp;</td>
+          </tr>
+
           <!-- Footer -->
           <tr>
-            <td style="padding:20px 40px 0;text-align:center">
-              <p style="margin:0;font-size:12px;color:#8e8e8e;line-height:1.5">
-                NutriFit Supervisor &mdash; Sistema de gesti&oacute;n de salud para gimnasios<br />
+            <td style="background-color:${MARCA.carbon};padding:26px 40px 28px;text-align:center">
+              <p style="margin:0 0 6px;font-size:13px;font-weight:600;color:${MARCA.blanco};letter-spacing:0.2px">NutriFit Supervisor</p>
+              <p style="margin:0;font-size:12px;color:#b6a9a3;line-height:1.6">
+                Sistema de gesti&oacute;n de salud para gimnasios<br />
                 Este es un mensaje autom&aacute;tico, por favor no respondas a este correo.
               </p>
             </td>

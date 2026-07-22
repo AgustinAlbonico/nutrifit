@@ -21,6 +21,7 @@ import {
   bienvenidaTemplate,
   type BienvenidaTemplateData,
 } from './templates/bienvenida.template';
+import { credencialesProvisionalesTemplate } from './templates/credenciales-provisionales.template';
 
 export const EMAIL_PROVIDER = 'EMAIL_PROVIDER';
 
@@ -134,23 +135,16 @@ export class EmailService {
   async enviarCredencialesProvisionales(
     data: CredencialesProvisionalesEmailData,
   ): Promise<void> {
-    const subject = 'Tus credenciales de acceso a NutriFit Supervisor';
-    const html = `
-      <p>Hola ${data.nombreDestinatario},</p>
-      <p>Te damos la bienvenida a <strong>NutriFit Supervisor</strong>. Tu cuenta fue creada con el rol <strong>${data.rol}</strong>.</p>
-      <p>Tus credenciales provisorias son:</p>
-      <ul>
-        <li><strong>Email:</strong> ${data.email}</li>
-        <li><strong>Contraseña provisional:</strong> <code>${data.contrasenaProvisional}</code></li>
-      </ul>
-      <p><strong>Importante:</strong> por seguridad, al ingresar por primera vez el sistema te pedirá que cambies tu contraseña.</p>
-      <p>Si no reconocés este registro, contactanos respondiendo este email.</p>
-    `.trim();
-
     await this.emailProvider.enviar({
       to: data.email,
-      subject,
-      html,
+      subject: 'Tus credenciales de acceso a NutriFit Supervisor',
+      html: credencialesProvisionalesTemplate({
+        nombreDestinatario: data.nombreDestinatario,
+        email: data.email,
+        contrasenaProvisional: data.contrasenaProvisional,
+        rol: data.rol,
+        loginUrl: this.construirUrlFrontend('/login'),
+      }),
       gimnasioId: data.gimnasioId,
     });
   }
