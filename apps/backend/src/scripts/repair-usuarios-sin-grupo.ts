@@ -62,7 +62,7 @@ async function main(): Promise<void> {
     );
 
     const grupos = (await dataSource.query(
-      'SELECT id, clave FROM grupo_permiso',
+      'SELECT id_grupo_permiso AS id, clave FROM grupo_permiso',
     )) as GrupoPermisoRow[];
     const grupoIdPorClave = new Map(grupos.map((g) => [g.clave, g.id]));
 
