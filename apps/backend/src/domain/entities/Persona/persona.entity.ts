@@ -17,7 +17,7 @@ export abstract class PersonaEntity {
   fotoPerfilKey: string | null;
   observaciones: string | null;
   /** ID del gimnasio al que pertenece esta persona (tenant isolation) */
-  gimnasioId: number;
+  gimnasioId: number | null;
 
   constructor(
     idPersona: number | null = null,
@@ -32,7 +32,7 @@ export abstract class PersonaEntity {
     dni: string,
     email: string = '',
     fotoPerfilKey: string | null = null,
-    gimnasioId: number = 1,
+    gimnasioId: number | null = null,
     observaciones: string | null = null,
   ) {
     this.idPersona = idPersona;

@@ -51,7 +51,7 @@ export class NutricionistaRepositoryImplementation implements NutricionistaRepos
   }
 
   async save(entity: NutricionistaEntity): Promise<NutricionistaEntity> {
-    const gimnasioId = entity.gimnasioId ?? this.gimnasioIdActual;
+    const gimnasioId = this.gimnasioIdActual;
     let idNutricionistaCreado: number;
     try {
       idNutricionistaCreado =

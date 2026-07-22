@@ -36,7 +36,7 @@ export class SocioRepositoryImplementation implements SocioRepository {
   }
 
   async save(entity: SocioEntity): Promise<SocioEntity> {
-    const gimnasioId = entity.gimnasioId ?? this.gimnasioIdActual;
+    const gimnasioId = this.gimnasioIdActual;
     const socioCreado = await this.socioRepository.save(
       this.toOrmEntity(entity, gimnasioId),
     );

@@ -1693,7 +1693,7 @@ export function GestionNutricionistas() {
                           {nutricionistaSeleccionado.diplomas.map((d) => (
                             <a
                               key={d.idDiploma}
-                              href={d.url}
+                              href={obtenerUrlFoto(d.url) ?? '#'}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-sm font-medium text-primary underline-offset-4 hover:underline"

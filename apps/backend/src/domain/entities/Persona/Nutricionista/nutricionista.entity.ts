@@ -66,7 +66,7 @@ export class NutricionistaEntity extends PersonaEntity {
       dni,
       email,
       null,
-      1,
+      null,
     );
     this.matricula = '';
     this.tarifaSesion = tarifaSesion;

@@ -523,7 +523,7 @@ export class ProfesionalController {
   private mapDiplomaToDto(d: DiplomaEntity, idPersona: number): DiplomaDto {
     const dto = new DiplomaDto();
     dto.idDiploma = d.idDiploma;
-    dto.url = `/api/profesional/${idPersona}/diplomas/${d.idDiploma}/archivo`;
+    dto.url = `/profesional/${idPersona}/diplomas/${d.idDiploma}/archivo`;
     dto.nombreOriginal = d.nombreOriginal;
     dto.mimeType = d.mimeType;
     return dto;

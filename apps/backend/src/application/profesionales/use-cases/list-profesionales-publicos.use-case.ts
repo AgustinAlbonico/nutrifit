@@ -133,7 +133,7 @@ export class ListProfesionalesPublicosUseCase implements BaseUseCase {
         dto.agendaConfigurada = (nutri.agendas ?? []).length > 0;
         dto.diplomas = (nutri.diplomas ?? []).map((d) => ({
           idDiploma: d.idDiploma,
-          url: `/api/profesional/${nutri.idPersona ?? 0}/diplomas/${d.idDiploma}/archivo`,
+          url: `/profesional/${nutri.idPersona ?? 0}/diplomas/${d.idDiploma}/archivo`,
           nombreOriginal: d.nombreOriginal,
           mimeType: d.mimeType,
         }));
@@ -158,6 +158,6 @@ export class ListProfesionalesPublicosUseCase implements BaseUseCase {
     fotoPerfilKey: string | null,
   ): string | null {
     if (!fotoPerfilKey) return null;
-    return `/api/profesional/${idPersona ?? 0}/foto?v=${encodeURIComponent(fotoPerfilKey)}`;
+    return `/profesional/${idPersona ?? 0}/foto?v=${encodeURIComponent(fotoPerfilKey)}`;
   }
 }

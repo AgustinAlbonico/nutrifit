@@ -76,9 +76,12 @@ export class RegistrarSocioUseCase implements BaseUseCase {
       estado,
     } = payload;
 
-    const gimnasioId = this.tenantContext.isInitialized
-      ? this.tenantContext.gimnasioId
-      : 1;
+    if (!this.tenantContext.isInitialized) {
+      throw new BadRequestException(
+        'No se puede registrar un socio sin un gimnasio resuelto en el contexto de la solicitud.',
+      );
+    }
+    const gimnasioId = this.tenantContext.gimnasioId;
 
     const socioEntity = new SocioEntity(
       null,

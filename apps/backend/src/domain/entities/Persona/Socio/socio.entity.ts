@@ -25,7 +25,7 @@ export class SocioEntity extends PersonaEntity {
     turnos: TurnoEntity[] = [],
     fichaSalud: FichaSaludEntity | null = null,
     planesAlimentacion: PlanAlimentacionEntity[] = [],
-    gimnasioId: number = 1,
+    gimnasioId: number | null = null,
   ) {
     super(
       idPersona,

@@ -71,7 +71,7 @@ export class GetPerfilProfesionalPublicoUseCase implements BaseUseCase {
     response.agendaConfigurada = (nutricionista.agendas ?? []).length > 0;
     response.diplomas = (nutricionista.diplomas ?? []).map((d) => ({
       idDiploma: d.idDiploma,
-      url: `/api/profesional/${nutricionista.idPersona ?? 0}/diplomas/${d.idDiploma}/archivo`,
+      url: `/profesional/${nutricionista.idPersona ?? 0}/diplomas/${d.idDiploma}/archivo`,
       nombreOriginal: d.nombreOriginal,
       mimeType: d.mimeType,
     }));
@@ -105,6 +105,6 @@ export class GetPerfilProfesionalPublicoUseCase implements BaseUseCase {
   ): string | null {
     if (!fotoPerfilKey) return null;
     // TODO(spec-futura): si en el futuro se migra a S3 presigned, este campo se transforma a URL absoluto.
-    return `/api/profesional/${idPersona ?? 0}/foto?v=${encodeURIComponent(fotoPerfilKey)}`;
+    return `/profesional/${idPersona ?? 0}/foto?v=${encodeURIComponent(fotoPerfilKey)}`;
   }
 }
