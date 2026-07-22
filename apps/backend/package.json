@@ -26,6 +26,7 @@
     "seed:multi-tenant": "ts-node -r tsconfig-paths/register src/seed-multi-tenant.ts",
     "seed:el-cid": "ts-node -r tsconfig-paths/register src/seed-el-cid.ts",
     "seed:martin-fotos": "ts-node -r tsconfig-paths/register src/scripts/seed-martin-evolucion-fotos.ts",
+    "repair:usuarios-sin-grupo": "ts-node -r tsconfig-paths/register src/scripts/repair-usuarios-sin-grupo.ts",
     "dedupe:planes": "ts-node -r tsconfig-paths/register scripts/dedupe-planes.ts"
   },
   "dependencies": {

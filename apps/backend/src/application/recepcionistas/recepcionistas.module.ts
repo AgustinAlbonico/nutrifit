@@ -15,6 +15,7 @@ import { EmailModule } from 'src/application/email/email.module';
 import {
   GrupoPermisoOrmEntity,
   RecepcionistaOrmEntity,
+  UsuarioGrupoPermisoOrmEntity,
   UsuarioOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
 import { RECEPCIONISTA_REPOSITORY } from 'src/domain/entities/Persona/Recepcionista/recepcionista.repository';
@@ -28,6 +29,7 @@ import { UsuarioRepositoryImplementation } from 'src/infrastructure/persistence/
       UsuarioOrmEntity,
       RecepcionistaOrmEntity,
       GrupoPermisoOrmEntity,
+      UsuarioGrupoPermisoOrmEntity,
     ]),
     AppLoggerModule,
     PasswordEncrypterModule,

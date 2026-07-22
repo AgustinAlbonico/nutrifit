@@ -23,6 +23,7 @@ import {
 import { ConflictError } from 'src/domain/exceptions/custom-exceptions';
 import { InjectRepository } from '@nestjs/typeorm';
 import { GrupoPermisoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/grupo-permiso.entity';
+import { UsuarioGrupoPermisoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/usuario-grupo-permiso.entity';
 import { Repository } from 'typeorm';
 import { GrupoPermisoEntity } from 'src/domain/entities/Usuario/grupo-permiso.entity';
 import { generarContrasenaProvisional } from 'src/common/utils/password-generator.util';
@@ -45,6 +46,8 @@ export class RegistrarSocioUseCase implements BaseUseCase {
     private readonly passwordEncrypter: IPasswordEncrypterService,
     @InjectRepository(GrupoPermisoOrmEntity)
     private readonly grupoPermisoRepository: Repository<GrupoPermisoOrmEntity>,
+    @InjectRepository(UsuarioGrupoPermisoOrmEntity)
+    private readonly usuarioGrupoRepo: Repository<UsuarioGrupoPermisoOrmEntity>,
     private readonly emailService: EmailService,
     private readonly tenantContext: TenantContextService,
   ) {}
@@ -127,7 +130,20 @@ export class RegistrarSocioUseCase implements BaseUseCase {
       true,
     );
 
-    await this.usuarioRepository.save(usuario);
+    const usuarioCreado = await this.usuarioRepository.save(usuario);
+
+    const grupoSocioOrm = await this.grupoPermisoRepository.findOne({
+      where: { clave: 'SOCIO' },
+    });
+    if (grupoSocioOrm && usuarioCreado.idUsuario) {
+      await this.usuarioGrupoRepo.save(
+        this.usuarioGrupoRepo.create({
+          usuario: { idUsuario: usuarioCreado.idUsuario } as never,
+          grupoPermiso: grupoSocioOrm,
+          gimnasioId: gimnasioId,
+        }),
+      );
+    }
 
     socioCreado.email = payload.email;
 

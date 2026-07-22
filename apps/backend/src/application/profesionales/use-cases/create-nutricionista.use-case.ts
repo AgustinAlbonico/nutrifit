@@ -23,6 +23,7 @@ import {
 import { ConflictError } from 'src/domain/exceptions/custom-exceptions';
 import { InjectRepository } from '@nestjs/typeorm';
 import { GrupoPermisoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/grupo-permiso.entity';
+import { UsuarioGrupoPermisoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/usuario-grupo-permiso.entity';
 import { Repository } from 'typeorm';
 import { GrupoPermisoEntity } from 'src/domain/entities/Usuario/grupo-permiso.entity';
 import { generarContrasenaProvisional } from 'src/common/utils/password-generator.util';
@@ -49,6 +50,8 @@ export class CreateNutricionistaUseCase implements BaseUseCase {
     private readonly passwordEncrypter: IPasswordEncrypterService,
     @InjectRepository(GrupoPermisoOrmEntity)
     private readonly grupoPermisoRepository: Repository<GrupoPermisoOrmEntity>,
+    @InjectRepository(UsuarioGrupoPermisoOrmEntity)
+    private readonly usuarioGrupoRepo: Repository<UsuarioGrupoPermisoOrmEntity>,
     private readonly emailService: EmailService,
   ) {}
 
@@ -159,7 +162,7 @@ export class CreateNutricionistaUseCase implements BaseUseCase {
       contrasenaProvisional,
     );
 
-    const grupoProfesional = await this.obtenerGrupoProfesionalPorDefecto();
+    const grupoNutricionista = await this.obtenerGrupoNutricionistaPorDefecto();
 
     // Create UsuarioEntity with NUTRICIONISTA role
     const usuario = new UsuarioEntity(
@@ -168,7 +171,7 @@ export class CreateNutricionistaUseCase implements BaseUseCase {
       contraseñaEncriptada,
       nutricionistaCreado,
       Rol.NUTRICIONISTA,
-      [grupoProfesional],
+      [grupoNutricionista],
       [],
       null,
       true,
@@ -176,6 +179,19 @@ export class CreateNutricionistaUseCase implements BaseUseCase {
 
     // Save usuario
     const usuarioCreado = await this.usuarioRepository.save(usuario);
+
+    const grupoNutricionistaOrm = await this.grupoPermisoRepository.findOne({
+      where: { clave: 'NUTRICIONISTA' },
+    });
+    if (grupoNutricionistaOrm && usuarioCreado.idUsuario) {
+      await this.usuarioGrupoRepo.save(
+        this.usuarioGrupoRepo.create({
+          usuario: { idUsuario: usuarioCreado.idUsuario } as never,
+          grupoPermiso: grupoNutricionistaOrm,
+          gimnasioId: null,
+        }),
+      );
+    }
 
     this.logger.log(
       `Usuario creado para nutricionista: ${nutricionistaCreado.idPersona} (debe_cambiar_password=true)`,
@@ -200,22 +216,22 @@ export class CreateNutricionistaUseCase implements BaseUseCase {
     };
   }
 
-  private async obtenerGrupoProfesionalPorDefecto(): Promise<GrupoPermisoEntity> {
-    const grupoProfesional = await this.grupoPermisoRepository.findOne({
-      where: { clave: 'PROFESIONAL' },
+  private async obtenerGrupoNutricionistaPorDefecto(): Promise<GrupoPermisoEntity> {
+    const grupoNutricionista = await this.grupoPermisoRepository.findOne({
+      where: { clave: 'NUTRICIONISTA' },
     });
 
-    if (!grupoProfesional) {
+    if (!grupoNutricionista) {
       throw new BadRequestException(
-        'No existe el grupo PROFESIONAL. Debe estar cargado por seed antes de crear profesionales.',
+        'No existe el grupo NUTRICIONISTA. Debe estar cargado por seed antes de crear profesionales.',
       );
     }
 
     return new GrupoPermisoEntity(
-      grupoProfesional.id,
-      grupoProfesional.clave,
-      grupoProfesional.nombre,
-      grupoProfesional.descripcion,
+      grupoNutricionista.id,
+      grupoNutricionista.clave,
+      grupoNutricionista.nombre,
+      grupoNutricionista.descripcion,
       [],
       [],
     );

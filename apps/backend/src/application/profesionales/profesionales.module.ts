@@ -13,6 +13,7 @@ import {
   GrupoPermisoOrmEntity,
   NutricionistaOrmEntity,
   TurnoOrmEntity,
+  UsuarioGrupoPermisoOrmEntity,
   UsuarioOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
 import { DIPLOMA_REPOSITORY } from 'src/domain/entities/Diploma/diploma.repository';
@@ -49,6 +50,7 @@ import { NotificacionOrmEntity } from 'src/infrastructure/persistence/typeorm/en
       UsuarioOrmEntity,
       NutricionistaOrmEntity,
       GrupoPermisoOrmEntity,
+      UsuarioGrupoPermisoOrmEntity,
       TurnoOrmEntity,
       NotificacionOrmEntity,
     ]),

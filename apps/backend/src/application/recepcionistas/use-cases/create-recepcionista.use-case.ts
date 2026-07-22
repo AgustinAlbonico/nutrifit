@@ -23,6 +23,7 @@ import {
 import { ConflictError } from 'src/domain/exceptions/custom-exceptions';
 import { InjectRepository } from '@nestjs/typeorm';
 import { GrupoPermisoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/grupo-permiso.entity';
+import { UsuarioGrupoPermisoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/usuario-grupo-permiso.entity';
 import { Repository } from 'typeorm';
 import { GrupoPermisoEntity } from 'src/domain/entities/Usuario/grupo-permiso.entity';
 import { generarContrasenaProvisional } from 'src/common/utils/password-generator.util';
@@ -46,6 +47,8 @@ export class CreateRecepcionistaUseCase implements BaseUseCase {
     private readonly passwordEncrypter: IPasswordEncrypterService,
     @InjectRepository(GrupoPermisoOrmEntity)
     private readonly grupoPermisoRepository: Repository<GrupoPermisoOrmEntity>,
+    @InjectRepository(UsuarioGrupoPermisoOrmEntity)
+    private readonly usuarioGrupoRepo: Repository<UsuarioGrupoPermisoOrmEntity>,
     private readonly emailService: EmailService,
     private readonly tenantContext: TenantContextService,
   ) {}
@@ -118,7 +121,7 @@ export class CreateRecepcionistaUseCase implements BaseUseCase {
       contrasenaProvisional,
     );
 
-    const grupoStaff = await this.obtenerGrupoStaffPorDefecto();
+    const grupoStaff = await this.obtenerGrupoRecepcionistaPorDefecto();
 
     const usuario = new UsuarioEntity(
       null,
@@ -132,7 +135,20 @@ export class CreateRecepcionistaUseCase implements BaseUseCase {
       true,
     );
 
-    await this.usuarioRepository.save(usuario);
+    const usuarioCreado = await this.usuarioRepository.save(usuario);
+
+    const grupoRecepcionistaOrm = await this.grupoPermisoRepository.findOne({
+      where: { clave: 'RECEPCIONISTA' },
+    });
+    if (grupoRecepcionistaOrm && usuarioCreado.idUsuario) {
+      await this.usuarioGrupoRepo.save(
+        this.usuarioGrupoRepo.create({
+          usuario: { idUsuario: usuarioCreado.idUsuario } as never,
+          grupoPermiso: grupoRecepcionistaOrm,
+          gimnasioId: null,
+        }),
+      );
+    }
 
     this.logger.log(
       `Usuario creado para recepcionista: ${recepcionistaCreado.idPersona} (debe_cambiar_password=true)`,
@@ -157,16 +173,14 @@ export class CreateRecepcionistaUseCase implements BaseUseCase {
     };
   }
 
-  private async obtenerGrupoStaffPorDefecto(): Promise<GrupoPermisoEntity> {
-    // Si no existe el grupo ADMIN para staff (o uno específico STAFF), asignamos ADMIN por simplicidad.
-    // Depende del seed.
+  private async obtenerGrupoRecepcionistaPorDefecto(): Promise<GrupoPermisoEntity> {
     const grupo = await this.grupoPermisoRepository.findOne({
-      where: { clave: 'ADMIN' },
+      where: { clave: 'RECEPCIONISTA' },
     });
 
     if (!grupo) {
       throw new BadRequestException(
-        'No existe el grupo ADMIN. Debe estar cargado por seed.',
+        'No existe el grupo RECEPCIONISTA. Debe estar cargado por seed.',
       );
     }
 

@@ -13,6 +13,7 @@ import { EmailModule } from 'src/application/email/email.module';
 import { AuditoriaModule } from 'src/infrastructure/services/auditoria/auditoria.module';
 import {
   SocioOrmEntity,
+  UsuarioGrupoPermisoOrmEntity,
   UsuarioOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
 import { GrupoPermisoOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/grupo-permiso.entity';
@@ -33,6 +34,7 @@ import { NotificacionesService } from 'src/application/notificaciones/notificaci
       UsuarioOrmEntity,
       SocioOrmEntity,
       GrupoPermisoOrmEntity,
+      UsuarioGrupoPermisoOrmEntity,
       TurnoOrmEntity,
       PlanAlimentacionOrmEntity,
       NotificacionOrmEntity,

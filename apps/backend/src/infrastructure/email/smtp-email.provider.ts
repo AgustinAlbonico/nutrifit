@@ -43,6 +43,7 @@ export class SmtpEmailProvider implements IEmailProvider {
         to: payload.to,
         subject: payload.subject,
         html: payload.html,
+        textEncoding: 'quoted-printable',
       };
 
       if (payload.text) {
