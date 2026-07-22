@@ -256,8 +256,9 @@ export class NutricionistaRepositoryImplementation implements NutricionistaRepos
   }
 
   async findByDni(dni: string): Promise<NutricionistaEntity | null> {
+    const gimnasioId = this.gimnasioIdActual;
     const nutricionista = await this.nutricionistaRepository.findOne({
-      where: { dni },
+      where: { dni, gimnasioId },
       relations: {
         usuario: true,
         agenda: true,
@@ -274,8 +275,9 @@ export class NutricionistaRepositoryImplementation implements NutricionistaRepos
   async findByMatricula(
     matricula: string,
   ): Promise<NutricionistaEntity | null> {
+    const gimnasioId = this.gimnasioIdActual;
     const nutricionista = await this.nutricionistaRepository.findOne({
-      where: { matricula },
+      where: { matricula, gimnasioId },
       relations: {
         usuario: true,
         agenda: true,

@@ -3,6 +3,7 @@ import {
   ChildEntity,
   Column,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   OneToMany,
@@ -113,8 +114,9 @@ export class SocioOrmEntity extends PersonaOrmEntity {
 export class RecepcionistaOrmEntity extends PersonaOrmEntity {}
 
 @ChildEntity()
+@Index('IDX_persona_matricula_gimnasio', ['matricula', 'gimnasioId'], { unique: true })
 export class NutricionistaOrmEntity extends PersonaOrmEntity {
-  @Column({ name: 'matricula', type: 'varchar', length: 50, unique: true })
+  @Column({ name: 'matricula', type: 'varchar', length: 50 })
   matricula: string;
 
   @Column({ name: 'anios_experiencia', type: 'int' })
