@@ -31,6 +31,13 @@ export class RolesGuard implements CanActivate {
 
     const user = context.switchToHttp().getRequest<RequestWithUser>().user;
 
+    // SUPERADMIN bypassea todo (es el "dueño del sistema").
+    // Mismo principio que ActionsGuard: los demás roles deben matchear
+    // explícitamente la lista de @Rol requerida.
+    if (user?.rol === Rol.SUPERADMIN) {
+      return true;
+    }
+
     return requiredRoles.includes(user?.rol);
   }
 }

@@ -265,7 +265,7 @@ export function ReportesAdminPage() {
       );
       return respuesta.data;
     },
-    enabled: rol === 'ADMIN' && !!fechaInicio && !!fechaFin,
+    enabled: autorizado && !!fechaInicio && !!fechaFin,
   });
 
   const datos = consultaKpi.data;
