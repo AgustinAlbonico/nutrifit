@@ -306,13 +306,24 @@ export class PersistirPlanManualUseCase implements BaseUseCase {
           motivoCambio: esCreacionInicial
             ? 'creacion_inicial'
             : 'edicion_manual',
-          activa: false,
+          // Activar la primera version persistida para que el plan deje
+          // el estado BORRADOR y sea visible al socio en MiPlanPage.
+          activa: esCreacionInicial,
           createdBy: userId,
         });
       }
       const saved = await versionRepo.save(orm);
       return saved;
     });
+
+    // Si es la primera version persistida, activar el plan para que el
+    // NUT deje de ver "0 planes activos" despues de guardar el borrador.
+    if (esCreacionInicial && nuevaVersion.activa) {
+      await this.planRepo.update(
+        { idPlanAlimentacion: planId },
+        { activo: true, estado: 'ACTIVO', ultimaEdicion: new Date() },
+      );
+    }
 
     // 10) Recargar plan completo
     const planCompleto = await this.planRepo.findOne({
