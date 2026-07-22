@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ZonaAdjuntosDocumento } from '@/components/profesionales/ZonaAdjuntosDocumento';
 import type {
   CertificacionDto,
   FormacionAcademicaDto,
@@ -14,6 +16,16 @@ interface PropiedadesEditorTrayectoriaProfesional {
   certificaciones: CertificacionDto[];
   alCambiarFormacionAcademica: (valor: FormacionAcademicaDto[]) => void;
   alCambiarCertificaciones: (valor: CertificacionDto[]) => void;
+  /**
+   * Si se provee, cada ítem de certificación muestra una zona para adjuntar el
+   * archivo (PDF/imagen) correspondiente. El padre recibe el array de archivos
+   * no nulos en el mismo orden que las certificaciones.
+   */
+  alCambiarArchivosCertificacion?: (archivos: File[]) => void;
+  /**
+   * Idem alCambiarArchivosCertificacion pero para formación académica.
+   */
+  alCambiarArchivosFormacion?: (archivos: File[]) => void;
   deshabilitado?: boolean;
 }
 
@@ -57,8 +69,40 @@ export function EditorTrayectoriaProfesional({
   certificaciones,
   alCambiarFormacionAcademica,
   alCambiarCertificaciones,
+  alCambiarArchivosCertificacion,
+  alCambiarArchivosFormacion,
   deshabilitado = false,
 }: PropiedadesEditorTrayectoriaProfesional) {
+  const admiteArchivosCertificacion = Boolean(alCambiarArchivosCertificacion);
+  const admiteArchivosFormacion = Boolean(alCambiarArchivosFormacion);
+
+  const [archivosCertificacion, setArchivosCertificacion] = useState<(File | null)[]>([]);
+  const [archivosFormacion, setArchivosFormacion] = useState<(File | null)[]>([]);
+
+  const notificarArchivosCertificacion = (proximo: (File | null)[]) => {
+    alCambiarArchivosCertificacion?.(proximo.filter((archivo): archivo is File => archivo !== null));
+  };
+
+  const notificarArchivosFormacion = (proximo: (File | null)[]) => {
+    alCambiarArchivosFormacion?.(proximo.filter((archivo): archivo is File => archivo !== null));
+  };
+
+  const actualizarArchivoCertificacion = (indice: number, archivo: File | null) => {
+    const proximo = [...archivosCertificacion];
+    while (proximo.length <= indice) proximo.push(null);
+    proximo[indice] = archivo;
+    setArchivosCertificacion(proximo);
+    notificarArchivosCertificacion(proximo);
+  };
+
+  const actualizarArchivoFormacion = (indice: number, archivo: File | null) => {
+    const proximo = [...archivosFormacion];
+    while (proximo.length <= indice) proximo.push(null);
+    proximo[indice] = archivo;
+    setArchivosFormacion(proximo);
+    notificarArchivosFormacion(proximo);
+  };
+
   const actualizarFormacion = (
     indice: number,
     cambios: Partial<FormacionAcademicaDto>,
@@ -80,6 +124,22 @@ export function EditorTrayectoriaProfesional({
     );
   };
 
+  const eliminarFormacion = (indice: number) => {
+    alCambiarFormacionAcademica(
+      formacionAcademica.filter((_, itemIndice) => itemIndice !== indice),
+    );
+    const proximoArchivos = archivosFormacion.filter(
+      (_, itemIndice) => itemIndice !== indice,
+    );
+    setArchivosFormacion(proximoArchivos);
+    notificarArchivosFormacion(proximoArchivos);
+  };
+
+  const agregarFormacion = () => {
+    alCambiarFormacionAcademica([...formacionAcademica, crearFormacionVacia()]);
+    setArchivosFormacion((prev) => [...prev, null]);
+  };
+
   const actualizarCertificacion = (
     indice: number,
     cambios: Partial<CertificacionDto>,
@@ -89,6 +149,22 @@ export function EditorTrayectoriaProfesional({
         itemIndice === indice ? { ...item, ...cambios } : item,
       ),
     );
+  };
+
+  const eliminarCertificacion = (indice: number) => {
+    alCambiarCertificaciones(
+      certificaciones.filter((_, itemIndice) => itemIndice !== indice),
+    );
+    const proximoArchivos = archivosCertificacion.filter(
+      (_, itemIndice) => itemIndice !== indice,
+    );
+    setArchivosCertificacion(proximoArchivos);
+    notificarArchivosCertificacion(proximoArchivos);
+  };
+
+  const agregarCertificacion = () => {
+    alCambiarCertificaciones([...certificaciones, crearCertificacionVacia()]);
+    setArchivosCertificacion((prev) => [...prev, null]);
   };
 
   return (
@@ -108,9 +184,7 @@ export function EditorTrayectoriaProfesional({
             variant="outline"
             size="sm"
             disabled={deshabilitado}
-            onClick={() =>
-              alCambiarFormacionAcademica([...formacionAcademica, crearFormacionVacia()])
-            }
+            onClick={agregarFormacion}
           >
             <Plus className="mr-2 h-4 w-4" />
             Agregar formación
@@ -136,11 +210,7 @@ export function EditorTrayectoriaProfesional({
                     variant="ghost"
                     size="icon"
                     disabled={deshabilitado}
-                    onClick={() =>
-                      alCambiarFormacionAcademica(
-                        formacionAcademica.filter((_, itemIndice) => itemIndice !== indice),
-                      )
-                    }
+                    onClick={() => eliminarFormacion(indice)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -224,6 +294,17 @@ export function EditorTrayectoriaProfesional({
                     En curso
                   </label>
                 </div>
+
+                {admiteArchivosFormacion && (
+                  <div className="mt-2 border-t pt-3">
+                    <ZonaAdjuntosDocumento
+                      archivo={archivosFormacion[indice] ?? null}
+                      alCambiar={(archivo) => actualizarArchivoFormacion(indice, archivo)}
+                      etiqueta="Adjuntar título (PDF o imagen, opcional)"
+                      deshabilitado={deshabilitado}
+                    />
+                  </div>
+                )}
               </div>
             ))
           )}
@@ -245,9 +326,7 @@ export function EditorTrayectoriaProfesional({
             variant="outline"
             size="sm"
             disabled={deshabilitado}
-            onClick={() =>
-              alCambiarCertificaciones([...certificaciones, crearCertificacionVacia()])
-            }
+            onClick={agregarCertificacion}
           >
             <Plus className="mr-2 h-4 w-4" />
             Agregar certificación
@@ -273,11 +352,7 @@ export function EditorTrayectoriaProfesional({
                     variant="ghost"
                     size="icon"
                     disabled={deshabilitado}
-                    onClick={() =>
-                      alCambiarCertificaciones(
-                        certificaciones.filter((_, itemIndice) => itemIndice !== indice),
-                      )
-                    }
+                    onClick={() => eliminarCertificacion(indice)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -351,6 +426,17 @@ export function EditorTrayectoriaProfesional({
                     />
                   </div>
                 </div>
+
+                {admiteArchivosCertificacion && (
+                  <div className="mt-2 border-t pt-3">
+                    <ZonaAdjuntosDocumento
+                      archivo={archivosCertificacion[indice] ?? null}
+                      alCambiar={(archivo) => actualizarArchivoCertificacion(indice, archivo)}
+                      etiqueta="Adjuntar certificado (PDF o imagen, opcional)"
+                      deshabilitado={deshabilitado}
+                    />
+                  </div>
+                )}
               </div>
             ))
           )}
