@@ -1,5 +1,5 @@
 import { Injectable, Inject, Optional } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { QueryFailedError, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CertificacionOrmEntity } from '../entities/certificacion.entity';
 import { CertificacionEntity } from 'src/domain/entities/Certificacion/certificacion.entity';
@@ -11,7 +11,14 @@ import { FormacionAcademicaOrmEntity } from '../entities/formacion-academica.ent
 import { NutricionistaOrmEntity } from '../entities/persona.entity';
 import { NutricionistaEntity } from 'src/domain/entities/Persona/Nutricionista/nutricionista.entity';
 import { NutricionistaRepository } from 'src/domain/entities/Persona/Nutricionista/nutricionista.repository';
+import { ConflictError } from 'src/domain/exceptions/custom-exceptions';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
+
+function esErrorDuplicateEntry(error: unknown): boolean {
+  if (!(error instanceof QueryFailedError)) return false;
+  const codigo = (error as { code?: string }).code;
+  return codigo === 'ER_DUP_ENTRY';
+}
 
 function obtenerGimnasioIdActual(
   tenantContext: TenantContextService | undefined,
@@ -45,23 +52,33 @@ export class NutricionistaRepositoryImplementation implements NutricionistaRepos
 
   async save(entity: NutricionistaEntity): Promise<NutricionistaEntity> {
     const gimnasioId = entity.gimnasioId ?? this.gimnasioIdActual;
-    const idNutricionistaCreado =
-      await this.nutricionistaRepository.manager.transaction(async (tx) => {
-        const nutricionistaCreado = await tx.save(
-          NutricionistaOrmEntity,
-          this.toOrmEntity(entity, gimnasioId),
-        );
-        if (nutricionistaCreado.idPersona == null) {
-          throw new Error('Nutricionista creado sin idPersona');
-        }
+    let idNutricionistaCreado: number;
+    try {
+      idNutricionistaCreado =
+        await this.nutricionistaRepository.manager.transaction(async (tx) => {
+          const nutricionistaCreado = await tx.save(
+            NutricionistaOrmEntity,
+            this.toOrmEntity(entity, gimnasioId),
+          );
+          if (nutricionistaCreado.idPersona == null) {
+            throw new Error('Nutricionista creado sin idPersona');
+          }
 
-        await this.reemplazarTrayectoriaProfesional(
-          tx,
-          nutricionistaCreado.idPersona,
-          entity,
+          await this.reemplazarTrayectoriaProfesional(
+            tx,
+            nutricionistaCreado.idPersona,
+            entity,
+          );
+          return nutricionistaCreado.idPersona;
+        });
+    } catch (error) {
+      if (esErrorDuplicateEntry(error)) {
+        throw new ConflictError(
+          'Ya existe un profesional con esa matrícula, DNI o email.',
         );
-        return nutricionistaCreado.idPersona;
-      });
+      }
+      throw error;
+    }
 
     const nutricionistaCreado = await this.findById(idNutricionistaCreado);
     if (!nutricionistaCreado) {
@@ -86,34 +103,43 @@ export class NutricionistaRepositoryImplementation implements NutricionistaRepos
       throw new Error(`Nutricionista with id ${id} not found in this gym`);
     }
 
-    await this.nutricionistaRepository.manager.transaction(async (tx) => {
-      await tx.update(
-        NutricionistaOrmEntity,
-        { idPersona: id, gimnasioId },
-        {
-          nombre: entity.nombre,
-          apellido: entity.apellido,
-          fechaNacimiento: entity.fechaNacimiento,
-          genero: entity.genero,
-          ciudad: entity.ciudad,
-          provincia: entity.provincia,
-          telefono: entity.telefono,
-          direccion: entity.direccion,
-          dni: entity.dni,
-          fotoPerfilKey: entity.fotoPerfilKey,
-          matricula: entity.matricula,
-          tarifaSesion: entity.tarifaSesion,
-          aniosExperiencia: entity.aniosExperiencia,
-          duracionTurnoMin: entity.duracionTurnoMin,
-          matriculaDocumentoKey: entity.matriculaDocumentoKey,
-          fechaBaja: entity.fechaBaja,
-          presentacion: entity.presentacion,
-          preferenciasIa: entity.preferenciasIa,
-        },
-      );
+    try {
+      await this.nutricionistaRepository.manager.transaction(async (tx) => {
+        await tx.update(
+          NutricionistaOrmEntity,
+          { idPersona: id, gimnasioId },
+          {
+            nombre: entity.nombre,
+            apellido: entity.apellido,
+            fechaNacimiento: entity.fechaNacimiento,
+            genero: entity.genero,
+            ciudad: entity.ciudad,
+            provincia: entity.provincia,
+            telefono: entity.telefono,
+            direccion: entity.direccion,
+            dni: entity.dni,
+            fotoPerfilKey: entity.fotoPerfilKey,
+            matricula: entity.matricula,
+            tarifaSesion: entity.tarifaSesion,
+            aniosExperiencia: entity.aniosExperiencia,
+            duracionTurnoMin: entity.duracionTurnoMin,
+            matriculaDocumentoKey: entity.matriculaDocumentoKey,
+            fechaBaja: entity.fechaBaja,
+            presentacion: entity.presentacion,
+            preferenciasIa: entity.preferenciasIa,
+          },
+        );
 
-      await this.reemplazarTrayectoriaProfesional(tx, id, entity);
-    });
+        await this.reemplazarTrayectoriaProfesional(tx, id, entity);
+      });
+    } catch (error) {
+      if (esErrorDuplicateEntry(error)) {
+        throw new ConflictError(
+          'Ya existe un profesional con esa matrícula o DNI.',
+        );
+      }
+      throw error;
+    }
 
     const updated = await this.findById(id);
     if (!updated) {
@@ -230,9 +256,8 @@ export class NutricionistaRepositoryImplementation implements NutricionistaRepos
   }
 
   async findByDni(dni: string): Promise<NutricionistaEntity | null> {
-    const gimnasioId = this.gimnasioIdActual;
     const nutricionista = await this.nutricionistaRepository.findOne({
-      where: { dni, gimnasioId },
+      where: { dni },
       relations: {
         usuario: true,
         agenda: true,
@@ -249,9 +274,8 @@ export class NutricionistaRepositoryImplementation implements NutricionistaRepos
   async findByMatricula(
     matricula: string,
   ): Promise<NutricionistaEntity | null> {
-    const gimnasioId = this.gimnasioIdActual;
     const nutricionista = await this.nutricionistaRepository.findOne({
-      where: { matricula, gimnasioId },
+      where: { matricula },
       relations: {
         usuario: true,
         agenda: true,
