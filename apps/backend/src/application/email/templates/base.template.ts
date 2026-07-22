@@ -45,15 +45,16 @@ export function escaparHtml(valor: string | number | null | undefined): string {
   );
 }
 
+const LOGO_EMAIL_POR_DEFECTO =
+  'https://cdn.jsdelivr.net/gh/AgustinAlbonico/nutrifit@main/apps/frontend/public/logo.png';
+
 /**
- * Construye la URL pública del logo del frontend.
- * Requiere FRONTEND_URL accesible desde internet (los clientes de mail
- * descargan la imagen; localhost no sirve en prod).
+ * URL publica del logo para los mails.
+ * Prioridad: LOGO_EMAIL_URL (env) -> CDN de jsDelivr (sirve el logo del repo publico).
+ * El CDN es estable y con cache global; no depende de que el frontend este deployado.
  */
 export function construirUrlLogo(): string {
-  const baseUrl = process.env.FRONTEND_URL?.trim() || 'http://localhost:5173';
-  const normalizedBaseUrl = baseUrl.replace(/\/+$/, '');
-  return `${normalizedBaseUrl}/logo.png`;
+  return process.env.LOGO_EMAIL_URL?.trim() || LOGO_EMAIL_POR_DEFECTO;
 }
 
 export function baseTemplate(data: BaseTemplateData): string {
