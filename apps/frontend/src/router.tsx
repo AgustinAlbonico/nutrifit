@@ -194,11 +194,12 @@ const recepcionistasRoute = createRoute({
   component: Recepcionistas,
 });
 
-// Permisos route
+// Permisos route (solo SUPERADMIN)
 const permisosRoute = createRoute({
   getParentRoute: () => authLayoutRoute,
   path: '/permisos',
   component: Permisos,
+  beforeLoad: requireSuperadmin,
 });
 
 // Agenda route

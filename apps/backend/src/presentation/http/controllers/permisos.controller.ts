@@ -34,21 +34,21 @@ export class PermisosController {
   ) {}
 
   @Get('actions')
-  @Rol(RolEnum.ADMIN, RolEnum.SUPERADMIN)
+  @Rol(RolEnum.SUPERADMIN)
   @Actions('auth.permissions.read')
   async listarAcciones() {
     return this.permisosService.listarAcciones();
   }
 
   @Post('actions')
-  @Rol(RolEnum.ADMIN, RolEnum.SUPERADMIN)
+  @Rol(RolEnum.SUPERADMIN)
   @Actions('auth.permissions.write')
   async crearAccion(@Body() dto: CreateAccionDto) {
     return this.permisosService.crearAccion(dto);
   }
 
   @Put('actions/:id')
-  @Rol(RolEnum.ADMIN, RolEnum.SUPERADMIN)
+  @Rol(RolEnum.SUPERADMIN)
   @Actions('auth.permissions.write')
   async editarAccion(
     @Param('id', ParseIntPipe) actionId: number,
@@ -58,21 +58,21 @@ export class PermisosController {
   }
 
   @Get('groups')
-  @Rol(RolEnum.ADMIN, RolEnum.SUPERADMIN)
+  @Rol(RolEnum.SUPERADMIN)
   @Actions('auth.permissions.read')
   async listarGrupos() {
     return this.permisosService.listarGrupos();
   }
 
   @Post('groups')
-  @Rol(RolEnum.ADMIN, RolEnum.SUPERADMIN)
+  @Rol(RolEnum.SUPERADMIN)
   @Actions('auth.permissions.write')
   async crearGrupo(@Body() dto: CreateGrupoPermisoDto) {
     return this.permisosService.crearGrupo(dto);
   }
 
   @Put('groups/:id')
-  @Rol(RolEnum.ADMIN, RolEnum.SUPERADMIN)
+  @Rol(RolEnum.SUPERADMIN)
   @Actions('auth.permissions.write')
   async editarGrupo(
     @Param('id', ParseIntPipe) groupId: number,
@@ -82,7 +82,7 @@ export class PermisosController {
   }
 
   @Put('groups/:id/actions')
-  @Rol(RolEnum.ADMIN, RolEnum.SUPERADMIN)
+  @Rol(RolEnum.SUPERADMIN)
   @Actions('auth.permissions.assign')
   async asignarAccionesAGrupo(
     @Param('id', ParseIntPipe) groupId: number,
@@ -92,7 +92,7 @@ export class PermisosController {
   }
 
   @Put('users/:id/groups')
-  @Rol(RolEnum.ADMIN, RolEnum.SUPERADMIN)
+  @Rol(RolEnum.SUPERADMIN)
   @Actions('auth.permissions.assign')
   async asignarGruposAUsuario(
     @Param('id', ParseIntPipe) userId: number,
@@ -102,7 +102,7 @@ export class PermisosController {
   }
 
   @Put('users/:id/actions')
-  @Rol(RolEnum.ADMIN, RolEnum.SUPERADMIN)
+  @Rol(RolEnum.SUPERADMIN)
   @Actions('auth.permissions.assign')
   async asignarAccionesAUsuario(
     @Param('id', ParseIntPipe) userId: number,
@@ -112,14 +112,14 @@ export class PermisosController {
   }
 
   @Get('users/:id/actions')
-  @Rol(RolEnum.ADMIN, RolEnum.SUPERADMIN)
+  @Rol(RolEnum.SUPERADMIN)
   @Actions('auth.permissions.read')
   async accionesDeUsuario(@Param('id', ParseIntPipe) userId: number) {
     return this.permisosService.getAccionesEfectivasUsuario(userId);
   }
 
   @Post('users/:id/reset-password')
-  @Rol(RolEnum.ADMIN, RolEnum.SUPERADMIN)
+  @Rol(RolEnum.SUPERADMIN)
   @Actions('auth.permissions.write')
   async resetearContrasena(
     @Param('id', ParseIntPipe) targetUserId: number,
@@ -132,7 +132,7 @@ export class PermisosController {
   }
 
   @Get('users')
-  @Rol(RolEnum.ADMIN, RolEnum.SUPERADMIN)
+  @Rol(RolEnum.SUPERADMIN)
   @Actions('auth.permissions.read')
   async buscarUsuarios(
     @Query('page') pageRaw?: string,

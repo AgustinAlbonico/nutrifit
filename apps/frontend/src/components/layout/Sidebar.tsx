@@ -94,7 +94,7 @@ export function Sidebar() {
       to: '/permisos',
       label: 'Permisos & Roles',
       icon: UserCheck,
-      roles: ['ADMIN', 'SUPERADMIN'],
+      roles: ['SUPERADMIN'],
     },
     {
       to: '/agenda',
