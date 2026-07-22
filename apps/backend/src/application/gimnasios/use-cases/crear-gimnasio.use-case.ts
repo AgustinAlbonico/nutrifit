@@ -5,7 +5,10 @@ import {
   GIMNASIO_REPOSITORY,
   CrearGimnasioDto,
 } from 'src/domain/entities/Gimnasio/gimnasio.repository';
-import { GimnasioEntity } from 'src/domain/entities/Gimnasio/gimnasio.entity';
+import {
+  EstadoGimnasio,
+  GimnasioEntity,
+} from 'src/domain/entities/Gimnasio/gimnasio.entity';
 import { ConflictError } from 'src/domain/exceptions/custom-exceptions';
 
 @Injectable()
@@ -31,6 +34,7 @@ export class CrearGimnasioUseCase implements BaseUseCase {
       direccion: dto.direccion,
       telefono: dto.telefono ?? null,
       email: dto.email ?? null,
+      estado: EstadoGimnasio.ACTIVO,
       fechaAlta: new Date(),
       fechaBaja: null,
     });

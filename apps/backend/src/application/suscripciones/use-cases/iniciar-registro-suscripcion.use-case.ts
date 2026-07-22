@@ -27,7 +27,10 @@ import { UsuarioGrupoPermisoOrmEntity } from 'src/infrastructure/persistence/typ
 import { RecepcionistaOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/persona.entity';
 import { RecepcionistaEntity } from 'src/domain/entities/Persona/Recepcionista/recepcionista.entity';
 import { Genero } from 'src/domain/entities/Persona/Genero';
-import { GimnasioEntity } from 'src/domain/entities/Gimnasio/gimnasio.entity';
+import {
+  EstadoGimnasio,
+  GimnasioEntity,
+} from 'src/domain/entities/Gimnasio/gimnasio.entity';
 import { SuscripcionGimnasioOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/suscripcion-gimnasio.entity';
 import { ConflictError } from 'src/domain/exceptions/custom-exceptions';
 
@@ -93,6 +96,7 @@ export class IniciarRegistroSuscripcionUseCase implements BaseUseCase {
       telefono: input.gimnasio.telefono ?? null,
       email: null,
       ciudad: input.gimnasio.ciudad ?? null,
+      estado: EstadoGimnasio.PENDIENTE_PAGO,
       fechaAlta: new Date(),
       fechaBaja: null,
     });
@@ -153,7 +157,7 @@ export class IniciarRegistroSuscripcionUseCase implements BaseUseCase {
     if (grupoAdminOrm && usuarioCreado.idUsuario) {
       await this.usuarioGrupoRepo.save(
         this.usuarioGrupoRepo.create({
-          usuario: { idUsuario: usuarioCreado.idUsuario } as any,
+          usuario: { idUsuario: usuarioCreado.idUsuario },
           grupoPermiso: grupoAdminOrm,
           gimnasioId: null,
         }),

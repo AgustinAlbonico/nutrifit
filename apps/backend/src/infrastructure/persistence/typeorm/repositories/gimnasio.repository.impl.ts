@@ -3,18 +3,11 @@ import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { GimnasioOrmEntity } from '../entities/gimnasio.entity';
 import {
+  EstadoGimnasio,
   GimnasioEntity,
-  GimnasioEntityData,
 } from 'src/domain/entities/Gimnasio/gimnasio.entity';
-import {
-  GimnasioRepository,
-  CrearGimnasioDto,
-  ActualizarGimnasioDto,
-} from 'src/domain/entities/Gimnasio/gimnasio.repository';
-import {
-  ConflictError,
-  NotFoundError,
-} from 'src/domain/exceptions/custom-exceptions';
+import { GimnasioRepository } from 'src/domain/entities/Gimnasio/gimnasio.repository';
+import { NotFoundError } from 'src/domain/exceptions/custom-exceptions';
 
 @Injectable()
 export class GimnasioRepositoryImplementation implements GimnasioRepository {
@@ -31,10 +24,11 @@ export class GimnasioRepositoryImplementation implements GimnasioRepository {
       telefono: orm.telefono ?? null,
       email: null, // GimnasioOrmEntity no tiene email
       ciudad: orm.ciudad || null,
+      estado: orm.estado ?? EstadoGimnasio.ACTIVO,
       fechaAlta: orm.plazoCancelacionHoras // placeholder - ORM no tiene fechaAlta
         ? new Date()
         : new Date(),
-      fechaBaja: null, // ORM no tiene fechaBaja - soft delete vía columna activa
+      fechaBaja: orm.fechaBaja,
     });
   }
 
@@ -66,6 +60,7 @@ export class GimnasioRepositoryImplementation implements GimnasioRepository {
     orm.antelacionMinimaReservaHoras = 2;
     orm.umbralAusenteMinutos = 15;
     orm.emailHabilitado = false;
+    orm.estado = entity.estado;
 
     const saved = await this.ormRepository.save(orm);
     return this.toDomainEntity(saved);
@@ -91,6 +86,9 @@ export class GimnasioRepositoryImplementation implements GimnasioRepository {
     if (partial.telefono !== undefined) {
       existing.telefono = partial.telefono ?? '';
     }
+    if (partial.estado !== undefined) {
+      existing.estado = partial.estado;
+    }
 
     const updated = await this.ormRepository.save(existing);
     return this.toDomainEntity(updated);
@@ -103,9 +101,8 @@ export class GimnasioRepositoryImplementation implements GimnasioRepository {
     if (!existing) {
       throw new NotFoundError('Gimnasio', String(id));
     }
-    // Soft delete: marcar emailHabilitado = false como indicador de baja
-    // La entidad ORM no tiene fechaBaja, usamos un flag
-    existing.emailHabilitado = false;
+    existing.estado = EstadoGimnasio.DADO_DE_BAJA;
+    existing.fechaBaja = new Date();
     await this.ormRepository.save(existing);
   }
 
@@ -123,7 +120,7 @@ export class GimnasioRepositoryImplementation implements GimnasioRepository {
 
   async findActivos(): Promise<GimnasioEntity[]> {
     const gimnasios = await this.ormRepository.find({
-      where: { emailHabilitado: true },
+      where: { estado: EstadoGimnasio.ACTIVO },
       order: { nombre: 'ASC' },
     });
     return gimnasios.map((g) => this.toDomainEntity(g));

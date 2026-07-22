@@ -13,6 +13,11 @@ import {
   APP_LOGGER_SERVICE,
   IAppLoggerService,
 } from 'src/domain/services/logger.service';
+import { EstadoGimnasio } from 'src/domain/entities/Gimnasio/gimnasio.entity';
+import {
+  GIMNASIO_REPOSITORY,
+  GimnasioRepository,
+} from 'src/domain/entities/Gimnasio/gimnasio.repository';
 
 export interface ProcesarPagoInput {
   uuid: string;
@@ -32,6 +37,8 @@ export class ProcesarPagoSimuladoUseCase implements BaseUseCase {
     private readonly suscripcionRepo: Repository<SuscripcionGimnasioOrmEntity>,
     @InjectRepository(PagoSimuladoOrmEntity)
     private readonly pagoRepo: Repository<PagoSimuladoOrmEntity>,
+    @Inject(GIMNASIO_REPOSITORY)
+    private readonly gimnasioRepository: GimnasioRepository,
     @Inject(APP_LOGGER_SERVICE)
     private readonly logger: IAppLoggerService,
   ) {}
@@ -67,6 +74,9 @@ export class ProcesarPagoSimuladoUseCase implements BaseUseCase {
       suscripcion.fechaInicio = ahora;
       suscripcion.fechaProximoPago = proximoPago;
       await this.suscripcionRepo.save(suscripcion);
+      await this.gimnasioRepository.update(suscripcion.gimnasioId, {
+        estado: EstadoGimnasio.ACTIVO,
+      });
       this.logger.log(
         `Suscripción ${suscripcion.id} activada (gimnasio ${suscripcion.gimnasioId})`,
       );
@@ -78,6 +88,9 @@ export class ProcesarPagoSimuladoUseCase implements BaseUseCase {
     } else {
       suscripcion.estado = 'cancelada';
       await this.suscripcionRepo.save(suscripcion);
+      await this.gimnasioRepository.update(suscripcion.gimnasioId, {
+        estado: EstadoGimnasio.SUSPENDIDO,
+      });
       this.logger.log(
         `Suscripción ${suscripcion.id} cancelada por rechazo (gimnasio ${suscripcion.gimnasioId})`,
       );

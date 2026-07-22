@@ -1,6 +1,7 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { TurnoOrmEntity } from './turno.entity';
 import { AuditableOrmEntity } from '../common/auditable.orm-entity';
+import { EstadoGimnasio } from 'src/domain/entities/Gimnasio/gimnasio.entity';
 
 @Entity('gimnasio')
 export class GimnasioOrmEntity extends AuditableOrmEntity {
@@ -66,6 +67,14 @@ export class GimnasioOrmEntity extends AuditableOrmEntity {
 
   @Column({ name: 'email_habilitado', type: 'boolean', default: false })
   emailHabilitado: boolean;
+
+  @Column({
+    name: 'estado',
+    type: 'enum',
+    enum: EstadoGimnasio,
+    default: EstadoGimnasio.ACTIVO,
+  })
+  estado?: EstadoGimnasio;
 
   @OneToMany(() => TurnoOrmEntity, (turno) => turno.gimnasio)
   turnos: TurnoOrmEntity[];
