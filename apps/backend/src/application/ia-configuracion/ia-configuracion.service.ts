@@ -180,6 +180,10 @@ export class IaConfiguracionService implements OnModuleInit {
     const apiKey = dto.apiKey?.trim() || this.obtenerApiKeyDescifrada(provider);
     const model =
       this.normalizarTextoNullable(dto.model) ?? configuracion?.model;
+    const baseUrl =
+      this.normalizarTextoNullable(dto.baseUrl) ??
+      configuracion?.baseUrl ??
+      this.obtenerBaseUrlDefault(provider);
 
     if (!apiKey) {
       return Promise.resolve({
@@ -202,22 +206,21 @@ export class IaConfiguracionService implements OnModuleInit {
       });
     }
 
-    return this.probarConexionHttp(provider, apiKey);
+    if (!baseUrl) {
+      return Promise.resolve({
+        ok: false,
+        mensaje: `No se pudo determinar la base URL de ${provider}.`,
+      });
+    }
+
+    return this.probarConexionHttp(provider, apiKey, baseUrl);
   }
 
   private async probarConexionHttp(
     provider: ProveedorIa,
     apiKey: string,
+    baseUrl: string,
   ): Promise<{ ok: boolean; mensaje: string; latencyMs?: number }> {
-    const baseUrl =
-      this.cache.get(provider)?.baseUrl ?? this.obtenerBaseUrlDefault(provider);
-    if (!baseUrl) {
-      return {
-        ok: false,
-        mensaje: `No se pudo determinar la base URL de ${provider}.`,
-      };
-    }
-
     const urlTest =
       provider === 'gemini'
         ? `${baseUrl.replace(/\/$/, '')}/models?key=${encodeURIComponent(apiKey)}`
@@ -242,6 +245,39 @@ export class IaConfiguracionService implements OnModuleInit {
       const latencyMs = Date.now() - inicio;
 
       if (respuesta.ok) {
+        let data: unknown;
+
+        try {
+          data = await respuesta.json();
+        } catch {
+          return {
+            ok: false,
+            mensaje: `La base URL de ${provider} respondió HTTP ${respuesta.status}, pero no devolvió JSON válido.`,
+            latencyMs,
+          };
+        }
+
+        if (!data || typeof data !== 'object' || Array.isArray(data)) {
+          return {
+            ok: false,
+            mensaje: `La base URL de ${provider} respondió HTTP ${respuesta.status}, pero no devolvió un catálogo de modelos válido.`,
+            latencyMs,
+          };
+        }
+
+        const modelos = this.normalizarModelos(
+          provider,
+          data as Record<string, unknown>,
+        );
+
+        if (modelos.length === 0) {
+          return {
+            ok: false,
+            mensaje: `La base URL de ${provider} respondió HTTP ${respuesta.status}, pero no devolvió modelos.`,
+            latencyMs,
+          };
+        }
+
         return {
           ok: true,
           mensaje: `Conexion OK con ${provider} (HTTP ${respuesta.status}, ${latencyMs}ms)`,
