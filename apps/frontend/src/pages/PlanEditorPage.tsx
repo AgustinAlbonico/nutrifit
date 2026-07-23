@@ -651,6 +651,15 @@ export function PlanEditorPage() {
     }
     setGuardandoBorrador(true);
     try {
+      if (haSidoModificadoRef.current) {
+        await apiRequest(
+          `/planes-alimentacion/${planIdActual}/persistir-manual`,
+          {
+            method: 'POST',
+            body: estructuraToPayload(estructura),
+          },
+        );
+      }
       const res = await apiRequest<RespuestaPlanSemanalV2FE | ApiResponse<RespuestaPlanSemanalV2FE>>(
         `/planes-alimentacion/${planIdActual}/guardar-version`,
         {

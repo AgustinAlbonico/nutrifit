@@ -291,6 +291,11 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
       solicitud.alimentosEvitados,
     );
 
+    const objetivoMacros: ObjetivoNutricional = this.calcularObjetivoMacros(
+      fichaClinica,
+      solicitud,
+    );
+
     // 5) Contexto base para prompts diarios
     const contextoPromptBase = {
       fichaClinica: {
@@ -307,18 +312,13 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
       comidasPorDia,
       alternativasPorComida,
       fechaInicio,
-      caloriasLimite: solicitud.caloriasLimite,
-      proteinasEstimadas: solicitud.proteinasEstimadas,
-      carbohidratosEstimados: solicitud.carbohidratosEstimados,
-      grasasEstimados: solicitud.grasasEstimados,
+      caloriasLimite: objetivoMacros.caloriasDiarias,
+      proteinasEstimadas: objetivoMacros.proteinasDiarias,
+      carbohidratosEstimados: objetivoMacros.carbohidratosDiarios,
+      grasasEstimados: objetivoMacros.grasasDiarias,
       alimentosPreferidos: alimentosPreferidosCurados,
       alimentosEvitados: alimentosEvitadosCurados,
     };
-
-    const objetivoMacros: ObjetivoNutricional = this.calcularObjetivoMacros(
-      fichaClinica,
-      solicitud,
-    );
 
     // 6) Loop de generación con reintentos
     let planJson: PlanAlimentacionDatosJson | null = null;
