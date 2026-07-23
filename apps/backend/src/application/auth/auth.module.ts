@@ -23,6 +23,7 @@ import { UsuarioRepositoryImplementation } from 'src/infrastructure/persistence/
 import { EnvironmentConfigModule } from 'src/infrastructure/config/environment-config/environment-config.module';
 import { EnvironmentConfigService } from 'src/infrastructure/config/environment-config/environment-config.service';
 import { EmailModule } from 'src/application/email/email.module';
+import { RepositoriesModule } from 'src/infrastructure/persistence/typeorm/repositories/repositories.module';
 import {
   LOGIN_AUDIT_SERVICE,
   LoginAuditService,
@@ -43,6 +44,7 @@ import {
     }),
     AppLoggerModule,
     EmailModule,
+    RepositoriesModule,
   ],
   providers: [
     {
