@@ -20,7 +20,7 @@ import { test, expect } from '@playwright/test';
 
 import { USUARIOS_PRUEBA } from '../helpers/users';
 import { login } from '../helpers/auth.helper';
-import { apiGet, getAuthToken } from '../helpers/api.helper';
+import { apiGet, getAuthToken, unwrapApiResponse } from '../helpers/api.helper';
 
 interface MisTurnosResponse {
   success: boolean;
@@ -52,8 +52,10 @@ test.describe('E2E Socio: Cancelar turno', () => {
       test.skip(true, 'Backend no disponible');
       return;
     }
-    const body = (await resp.json()) as MisTurnosResponse;
-    const turnos = body.data?.data ?? [];
+    const body = unwrapApiResponse<MisTurnosResponse['data']>(
+      (await resp.json()) as MisTurnosResponse,
+    );
+    const turnos = body.data ?? [];
 
     const estadosNoCancelables = ['EN_CURSO', 'REALIZADO', 'AUSENTE', 'CANCELADO', 'PRESENTE'];
     const hayTurnoNoCancelable = turnos.some((t) =>
@@ -110,9 +112,10 @@ test.describe('E2E Socio: Cancelar turno', () => {
     );
     expect(resp.ok()).toBeTruthy();
 
-    const body = (await resp.json()) as MisTurnosResponse;
-    expect(body.success).toBe(true);
-    expect(Array.isArray(body.data?.data)).toBeTruthy();
+    const rawBody = (await resp.json()) as MisTurnosResponse;
+    const body = unwrapApiResponse<MisTurnosResponse['data']>(rawBody);
+    expect(rawBody.success).toBe(true);
+    expect(Array.isArray(body.data)).toBeTruthy();
   });
 
   test('A2 intento de cancelar un turno en curso vía API devuelve error controlado', async ({
@@ -134,8 +137,10 @@ test.describe('E2E Socio: Cancelar turno', () => {
       return;
     }
 
-    const body = (await resp.json()) as MisTurnosResponse;
-    const turnoEnCurso = body.data?.data?.[0];
+    const body = unwrapApiResponse<MisTurnosResponse['data']>(
+      (await resp.json()) as MisTurnosResponse,
+    );
+    const turnoEnCurso = body.data?.[0];
 
     if (!turnoEnCurso) {
       test.skip(true, 'Socio sin turnos EN_CURSO');

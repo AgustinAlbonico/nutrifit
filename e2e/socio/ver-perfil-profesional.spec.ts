@@ -18,7 +18,7 @@ import { test, expect } from '@playwright/test';
 
 import { USUARIOS_PRUEBA } from '../helpers/users';
 import { login } from '../helpers/auth.helper';
-import { apiGet, getAuthToken } from '../helpers/api.helper';
+import { apiGet, getAuthToken, unwrapApiResponse } from '../helpers/api.helper';
 
 interface PerfilProfesional {
   idPersona: number;
@@ -46,8 +46,10 @@ async function obtenerPrimerProfesional(
     token ?? undefined,
   );
   if (!resp.ok()) return null;
-  const body = (await resp.json()) as CatalogoResponse;
-  return body.data?.[0]?.idPersona ?? null;
+  const body = unwrapApiResponse<CatalogoResponse['data']>(
+    (await resp.json()) as CatalogoResponse,
+  );
+  return body?.[0]?.idPersona ?? null;
 }
 
 test.describe('E2E Socio: Ver perfil del profesional', () => {
@@ -113,8 +115,8 @@ test.describe('E2E Socio: Ver perfil del profesional', () => {
     );
     expect(resp.ok()).toBeTruthy();
 
-    const body = await resp.json();
-    const data = (body?.data ?? body) as PerfilProfesional;
+    const body = unwrapApiResponse(await resp.json()) as PerfilProfesional;
+    const data = body;
     expect(data.idPersona).toBe(idProfesional);
     expect(typeof data.nombre).toBe('string');
     expect(typeof data.especialidad).toBe('string');

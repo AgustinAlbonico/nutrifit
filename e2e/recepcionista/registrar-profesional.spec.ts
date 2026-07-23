@@ -10,7 +10,7 @@
 import { test, expect } from '@playwright/test';
 import { USUARIOS_PRUEBA } from '../helpers/users';
 import { login } from '../helpers/auth.helper';
-import { apiPost, apiGet, getAuthToken } from '../helpers/api.helper';
+import { apiPost, apiGet, getAuthToken, unwrapApiResponse } from '../helpers/api.helper';
 
 const SELLO_UNICO = Date.now().toString().slice(-7);
 
@@ -60,8 +60,8 @@ test.describe('E2E Recepcionista: registrar profesional (CUD02)', () => {
 
     // Verificar respuesta exitosa (201) — el backend acepta body JSON sin foto
     expect([200, 201]).toContain(response.status());
-    const body = await response.json();
-    const nutri = body?.data ?? body;
+    const body = unwrapApiResponse(await response.json());
+    const nutri = body;
     expect(nutri.idPersona).toBeGreaterThan(0);
     expect(nutri.email).toContain('@');
   });
@@ -193,8 +193,8 @@ test.describe('E2E Recepcionista: registrar profesional (CUD02)', () => {
       test.skip(true, `Creación no devolvió OK (status=${response.status()})`);
     }
 
-    const body = await response.json();
-    const nutri = body?.data ?? body;
+    const body = unwrapApiResponse(await response.json());
+    const nutri = body;
 
     // La contraseña provisional debe estar presente (campo contrasenaProvisional)
     // según CreateNutricionistaUseCase → mapToResponseDto.
@@ -209,8 +209,8 @@ test.describe('E2E Recepcionista: registrar profesional (CUD02)', () => {
       token ?? undefined,
     );
     if (listado.ok()) {
-      const bodyListado = await listado.json();
-      const encontrado = (bodyListado?.data ?? []).find(
+      const bodyListado = unwrapApiResponse(await listado.json());
+      const encontrado = bodyListado.data.find(
         (n: { email: string }) => n.email === payload.email,
       );
       expect(encontrado, 'Profesional recién creado debe aparecer en listado').toBeTruthy();

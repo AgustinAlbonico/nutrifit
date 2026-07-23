@@ -15,7 +15,7 @@ import { test, expect } from '@playwright/test';
 
 import { USUARIOS_PRUEBA } from '../helpers/users';
 import { login } from '../helpers/auth.helper';
-import { apiGet, getAuthToken } from '../helpers/api.helper';
+import { apiGet, getAuthToken, unwrapApiResponse } from '../helpers/api.helper';
 
 interface MisTurnosResponse {
   success: boolean;
@@ -46,8 +46,10 @@ async function obtenerPrimerTurnoConfirmado(
     token ?? undefined,
   );
   if (!resp.ok()) return null;
-  const body = (await resp.json()) as MisTurnosResponse;
-  const t = body.data?.data?.[0];
+  const body = unwrapApiResponse<MisTurnosResponse['data']>(
+    (await resp.json()) as MisTurnosResponse,
+  );
+  const t = body.data?.[0];
   if (!t) return null;
   const idProfesional =
     typeof t.profesionalId === 'number'
@@ -182,10 +184,11 @@ test.describe('E2E Socio: Reprogramar turno', () => {
       test.skip(true, 'Backend no disponible (disponibilidad)');
       return;
     }
-    const body = (await respFechaPasada.json()) as DisponibilidadResponse;
-    expect(body.success).toBe(true);
-    expect(Array.isArray(body.data)).toBeTruthy();
-    expect(body.data.length).toBe(0);
+    const rawBody = (await respFechaPasada.json()) as DisponibilidadResponse;
+    const body = unwrapApiResponse<DisponibilidadResponse['data']>(rawBody);
+    expect(rawBody.success).toBe(true);
+    expect(Array.isArray(body)).toBeTruthy();
+    expect(body.length).toBe(0);
 
     await page.goto('/turnos');
     await page.waitForLoadState('networkidle');

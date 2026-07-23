@@ -12,7 +12,7 @@ import { test, expect, type APIResponse } from '@playwright/test';
 
 import { USUARIOS_PRUEBA } from '../helpers/users';
 import { login } from '../helpers/auth.helper';
-import { apiGet, getAuthToken } from '../helpers/api.helper';
+import { apiGet, getAuthToken, unwrapApiResponse } from '../helpers/api.helper';
 
 interface CatalogoResponse {
   success: boolean;
@@ -83,8 +83,10 @@ test.describe('E2E Socio: Ver lista de profesionales activos', () => {
       return;
     }
 
-    const body = (await respuesta.json()) as CatalogoResponse;
-    const primerItem = body.data?.[0];
+    const body = unwrapApiResponse<CatalogoResponse['data']>(
+      (await respuesta.json()) as CatalogoResponse,
+    );
+    const primerItem = body?.[0];
     if (!primerItem) {
       test.skip(true, 'Backend sin profesionales seed cargados');
       return;
@@ -151,9 +153,10 @@ test.describe('E2E Socio: Ver lista de profesionales activos', () => {
       test.skip(true, 'Backend no disponible');
       return;
     }
-    const body = (await respuesta.json()) as CatalogoResponse;
-    expect(body.success).toBe(true);
-    expect(Array.isArray(body.data)).toBeTruthy();
-    expect(body.meta?.pagination?.total).toBeGreaterThanOrEqual(0);
+    const rawBody = (await respuesta.json()) as CatalogoResponse;
+    const body = unwrapApiResponse<CatalogoResponse['data']>(rawBody);
+    expect(rawBody.success).toBe(true);
+    expect(Array.isArray(body)).toBeTruthy();
+    expect(rawBody.meta?.pagination?.total).toBeGreaterThanOrEqual(0);
   });
 });

@@ -15,7 +15,7 @@ import { test, expect } from '@playwright/test';
 
 import { USUARIOS_PRUEBA } from '../helpers/users';
 import { login } from '../helpers/auth.helper';
-import { apiGet, getAuthToken } from '../helpers/api.helper';
+import { apiGet, getAuthToken, unwrapApiResponse } from '../helpers/api.helper';
 
 interface MisTurnosResponse {
   success: boolean;
@@ -79,15 +79,16 @@ test.describe('E2E Socio: Ver turnos reservados', () => {
     );
     expect(resp.ok()).toBeTruthy();
 
-    const body = (await resp.json()) as MisTurnosResponse;
-    expect(body.success).toBe(true);
+    const rawBody = (await resp.json()) as MisTurnosResponse;
+    const body = unwrapApiResponse<MisTurnosResponse['data']>(rawBody);
+    expect(rawBody.success).toBe(true);
 
-    if (body.data?.data) {
-      expect(Array.isArray(body.data.data)).toBeTruthy();
+    if (body.data) {
+      expect(Array.isArray(body.data)).toBeTruthy();
     }
 
-    if (body.data?.pagination) {
-      expect(body.data.pagination.page).toBeGreaterThanOrEqual(1);
+    if (body.pagination) {
+      expect(body.pagination.page).toBeGreaterThanOrEqual(1);
     }
   });
 
@@ -108,8 +109,10 @@ test.describe('E2E Socio: Ver turnos reservados', () => {
       test.skip(true, 'Backend no disponible');
       return;
     }
-    const body = (await resp.json()) as MisTurnosResponse;
-    const turnos = body.data?.data ?? [];
+    const body = unwrapApiResponse<MisTurnosResponse['data']>(
+      (await resp.json()) as MisTurnosResponse,
+    );
+    const turnos = body.data ?? [];
 
     if (turnos.length === 0) {
       test.skip(true, 'Socio sin turnos registrados');

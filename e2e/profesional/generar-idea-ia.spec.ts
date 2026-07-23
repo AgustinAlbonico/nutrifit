@@ -17,7 +17,7 @@
 import { test, expect } from '@playwright/test';
 import { USUARIOS_PRUEBA } from '../helpers/users';
 import { login } from '../helpers/auth.helper';
-import { getAuthToken } from '../helpers/api.helper';
+import { getAuthToken, unwrapApiResponse } from '../helpers/api.helper';
 import { mockGroqEndpoint } from '../helpers/mock-groq.helper';
 
 const API_BASE_URL = 'http://localhost:3000';
@@ -59,8 +59,8 @@ test.describe('E2E Profesional: generar idea con IA (CUD29)', () => {
     expect([201, 400, 502, 503]).toContain(response.status());
 
     if (response.status() === 201) {
-      const body = await response.json();
-      const data = body?.data ?? body;
+      const body = unwrapApiResponse(await response.json());
+      const data = body;
       const propuestas = data?.propuestas ?? data;
       if (Array.isArray(propuestas)) {
         expect(propuestas.length).toBeGreaterThanOrEqual(2);

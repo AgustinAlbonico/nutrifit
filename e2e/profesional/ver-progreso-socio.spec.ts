@@ -15,7 +15,7 @@
 import { test, expect } from '@playwright/test';
 import { USUARIOS_PRUEBA } from '../helpers/users';
 import { login } from '../helpers/auth.helper';
-import { getAuthToken } from '../helpers/api.helper';
+import { getAuthToken, unwrapApiResponse } from '../helpers/api.helper';
 
 const API_BASE_URL = 'http://localhost:3000';
 
@@ -47,8 +47,8 @@ test.describe('E2E Profesional: ver progreso del socio (CUD30)', () => {
     expect([200, 403, 404]).toContain(response.status());
 
     if (response.status() === 200) {
-      const body = await response.json();
-      const data = body?.data ?? body;
+      const body = unwrapApiResponse(await response.json());
+      const data = body;
       expect(data).toBeTruthy();
     }
   });
@@ -79,8 +79,8 @@ test.describe('E2E Profesional: ver progreso del socio (CUD30)', () => {
     expect([200, 403, 404]).toContain(response.status());
 
     if (response.status() === 200) {
-      const body = await response.json();
-      const data = body?.data ?? body;
+      const body = unwrapApiResponse(await response.json());
+      const data = body;
       expect(Array.isArray(data) || typeof data === 'object').toBeTruthy();
     }
   });

@@ -11,7 +11,7 @@
 import { test, expect } from '@playwright/test';
 import { USUARIOS_PRUEBA } from '../helpers/users';
 import { login } from '../helpers/auth.helper';
-import { getAuthToken } from '../helpers/api.helper';
+import { getAuthToken, unwrapApiResponse } from '../helpers/api.helper';
 
 const API_BASE_URL = 'http://localhost:3000';
 
@@ -46,8 +46,8 @@ test.describe('E2E Profesional: ver ficha de salud del paciente (CUD09)', () => 
     expect([200, 403, 404]).toContain(response.status());
 
     if (response.status() === 200) {
-      const body = await response.json();
-      const ficha = body?.data ?? body;
+      const body = unwrapApiResponse(await response.json());
+      const ficha = body;
       if (ficha) {
         // Si hay ficha, debe tener al menos un campo característico.
         expect(ficha.altura ?? ficha.peso ?? ficha.nivelActividadFisica).toBeDefined();

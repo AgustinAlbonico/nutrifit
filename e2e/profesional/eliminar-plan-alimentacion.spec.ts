@@ -11,7 +11,7 @@
 import { test, expect } from '@playwright/test';
 import { USUARIOS_PRUEBA } from '../helpers/users';
 import { login } from '../helpers/auth.helper';
-import { getAuthToken } from '../helpers/api.helper';
+import { getAuthToken, unwrapApiResponse } from '../helpers/api.helper';
 
 const API_BASE_URL = 'http://localhost:3000';
 
@@ -105,9 +105,9 @@ test.describe('E2E Profesional: eliminar plan de alimentación (CUD27)', () => {
       return;
     }
 
-    const bodyListar = await responseListar.json();
+    const bodyListar = unwrapApiResponse(await responseListar.json());
     const planes: Array<{ id: number; estado?: string }> =
-      bodyListar?.data ?? bodyListar ?? [];
+      bodyListar.data ?? [];
 
     const planCancelado = planes.find(
       (p) => p.estado === 'CANCELADO' || p.estado === 'CANCELADA',

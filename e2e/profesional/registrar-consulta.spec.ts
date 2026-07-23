@@ -16,7 +16,7 @@
 import { test, expect, type APIRequestContext } from '@playwright/test';
 import { USUARIOS_PRUEBA } from '../helpers/users';
 import { login } from '../helpers/auth.helper';
-import { getAuthToken } from '../helpers/api.helper';
+import { getAuthToken, unwrapApiResponse } from '../helpers/api.helper';
 
 const API_BASE_URL = 'http://localhost:3000';
 
@@ -65,8 +65,8 @@ test.describe('E2E Profesional: registrar datos de consulta (CUD23)', () => {
       return;
     }
 
-    const bodyTurnos = await responseTurnos.json();
-    const turnos: TurnoIniciado[] = bodyTurnos?.data ?? bodyTurnos ?? [];
+    const bodyTurnos = unwrapApiResponse(await responseTurnos.json());
+    const turnos: TurnoIniciado[] = bodyTurnos.data ?? [];
 
     if (turnos.length === 0) {
       test.skip(true, 'No hay turnos del día para iniciar consulta');

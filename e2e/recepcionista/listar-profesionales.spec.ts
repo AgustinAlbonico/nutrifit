@@ -11,7 +11,7 @@
 import { test, expect } from '@playwright/test';
 import { USUARIOS_PRUEBA } from '../helpers/users';
 import { login } from '../helpers/auth.helper';
-import { apiGet, getAuthToken } from '../helpers/api.helper';
+import { apiGet, getAuthToken, unwrapApiResponse } from '../helpers/api.helper';
 
 test.describe('E2E Recepcionista: listado de profesionales (CUD05)', () => {
   test('recepción obtiene el listado paginado de profesionales', async ({
@@ -35,10 +35,10 @@ test.describe('E2E Recepcionista: listado de profesionales (CUD05)', () => {
     }
 
     expect(response.ok()).toBeTruthy();
-    const body = await response.json();
-    expect(body?.data).toBeDefined();
+    const body = unwrapApiResponse(await response.json());
+    expect(body.data).toBeDefined();
     expect(Array.isArray(body.data)).toBeTruthy();
-    expect(body?.pagination).toBeDefined();
+    expect(body.pagination).toBeDefined();
   });
 
   test('filtro search por nombre devuelve resultados coincidentes', async ({
@@ -60,8 +60,8 @@ test.describe('E2E Recepcionista: listado de profesionales (CUD05)', () => {
       test.skip(true, 'Backend no disponible');
     }
     expect(response.ok()).toBeTruthy();
-    const body = await response.json();
-    const lista = body?.data ?? [];
+    const body = unwrapApiResponse(await response.json());
+    const lista = body.data ?? [];
     // Todos los resultados deben contener "nutri" en algún campo searchable
     lista.forEach((n: { nombre: string; apellido: string; email: string }) => {
       const campos = `${n.nombre} ${n.apellido} ${n.email}`.toLowerCase();
@@ -88,8 +88,8 @@ test.describe('E2E Recepcionista: listado de profesionales (CUD05)', () => {
       test.skip(true, 'Backend no disponible');
     }
     expect(response.ok()).toBeTruthy();
-    const body = await response.json();
-    const lista = body?.data ?? [];
+    const body = unwrapApiResponse(await response.json());
+    const lista = body.data ?? [];
     lista.forEach((n: { activo: boolean; fechaBaja: string | null }) => {
       expect(n.activo).toBe(true);
       expect(n.fechaBaja).toBeFalsy();
@@ -115,8 +115,8 @@ test.describe('E2E Recepcionista: listado de profesionales (CUD05)', () => {
       test.skip(true, 'Backend no disponible');
     }
     expect(response.ok()).toBeTruthy();
-    const body = await response.json();
-    const lista = body?.data ?? [];
+    const body = unwrapApiResponse(await response.json());
+    const lista = body.data ?? [];
 
     // Si hay resultados, todos deben ser de Santa Fe
     if (lista.length > 0) {
@@ -142,8 +142,8 @@ test.describe('E2E Recepcionista: listado de profesionales (CUD05)', () => {
       test.skip(true, 'Backend no disponible');
     }
     expect(response.ok()).toBeTruthy();
-    const body = await response.json();
-    const lista = body?.data ?? [];
+    const body = unwrapApiResponse(await response.json());
+    const lista = body.data ?? [];
 
     if (lista.length > 0) {
       lista.forEach((n: { ciudad: string }) => {
@@ -172,11 +172,11 @@ test.describe('E2E Recepcionista: listado de profesionales (CUD05)', () => {
       test.skip(true, 'Backend no disponible');
     }
     expect(response.ok()).toBeTruthy();
-    const body = await response.json();
-    expect(Array.isArray(body?.data)).toBeTruthy();
+    const body = unwrapApiResponse(await response.json());
+    expect(Array.isArray(body.data)).toBeTruthy();
     expect(body.data.length).toBe(0);
     // pagination debe tener total=0
-    expect(body?.pagination?.total).toBe(0);
+    expect(body.pagination.total).toBe(0);
   });
 
   // ─── GAP documentado ──────────────────────────────────────────────────────
@@ -216,8 +216,8 @@ test.describe('E2E Recepcionista: listado de profesionales (CUD05)', () => {
     // ── Comportamiento DESEADO: debería devolver solo los de "Clinica" ──
     expect(response.ok()).toBeTruthy();
 
-    const body = await response.json();
-    const lista = body?.data ?? [];
+    const body = unwrapApiResponse(await response.json());
+    const lista = body.data ?? [];
 
     // Verificación del gap: el listado incluye profesionales cuya
     // presentación NO contiene "Clinica" (filtro ignorado).

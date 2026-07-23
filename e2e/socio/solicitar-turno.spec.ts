@@ -15,7 +15,7 @@ import { test, expect } from '@playwright/test';
 
 import { USUARIOS_PRUEBA } from '../helpers/users';
 import { login } from '../helpers/auth.helper';
-import { apiGet, getAuthToken } from '../helpers/api.helper';
+import { apiGet, getAuthToken, unwrapApiResponse } from '../helpers/api.helper';
 
 interface DisponibilidadResponse {
   success: boolean;
@@ -49,11 +49,10 @@ test.describe('E2E Socio: Solicitar turno con profesional', () => {
       test.skip(true, 'Backend no disponible');
       return;
     }
-    const body = (await respProfesionales.json()) as {
-      success: boolean;
-      data: ProfesionalDisponible[];
-    };
-    const profesional = body.data?.find((p) => p.agendaConfigurada);
+    const body = unwrapApiResponse<ProfesionalDisponible[]>(
+      await respProfesionales.json(),
+    );
+    const profesional = body.find((p) => p.agendaConfigurada);
     if (!profesional) {
       test.skip(true, 'No hay profesionales con agenda configurada');
       return;
@@ -68,10 +67,11 @@ test.describe('E2E Socio: Solicitar turno con profesional', () => {
       test.skip(true, 'Backend no disponible (disponibilidad)');
       return;
     }
-    const bodyDisp = (await respDisponibilidad.json()) as DisponibilidadResponse;
-    expect(bodyDisp.success).toBe(true);
-    expect(Array.isArray(bodyDisp.data)).toBeTruthy();
-    expect(bodyDisp.data.length).toBe(0);
+    const rawBody = (await respDisponibilidad.json()) as DisponibilidadResponse;
+    const bodyDisp = unwrapApiResponse<DisponibilidadResponse['data']>(rawBody);
+    expect(rawBody.success).toBe(true);
+    expect(Array.isArray(bodyDisp)).toBeTruthy();
+    expect(bodyDisp.length).toBe(0);
   });
 
   test('socio sin agenda puede ver el catálogo pero el botón "Reservar" aparece deshabilitado', async ({
@@ -93,11 +93,10 @@ test.describe('E2E Socio: Solicitar turno con profesional', () => {
       test.skip(true, 'Backend no disponible');
       return;
     }
-    const body = (await resp.json()) as {
-      success: boolean;
-      data: ProfesionalDisponible[];
-    };
-    const sinAgenda = (body.data ?? []).find((p) => p.agendaConfigurada === false);
+    const body = unwrapApiResponse<ProfesionalDisponible[]>(
+      await resp.json(),
+    );
+    const sinAgenda = (body ?? []).find((p) => p.agendaConfigurada === false);
 
     await page.goto('/nutricionistas/catalogo');
     await page.waitForLoadState('networkidle');

@@ -11,7 +11,7 @@
 import { test, expect } from '@playwright/test';
 import { USUARIOS_PRUEBA } from '../helpers/users';
 import { login } from '../helpers/auth.helper';
-import { apiGet, getAuthToken } from '../helpers/api.helper';
+import { apiGet, getAuthToken, unwrapApiResponse } from '../helpers/api.helper';
 
 test.describe('E2E Recepcionista: gestionar profesionales (CUD01)', () => {
   test('recepción ve el listado paginado de profesionales', async ({
@@ -65,8 +65,8 @@ test.describe('E2E Recepcionista: gestionar profesionales (CUD01)', () => {
     }
     expect(listado.ok()).toBeTruthy();
 
-    const bodyListado = await listado.json();
-    const primerNutri = bodyListado?.data?.[0];
+    const bodyListado = unwrapApiResponse(await listado.json());
+    const primerNutri = bodyListado.data?.[0];
     expect(primerNutri, 'Se esperaba al menos un profesional seedeado').toBeTruthy();
 
     // Consultar el detalle
@@ -76,8 +76,8 @@ test.describe('E2E Recepcionista: gestionar profesionales (CUD01)', () => {
       token ?? undefined,
     );
     expect(detalle.ok()).toBeTruthy();
-    const bodyDetalle = await detalle.json();
-    const detalleNutri = bodyDetalle?.data ?? bodyDetalle;
+    const bodyDetalle = unwrapApiResponse(await detalle.json());
+    const detalleNutri = bodyDetalle;
     expect(detalleNutri.idPersona).toBe(primerNutri.idPersona);
     expect(detalleNutri.email).toBeTruthy();
     expect(detalleNutri.matricula).toBeTruthy();
@@ -117,8 +117,8 @@ test.describe('E2E Recepcionista: gestionar profesionales (CUD01)', () => {
     if (listado.status() === 404 || listado.status() === 0) {
       test.skip(true, 'Backend no disponible');
     }
-    const bodyListado = await listado.json();
-    const primerNutri = bodyListado?.data?.[0];
+    const bodyListado = unwrapApiResponse(await listado.json());
+    const primerNutri = bodyListado.data?.[0];
     if (!primerNutri) {
       test.skip(true, 'Sin profesionales seed para validar acciones');
     }

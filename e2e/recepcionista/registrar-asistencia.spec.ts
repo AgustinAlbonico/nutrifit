@@ -10,7 +10,7 @@
 import { test, expect } from '@playwright/test';
 import { USUARIOS_PRUEBA } from '../helpers/users';
 import { login } from '../helpers/auth.helper';
-import { apiGet, apiPost, getAuthToken } from '../helpers/api.helper';
+import { apiGet, apiPost, getAuthToken, unwrapApiResponse } from '../helpers/api.helper';
 
 test.describe('E2E Recepcionista: registrar asistencia (CUD20)', () => {
   test('recepción ve la pantalla de check-in del día actual', async ({
@@ -53,8 +53,8 @@ test.describe('E2E Recepcionista: registrar asistencia (CUD20)', () => {
     }
 
     expect(responseTurnos.ok()).toBeTruthy();
-    const bodyTurnos = await responseTurnos.json();
-    const turnos = bodyTurnos?.data ?? [];
+    const bodyTurnos = unwrapApiResponse(await responseTurnos.json());
+    const turnos = bodyTurnos.data ?? [];
 
     // Buscar un turno cuyo estado NO sea CONFIRMADO ni PRESENTE
     // (p. ej. CANCELADO, AUSENTE, REALIZADO) para forzar A2.
@@ -113,8 +113,8 @@ test.describe('E2E Recepcionista: registrar asistencia (CUD20)', () => {
     }
     expect(responseTurnos.ok()).toBeTruthy();
 
-    const bodyTurnos = await responseTurnos.json();
-    const turnos = bodyTurnos?.data ?? [];
+    const bodyTurnos = unwrapApiResponse(await responseTurnos.json());
+    const turnos = bodyTurnos.data ?? [];
 
     const turnoConfirmado = turnos.find(
       (t: { estadoTurno: string }) => t.estadoTurno === 'CONFIRMADO',
@@ -138,8 +138,8 @@ test.describe('E2E Recepcionista: registrar asistencia (CUD20)', () => {
     // backend calcula llegadaTardeMin pero el happy path no debería
     // rechazar (CheckInTurnoUseCase valida solo -10min a +30min del horario).
     expect([200, 201]).toContain(responseCheckIn.status());
-    const body = await responseCheckIn.json();
-    const resultado = body?.data ?? body;
+    const body = unwrapApiResponse(await responseCheckIn.json());
+    const resultado = body;
     expect(resultado.estado).toBe('PRESENTE');
     expect(resultado.success).toBe(true);
     expect(resultado.checkInAt).toBeTruthy();
@@ -166,8 +166,8 @@ test.describe('E2E Recepcionista: registrar asistencia (CUD20)', () => {
     }
     expect(responseTurnos.ok()).toBeTruthy();
 
-    const bodyTurnos = await responseTurnos.json();
-    const turnos = bodyTurnos?.data ?? [];
+    const bodyTurnos = unwrapApiResponse(await responseTurnos.json());
+    const turnos = bodyTurnos.data ?? [];
 
     const turnoConfirmado = turnos.find(
       (t: { estadoTurno: string }) => t.estadoTurno === 'CONFIRMADO',
@@ -188,8 +188,8 @@ test.describe('E2E Recepcionista: registrar asistencia (CUD20)', () => {
       test.skip(true, 'Turno ya pasó la ventana de check-in');
     }
     expect([200, 201]).toContain(primer.status());
-    const bodyPrimer = await primer.json();
-    const resultadoPrimer = bodyPrimer?.data ?? bodyPrimer;
+    const bodyPrimer = unwrapApiResponse(await primer.json());
+    const resultadoPrimer = bodyPrimer;
     expect(resultadoPrimer.estado).toBe('PRESENTE');
 
     // Segunda llamada — debe seguir PRESENTE pero marcado como idempotente
@@ -200,8 +200,8 @@ test.describe('E2E Recepcionista: registrar asistencia (CUD20)', () => {
       token ?? undefined,
     );
     expect(segundo.ok()).toBeTruthy();
-    const bodySegundo = await segundo.json();
-    const resultadoSegundo = bodySegundo?.data ?? bodySegundo;
+    const bodySegundo = unwrapApiResponse(await segundo.json());
+    const resultadoSegundo = bodySegundo;
     expect(resultadoSegundo.estado).toBe('PRESENTE');
     // fueIdempotente puede ser true o false según el código de implementación
     expect(typeof resultadoSegundo.fueIdempotente).toBe('boolean');
@@ -240,8 +240,8 @@ test.describe('E2E Recepcionista: registrar asistencia (CUD20)', () => {
     }
 
     expect(responseTurnos.ok()).toBeTruthy();
-    const bodyTurnos = await responseTurnos.json();
-    const turnos = bodyTurnos?.data ?? [];
+    const bodyTurnos = unwrapApiResponse(await responseTurnos.json());
+    const turnos = bodyTurnos.data ?? [];
 
     // El listado debe estar presente (aunque esté vacío)
     expect(Array.isArray(turnos)).toBeTruthy();

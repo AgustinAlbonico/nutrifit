@@ -96,3 +96,15 @@ export async function expectApiError(response: Response, expectedStatus?: number
     throw new Error(`Expected status ${expectedStatus} but got ${response.status()}`);
   }
 }
+
+/**
+ * Desenvuelve la respuesta de la API que viene envuelta en {success, data, meta}
+ * por el ApiResponseInterceptor. Si la respuesta ya es un array o no tiene la
+ * estructura envuelta, la devuelve tal cual.
+ */
+export function unwrapApiResponse<T = unknown>(body: unknown): T {
+  if (body && typeof body === 'object' && 'data' in (body as Record<string, unknown>)) {
+    return (body as { data: T }).data;
+  }
+  return body as T;
+}

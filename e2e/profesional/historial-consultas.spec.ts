@@ -13,7 +13,7 @@
 import { test, expect } from '@playwright/test';
 import { USUARIOS_PRUEBA } from '../helpers/users';
 import { login } from '../helpers/auth.helper';
-import { getAuthToken } from '../helpers/api.helper';
+import { getAuthToken, unwrapApiResponse } from '../helpers/api.helper';
 
 const API_BASE_URL = 'http://localhost:3000';
 
@@ -45,8 +45,8 @@ test.describe('E2E Profesional: ver historial de consultas (CUD10)', () => {
     expect([200, 403, 404]).toContain(response.status());
 
     if (response.status() === 200) {
-      const body = await response.json();
-      const historial = body?.data ?? body;
+      const body = unwrapApiResponse(await response.json());
+      const historial = body;
       expect(Array.isArray(historial)).toBeTruthy();
     }
   });
@@ -74,8 +74,8 @@ test.describe('E2E Profesional: ver historial de consultas (CUD10)', () => {
       return;
     }
 
-    const body = await response.json();
-    const historial: unknown[] = body?.data ?? body;
+    const body = unwrapApiResponse(await response.json());
+    const historial: unknown[] = body;
 
     if (!Array.isArray(historial) || historial.length === 0) {
       test.skip(true, 'Historial vacío: no se puede validar estructura');
@@ -118,8 +118,8 @@ test.describe('E2E Profesional: ver historial de consultas (CUD10)', () => {
       return;
     }
 
-    const body = await response.json();
-    const historial: Array<Record<string, unknown>> = body?.data ?? body;
+    const body = unwrapApiResponse(await response.json());
+    const historial: Array<Record<string, unknown>> = body;
 
     if (!Array.isArray(historial) || historial.length === 0) {
       test.skip(true, 'Sin consultas previas para validar adjuntos');

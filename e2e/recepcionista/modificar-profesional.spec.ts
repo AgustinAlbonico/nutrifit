@@ -13,6 +13,7 @@ import {
   apiPost,
   apiPut,
   getAuthToken,
+  unwrapApiResponse,
 } from '../helpers/api.helper';
 
 const SELLO = Date.now().toString().slice(-7);
@@ -55,8 +56,8 @@ async function crearProfesionalBase(
       `No se pudo crear profesional base para CUD03: status=${response.status()}`,
     );
   }
-  const body = await response.json();
-  return body?.data?.idPersona ?? body?.idPersona;
+  const body = unwrapApiResponse(await response.json());
+  return body.idPersona;
 }
 
 test.describe('E2E Recepcionista: modificar profesional (CUD03)', () => {
@@ -93,8 +94,8 @@ test.describe('E2E Recepcionista: modificar profesional (CUD03)', () => {
 
     // PUT idempotente debe ser 200
     expect(responsePut.status()).toBe(200);
-    const body = await responsePut.json();
-    const nutri = body?.data ?? body;
+    const body = unwrapApiResponse(await responsePut.json());
+    const nutri = body;
     expect(nutri.idPersona).toBe(idNutri);
     expect(nutri.tarifaSesion).toBe(25000);
   });
@@ -228,8 +229,8 @@ test.describe('E2E Recepcionista: modificar profesional (CUD03)', () => {
     if (!listado.ok()) {
       test.skip(true, 'Backend no disponible');
     }
-    const bodyListado = await listado.json();
-    const primerNutri = bodyListado?.data?.[0];
+    const bodyListado = unwrapApiResponse(await listado.json());
+    const primerNutri = bodyListado.data?.[0];
     if (!primerNutri) {
       test.skip(true, 'Sin profesionales seed');
     }

@@ -14,7 +14,7 @@
 import { test, expect } from '@playwright/test';
 import { USUARIOS_PRUEBA } from '../helpers/users';
 import { login } from '../helpers/auth.helper';
-import { getAuthToken } from '../helpers/api.helper';
+import { getAuthToken, unwrapApiResponse } from '../helpers/api.helper';
 
 const API_BASE_URL = 'http://localhost:3000';
 
@@ -48,8 +48,8 @@ test.describe('E2E Profesional: ver plan de alimentación (CUD28)', () => {
       return;
     }
 
-    const bodyListar = await responseListar.json();
-    const planes: Array<{ id: number }> = bodyListar?.data ?? bodyListar ?? [];
+    const bodyListar = unwrapApiResponse(await responseListar.json());
+    const planes: Array<{ id: number }> = bodyListar.data ?? [];
 
     if (planes.length === 0) {
       test.skip(true, 'Nutricionista sin planes creados');
@@ -65,8 +65,8 @@ test.describe('E2E Profesional: ver plan de alimentación (CUD28)', () => {
     expect([200, 404]).toContain(response.status());
 
     if (response.status() === 200) {
-      const body = await response.json();
-      const plan = body?.data ?? body;
+      const body = unwrapApiResponse(await response.json());
+      const plan = body;
       expect(plan).toBeTruthy();
       expect(plan.id ?? plan.idPlanAlimentacion).toBeTruthy();
     }
@@ -101,8 +101,8 @@ test.describe('E2E Profesional: ver plan de alimentación (CUD28)', () => {
     expect([200, 403, 404]).toContain(response.status());
 
     if (response.status() === 200) {
-      const body = await response.json();
-      const data = body?.data ?? body;
+      const body = unwrapApiResponse(await response.json());
+      const data = body;
       expect(Array.isArray(data)).toBeTruthy();
     }
   });

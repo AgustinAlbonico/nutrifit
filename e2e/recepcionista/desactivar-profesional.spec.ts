@@ -15,6 +15,7 @@ import {
   apiGet,
   apiPost,
   getAuthToken,
+  unwrapApiResponse,
 } from '../helpers/api.helper';
 
 const SELLO = Date.now().toString().slice(-7);
@@ -68,8 +69,8 @@ async function loginYCrearProfesional(
     );
   }
 
-  const bodyCrear = await responseCrear.json();
-  const nutri = bodyCrear?.data ?? bodyCrear;
+  const bodyCrear = unwrapApiResponse(await responseCrear.json());
+  const nutri = bodyCrear;
   const contrasenaProvisional = nutri.contrasenaProvisional;
 
   // Cerrar sesión de recepción para no contaminar contexto del nutri
@@ -122,9 +123,8 @@ test.describe('E2E Recepcionista: desactivar profesional (CUD04)', () => {
     if (!crearResponse.ok()) {
       test.skip(true, 'No se pudo crear profesional base');
     }
-    const crearBody = await crearResponse.json();
-    const idNutri: number =
-      crearBody?.data?.idPersona ?? crearBody?.idPersona;
+    const crearBody = unwrapApiResponse(await crearResponse.json());
+    const idNutri: number = crearBody.idPersona;
 
     if (!idNutri) {
       test.skip(true, 'No se pudo obtener idPersona del profesional');
@@ -144,8 +144,8 @@ test.describe('E2E Recepcionista: desactivar profesional (CUD04)', () => {
     }
 
     expect(response.ok()).toBeTruthy();
-    const body = await response.json();
-    const resultado = body?.data ?? body;
+    const body = unwrapApiResponse(await response.json());
+    const resultado = body;
     expect(resultado.turnosCancelados).toBe(0);
     expect(resultado.sociosAfectados).toBe(0);
     expect(String(resultado.message)).toMatch(/desactivado/i);
@@ -170,10 +170,11 @@ test.describe('E2E Recepcionista: desactivar profesional (CUD04)', () => {
     if (!listado.ok()) {
       test.skip(true, 'Backend no disponible');
     }
-    const bodyListado = await listado.json();
-    const candidatos: Array<{ idPersona: number; activo: boolean }> = (
-      bodyListado?.data ?? []
-    ).filter((n: { fechaBaja?: string | null }) => !n.fechaBaja);
+    const bodyListado = unwrapApiResponse(await listado.json());
+    const candidatos: Array<{ idPersona: number; activo: boolean }> =
+      bodyListado.data.filter(
+        (n: { fechaBaja?: string | null }) => !n.fechaBaja,
+      );
 
     if (candidatos.length === 0) {
       test.skip(true, 'No hay nutricionistas activos para desactivar');
@@ -200,8 +201,8 @@ test.describe('E2E Recepcionista: desactivar profesional (CUD04)', () => {
     }
 
     expect(response.ok()).toBeTruthy();
-    const body = await response.json();
-    const resultado = body?.data ?? body;
+    const body = unwrapApiResponse(await response.json());
+    const resultado = body;
     // El campo debe estar presente, sin importar el valor exacto
     expect(resultado.turnosCancelados).toBeGreaterThanOrEqual(0);
     expect(resultado.sociosAfectados).toBeGreaterThanOrEqual(0);
@@ -226,8 +227,8 @@ test.describe('E2E Recepcionista: desactivar profesional (CUD04)', () => {
     if (!listado.ok()) {
       test.skip(true, 'Backend no disponible');
     }
-    const bodyListado = await listado.json();
-    const idNutri = bodyListado?.data?.[0]?.idPersona;
+    const bodyListado = unwrapApiResponse(await listado.json());
+    const idNutri = bodyListado.data?.[0]?.idPersona;
     if (!idNutri) {
       test.skip(true, 'Sin profesionales seed');
     }
