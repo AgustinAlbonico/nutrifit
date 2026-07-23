@@ -214,13 +214,17 @@ export class PersistirPlanManualUseCase implements BaseUseCase {
 
             const itemSnapshots = a.alimentos.map((i) => {
               const al = alimentoMap.get(i.alimentoId)!;
-              const base = al.cantidad || 100;
-              const factor = i.cantidad / base;
-              const cal = Math.round((al.calorias ?? 0) * factor * 100) / 100;
-              const pro = Math.round((al.proteinas ?? 0) * factor * 100) / 100;
-              const carb =
-                Math.round((al.carbohidratos ?? 0) * factor * 100) / 100;
-              const gras = Math.round((al.grasas ?? 0) * factor * 100) / 100;
+              const factorNormalizacion =
+                al.unidadMedida === 'kilogramo' ? 1 / 10 : 1;
+              const kcalPor100g = (al.calorias ?? 0) * factorNormalizacion;
+              const proPor100g = (al.proteinas ?? 0) * factorNormalizacion;
+              const carbPor100g = (al.carbohidratos ?? 0) * factorNormalizacion;
+              const grasPor100g = (al.grasas ?? 0) * factorNormalizacion;
+              const factor = i.cantidad / 100;
+              const cal = Math.round(kcalPor100g * factor * 100) / 100;
+              const pro = Math.round(proPor100g * factor * 100) / 100;
+              const carb = Math.round(carbPor100g * factor * 100) / 100;
+              const gras = Math.round(grasPor100g * factor * 100) / 100;
 
               totalCal += cal;
               totalPro += pro;
