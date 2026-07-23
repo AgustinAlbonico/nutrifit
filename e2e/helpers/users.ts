@@ -15,23 +15,23 @@ function leerCredencialesSeed(): string {
 }
 
 function extraerPasswordUniversal(markdown: string): string {
-  const match = markdown.match(/Contraseña de todos los usuarios seed:\*\* `([^`]+)`/);
+  const match = markdown.match(/Contraseña universal para todos los usuarios seed:\*\* `([^`]+)`/);
   return match?.[1] ?? '123456';
 }
 
 function extraerEmailPorRolYGimnasio(
   markdown: string,
-  rol: UsuarioPrueba['rol'],
+  _rol: UsuarioPrueba['rol'],
   gimnasio: string,
 ): string {
   const gimnasioEscapado = gimnasio.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const pattern = new RegExp(
-    `\\|\\s*${rol}\\s*\\|\\s*${gimnasioEscapado}\\s*\\|\\s*\`([^\`]+)\``,
+    `\\|\\s*\\*\\*${gimnasioEscapado}\\*\\*\\s*\\|\\s*[^|]+\\|\\s*\`([^\`]+)\``,
   );
 
   const match = markdown.match(pattern);
   if (!match?.[1]) {
-    throw new Error(`No se encontró email seed para rol=${rol} gimnasio=${gimnasio}`);
+    throw new Error(`No se encontró email seed para gimnasio=${gimnasio}`);
   }
   return match[1];
 }
@@ -44,7 +44,7 @@ function extraerEmailPorGimnasioEnTabla(
   const gimnasioEscapado = gimnasio.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const parcialEscapado = emailEsperadoParcial.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const pattern = new RegExp(
-    `\\|\\s*${gimnasioEscapado}\\s*\\|\\s*\`([^\`]*${parcialEscapado}[^\`]*)\``,
+    `\\|\\s*\\*\\*${gimnasioEscapado}\\*\\*\\s*\\|\\s*(?:[^|]+\\|)?\\s*\`([^\`<]*${parcialEscapado}[^\`<]*)\``,
   );
 
   const match = markdown.match(pattern);
@@ -58,7 +58,7 @@ function extraerEmailPorGimnasioEnTabla(
 }
 
 function extraerEmailSuperadmin(markdown: string): string {
-  const match = markdown.match(/\|\s*SUPERADMIN\s*\|\s*Global\s*\|\s*`([^`]+)`/);
+  const match = markdown.match(/\|\s*\*\*SUPERADMIN\*\*\s*\|\s*`([^`]+)`/);
   if (!match?.[1]) {
     throw new Error('No se encontró email seed de SUPERADMIN');
   }
