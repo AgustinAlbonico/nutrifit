@@ -361,7 +361,6 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
     const categoriasExistentes = await this.grupoAlimenticioRepo.find({
       select: { idGrupoAlimenticio: true, descripcion: true },
     });
-    const categoriasNombres = categoriasExistentes.map((c) => c.descripcion);
 
     let intentoCatalogo = 0;
     let planResolved = false;
@@ -674,12 +673,17 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
       params.contextoPromptBase.alimentosEvitados ?? [],
     );
 
-    const resultadosPorComida: Array<{
+    type TareaGeneracionComida = (typeof tareasGeneracion)[number];
+    type ResultadoGeneracionComida = {
       dia: DiaSemana;
       tipoComida: TipoComida;
       comidaGenerada: ComidaPlanGenerada;
       generacionComida: ComidaGeneradaJson;
-    }> = [];
+    };
+    type FalloGeneracionComida = TareaGeneracionComida & { error: unknown };
+
+    const resultadosPorComida: ResultadoGeneracionComida[] = [];
+    const fallosTimeoutPendientes: FalloGeneracionComida[] = [];
 
     const construirEstructuraParcial =
       (): PlanAlimentacionDatosJson['estructura'] =>
@@ -696,6 +700,135 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
           }),
         }));
 
+    const generarTareaComida = async (
+      { dia, tipoComida }: TareaGeneracionComida,
+      maxIntentosProveedor = MAX_REINTENTOS_PROVEEDOR_IA,
+      maxIntentosEstructura = MAX_REINTENTOS_ESTRUCTURA + 1,
+    ): Promise<ResultadoGeneracionComida> => {
+      const claveComida = this.construirClaveComida(dia, tipoComida);
+      const proteinaAsignada = proteinasAsignadas.get(claveComida);
+      const { systemPrompt, userPrompt } = this.promptBuilder.construirComida({
+        ...params.contextoPromptBase,
+        diasAGenerar: 1,
+        diasEspecificos: [dia],
+        comidasPorDia: 1,
+        tiposComidaEspecificos: [tipoComida],
+        caloriasLimite: this.dividirObjetivoComida(
+          params.contextoPromptBase.caloriasLimite,
+          params.comidasPorDia,
+        ),
+        proteinasEstimadas: this.dividirObjetivoComida(
+          params.contextoPromptBase.proteinasEstimadas,
+          params.comidasPorDia,
+        ),
+        carbohidratosEstimados: this.dividirObjetivoComida(
+          params.contextoPromptBase.carbohidratosEstimados,
+          params.comidasPorDia,
+        ),
+        grasasEstimados: this.dividirObjetivoComida(
+          params.contextoPromptBase.grasasEstimados,
+          params.comidasPorDia,
+        ),
+        ...(proteinaAsignada
+          ? { proteinaPrincipalAsignada: proteinaAsignada }
+          : {}),
+      });
+
+      const generacionComida = await this.generarComidaConReintentos({
+        systemPrompt,
+        userPrompt,
+        socioId: params.socioId,
+        dia,
+        tipoComida,
+        alternativasPorComida: params.alternativasPorComida,
+        maxIntentosProveedor,
+        maxIntentosEstructura,
+      });
+
+      return {
+        dia,
+        tipoComida,
+        comidaGenerada: generacionComida.comida,
+        generacionComida,
+      };
+    };
+
+    let colaPersistenciaProgreso = Promise.resolve();
+    const registrarResultado = async (
+      resultado: ResultadoGeneracionComida,
+    ): Promise<void> => {
+      resultadosPorComida.push(resultado);
+      const progreso: ProgresoGeneracionPlanIa = {
+        dia: resultado.dia,
+        tipoComida: resultado.tipoComida,
+        comidasGeneradas: resultadosPorComida.length,
+        comidasTotales: tareasGeneracion.length,
+        snapshotParcial: {
+          estructura: construirEstructuraParcial(),
+        },
+      };
+
+      colaPersistenciaProgreso = colaPersistenciaProgreso.then(async () => {
+        await params.onProgreso?.(progreso);
+      });
+      await colaPersistenciaProgreso;
+    };
+
+    const ejecutarLote = async (
+      loteComidas: readonly TareaGeneracionComida[],
+      maxIntentosProveedor = MAX_REINTENTOS_PROVEEDOR_IA,
+      maxIntentosEstructura = MAX_REINTENTOS_ESTRUCTURA + 1,
+    ): Promise<FalloGeneracionComida[]> => {
+      let falloPersistenciaProgreso = false;
+      let errorPersistenciaProgreso: unknown;
+      const fallos = await Promise.all(
+        loteComidas.map(async (tarea) => {
+          let resultado: ResultadoGeneracionComida;
+          try {
+            resultado = await generarTareaComida(
+              tarea,
+              maxIntentosProveedor,
+              maxIntentosEstructura,
+            );
+          } catch (error: unknown) {
+            return { ...tarea, error };
+          }
+
+          try {
+            await registrarResultado(resultado);
+          } catch (error: unknown) {
+            if (!falloPersistenciaProgreso) {
+              falloPersistenciaProgreso = true;
+              errorPersistenciaProgreso = error;
+            }
+          }
+          return null;
+        }),
+      );
+
+      if (falloPersistenciaProgreso) {
+        throw errorPersistenciaProgreso;
+      }
+
+      return fallos.flatMap((fallo) => (fallo ? [fallo] : []));
+    };
+
+    const relanzarFallo = (fallo: FalloGeneracionComida): never => {
+      if (fallo.error instanceof Error) {
+        throw fallo.error;
+      }
+
+      throw new BadGatewayError(
+        `AI_PROVIDER_UPSTREAM_ERROR: no se pudo generar ${fallo.dia}/${fallo.tipoComida}`,
+        {
+          codigo: 'AI_PROVIDER_UPSTREAM_ERROR',
+          socioId: params.socioId,
+          dia: fallo.dia,
+          tipoComida: fallo.tipoComida,
+        },
+      );
+    };
+
     for (
       let i = 0;
       i < tareasGeneracion.length;
@@ -705,67 +838,41 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
         i,
         i + CONCURRENCIA_GENERACION_COMIDAS,
       );
-      const resultadosLote = await Promise.all(
-        loteComidas.map(async ({ dia, tipoComida }) => {
-          const claveComida = this.construirClaveComida(dia, tipoComida);
-          const proteinaAsignada = proteinasAsignadas.get(claveComida);
-          const { systemPrompt, userPrompt } =
-            this.promptBuilder.construirComida({
-              ...params.contextoPromptBase,
-              diasAGenerar: 1,
-              diasEspecificos: [dia],
-              comidasPorDia: 1,
-              tiposComidaEspecificos: [tipoComida],
-              caloriasLimite: this.dividirObjetivoComida(
-                params.contextoPromptBase.caloriasLimite,
-                params.comidasPorDia,
-              ),
-              proteinasEstimadas: this.dividirObjetivoComida(
-                params.contextoPromptBase.proteinasEstimadas,
-                params.comidasPorDia,
-              ),
-              carbohidratosEstimados: this.dividirObjetivoComida(
-                params.contextoPromptBase.carbohidratosEstimados,
-                params.comidasPorDia,
-              ),
-              grasasEstimados: this.dividirObjetivoComida(
-                params.contextoPromptBase.grasasEstimados,
-                params.comidasPorDia,
-              ),
-              ...(proteinaAsignada
-                ? { proteinaPrincipalAsignada: proteinaAsignada }
-                : {}),
-            });
+      const fallosLote = await ejecutarLote(loteComidas);
+      if (fallosLote.length === 0) {
+        continue;
+      }
 
-          const generacionComida = await this.generarComidaConReintentos({
-            systemPrompt,
-            userPrompt,
-            socioId: params.socioId,
-            dia,
-            tipoComida,
-            alternativasPorComida: params.alternativasPorComida,
-          });
+      const falloNoRecuperable = fallosLote.find((fallo) => {
+        const mensaje =
+          fallo.error instanceof Error
+            ? fallo.error.message
+            : String(fallo.error);
+        return !this.esTimeout(mensaje);
+      });
+      if (falloNoRecuperable) {
+        relanzarFallo(falloNoRecuperable);
+      }
 
-          return {
-            dia,
-            tipoComida,
-            comidaGenerada: generacionComida.comida,
-            generacionComida,
-          };
-        }),
+      if (fallosLote.length === loteComidas.length) {
+        relanzarFallo(fallosLote[0]);
+      }
+
+      for (const fallo of fallosLote) {
+        this.logger.warn(
+          `Comida ${fallo.dia}/${fallo.tipoComida} agotó sus intentos por timeout; se reintentará al finalizar los lotes regulares.`,
+        );
+        fallosTimeoutPendientes.push(fallo);
+      }
+    }
+
+    for (const falloPendiente of fallosTimeoutPendientes) {
+      this.logger.warn(
+        `Reintentando comida aislada ${falloPendiente.dia}/${falloPendiente.tipoComida}.`,
       );
-
-      for (const resultado of resultadosLote) {
-        resultadosPorComida.push(resultado);
-        await params.onProgreso?.({
-          dia: resultado.dia,
-          tipoComida: resultado.tipoComida,
-          comidasGeneradas: resultadosPorComida.length,
-          comidasTotales: tareasGeneracion.length,
-          snapshotParcial: {
-            estructura: construirEstructuraParcial(),
-          },
-        });
+      const fallosRecuperacion = await ejecutarLote([falloPendiente], 1, 1);
+      if (fallosRecuperacion.length > 0) {
+        relanzarFallo(fallosRecuperacion[0]);
       }
     }
 
@@ -951,21 +1058,28 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
     dia: DiaSemana;
     tipoComida: TipoComida;
     alternativasPorComida: number;
+    maxIntentosProveedor?: number;
+    maxIntentosEstructura?: number;
   }): Promise<ComidaGeneradaJson> {
     const promptBase = this.combinarPrompts(
       params.systemPrompt,
       params.userPrompt,
     );
     let promptActual = promptBase;
+    const maxIntentosEstructura =
+      params.maxIntentosEstructura ?? MAX_REINTENTOS_ESTRUCTURA + 1;
 
     for (
       let intentoEstructura = 1;
-      intentoEstructura <= MAX_REINTENTOS_ESTRUCTURA + 1;
+      intentoEstructura <= maxIntentosEstructura;
       intentoEstructura++
     ) {
       const comidaCandidata = await this.generarComidaConReintentosProveedorIa(
         promptActual,
         params.socioId,
+        params.dia,
+        params.tipoComida,
+        params.maxIntentosProveedor,
       );
       const advertencias = this.obtenerAdvertenciasComida(
         comidaCandidata,
@@ -978,10 +1092,10 @@ export class GenerarPlanSemanalUseCase implements BaseUseCase {
       }
 
       this.logger.warn(
-        `Comida IA incompleta ${params.dia}/${params.tipoComida} (intento ${intentoEstructura}/${MAX_REINTENTOS_ESTRUCTURA + 1}): ${advertencias.join('; ')}`,
+        `Comida IA incompleta ${params.dia}/${params.tipoComida} (intento ${intentoEstructura}/${maxIntentosEstructura}): ${advertencias.join('; ')}`,
       );
 
-      if (intentoEstructura > MAX_REINTENTOS_ESTRUCTURA) {
+      if (intentoEstructura >= maxIntentosEstructura) {
         throw new BadRequestError(
           `PLAN_ESTRUCTURA_INVALIDA: ${advertencias.join('; ')}`,
           {
@@ -1080,10 +1194,13 @@ Requisitos exactos:
   private async generarComidaConReintentosProveedorIa(
     prompt: string,
     socioId: number,
+    dia: DiaSemana,
+    tipoComida: TipoComida,
+    maxIntentosProveedor = MAX_REINTENTOS_PROVEEDOR_IA,
   ): Promise<ComidaGeneradaJson> {
     let intentoProveedor = 0;
 
-    while (intentoProveedor < MAX_REINTENTOS_PROVEEDOR_IA) {
+    while (intentoProveedor < maxIntentosProveedor) {
       intentoProveedor++;
       try {
         return await this.aiProvider.generarRecomendacion<ComidaGeneradaJson>(
@@ -1098,41 +1215,50 @@ Requisitos exactos:
         const mensaje = error instanceof Error ? error.message : String(error);
         if (this.esTimeout(mensaje)) {
           this.logger.warn(
-            `Proveedor IA timeout generando comida (intento ${intentoProveedor}/${MAX_REINTENTOS_PROVEEDOR_IA}): ${mensaje}`,
+            `Proveedor IA timeout generando comida (intento ${intentoProveedor}/${maxIntentosProveedor}): ${mensaje}`,
           );
-          if (intentoProveedor < MAX_REINTENTOS_PROVEEDOR_IA) {
+          if (intentoProveedor < maxIntentosProveedor) {
             await this.sleep(TIMEOUT_BACKOFF_MS);
             continue;
           }
-          throw new ServiceUnavailableError(`AI_PROVIDER_TIMEOUT: ${mensaje}`, {
-            codigo: 'AI_PROVIDER_TIMEOUT',
-            socioId,
-          });
+          throw new ServiceUnavailableError(
+            `AI_PROVIDER_TIMEOUT (${dia}/${tipoComida}): ${mensaje}`,
+            {
+              codigo: 'AI_PROVIDER_TIMEOUT',
+              socioId,
+              dia,
+              tipoComida,
+            },
+          );
         }
 
         if (this.esTruncacionDeterminista(mensaje)) {
           this.logger.warn(
-            `Proveedor IA truncó respuesta generando comida (intento ${intentoProveedor}/${MAX_REINTENTOS_PROVEEDOR_IA}, no retry): ${mensaje}`,
+            `Proveedor IA truncó respuesta generando comida (intento ${intentoProveedor}/${maxIntentosProveedor}, no retry): ${mensaje}`,
           );
           throw new BadGatewayError(
             `AI_PROVIDER_TRUNCATED: ${mensaje}. Reducí alternativas o aumentá el límite de tokens.`,
             {
               codigo: 'AI_PROVIDER_TRUNCATED',
               socioId,
+              dia,
+              tipoComida,
             },
           );
         }
 
         if (this.esJsonInvalido(mensaje)) {
           this.logger.warn(
-            `Proveedor IA JSON inválido generando comida (intento ${intentoProveedor}/${MAX_REINTENTOS_PROVEEDOR_IA}): ${mensaje}`,
+            `Proveedor IA JSON inválido generando comida (intento ${intentoProveedor}/${maxIntentosProveedor}): ${mensaje}`,
           );
-          if (intentoProveedor < MAX_REINTENTOS_PROVEEDOR_IA) {
+          if (intentoProveedor < maxIntentosProveedor) {
             continue;
           }
           throw new BadGatewayError(`AI_PROVIDER_INVALID_JSON: ${mensaje}`, {
             codigo: 'AI_PROVIDER_INVALID_JSON',
             socioId,
+            dia,
+            tipoComida,
           });
         }
 
@@ -1142,6 +1268,8 @@ Requisitos exactos:
         throw new BadGatewayError(`AI_PROVIDER_UPSTREAM_ERROR: ${mensaje}`, {
           codigo: 'AI_PROVIDER_UPSTREAM_ERROR',
           socioId,
+          dia,
+          tipoComida,
         });
       }
     }
