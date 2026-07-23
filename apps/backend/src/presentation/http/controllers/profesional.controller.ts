@@ -107,10 +107,6 @@ export class ProfesionalController {
     @Body() createNutricionistaDto: CreateNutricionistaDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
-    console.log(
-      '--- RAW BODY RECIBIDO EN CREATE NUTRICIONISTA ---',
-      createNutricionistaDto,
-    );
     this.logger.log(
       `Creando profesional con email: ${createNutricionistaDto.email}`,
     );
