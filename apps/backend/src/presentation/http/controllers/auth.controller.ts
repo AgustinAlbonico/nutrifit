@@ -70,15 +70,10 @@ export class AuthController {
   @Post('logout')
   @UseGuards(JwtAuthGuard)
   async logout(
-    @CurrentUserId() userId: number,
     @CurrentUser() user: UsuarioAutenticadoPayload,
     @Req() request: Request,
   ) {
-    await this.logoutUseCase.execute(
-      userId,
-      user.gimnasioId,
-      extraerOrigenRequest(request),
-    );
+    await this.logoutUseCase.execute(user, extraerOrigenRequest(request));
 
     return { message: 'Sesión cerrada' };
   }

@@ -26,6 +26,7 @@ import {
   PlanAlimentacionOrmEntity,
   PlanAlimentacionVersionOrmEntity,
   PlanFeedbackOrmEntity,
+  TokenRevocadoOrmEntity,
   TurnoOrmEntity,
   UsuarioOrmEntity,
   GimnasioOrmEntity,
@@ -49,6 +50,8 @@ import { NUTRICIONISTA_IA_MEMORIA_REPOSITORY } from 'src/domain/repositories/nut
 import { NutricionistaIAMemoriaRepositoryImpl } from './nutricionista-ia-memoria.repository.impl';
 import { GENERACION_PLAN_IA_REPOSITORY } from 'src/domain/repositories/generacion-plan-ia.repository';
 import { GeneracionPlanIaRepositoryImpl } from './generacion-plan-ia.repository.impl';
+import { TOKEN_REVOCADO_REPOSITORY } from 'src/domain/repositories/token-revocado.repository';
+import { TokenRevocadoRepositoryImplementation } from './token-revocado.repository';
 
 // This module is responsible for providing TypeORM repositories for the application.
 // It imports the TypeOrmConfigModule for database configuration and registers the necessary entities.
@@ -76,6 +79,7 @@ import { GeneracionPlanIaRepositoryImpl } from './generacion-plan-ia.repository.
       PlanAlimentacionOrmEntity,
       PlanAlimentacionVersionOrmEntity,
       PlanFeedbackOrmEntity,
+      TokenRevocadoOrmEntity,
       TurnoOrmEntity,
       UsuarioOrmEntity,
       GimnasioOrmEntity,
@@ -121,6 +125,10 @@ import { GeneracionPlanIaRepositoryImpl } from './generacion-plan-ia.repository.
       provide: GENERACION_PLAN_IA_REPOSITORY,
       useClass: GeneracionPlanIaRepositoryImpl,
     },
+    {
+      provide: TOKEN_REVOCADO_REPOSITORY,
+      useClass: TokenRevocadoRepositoryImplementation,
+    },
   ],
   exports: [
     USUARIO_REPOSITORY,
@@ -134,6 +142,7 @@ import { GeneracionPlanIaRepositoryImpl } from './generacion-plan-ia.repository.
     PLAN_FEEDBACK_REPOSITORY,
     NUTRICIONISTA_IA_MEMORIA_REPOSITORY,
     GENERACION_PLAN_IA_REPOSITORY,
+    TOKEN_REVOCADO_REPOSITORY,
   ],
 })
 export class RepositoriesModule {}

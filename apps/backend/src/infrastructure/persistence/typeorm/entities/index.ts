@@ -28,6 +28,7 @@ export * from './nutricionista-ia-memoria.entity';
 export * from './preparacion.entity';
 export * from './preparacion-item.entity';
 export * from './sugerencia-ia.entity';
+export * from './token-revocado.entity';
 export * from './turno.entity';
 export * from './notificacion.entity';
 export * from './recordatorio-enviado.entity';

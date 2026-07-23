@@ -14,6 +14,8 @@ export interface UsuarioAutenticadoPayload {
   gimnasioId: number | null;
   personaId: number | null;
   jti: string;
+  /** Expiracion del JWT en epoch seconds (presente cuando el guard lo expone). */
+  exp?: number;
 }
 
 interface RequestConUsuario extends Request {
