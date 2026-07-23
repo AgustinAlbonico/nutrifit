@@ -373,48 +373,6 @@ export class ProfesionalController {
     return res.send(archivo.buffer);
   }
 
-  /** @deprecated Mantenido para compatibilidad; retorna el primer diploma o 404 */
-  @Get(':id/diploma')
-  @Rol(
-    RolEnum.SOCIO,
-    RolEnum.ADMIN,
-    RolEnum.RECEPCIONISTA,
-    RolEnum.NUTRICIONISTA,
-  )
-  async obtenerDiplomaLegacy(
-    @Param('id', ParseIntPipe) id: number,
-    @Res() res: Response,
-  ) {
-    const diplomas = await this.listarDiplomasUseCase.execute(id);
-    if (diplomas.length === 0) {
-      return res
-        .status(404)
-        .json({ message: 'El profesional no tiene diplomas cargados.' });
-    }
-
-    const primero = diplomas[0];
-    const archivo = await this.objectStorage.obtenerArchivo(
-      primero.documentKey,
-    );
-    if (!archivo) {
-      return res
-        .status(404)
-        .json({ message: 'No se pudo recuperar el archivo del diploma.' });
-    }
-
-    res.setHeader('Content-Type', archivo.mimeType);
-    res.setHeader(
-      'Content-Disposition',
-      `inline; filename="${primero.nombreOriginal || `diploma-${id}.${archivo.mimeType.split('/')[1] || 'pdf'}`}"`,
-    );
-    res.setHeader('Cache-Control', 'public, max-age=3600');
-    res.setHeader(
-      'Content-Security-Policy',
-      "frame-ancestors 'self' http://localhost:5173",
-    );
-    return res.send(archivo.buffer);
-  }
-
   @Delete(':id')
   @Rol(RolEnum.ADMIN, RolEnum.RECEPCIONISTA)
   @Actions(ACCIONES.NUTRICIONISTAS_ELIMINAR)
