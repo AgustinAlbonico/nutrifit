@@ -77,17 +77,21 @@ function crearUsuariosPrueba(): Record<string, UsuarioPrueba> {
       nombre: 'Super Admin',
     },
     ADMIN_CENTRAL: {
-      email: extraerEmailPorRolYGimnasio(markdown, 'ADMIN', 'Gym Central'),
+      email: extraerEmailPorGimnasioEnTabla(
+        markdown,
+        'Gym Central',
+        'admin-central@nutrifit.com',
+      ),
       password,
       rol: 'ADMIN',
       nombre: 'Admin Central',
       gimnasio: 'Gym Central',
     },
     RECEPCIONISTA_CENTRAL: {
-      email: extraerEmailPorRolYGimnasio(
+      email: extraerEmailPorGimnasioEnTabla(
         markdown,
-        'RECEPCIONISTA',
         'Gym Central',
+        'recepcion-central@nutrifit.com',
       ),
       password,
       rol: 'RECEPCIONISTA',

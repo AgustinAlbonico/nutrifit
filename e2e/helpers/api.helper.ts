@@ -62,9 +62,15 @@ export async function apiDelete(
  * Obtiene el token de autenticacion de la sesion actual
  */
 export async function getAuthToken(page: Page): Promise<string | null> {
-  // Intentar obtener token del localStorage
   const token = await page.evaluate(() => {
-    return localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+    const raw = localStorage.getItem('nutrifit.auth');
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(raw);
+      return parsed?.token ?? null;
+    } catch {
+      return null;
+    }
   });
   return token;
 }
