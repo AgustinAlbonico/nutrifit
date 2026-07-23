@@ -454,11 +454,13 @@ export class UsuarioRepositoryImplementation implements UsuarioRepository {
     );
   }
 
-  async findByTokenRecuperacion(token: string): Promise<UsuarioEntity | null> {
-    if (!token) return null;
+  async findByHashTokenRecuperacion(
+    hashToken: string,
+  ): Promise<UsuarioEntity | null> {
+    if (!hashToken) return null;
 
     const user = await this.userRepository.findOne({
-      where: { tokenRecuperacion: token },
+      where: { tokenRecuperacion: hashToken },
     });
 
     if (!user) return null;

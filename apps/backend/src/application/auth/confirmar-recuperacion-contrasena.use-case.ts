@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { createHash } from 'crypto';
 import { BaseUseCase } from 'src/application/shared/use-case.base';
 import {
   USUARIO_REPOSITORY,
@@ -38,7 +39,9 @@ export class ConfirmarRecuperacionContrasenaUseCase implements BaseUseCase {
       throw new BadRequestError('El token es requerido.');
     }
 
-    const usuario = await this.usuarioRepository.findByTokenRecuperacion(token);
+    const hashToken = createHash('sha256').update(token).digest('hex');
+    const usuario =
+      await this.usuarioRepository.findByHashTokenRecuperacion(hashToken);
 
     if (!usuario || !usuario.tokenRecuperacion) {
       this.logger.warn(

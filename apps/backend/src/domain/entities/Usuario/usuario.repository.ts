@@ -20,8 +20,8 @@ export abstract class UsuarioRepository implements BaseRepository<UsuarioEntity>
   abstract update(id: number, entity: UsuarioEntity): Promise<UsuarioEntity>;
   abstract delete(id: number): Promise<void>;
   abstract findByEmail(email: string): Promise<UsuarioEntity | null>;
-  abstract findByTokenRecuperacion(
-    token: string,
+  abstract findByHashTokenRecuperacion(
+    hashToken: string,
   ): Promise<UsuarioEntity | null>;
   abstract findAdminByGimnasioId(
     gimnasioId: number,

@@ -9,7 +9,7 @@ import {
   APP_LOGGER_SERVICE,
   IAppLoggerService,
 } from 'src/domain/services/logger.service';
-import * as crypto from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 
 @Injectable()
 export class SolicitarRecuperacionContrasenaUseCase implements BaseUseCase {
@@ -40,11 +40,13 @@ export class SolicitarRecuperacionContrasenaUseCase implements BaseUseCase {
       };
     }
 
-    const token = crypto.randomBytes(32).toString('hex');
+    const token = randomBytes(32).toString('hex');
     const unaHoraMs = 60 * 60 * 1000;
     const expiracion = new Date(Date.now() + unaHoraMs);
 
-    usuario.tokenRecuperacion = token;
+    usuario.tokenRecuperacion = createHash('sha256')
+      .update(token)
+      .digest('hex');
     usuario.tokenRecuperacionExpiracion = expiracion;
 
     await this.usuarioRepository.update(usuario.idUsuario!, usuario);
