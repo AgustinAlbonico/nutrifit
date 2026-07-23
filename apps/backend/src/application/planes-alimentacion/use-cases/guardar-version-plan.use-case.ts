@@ -20,6 +20,7 @@ import {
   PlanAlimentacionOrmEntity,
   PlanAlimentacionVersionOrmEntity,
   SocioOrmEntity,
+  FichaSaludOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
 import { TenantContextService } from 'src/infrastructure/auth/tenant-context.service';
 import { NotificacionesService } from 'src/application/notificaciones/notificaciones.service';
@@ -30,17 +31,16 @@ import {
   APP_LOGGER_SERVICE,
   IAppLoggerService,
 } from 'src/domain/services/logger.service';
-import {
-  MacrosValidator,
-  type ObjetivoNutricional,
-} from 'src/domain/validators/macros-validator';
+import { MacrosValidator } from 'src/domain/validators/macros-validator';
 import {
   RestriccionesValidatorV2,
   type FichaClinicaParaValidacion,
 } from 'src/domain/validators/restricciones-validator-v2';
+import { calcularObjetivoMacros } from 'src/domain/services/objetivo-macros.helper';
 import { RespuestaGuardarVersionDto } from '../dtos';
 import { UnidadMedida } from 'src/domain/entities/Alimento/UnidadMedida';
 import { BloqueoGeneracionPlanIaService } from '../services/bloqueo-generacion-plan-ia.service';
+import { prepararActivacionExclusivaPlan } from '../services/activacion-exclusiva-plan.service';
 
 export interface SolicitudGuardarVersion {
   planAlimentacionId: number;
@@ -103,8 +103,6 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
     private readonly diaRepo: Repository<DiaPlanOrmEntity>,
     @InjectRepository(OpcionComidaOrmEntity)
     private readonly opcionRepo: Repository<OpcionComidaOrmEntity>,
-    @InjectRepository(AlimentoOrmEntity)
-    private readonly alimentoRepo: Repository<AlimentoOrmEntity>,
     @Inject(PLAN_ALIMENTACION_VERSION_REPOSITORY)
     private readonly planVersionRepo: PlanAlimentacionVersionRepository,
     private readonly notificacionesService: NotificacionesService,
@@ -152,12 +150,23 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
         'PLAN_FINALIZADO: el plan está finalizado y no admite guardar nuevas versiones',
       );
     }
+    if (plan.eliminadoEn) {
+      throw new ConflictError(
+        'PLAN_ELIMINADO: el plan fue eliminado y no admite nuevas versiones',
+      );
+    }
 
     // 4) NUT dueño
-    const ownerId = plan.nutricionista.idPersona;
-    if (ownerId !== nutricionistaUserId) {
+    const ownerUserId = plan.nutricionista.usuario?.idUsuario;
+    if (ownerUserId !== nutricionistaUserId) {
       throw new ForbiddenError(
         'Solo el nutricionista responsable del plan puede guardar versiones.',
+      );
+    }
+    const creadorPersonaId = plan.nutricionista.idPersona;
+    if (creadorPersonaId == null) {
+      throw new ForbiddenError(
+        'El nutricionista responsable no tiene una persona válida.',
       );
     }
 
@@ -173,140 +182,252 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
       planAlimentacionId,
     });
 
-    // 5) Buscar versión borrador (numeroVersion = 0)
-    const versionesExistentes =
-      await this.planVersionRepo.listarPorPlan(planAlimentacionId);
-    const borrador = versionesExistentes.find((v) => v.numeroVersion === 0);
-    if (!borrador) {
-      throw new BadRequestError(
-        'No hay cambios pendientes de guardar en este plan (borrador no encontrado).',
-      );
-    }
+    // 5) Transacción atómica
+    const fechaActivacion = new Date();
+    const resultadoGuardado = await this.dataSource.transaction(
+      async (manager) => {
+        const versionRepo = manager.getRepository(
+          PlanAlimentacionVersionOrmEntity,
+        );
+        const planRepoTx = manager.getRepository(PlanAlimentacionOrmEntity);
+        const diaRepoTx = manager.getRepository(DiaPlanOrmEntity);
+        const opcionRepoTx = manager.getRepository(OpcionComidaOrmEntity);
 
-    const { datosJson, motivoCambio } = borrador;
+        await prepararActivacionExclusivaPlan(
+          manager,
+          socioId,
+          planAlimentacionId,
+          fechaActivacion,
+        );
 
-    // 6) Calcular nuevo numeroVersion correlativo
-    const maxVersion = versionesExistentes.reduce(
-      (max, v) => Math.max(max, v.numeroVersion),
-      0,
-    );
-    const nuevoNumeroVersion = maxVersion + 1;
-
-    // 7) Cargar alimentos para sincronización de tablas
-    const todosAlimentosIds = [
-      ...new Set(
-        datosJson.estructura.flatMap((d) =>
-          d.comidas.flatMap((c) =>
-            c.alternativas.flatMap((a) => a.alimentos.map((i) => i.alimentoId)),
-          ),
-        ),
-      ),
-    ];
-    const alimentos = await this.alimentoRepo.findBy({
-      idAlimento: In(todosAlimentosIds),
-    });
-    const alimentoMap = new Map(alimentos.map((a) => [a.idAlimento, a]));
-
-    // 8) Transacción atómica
-    const nuevaVersion = await this.dataSource.transaction(async (manager) => {
-      const versionRepo = manager.getRepository(
-        PlanAlimentacionVersionOrmEntity,
-      );
-      const planRepoTx = manager.getRepository(PlanAlimentacionOrmEntity);
-      const diaRepoTx = manager.getRepository(DiaPlanOrmEntity);
-      const opcionRepoTx = manager.getRepository(OpcionComidaOrmEntity);
-
-      // 8a) Crear nueva versión correlativa real activa
-      const versionCreada = versionRepo.create({
-        idPlanAlimentacion: planAlimentacionId,
-        numeroVersion: nuevoNumeroVersion,
-        datosJson,
-        motivoCambio: motivoCambio || 'edicion_manual',
-        activa: true,
-        createdBy: plan.nutricionista.idPersona ?? 0,
-      });
-      const savedVersion = await versionRepo.save(versionCreada);
-
-      // 8b) Desactivar todas las versiones anteriores del plan
-      await versionRepo
-        .createQueryBuilder()
-        .update()
-        .set({ activa: false })
-        .where('id_plan_alimentacion = :planId', { planId: planAlimentacionId })
-        .execute();
-
-      // Reactivar la nueva creada
-      await versionRepo
-        .createQueryBuilder()
-        .update()
-        .set({ activa: true })
-        .where('id_plan_alimentacion_version = :versionId', {
-          versionId: savedVersion.idPlanAlimentacionVersion,
-        })
-        .execute();
-
-      // 8c) Marcar plan como ACTIVO
-      await planRepoTx
-        .createQueryBuilder()
-        .update()
-        .set({ estado: 'ACTIVO', activo: true, ultimaEdicion: new Date() })
-        .where('id_plan_alimentacion = :planId', { planId: planAlimentacionId })
-        .execute();
-
-      // 8d) Sincronizar `dias` de la base de datos activa con la estructura de la versión
-      for (const diaExistente of plan.dias ?? []) {
-        for (const opcion of diaExistente.opcionesComida ?? []) {
-          await opcionRepoTx.remove(opcion);
+        const planActual = await planRepoTx.findOne({
+          where: { idPlanAlimentacion: planAlimentacionId },
+          relations: { dias: { opcionesComida: { items: true } } },
+        });
+        if (!planActual) {
+          throw new NotFoundError(
+            'Plan de alimentación',
+            String(planAlimentacionId),
+          );
         }
-        await diaRepoTx.remove(diaExistente);
-      }
 
-      for (const [idx, diaEstructura] of datosJson.estructura.entries()) {
-        const dia = new DiaPlanOrmEntity();
-        dia.dia = diaEstructura.dia;
-        dia.orden = idx + 1;
-        dia.planAlimentacion = plan;
-        const diaGuardado = await diaRepoTx.save(dia);
+        const versionesExistentes = await versionRepo.find({
+          where: { idPlanAlimentacion: planAlimentacionId },
+          order: { numeroVersion: 'DESC' },
+        });
+        const borrador = versionesExistentes.find(
+          (version) => version.numeroVersion === 0,
+        );
+        if (!borrador) {
+          throw new BadRequestError(
+            'No hay cambios pendientes de guardar en este plan (borrador no encontrado).',
+          );
+        }
 
-        for (const comidaEstructura of diaEstructura.comidas) {
-          const opcion = new OpcionComidaOrmEntity();
-          opcion.tipoComida = comidaEstructura.tipo;
-          opcion.comentarios = null;
-          opcion.diaPlan = diaGuardado;
+        const { datosJson, motivoCambio } = borrador;
+        const versionActivaActual = versionesExistentes.find(
+          (version) => version.activa,
+        );
+        if (
+          versionActivaActual &&
+          JSON.stringify(versionActivaActual.datosJson) ===
+            JSON.stringify(datosJson)
+        ) {
+          throw new BadRequestError(
+            'No hay cambios nuevos para guardar como versión definitiva.',
+          );
+        }
 
-          for (const alt of comidaEstructura.alternativas) {
-            for (const ali of alt.alimentos) {
-              const item = new ItemComidaOrmEntity();
-              const al = alimentoMap.get(ali.alimentoId)!;
-              item.alimentoId = al.idAlimento;
-              item.alimentoNombre = al.nombre;
-              item.cantidad = ali.cantidad;
-              const unidadNormalizada =
-                GuardarVersionPlanUseCase.normalizarUnidad(ali.unidad);
-              if (ali.unidad && !unidadNormalizada) {
-                this.logger.warn(
-                  `unidad invalida "${ali.unidad}" para alimentoId=${ali.alimentoId}; fallback a "${al.unidadMedida}".`,
-                );
+        const ficha = await manager.getRepository(FichaSaludOrmEntity).findOne({
+          where: { socio: { idPersona: socioId } },
+          relations: { alergias: true, patologias: true },
+        });
+        const fichaClinica: FichaClinicaParaValidacion = {
+          alergias: ficha?.alergias?.map((alergia) => alergia.nombre) ?? [],
+          restriccionesAlimentarias: ficha?.restriccionesAlimentarias ?? null,
+          patologias:
+            ficha?.patologias
+              ?.map((patologia) => patologia.nombre)
+              .filter((nombre) => nombre.length > 0) ?? [],
+          objetivoPersonal: ficha?.objetivoPersonal ?? null,
+        };
+        const objetivoMacros = calcularObjetivoMacros(fichaClinica);
+        const macros = MacrosValidator.validar(
+          datosJson,
+          objetivoMacros,
+          datosJson.estructura.length,
+          datosJson.estructura[0]?.comidas.length ?? 4,
+          fechaActivacion,
+        );
+        if (!macros.cumpleEstructura || datosJson.estructura.length === 0) {
+          throw new BadRequestError(
+            'PLAN_ESTRUCTURA_INVALIDA: el borrador no contiene un plan completo para publicar',
+            { codigo: 'PLAN_ESTRUCTURA_INVALIDA' },
+          );
+        }
+        if (macros.bandaGlobal !== 'VERDE') {
+          throw new BadRequestError(
+            `MACROS_NO_VERDES: el borrador tiene banda global ${macros.bandaGlobal}.`,
+            {
+              codigo: 'MACROS_NO_VERDES',
+              bandaGlobal: macros.bandaGlobal,
+            },
+          );
+        }
+        const validacion = RestriccionesValidatorV2.validarPlanCompleto(
+          datosJson,
+          fichaClinica,
+        );
+        if (validacion.restriccionesNoCumplidas.length > 0) {
+          throw new BadRequestError(
+            'RESTRICCIONES_NO_CUMPLIDAS: el borrador contiene alimentos incompatibles con la ficha clínica.',
+            {
+              codigo: 'RESTRICCIONES_NO_CUMPLIDAS',
+              cantidad: validacion.restriccionesNoCumplidas.length,
+            },
+          );
+        }
+
+        const nuevoNumeroVersion =
+          versionesExistentes.reduce(
+            (maximo, version) => Math.max(maximo, version.numeroVersion),
+            0,
+          ) + 1;
+        const todosAlimentosIds = [
+          ...new Set(
+            datosJson.estructura.flatMap((dia) =>
+              dia.comidas.flatMap((comida) =>
+                comida.alternativas.flatMap((alternativa) =>
+                  alternativa.alimentos.map((item) => item.alimentoId),
+                ),
+              ),
+            ),
+          ),
+        ];
+        const alimentos = await manager
+          .getRepository(AlimentoOrmEntity)
+          .findBy({
+            idAlimento: In(todosAlimentosIds),
+          });
+        const alimentoMap = new Map(
+          alimentos.map((alimento) => [alimento.idAlimento, alimento]),
+        );
+
+        // 8a) Crear la versión inactiva para no solapar punteros activos.
+        const versionCreada = versionRepo.create({
+          idPlanAlimentacion: planAlimentacionId,
+          numeroVersion: nuevoNumeroVersion,
+          datosJson,
+          motivoCambio: motivoCambio || 'edicion_manual',
+          activa: false,
+          createdBy: creadorPersonaId,
+        });
+        const savedVersion = await versionRepo.save(versionCreada);
+
+        // 8b) Desactivar todas las versiones anteriores del plan
+        await versionRepo
+          .createQueryBuilder()
+          .update()
+          .set({ activa: false })
+          .where('id_plan_alimentacion = :planId', {
+            planId: planAlimentacionId,
+          })
+          .execute();
+
+        // Reactivar la nueva creada
+        await versionRepo
+          .createQueryBuilder()
+          .update()
+          .set({ activa: true })
+          .where('id_plan_alimentacion_version = :versionId', {
+            versionId: savedVersion.idPlanAlimentacionVersion,
+          })
+          .execute();
+
+        // 8c) Marcar plan como ACTIVO
+        await planRepoTx
+          .createQueryBuilder()
+          .update()
+          .set({
+            estado: 'ACTIVO',
+            activo: true,
+            ultimaEdicion: fechaActivacion,
+          })
+          .where('id_plan_alimentacion = :planId', {
+            planId: planAlimentacionId,
+          })
+          .execute();
+
+        // 8d) Sincronizar `dias` de la base de datos activa con la estructura de la versión
+        for (const diaExistente of planActual.dias ?? []) {
+          for (const opcion of diaExistente.opcionesComida ?? []) {
+            await opcionRepoTx.remove(opcion);
+          }
+          await diaRepoTx.remove(diaExistente);
+        }
+
+        for (const [idx, diaEstructura] of datosJson.estructura.entries()) {
+          const dia = new DiaPlanOrmEntity();
+          dia.dia = diaEstructura.dia;
+          dia.orden = idx + 1;
+          dia.planAlimentacion = planActual;
+          const diaGuardado = await diaRepoTx.save(dia);
+
+          for (const comidaEstructura of diaEstructura.comidas) {
+            const opcion = new OpcionComidaOrmEntity();
+            opcion.tipoComida = comidaEstructura.tipo;
+            opcion.comentarios = null;
+            opcion.diaPlan = diaGuardado;
+
+            for (const alt of comidaEstructura.alternativas) {
+              for (const ali of alt.alimentos) {
+                const item = new ItemComidaOrmEntity();
+                const al = alimentoMap.get(ali.alimentoId)!;
+                item.alimentoId = al.idAlimento;
+                item.alimentoNombre = al.nombre;
+                item.cantidad = ali.cantidad;
+                const unidadNormalizada =
+                  GuardarVersionPlanUseCase.normalizarUnidad(ali.unidad);
+                if (ali.unidad && !unidadNormalizada) {
+                  this.logger.warn(
+                    `unidad invalida "${ali.unidad}" para alimentoId=${ali.alimentoId}; fallback a "${al.unidadMedida}".`,
+                  );
+                }
+                item.unidad = unidadNormalizada ?? al.unidadMedida;
+                item.notas = null;
+                item.calorias = al.calorias;
+                item.proteinas = al.proteinas;
+                item.carbohidratos = al.carbohidratos;
+                item.grasas = al.grasas;
+                item.alimento = al;
+                item.opcionComida = opcion;
+                opcion.items = [...(opcion.items ?? []), item];
               }
-              item.unidad = unidadNormalizada ?? al.unidadMedida;
-              item.notas = null;
-              item.calorias = al.calorias;
-              item.proteinas = al.proteinas;
-              item.carbohidratos = al.carbohidratos;
-              item.grasas = al.grasas;
-              item.alimento = al;
-              item.opcionComida = opcion;
-              opcion.items = [...(opcion.items ?? []), item];
+            }
+            if (opcion.items) {
+              await opcionRepoTx.save(opcion);
             }
           }
-          if (opcion.items) {
-            await opcionRepoTx.save(opcion);
-          }
         }
-      }
 
-      return savedVersion;
-    });
+        return {
+          nuevaVersion: savedVersion,
+          nuevoNumeroVersion,
+          datosJson,
+          motivoCambio,
+          macros,
+          validacion,
+        };
+      },
+    );
+    const {
+      nuevaVersion,
+      nuevoNumeroVersion,
+      datosJson,
+      motivoCambio,
+      macros,
+      validacion,
+    } = resultadoGuardado;
 
     // 9) Notificación al socio
     try {
@@ -357,29 +478,6 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
         `Auditoria PLAN_ACTIVADO falló: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
-
-    const objetivoMacros: ObjetivoNutricional = {
-      caloriasDiarias: 2000,
-      proteinasDiarias: 150,
-      carbohidratosDiarios: 200,
-      grasasDiarias: 70,
-    };
-    const fichaClinicaValidacion: FichaClinicaParaValidacion = {
-      alergias: [],
-      restriccionesAlimentarias: null,
-      patologias: [],
-      objetivoPersonal: motivoCambio ?? null,
-    };
-    const macros = MacrosValidator.validar(
-      datosJson as unknown as Parameters<typeof MacrosValidator.validar>[0],
-      objetivoMacros,
-    );
-    const validacion = RestriccionesValidatorV2.validarPlanCompleto(
-      datosJson as unknown as Parameters<
-        typeof RestriccionesValidatorV2.validarPlanCompleto
-      >[0],
-      fichaClinicaValidacion,
-    );
 
     return {
       idPlanAlimentacion: planAlimentacionId,

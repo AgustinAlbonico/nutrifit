@@ -38,10 +38,6 @@ import {
   NotFoundError,
 } from 'src/domain/exceptions/custom-exceptions';
 import {
-  PLAN_ALIMENTACION_VERSION_REPOSITORY,
-  PlanAlimentacionVersionRepository,
-} from 'src/domain/repositories/plan-alimentacion-version.repository';
-import {
   PlanAlimentacionOrmEntity,
   PlanAlimentacionVersionOrmEntity,
   SocioOrmEntity,
@@ -56,12 +52,11 @@ import {
   IAppLoggerService,
 } from 'src/domain/services/logger.service';
 import { FichaSaludOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/ficha-salud.entity';
-import {
-  MacrosValidator,
-  type ObjetivoNutricional,
-} from 'src/domain/validators/macros-validator';
+import { MacrosValidator } from 'src/domain/validators/macros-validator';
 import type { FichaClinicaParaValidacion } from 'src/domain/validators/restricciones-validator-v2';
+import { calcularObjetivoMacros } from 'src/domain/services/objetivo-macros.helper';
 import { BloqueoGeneracionPlanIaService } from '../services/bloqueo-generacion-plan-ia.service';
+import { prepararActivacionExclusivaPlan } from '../services/activacion-exclusiva-plan.service';
 
 export interface SolicitudActivarPlan {
   planAlimentacionId: number;
@@ -89,8 +84,6 @@ export class ActivarPlanAlimentacionUseCase implements BaseUseCase {
     private readonly socioRepo: Repository<SocioOrmEntity>,
     @InjectRepository(FichaSaludOrmEntity)
     private readonly fichaSaludRepo: Repository<FichaSaludOrmEntity>,
-    @Inject(PLAN_ALIMENTACION_VERSION_REPOSITORY)
-    private readonly planVersionRepo: PlanAlimentacionVersionRepository,
     private readonly notificacionesService: NotificacionesService,
     private readonly auditoriaService: AuditoriaService,
     private readonly tenantContext: TenantContextService,
@@ -130,6 +123,11 @@ export class ActivarPlanAlimentacionUseCase implements BaseUseCase {
         'PLAN_FINALIZADO: el plan está finalizado y no admite activación de versiones',
       );
     }
+    if (plan.eliminadoEn) {
+      throw new ConflictError(
+        'PLAN_ELIMINADO: el plan fue eliminado y no puede volver a activarse',
+      );
+    }
 
     // 4) NUT dueño
     const ownerId =
@@ -152,46 +150,68 @@ export class ActivarPlanAlimentacionUseCase implements BaseUseCase {
       planAlimentacionId: solicitud.planAlimentacionId,
     });
 
-    // 5) Cargar versión y validar que pertenece al plan
-    const version = await this.planVersionRepo.obtenerPorId(
-      solicitud.versionId,
-    );
-    if (!version) {
-      throw new NotFoundError('Versión de plan', String(solicitud.versionId));
-    }
-    if (version.idPlanAlimentacion !== plan.idPlanAlimentacion) {
-      throw new ConflictError(
-        'La versión indicada no pertenece al plan solicitado',
-      );
-    }
-
-    // 6) Re-validar macros sobre la versión a activar
+    // 5) Preparar validación clínica. La versión se recarga bajo lock.
     const fichaClinica = await this.cargarFichaClinica(socioId);
-    const objetivoMacros = this.calcularObjetivoMacros(fichaClinica);
-    const validacionMacros = MacrosValidator.validar(
-      version.datosJson,
-      objetivoMacros,
-      version.datosJson.estructura.length,
-      version.datosJson.estructura[0]?.comidas.length ?? 4,
-      new Date(),
-    );
+    const objetivoMacros = calcularObjetivoMacros(fichaClinica);
 
-    if (validacionMacros.bandaGlobal !== 'VERDE') {
-      throw new BadRequestError(
-        `MACROS_NO_VERDES: la versión tiene banda global ${validacionMacros.bandaGlobal}. Solo se pueden activar versiones con banda VERDE (desvío ±5%).`,
-        {
-          codigo: 'MACROS_NO_VERDES',
-          bandaGlobal: validacionMacros.bandaGlobal,
-        },
-      );
-    }
-
-    // 7) Transacción: marcar activa + estado plan
-    await this.dataSource.transaction(async (manager) => {
+    // 6) Transacción: bloquear, validar y activar de forma atómica.
+    const fechaActivacion = new Date();
+    const version = await this.dataSource.transaction(async (manager) => {
       const versionRepo = manager.getRepository(
         PlanAlimentacionVersionOrmEntity,
       );
       const planRepoTx = manager.getRepository(PlanAlimentacionOrmEntity);
+
+      await prepararActivacionExclusivaPlan(
+        manager,
+        socioId,
+        plan.idPlanAlimentacion,
+        fechaActivacion,
+      );
+
+      const versionBloqueada = await versionRepo.findOne({
+        where: { idPlanAlimentacionVersion: solicitud.versionId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!versionBloqueada) {
+        throw new NotFoundError('Versión de plan', String(solicitud.versionId));
+      }
+      if (versionBloqueada.idPlanAlimentacion !== plan.idPlanAlimentacion) {
+        throw new ConflictError(
+          'La versión indicada no pertenece al plan solicitado',
+        );
+      }
+      if (versionBloqueada.numeroVersion === 0) {
+        throw new ConflictError(
+          'VERSION_BORRADOR: guardá una versión definitiva antes de activar el plan',
+        );
+      }
+
+      const validacionMacros = MacrosValidator.validar(
+        versionBloqueada.datosJson,
+        objetivoMacros,
+        versionBloqueada.datosJson.estructura.length,
+        versionBloqueada.datosJson.estructura[0]?.comidas.length ?? 4,
+        fechaActivacion,
+      );
+      if (
+        !validacionMacros.cumpleEstructura ||
+        versionBloqueada.datosJson.estructura.length === 0
+      ) {
+        throw new BadRequestError(
+          'PLAN_ESTRUCTURA_INVALIDA: la versión no contiene un plan completo para activar',
+          { codigo: 'PLAN_ESTRUCTURA_INVALIDA' },
+        );
+      }
+      if (validacionMacros.bandaGlobal !== 'VERDE') {
+        throw new BadRequestError(
+          `MACROS_NO_VERDES: la versión tiene banda global ${validacionMacros.bandaGlobal}. Solo se pueden activar versiones con banda VERDE (desvío ±5%).`,
+          {
+            codigo: 'MACROS_NO_VERDES',
+            bandaGlobal: validacionMacros.bandaGlobal,
+          },
+        );
+      }
 
       // 7a) Desactivar todas las versiones del plan
       await versionRepo
@@ -209,7 +229,7 @@ export class ActivarPlanAlimentacionUseCase implements BaseUseCase {
         .update()
         .set({ activa: true })
         .where('id_plan_alimentacion_version = :versionId', {
-          versionId: version.idPlanAlimentacionVersion,
+          versionId: versionBloqueada.idPlanAlimentacionVersion,
         })
         .execute();
 
@@ -217,11 +237,17 @@ export class ActivarPlanAlimentacionUseCase implements BaseUseCase {
       await planRepoTx
         .createQueryBuilder()
         .update()
-        .set({ estado: 'ACTIVO', activo: true })
+        .set({
+          estado: 'ACTIVO',
+          activo: true,
+          ultimaEdicion: fechaActivacion,
+        })
         .where('id_plan_alimentacion = :planId', {
           planId: plan.idPlanAlimentacion,
         })
         .execute();
+
+      return versionBloqueada;
     });
 
     // 8) Notificación al socio titular
@@ -313,22 +339,6 @@ export class ActivarPlanAlimentacionUseCase implements BaseUseCase {
         ficha.patologias?.map((p) => p.nombre).filter((p) => p.length > 0) ??
         [],
       objetivoPersonal: ficha.objetivoPersonal ?? null,
-    };
-  }
-
-  private calcularObjetivoMacros(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    ficha: FichaClinicaParaValidacion,
-  ): ObjetivoNutricional {
-    const calorias = 2000;
-    const proteinas = Math.round((calorias * 0.25) / 4);
-    const carbohidratos = Math.round((calorias * 0.5) / 4);
-    const grasas = Math.round((calorias * 0.25) / 9);
-    return {
-      caloriasDiarias: calorias,
-      proteinasDiarias: proteinas,
-      carbohidratosDiarios: carbohidratos,
-      grasasDiarias: grasas,
     };
   }
 }
