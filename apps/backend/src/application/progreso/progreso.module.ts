@@ -19,6 +19,11 @@ import { MinioModule } from 'src/infrastructure/services/minio/minio.module';
 import { AppLoggerModule } from 'src/infrastructure/common/logger/app-logger.module';
 import { AuthModule } from 'src/application/auth/auth.module';
 import { PermisosModule } from 'src/application/permisos/permisos.module';
+import { RepositoriesModule } from 'src/infrastructure/persistence/typeorm/repositories/repositories.module';
+import { JwtAuthGuard } from 'src/infrastructure/auth/guards/auth.guard';
+import { RolesGuard } from 'src/infrastructure/auth/guards/roles.guard';
+import { ActionsGuard } from 'src/infrastructure/auth/guards/actions.guard';
+import { SocioResourceAccessGuard } from 'src/infrastructure/auth/guards/socio-resource-access.guard';
 
 @Module({
   imports: [
@@ -33,6 +38,7 @@ import { PermisosModule } from 'src/application/permisos/permisos.module';
     AppLoggerModule,
     AuthModule,
     PermisosModule,
+    RepositoriesModule,
   ],
   controllers: [ProgresoController],
   providers: [
@@ -45,6 +51,10 @@ import { PermisosModule } from 'src/application/permisos/permisos.module';
     ActualizarObjetivoUseCase,
     MarcarObjetivoCompletadoUseCase,
     ObtenerObjetivosActivosUseCase,
+    JwtAuthGuard,
+    RolesGuard,
+    ActionsGuard,
+    SocioResourceAccessGuard,
   ],
   exports: [
     SubirFotoProgresoUseCase,
