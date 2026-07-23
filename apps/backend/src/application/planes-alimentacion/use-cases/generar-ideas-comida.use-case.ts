@@ -372,23 +372,15 @@ export class GenerarIdeasComidaUseCase {
     const promptCompleto = `${system}\n\n---\n\n${user}`;
 
     // Llamar al AI provider y parsear la respuesta JSON
-    let resultado: RespuestaRawIdeasComida = {};
-    try {
-      resultado =
-        await this.aiProvider.generarRecomendacion<RespuestaRawIdeasComida>(
-          promptCompleto,
-          {
-            schema: RESPUESTA_IDEAS_COMIDA_SCHEMA,
-            temperature: 0.4,
-            max_tokens: MAX_TOKENS_IDEAS_COMIDA,
-            timeoutMs: 30000,
-          },
-        );
-    } catch (error) {
-      const mensaje = error instanceof Error ? error.message : String(error);
-      this.logger.warn(`AI provider error en generarUnaPasada: ${mensaje}`);
-      return { prompt: promptCompleto, alternativas: [] };
-    }
+    const resultado =
+      await this.aiProvider.generarRecomendacion<RespuestaRawIdeasComida>(
+        promptCompleto,
+        {
+          schema: RESPUESTA_IDEAS_COMIDA_SCHEMA,
+          temperature: 0.4,
+          max_tokens: MAX_TOKENS_IDEAS_COMIDA,
+        },
+      );
 
     const alternativasRaw = resultado.alternativas ?? resultado.ideas ?? [];
     const alimentosNuevosRaw = resultado.alimentosNuevos ?? [];

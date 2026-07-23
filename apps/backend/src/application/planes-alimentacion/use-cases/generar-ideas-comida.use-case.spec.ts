@@ -8,7 +8,9 @@ import {
 import { FichaSaludOrmEntity } from 'src/infrastructure/persistence/typeorm/entities/ficha-salud.entity';
 import {
   AlimentoOrmEntity,
+  GrupoAlimenticioOrmEntity,
   PlanAlimentacionOrmEntity,
+  PreparacionOrmEntity,
 } from 'src/infrastructure/persistence/typeorm/entities';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -18,6 +20,11 @@ import { SOCIO_REPOSITORY } from 'src/domain/entities/Persona/Socio/socio.reposi
 import { NUTRICIONISTA_REPOSITORY } from 'src/domain/entities/Persona/Nutricionista/nutricionista.repository';
 import { PLAN_ALIMENTACION_VERSION_REPOSITORY } from 'src/domain/repositories/plan-alimentacion-version.repository';
 import { RestriccionesValidator } from 'src/application/restricciones/restricciones-validator.service';
+import { ResolvedorCatalogoIA } from 'src/application/ia/services/resolvedor-catalogo-ia.service';
+import { CreadorPreparacionesIA } from 'src/application/ia/services/creador-preparaciones-ia.service';
+import { BloqueoGeneracionPlanIaService } from '../services/bloqueo-generacion-plan-ia.service';
+import { BuscadorMacrosOpenFoodFacts } from 'src/infrastructure/alimentos/buscador-macros-openfoodfacts.service';
+import { ServiceUnavailableError } from 'src/domain/exceptions/custom-exceptions';
 
 const loggerMock = {
   log: jest.fn(),
@@ -66,9 +73,29 @@ describe('GenerarIdeasComidaUseCase', () => {
         { idAlimento: 5, nombre: 'Banana' },
         { idAlimento: 6, nombre: 'Manzana' },
       ]),
+      findOne: jest.fn().mockResolvedValue(null),
+      save: jest
+        .fn()
+        .mockRejectedValue(
+          new Error('No se puede crear el alimento en el test'),
+        ),
+    } as never;
+    const grupoAlimenticioRepo = {
+      find: jest
+        .fn()
+        .mockResolvedValue([{ idGrupoAlimenticio: 1, descripcion: 'Otros' }]),
     } as never;
     const socioRepo = { findOne: jest.fn() } as never;
     const nutriRepo = { findById: jest.fn() } as never;
+    const buscadorMacros = {
+      buscarMacrosPorNombre: jest.fn().mockResolvedValue(null),
+    };
+    const creadorPreparaciones = {
+      obtenerOCrear: jest.fn().mockResolvedValue(new Map()),
+    };
+    const bloqueoGeneracion = {
+      verificarSinGeneracionActiva: jest.fn().mockResolvedValue(undefined),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -87,12 +114,30 @@ describe('GenerarIdeasComidaUseCase', () => {
           provide: getRepositoryToken(AlimentoOrmEntity),
           useValue: alimentoRepo,
         },
+        {
+          provide: getRepositoryToken(GrupoAlimenticioOrmEntity),
+          useValue: grupoAlimenticioRepo,
+        },
+        {
+          provide: getRepositoryToken(PreparacionOrmEntity),
+          useValue: {},
+        },
         { provide: getRepositoryToken(SocioOrmEntity), useValue: socioRepo },
         { provide: NUTRICIONISTA_REPOSITORY, useValue: nutriRepo },
         { provide: SOCIO_REPOSITORY, useValue: socioRepo },
         { provide: PLAN_ALIMENTACION_VERSION_REPOSITORY, useValue: {} },
         { provide: TenantContextService, useValue: {} },
         { provide: APP_LOGGER_SERVICE, useValue: loggerMock },
+        ResolvedorCatalogoIA,
+        { provide: BuscadorMacrosOpenFoodFacts, useValue: buscadorMacros },
+        {
+          provide: CreadorPreparacionesIA,
+          useValue: creadorPreparaciones,
+        },
+        {
+          provide: BloqueoGeneracionPlanIaService,
+          useValue: bloqueoGeneracion,
+        },
       ],
     }).compile();
 
@@ -235,7 +280,7 @@ describe('GenerarIdeasComidaUseCase', () => {
     ).rejects.toMatchObject({ errorCode: 'BAD_REQUEST' });
   });
 
-  it('resuelve sinonimos y plurales comunes contra nombres canonicos del catalogo', async () => {
+  it('resuelve sinonimos y plurales comunes contra ids del catalogo', async () => {
     planRepo.findOne.mockResolvedValue(planBase);
     fichaRepo.findOne.mockResolvedValue(fichaBase);
     alimentoRepo.find.mockResolvedValue([
@@ -279,8 +324,8 @@ describe('GenerarIdeasComidaUseCase', () => {
     );
 
     expect(respuesta.alternativas[0].alimentos).toEqual([
-      expect.objectContaining({ alimentoId: 5, alimentoNombre: 'Banana' }),
-      expect.objectContaining({ alimentoId: 2, alimentoNombre: 'Huevo' }),
+      expect.objectContaining({ alimentoId: 5 }),
+      expect.objectContaining({ alimentoId: 2 }),
     ]);
   });
 
@@ -371,6 +416,30 @@ describe('GenerarIdeasComidaUseCase', () => {
 
     expect(llamada[0]).toEqual(expect.any(String));
     expect(llamada[1].schema.properties).toHaveProperty('alternativas');
+    expect(llamada[1]).not.toHaveProperty('timeoutMs');
+  });
+
+  it('propaga errores del provider sin repetir la misma llamada', async () => {
+    planRepo.findOne.mockResolvedValue(planBase);
+    fichaRepo.findOne.mockResolvedValue(fichaBase);
+    const errorProvider = new ServiceUnavailableError(
+      'OpenCode Zen no respondió a tiempo.',
+    );
+    aiProvider.generarRecomendacion.mockRejectedValue(errorProvider);
+
+    await expect(
+      sut.execute(
+        { personaId: 5, gimnasioId: 1, rol: 'NUTRICIONISTA' } as never,
+        {
+          planAlimentacionId: 1,
+          dia: 'LUNES',
+          tipoComida: 'DESAYUNO',
+          cantidadAlternativas: 1,
+        } as never,
+      ),
+    ).rejects.toBe(errorProvider);
+
+    expect(aiProvider.generarRecomendacion.mock.calls).toHaveLength(1);
   });
 
   it('no devuelve exito vacio si la IA no genera alternativas parseables', async () => {
