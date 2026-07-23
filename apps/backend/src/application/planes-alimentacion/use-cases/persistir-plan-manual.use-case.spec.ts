@@ -36,6 +36,7 @@ import {
   ForbiddenError,
   NotFoundError,
 } from 'src/domain/exceptions/custom-exceptions';
+import { BloqueoGeneracionPlanIaService } from '../services/bloqueo-generacion-plan-ia.service';
 
 const loggerMock = {
   log: jest.fn(),
@@ -47,7 +48,7 @@ const loggerMock = {
 
 describe('PersistirPlanManualUseCase', () => {
   let sut: PersistirPlanManualUseCase;
-  let planRepo: { findOne: jest.Mock };
+  let planRepo: { findOne: jest.Mock; update: jest.Mock };
   let planVersionRepo: {
     listarPorPlan: jest.Mock;
     crear: jest.Mock;
@@ -60,7 +61,10 @@ describe('PersistirPlanManualUseCase', () => {
   };
 
   beforeEach(async () => {
-    planRepo = { findOne: jest.fn() };
+    planRepo = {
+      findOne: jest.fn(),
+      update: jest.fn().mockResolvedValue(undefined),
+    };
     planVersionRepo = {
       listarPorPlan: jest.fn().mockResolvedValue([]),
       crear: jest.fn().mockImplementation(async (input) => ({
@@ -146,6 +150,12 @@ describe('PersistirPlanManualUseCase', () => {
           useValue: { generarIncidencias: jest.fn().mockResolvedValue([]) },
         },
         { provide: TenantContextService, useValue: { gimnasioId: 1 } },
+        {
+          provide: BloqueoGeneracionPlanIaService,
+          useValue: {
+            verificarSinGeneracionActiva: jest.fn().mockResolvedValue(undefined),
+          },
+        },
         { provide: APP_LOGGER_SERVICE, useValue: loggerMock },
       ],
     }).compile();
@@ -157,7 +167,7 @@ describe('PersistirPlanManualUseCase', () => {
     planRepo.findOne.mockResolvedValue({
       idPlanAlimentacion: 1,
       activo: true,
-      nutricionista: { idPersona: 5 },
+      nutricionista: { idPersona: 50, usuario: { idUsuario: 5 } },
       socio: { idPersona: 50 },
       dias: [],
     });
@@ -167,7 +177,7 @@ describe('PersistirPlanManualUseCase', () => {
     planRepo.findOne.mockResolvedValueOnce({
       idPlanAlimentacion: 1,
       activo: true,
-      nutricionista: { idPersona: 5 },
+      nutricionista: { idPersona: 50, usuario: { idUsuario: 5 } },
       socio: { idPersona: 50 },
       dias: [],
     });
@@ -211,7 +221,7 @@ describe('PersistirPlanManualUseCase', () => {
         idPlanAlimentacion: 1,
         activo: false,
         estado: 'BORRADOR',
-        nutricionista: { idPersona: 5 },
+        nutricionista: { idPersona: 50, usuario: { idUsuario: 5 } },
         socio: { idPersona: 50 },
         dias: [],
       })
@@ -219,7 +229,7 @@ describe('PersistirPlanManualUseCase', () => {
         idPlanAlimentacion: 1,
         activo: false,
         estado: 'BORRADOR',
-        nutricionista: { idPersona: 5 },
+        nutricionista: { idPersona: 50, usuario: { idUsuario: 5 } },
         socio: { idPersona: 50 },
         dias: [],
       });
@@ -251,7 +261,7 @@ describe('PersistirPlanManualUseCase', () => {
         idPlanAlimentacion: 1,
         numeroVersion: 0,
         motivoCambio: 'creacion_inicial',
-        activa: false,
+        activa: true,
         createdBy: 5,
       }),
     );
@@ -269,7 +279,7 @@ describe('PersistirPlanManualUseCase', () => {
     planRepo.findOne.mockResolvedValue({
       idPlanAlimentacion: 1,
       activo: true,
-      nutricionista: { idPersona: 99 },
+      nutricionista: { idPersona: 99, usuario: { idUsuario: 99 } },
       socio: { idPersona: 50 },
       dias: [],
     });

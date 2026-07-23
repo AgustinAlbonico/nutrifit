@@ -106,7 +106,7 @@ export class PersistirPlanManualUseCase implements BaseUseCase {
     // 1) Validar plan
     const plan = await this.planRepo.findOne({
       where: { idPlanAlimentacion: planId },
-      relations: { nutricionista: true, socio: true },
+      relations: { nutricionista: { usuario: true }, socio: true },
     });
     if (!plan) {
       throw new NotFoundError('Plan de alimentación', String(planId));
@@ -116,9 +116,7 @@ export class PersistirPlanManualUseCase implements BaseUseCase {
     }
 
     // 2) Auth: NUT dueño o ADMIN del gimnasio
-    const esDueno =
-      (plan.nutricionista as unknown as { idPersona: number | null })
-        ?.idPersona === userId;
+    const esDueno = plan.nutricionista.usuario?.idUsuario === userId;
     const esAdmin = userRol === Rol.ADMIN;
     if (!esDueno && !esAdmin) {
       throw new ForbiddenError(
