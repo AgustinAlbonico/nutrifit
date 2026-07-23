@@ -368,12 +368,12 @@ export class PlanAlimentacionController {
     estado: 'ACTIVO';
   }> {
     this.logger.log(
-      `Activando versión ${payload.versionId} del plan ${id} por nutricionista ${user.personaId}.`,
+      `Activando versión ${payload.versionId} del plan ${id} por nutricionista ${user.id}.`,
     );
     const result = await this.activarPlanAlimentacionUseCase.execute({
       planAlimentacionId: id,
       versionId: payload.versionId,
-      nutricionistaUserId: user.personaId ?? 0,
+      nutricionistaUserId: user.id,
       gimnasioId: user.gimnasioId ?? 0,
     });
     return result;
@@ -397,12 +397,10 @@ export class PlanAlimentacionController {
     estado: 'FINALIZADO';
     finalizadoAt: Date;
   }> {
-    this.logger.log(
-      `Finalizando plan ${id} por nutricionista ${user.personaId}.`,
-    );
+    this.logger.log(`Finalizando plan ${id} por nutricionista ${user.id}.`);
     return this.finalizarPlanAlimentacionUseCase.execute({
       planAlimentacionId: id,
-      nutricionistaUserId: user.personaId ?? 0,
+      nutricionistaUserId: user.id,
       gimnasioId: user.gimnasioId ?? 0,
     });
   }
@@ -422,7 +420,7 @@ export class PlanAlimentacionController {
     @Body() body: { dias: unknown[]; notas?: string },
   ) {
     return this.persistirPlanManualUseCase.execute(
-      user.personaId ?? 0,
+      user.id,
       user.rol as string,
       id,
       body as never,
@@ -443,11 +441,11 @@ export class PlanAlimentacionController {
     },
   ) {
     this.logger.log(
-      `Guardando versión del plan ${id} por nutricionista ${user.personaId}.`,
+      `Guardando versión del plan ${id} por nutricionista ${user.id}.`,
     );
     return this.guardarVersionPlanUseCase.execute({
       planAlimentacionId: id,
-      nutricionistaUserId: user.personaId ?? 0,
+      nutricionistaUserId: user.id,
       gimnasioId: user.gimnasioId ?? 0,
     });
   }
