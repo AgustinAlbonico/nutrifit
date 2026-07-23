@@ -2,6 +2,11 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
 import { UnauthorizedError } from 'src/domain/exceptions/custom-exceptions';
+import { Rol } from 'src/domain/entities/Usuario/Rol';
+import {
+  USUARIO_REPOSITORY,
+  UsuarioRepository,
+} from 'src/domain/entities/Usuario/usuario.repository';
 import {
   IJwtService,
   JWT_SERVICE,
@@ -22,6 +27,8 @@ export class RefreshTokenUseCase {
   constructor(
     @Inject(JWT_SERVICE)
     private readonly jwtService: IJwtService,
+    @Inject(USUARIO_REPOSITORY)
+    private readonly userRepository: UsuarioRepository,
     @Inject(LOGIN_AUDIT_SERVICE)
     private readonly loginAuditService: LoginAuditService,
   ) {}
@@ -31,21 +38,42 @@ export class RefreshTokenUseCase {
     origen: OrigenRequest,
   ): Promise<{ token: string }> {
     try {
+      // Re-validar que el usuario y su persona sigan activos. Un socio o
+      // nutricionista dado de baja (fechaBaja) NO debe poder extender su
+      // sesion aunque su JWT siga sin expirar.
+      const userId = currentTokenPayload.id;
+      const user = await this.userRepository.findByEmail(
+        currentTokenPayload.email,
+      );
+
+      if (
+        !user ||
+        user.idUsuario !== userId ||
+        user.persona?.fechaBaja
+      ) {
+        throw new UnauthorizedError('La cuenta está inactiva');
+      }
+
+      const gimnasioId =
+        user.rol === Rol.SUPERADMIN
+          ? null
+          : user.persona?.gimnasioId ?? null;
+
       const payload: JwtPayload = {
-        id: currentTokenPayload.id,
-        email: currentTokenPayload.email,
-        rol: currentTokenPayload.rol,
-        acciones: currentTokenPayload.acciones,
-        personaId: currentTokenPayload.personaId,
-        gimnasioId: currentTokenPayload.gimnasioId,
+        id: user.idUsuario,
+        email: user.email,
+        rol: user.rol,
+        acciones: user.getAccionesEfectivas(),
+        personaId: user.persona?.idPersona ?? null,
+        gimnasioId,
         jti: randomUUID(),
       };
 
       const token = this.jwtService.sign(payload);
 
       await this.registrarRefresh(
-        currentTokenPayload.id,
-        currentTokenPayload.gimnasioId,
+        user.idUsuario,
+        gimnasioId,
         ResultadoLoginAudit.REFRESH_SUCCESS,
         origen,
       );
