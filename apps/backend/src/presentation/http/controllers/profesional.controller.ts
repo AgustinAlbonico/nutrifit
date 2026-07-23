@@ -64,6 +64,7 @@ import {
   IObjectStorageService,
   OBJECT_STORAGE_SERVICE,
 } from 'src/domain/services/object-storage.service';
+import { FotoPerfilService } from 'src/application/shared/foto-perfil.service';
 import { Actions } from 'src/infrastructure/auth/decorators/actions.decorator';
 import { ACCIONES, PaginatedData } from '@nutrifit/shared';
 import { Public } from 'src/infrastructure/auth/decorators/public.decorator';
@@ -97,6 +98,7 @@ export class ProfesionalController {
     @Inject(APP_LOGGER_SERVICE) private readonly logger: IAppLoggerService,
     @Inject(OBJECT_STORAGE_SERVICE)
     private readonly objectStorage: IObjectStorageService,
+    private readonly fotoPerfilService: FotoPerfilService,
   ) {}
 
   @Post()
@@ -114,13 +116,9 @@ export class ProfesionalController {
     let fotoPerfilKey: string | undefined;
 
     if (file) {
-      const extension = file.originalname.split('.').pop();
-      fotoPerfilKey = `perfiles/nutricionistas/${Date.now()}-${Math.random().toString(36).substring(7)}.${extension}`;
-
-      await this.objectStorage.subirArchivo(
-        fotoPerfilKey,
-        file.buffer,
-        file.mimetype,
+      fotoPerfilKey = await this.fotoPerfilService.subir(
+        'nutricionistas',
+        file,
       );
 
       this.logger.log(`Foto de perfil subida: ${fotoPerfilKey}`);
@@ -245,13 +243,9 @@ export class ProfesionalController {
     let fotoPerfilKey: string | undefined;
 
     if (file) {
-      const extension = file.originalname.split('.').pop();
-      fotoPerfilKey = `perfiles/nutricionistas/${Date.now()}-${Math.random().toString(36).substring(7)}.${extension}`;
-
-      await this.objectStorage.subirArchivo(
-        fotoPerfilKey,
-        file.buffer,
-        file.mimetype,
+      fotoPerfilKey = await this.fotoPerfilService.subir(
+        'nutricionistas',
+        file,
       );
 
       this.logger.log(`Foto de perfil actualizada: ${fotoPerfilKey}`);

@@ -33,6 +33,7 @@ import { APP_LOGGER_SERVICE } from 'src/domain/services/logger.service';
 import { OBJECT_STORAGE_SERVICE } from 'src/domain/services/object-storage.service';
 import { IObjectStorageService } from 'src/domain/services/object-storage.service';
 import { AppLoggerService } from 'src/infrastructure/common/logger/app-logger.service';
+import { FotoPerfilService } from 'src/application/shared/foto-perfil.service';
 import { Actions } from 'src/infrastructure/auth/decorators/actions.decorator';
 import { Public } from 'src/infrastructure/auth/decorators/public.decorator';
 import { Rol } from 'src/infrastructure/auth/decorators/role.decorator';
@@ -56,6 +57,7 @@ export class SocioController {
     private readonly logger: AppLoggerService,
     @Inject(OBJECT_STORAGE_SERVICE)
     private readonly objectStorage: IObjectStorageService,
+    private readonly fotoPerfilService: FotoPerfilService,
   ) {}
 
   @Get()
@@ -90,17 +92,7 @@ export class SocioController {
     let fotoPerfilKey: string | undefined;
 
     if (file) {
-      // Generar clave única para la foto
-      const timestamp = Date.now();
-      const extension = file.originalname.split('.').pop();
-      fotoPerfilKey = `perfiles/socios/${timestamp}-${Math.random().toString(36).substring(7)}.${extension}`;
-
-      // Subir archivo a MinIO
-      await this.objectStorage.subirArchivo(
-        fotoPerfilKey,
-        file.buffer,
-        file.mimetype,
-      );
+      fotoPerfilKey = await this.fotoPerfilService.subir('socios', file);
 
       this.logger.log(`Foto de perfil subida: ${fotoPerfilKey}`);
     }
@@ -133,17 +125,7 @@ export class SocioController {
     let fotoPerfilKey: string | undefined;
 
     if (file) {
-      // Generar clave única para la foto
-      const timestamp = Date.now();
-      const extension = file.originalname.split('.').pop();
-      fotoPerfilKey = `perfiles/socios/${timestamp}-${Math.random().toString(36).substring(7)}.${extension}`;
-
-      // Subir archivo a MinIO
-      await this.objectStorage.subirArchivo(
-        fotoPerfilKey,
-        file.buffer,
-        file.mimetype,
-      );
+      fotoPerfilKey = await this.fotoPerfilService.subir('socios', file);
 
       this.logger.log(`Foto de perfil actualizada: ${fotoPerfilKey}`);
     }

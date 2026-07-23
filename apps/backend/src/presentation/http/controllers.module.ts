@@ -17,6 +17,7 @@ import {
   NotificacionesController,
   AdminEstadisticasController,
   AdminReportesController,
+  AdminGimnasioController,
   ConfiguracionController,
   IaConfiguracionController,
   RecepcionistasController,
@@ -67,6 +68,7 @@ import { SuscripcionesModule } from './suscripciones.module';
 import { AuditoriaInterceptor } from 'src/infrastructure/services/auditoria/auditoria.interceptor';
 import { AuditoriaService } from 'src/infrastructure/services/auditoria/auditoria.service';
 import { AuditoriaEntityRegistry } from 'src/infrastructure/services/auditoria/auditoria-entity.registry';
+import { FotoPerfilService } from 'src/application/shared/foto-perfil.service';
 
 @Module({
   imports: [
@@ -110,6 +112,7 @@ import { AuditoriaEntityRegistry } from 'src/infrastructure/services/auditoria/a
     BuscarSociosConFichaUseCase,
     GimnasioRepository,
     NotificacionesService,
+    FotoPerfilService,
     CrearPreparacionUseCase,
     ListarPreparacionesUseCase,
     ObtenerPreparacionUseCase,
@@ -141,6 +144,7 @@ import { AuditoriaEntityRegistry } from 'src/infrastructure/services/auditoria/a
     NotificacionesController,
     AdminEstadisticasController,
     AdminReportesController,
+    AdminGimnasioController,
     ConfiguracionController,
     IaConfiguracionController,
     RecepcionistasController,

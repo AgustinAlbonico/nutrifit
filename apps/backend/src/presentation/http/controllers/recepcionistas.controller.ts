@@ -32,6 +32,7 @@ import {
   OBJECT_STORAGE_SERVICE,
   IObjectStorageService,
 } from 'src/domain/services/object-storage.service';
+import { FotoPerfilService } from 'src/application/shared/foto-perfil.service';
 import { Public } from 'src/infrastructure/auth/decorators/public.decorator';
 import { Actions } from 'src/infrastructure/auth/decorators/actions.decorator';
 import { Rol } from 'src/infrastructure/auth/decorators/role.decorator';
@@ -52,6 +53,7 @@ export class RecepcionistasController {
     private readonly reactivarRecepcionistaUseCase: ReactivarRecepcionistaUseCase,
     @Inject(OBJECT_STORAGE_SERVICE)
     private readonly objectStorage: IObjectStorageService,
+    private readonly fotoPerfilService: FotoPerfilService,
   ) {}
 
   @Post()
@@ -68,14 +70,9 @@ export class RecepcionistasController {
       if (!file.mimetype.startsWith('image/')) {
         throw new BadRequestException('El archivo debe ser una imagen');
       }
-      const timestamp = Date.now();
-      const extension = file.originalname.split('.').pop();
-      fotoPerfilKey = `perfiles/recepcionistas/${timestamp}-${Math.random().toString(36).substring(7)}.${extension}`;
-
-      await this.objectStorage.subirArchivo(
-        fotoPerfilKey,
-        file.buffer,
-        file.mimetype,
+      fotoPerfilKey = await this.fotoPerfilService.subir(
+        'recepcionistas',
+        file,
       );
     }
 
@@ -144,14 +141,9 @@ export class RecepcionistasController {
       if (!file.mimetype.startsWith('image/')) {
         throw new BadRequestException('El archivo debe ser una imagen');
       }
-      const timestamp = Date.now();
-      const extension = file.originalname.split('.').pop();
-      fotoPerfilKey = `perfiles/recepcionistas/${timestamp}-${Math.random().toString(36).substring(7)}.${extension}`;
-
-      await this.objectStorage.subirArchivo(
-        fotoPerfilKey,
-        file.buffer,
-        file.mimetype,
+      fotoPerfilKey = await this.fotoPerfilService.subir(
+        'recepcionistas',
+        file,
       );
     }
 

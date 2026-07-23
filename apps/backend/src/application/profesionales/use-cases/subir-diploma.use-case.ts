@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { BaseUseCase } from 'src/application/shared/use-case.base';
 import {
   DIPLOMA_REPOSITORY,
@@ -24,7 +25,7 @@ export class SubirDiplomaUseCase implements BaseUseCase {
     archivo: Express.Multer.File,
   ): Promise<DiplomaEntity> {
     const extension = archivo.originalname.split('.').pop();
-    const diplomaKey = `perfiles/nutricionistas/diplomas/${Date.now()}-${Math.random().toString(36).substring(7)}.${extension}`;
+    const diplomaKey = `perfiles/nutricionistas/diplomas/${Date.now()}-${randomUUID()}.${extension}`;
 
     await this.objectStorage.subirArchivo(
       diplomaKey,
