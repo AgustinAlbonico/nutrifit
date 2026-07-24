@@ -106,10 +106,21 @@ export function VersionHistory({
     );
   }
 
+  const versionesGuardadas = versiones.filter(
+    (version) => version.numeroVersion !== 0,
+  );
+  if (versionesGuardadas.length === 0) {
+    return (
+      <div className="rounded-lg border border-dashed border-border/60 bg-muted/20 px-4 py-6 text-center text-sm text-muted-foreground">
+        Este plan todavía no tiene versiones guardadas.
+      </div>
+    );
+  }
+
   return (
     <nav aria-label="Historial de versiones del plan">
       <ol className="flex flex-col gap-2">
-        {versiones.map((version) => (
+        {versionesGuardadas.map((version) => (
           <VersionItem
             key={version.idPlanAlimentacionVersion}
             version={version}

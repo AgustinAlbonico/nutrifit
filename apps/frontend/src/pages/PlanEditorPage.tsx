@@ -31,8 +31,8 @@
  * - Skip-links implícitos por jerarquía de headings
  */
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from '@tanstack/react-router';
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useParams, useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeft,
   Sparkles,
@@ -44,8 +44,9 @@ import {
   History,
   Save,
   CheckCircle2,
-} from 'lucide-react';
-import { toast } from 'sonner';
+  AlertCircle,
+} from "lucide-react";
+import { toast } from "sonner";
 
 import {
   DndContext,
@@ -53,13 +54,13 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
-} from '@dnd-kit/core';
+} from "@dnd-kit/core";
 
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AvatarPaciente } from '@/components/ui/avatar-paciente';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AvatarPaciente } from "@/components/ui/avatar-paciente";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -67,30 +68,30 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 
-import { GeneradorPlanSemanal } from '@/components/ia/GeneradorPlanSemanal';
-import { FeedbackModal } from '@/components/ia/FeedbackModal';
-import { VersionHistory } from '@/components/plan/VersionHistory';
-import { RazonamientoCumplimiento } from '@/components/plan/RazonamientoCumplimiento';
-import { RestriccionesEditablesCard } from '@/components/plan/RestriccionesEditablesCard';
-import { GrillaManualSlots } from '@/components/plan/GrillaManualSlots';
-import { DialogGenerarIdeasIa } from '@/components/plan/DialogGenerarIdeasIa';
+import { GeneradorPlanSemanal } from "@/components/ia/GeneradorPlanSemanal";
+import { FeedbackModal } from "@/components/ia/FeedbackModal";
+import { VersionHistory } from "@/components/plan/VersionHistory";
+import { RazonamientoCumplimiento } from "@/components/plan/RazonamientoCumplimiento";
+import { RestriccionesEditablesCard } from "@/components/plan/RestriccionesEditablesCard";
+import { GrillaManualSlots } from "@/components/plan/GrillaManualSlots";
+import { DialogGenerarIdeasIa } from "@/components/plan/DialogGenerarIdeasIa";
 import {
   crearClaveSlot,
   estructuraTieneContenido,
   obtenerClavesGeneradas,
-} from '@/components/plan/estructuraPlan.utils';
+} from "@/components/plan/estructuraPlan.utils";
 
-import { apiRequest } from '@/lib/api';
-import { desenvolverRespuestaApi } from '@/lib/api-response';
-import { useObtenerFichaNutricionista } from '@/hooks/useObtenerFichaNutricionista';
-import { useEditarFichaPaciente } from '@/hooks/useEditarFichaPaciente';
-import { useDebounce } from '@/hooks/useDebounce';
-import { useGeneracionPlanIa as useGeneracionPlanIaContext } from '@/contexts/GeneracionPlanIaContext';
-import { normalizarVersionesPlan } from '@/hooks/useVersionesPlan';
-import type { PaginatedData } from '@nutrifit/shared';
-import type { ApiResponse } from '@/types/api';
+import { apiRequest } from "@/lib/api";
+import { desenvolverRespuestaApi } from "@/lib/api-response";
+import { useObtenerFichaNutricionista } from "@/hooks/useObtenerFichaNutricionista";
+import { useEditarFichaPaciente } from "@/hooks/useEditarFichaPaciente";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useGeneracionPlanIa as useGeneracionPlanIaContext } from "@/contexts/GeneracionPlanIaContext";
+import { normalizarVersionesPlan } from "@/hooks/useVersionesPlan";
+import type { PaginatedData } from "@nutrifit/shared";
+import type { ApiResponse } from "@/types/api";
 import type {
   RespuestaPlanSemanalV2FE,
   EstructuraDiaFE,
@@ -99,8 +100,8 @@ import type {
   TipoComidaPlan,
   IdeaComidaIa,
   GeneracionPlanIaFE,
-} from '@/types/ia';
-import type { FichaSaludSocio } from '@/types/ficha-salud';
+} from "@/types/ia";
+import type { FichaSaludSocio } from "@/types/ficha-salud";
 
 interface PacienteResumen {
   socioId: number;
@@ -114,7 +115,7 @@ interface PlanAlimentacionListadoFE {
   fechaCreacion?: string | Date;
   objetivoNutricional?: string;
   activo?: boolean;
-  estado?: 'BORRADOR' | 'ACTIVO' | 'FINALIZADO';
+  estado?: "BORRADOR" | "ACTIVO" | "FINALIZADO";
   eliminadoEn?: string | Date | null;
   socioId?: number;
   nutricionistaId?: number;
@@ -128,21 +129,24 @@ interface PropiedadesEstadoBloqueadoPlanEditor {
 
 function normalizarRespuestaConMacros<
   T extends {
-    plan: RespuestaPlanSemanalV2FE['plan'];
-    macros: RespuestaPlanSemanalV2FE['macros'];
+    plan: RespuestaPlanSemanalV2FE["plan"];
+    macros: RespuestaPlanSemanalV2FE["macros"];
   },
 >(respuesta: T): T {
   return {
     ...respuesta,
     plan: {
       ...respuesta.plan,
-      macrosPorDia: respuesta.macros?.macrosPorDia ?? respuesta.plan.macrosPorDia,
+      macrosPorDia:
+        respuesta.macros?.macrosPorDia ?? respuesta.plan.macrosPorDia,
     },
   };
 }
 
 function normalizarPlanesListado(
-  respuesta: PlanAlimentacionListadoFE[] | ApiResponse<PlanAlimentacionListadoFE[]>,
+  respuesta:
+    | PlanAlimentacionListadoFE[]
+    | ApiResponse<PlanAlimentacionListadoFE[]>,
 ): PlanAlimentacionListadoFE[] {
   const data = desenvolverRespuestaApi(respuesta);
   return Array.isArray(data) ? data : [];
@@ -153,7 +157,7 @@ function esPlanEditableExistente(
   nutricionistaId: number | null,
 ): boolean {
   if (plan.eliminadoEn) return false;
-  if (plan.estado === 'FINALIZADO') return false;
+  if (plan.estado === "FINALIZADO") return false;
   if (nutricionistaId != null && plan.nutricionistaId != null) {
     return plan.nutricionistaId === nutricionistaId;
   }
@@ -161,21 +165,21 @@ function esPlanEditableExistente(
 }
 
 const DIAS_PLAN: DiaSemana[] = [
-  'LUNES',
-  'MARTES',
-  'MIERCOLES',
-  'JUEVES',
-  'VIERNES',
-  'SABADO',
-  'DOMINGO',
+  "LUNES",
+  "MARTES",
+  "MIERCOLES",
+  "JUEVES",
+  "VIERNES",
+  "SABADO",
+  "DOMINGO",
 ];
 
 const TIPOS_COMIDA_PLAN: TipoComidaPlan[] = [
-  'DESAYUNO',
-  'ALMUERZO',
-  'MERIENDA',
-  'CENA',
-  'COLACION',
+  "DESAYUNO",
+  "ALMUERZO",
+  "MERIENDA",
+  "CENA",
+  "COLACION",
 ];
 
 interface VersionPlanCompletaFE {
@@ -201,7 +205,9 @@ function completarEstructuraManual(
   }
 
   return estructuraBase.map((diaBase) => {
-    const diaPersistido = estructuraPersistida.find((dia) => dia.dia === diaBase.dia);
+    const diaPersistido = estructuraPersistida.find(
+      (dia) => dia.dia === diaBase.dia,
+    );
     if (!diaPersistido) return diaBase;
 
     return {
@@ -211,7 +217,10 @@ function completarEstructuraManual(
           (comida) => comida.tipo === comidaBase.tipo,
         );
         return comidaPersistida
-          ? { ...comidaPersistida, alternativas: comidaPersistida.alternativas ?? [] }
+          ? {
+              ...comidaPersistida,
+              alternativas: comidaPersistida.alternativas ?? [],
+            }
           : comidaBase;
       }),
     };
@@ -237,7 +246,9 @@ interface PersistirManualPayload {
   notas?: string;
 }
 
-function estructuraToPayload(estructura: EstructuraDiaFE[]): PersistirManualPayload {
+function estructuraToPayload(
+  estructura: EstructuraDiaFE[],
+): PersistirManualPayload {
   return {
     dias: estructura.map((dia, orden) => ({
       dia: dia.dia,
@@ -258,7 +269,7 @@ export function PlanEditorPage() {
   const params = useParams({ strict: false }) as { socioId?: string };
   const navigate = useNavigate();
   const socioIdNumero = params.socioId ? Number(params.socioId) : undefined;
-  const puedeEditarPlanes = rol === 'NUTRICIONISTA';
+  const puedeEditarPlanes = rol === "NUTRICIONISTA";
 
   // Estado principal: respuesta del backend con el plan generado
   const [respuesta, setRespuesta] = useState<RespuestaPlanSemanalV2FE | null>(
@@ -275,21 +286,27 @@ export function PlanEditorPage() {
   const [confirmacionVaciadoAbierta, setConfirmacionVaciadoAbierta] =
     useState(false);
   const [vaciandoContenido, setVaciandoContenido] = useState(false);
+  const [confirmarPublicarAbierto, setConfirmarPublicarAbierto] =
+    useState(false);
+  const [bandaParaConfirmar, setBandaParaConfirmar] = useState<
+    "VERDE" | "AMARILLO" | "ROJO" | null
+  >(null);
 
   // Modo de tabs: editor | versiones
-  const [modo, setModo] = useState<'editor' | 'versiones'>('editor');
-  const [planManualExistenteId, setPlanManualExistenteId] = useState<number | null>(
-    null,
-  );
+  const [modo, setModo] = useState<"editor" | "versiones">("editor");
+  const [planManualExistenteId, setPlanManualExistenteId] = useState<
+    number | null
+  >(null);
   const [cargandoPlanExistente, setCargandoPlanExistente] = useState(false);
-
 
   // Paciente
   const [paciente, setPaciente] = useState<PacienteResumen | null>(null);
   const [cargandoPaciente, setCargandoPaciente] = useState(false);
 
   // Estados del editor unificado y autoguardado de borrador
-  const [estructura, setEstructura] = useState<EstructuraDiaFE[]>(crearEstructuraInicial);
+  const [estructura, setEstructura] = useState<EstructuraDiaFE[]>(
+    crearEstructuraInicial,
+  );
   const [ultimoGuardado, setUltimoGuardado] = useState<Date | null>(null);
   const [guardandoBorrador, setGuardandoBorrador] = useState(false);
   const [cargandoEstructura, setCargandoEstructura] = useState(false);
@@ -336,7 +353,7 @@ export function PlanEditorPage() {
   ): Promise<void> => {
     if (!puedeEditarPlanes || !socioIdNumero || !personaId) return;
     await editarFichaAsync({ payload: datosEditados });
-    toast.success('Ficha del paciente actualizada', {
+    toast.success("Ficha del paciente actualizada", {
       description: `Versión guardada. La IA usará los datos actualizados.`,
     });
   };
@@ -388,16 +405,19 @@ export function PlanEditorPage() {
       const res = await apiRequest<
         RespuestaPlanSemanalV2FE | ApiResponse<RespuestaPlanSemanalV2FE>
       >(`/planes-alimentacion/crear-manual/${socioIdNumero}`, {
-        method: 'POST',
+        method: "POST",
         token,
       });
-      const planData = normalizarRespuestaConMacros(desenvolverRespuestaApi(res));
+      const planData = normalizarRespuestaConMacros(
+        desenvolverRespuestaApi(res),
+      );
       setRespuesta(planData);
       setPlanManualExistenteId(planData.planAlimentacionId);
       setEstructura(crearEstructuraInicial());
-      setModo('editor');
+      setModo("editor");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al crear plan manual';
+      const msg =
+        err instanceof Error ? err.message : "Error al crear plan manual";
       toast.error(msg);
     } finally {
       setCargandoPlanManual(false);
@@ -417,10 +437,10 @@ export function PlanEditorPage() {
 
         if (cancelado) return;
 
-        const planEditable = normalizarPlanesListado(respuestaApi).find((plan) =>
-          esPlanEditableExistente(plan, personaId ?? null),
+        const planEditable = normalizarPlanesListado(respuestaApi).find(
+          (plan) => esPlanEditableExistente(plan, personaId ?? null),
         );
-        
+
         if (planEditable) {
           setPlanManualExistenteId(planEditable.idPlanAlimentacion ?? null);
         } else {
@@ -438,17 +458,23 @@ export function PlanEditorPage() {
     return () => {
       cancelado = true;
     };
-  }, [puedeEditarPlanes, token, personaId, socioIdNumero, manejarCrearPlanManual]);
+  }, [
+    puedeEditarPlanes,
+    token,
+    personaId,
+    socioIdNumero,
+    manejarCrearPlanManual,
+  ]);
 
   const volverAlPlan = () => {
-    const turnoId = new URLSearchParams(window.location.search).get('turnoId');
+    const turnoId = new URLSearchParams(window.location.search).get("turnoId");
 
     if (turnoId) {
       void navigate({ to: `/profesional/consulta/${turnoId}` });
     } else if (socioIdNumero) {
       void navigate({ to: `/profesional/plan/${socioIdNumero}` });
     } else {
-      void navigate({ to: '/dashboard' });
+      void navigate({ to: "/dashboard" });
     }
   };
 
@@ -456,11 +482,8 @@ export function PlanEditorPage() {
 
   // El polling y el badge persistente viven en GeneracionPlanIaContext.
   // Aquí solo consumimos el estado y sincronizamos los IDs del socio/plan.
-  const {
-    generacionVisible,
-    planBloqueadoPorIa,
-    setIds,
-  } = useGeneracionPlanIaContext();
+  const { generacionVisible, planBloqueadoPorIa, setIds } =
+    useGeneracionPlanIaContext();
   planBloqueadoPorIaRef.current = planBloqueadoPorIa;
 
   useEffect(() => {
@@ -494,26 +517,30 @@ export function PlanEditorPage() {
     if (!g?.id) return;
     if (generacionCerradaRef.current === g.id) return;
 
-    if (g.estado === 'COMPLETADO') {
+    if (g.estado === "COMPLETADO") {
       generacionCerradaRef.current = g.id;
       if (g.respuestaJson) {
-        const respuestaNormalizada = normalizarRespuestaConMacros(g.respuestaJson);
+        const respuestaNormalizada = normalizarRespuestaConMacros(
+          g.respuestaJson,
+        );
         setRespuesta(respuestaNormalizada);
         setPlanManualExistenteId(respuestaNormalizada.planAlimentacionId);
-        setEstructura(completarEstructuraManual(respuestaNormalizada.plan.estructura));
+        setEstructura(
+          completarEstructuraManual(respuestaNormalizada.plan.estructura),
+        );
         setVersionSeleccionadaId(respuestaNormalizada.versionId);
         haSidoModificadoRef.current = false;
       }
-      toast.success('Plan generado correctamente', {
-        description: 'El editor se actualizó con la nueva versión del plan.',
+      toast.success("Plan generado correctamente", {
+        description: "El editor se actualizó con la nueva versión del plan.",
       });
       return;
     }
 
-    if (g.estado === 'ERROR') {
+    if (g.estado === "ERROR") {
       generacionCerradaRef.current = g.id;
-      toast.error('La generación con IA falló', {
-        description: g.errorMensaje ?? 'El editor vuelve a estar disponible.',
+      toast.error("La generación con IA falló", {
+        description: g.errorMensaje ?? "El editor vuelve a estar disponible.",
       });
     }
   }, [
@@ -531,7 +558,9 @@ export function PlanEditorPage() {
     () => completarEstructuraManual(snapshotParcialIa?.estructura),
     [snapshotParcialIa?.estructura],
   );
-  const estructuraVisible = mostrandoPreviewIa ? estructuraPreviewIa : estructura;
+  const estructuraVisible = mostrandoPreviewIa
+    ? estructuraPreviewIa
+    : estructura;
   const slotsGenerandoIa = useMemo(() => {
     if (!mostrandoPreviewIa) return undefined;
 
@@ -553,9 +582,15 @@ export function PlanEditorPage() {
   const textoProgresoPreviewIa = useMemo(() => {
     if (!mostrandoPreviewIa) return null;
     const progresoActual = generacionVisible?.progresoActual ?? 0;
-    const progresoTotal = generacionVisible?.progresoTotal ?? DIAS_PLAN.length * TIPOS_COMIDA_PLAN.length;
+    const progresoTotal =
+      generacionVisible?.progresoTotal ??
+      DIAS_PLAN.length * TIPOS_COMIDA_PLAN.length;
     return `${progresoActual}/${progresoTotal} comidas generadas`;
-  }, [generacionVisible?.progresoActual, generacionVisible?.progresoTotal, mostrandoPreviewIa]);
+  }, [
+    generacionVisible?.progresoActual,
+    generacionVisible?.progresoTotal,
+    mostrandoPreviewIa,
+  ]);
 
   // Carga el borrador o versión activa al montar o cambiar de plan
   useEffect(() => {
@@ -565,12 +600,14 @@ export function PlanEditorPage() {
     const cargarBorradorOActiva = async () => {
       try {
         setCargandoEstructura(true);
-        const respuestaVersiones = await apiRequest<Parameters<typeof normalizarVersionesPlan>[0]>(
-          `/planes-alimentacion/${planIdActual}/versiones`,
-          { token }
+        const respuestaVersiones = await apiRequest<
+          Parameters<typeof normalizarVersionesPlan>[0]
+        >(`/planes-alimentacion/${planIdActual}/versiones`, { token });
+        const versiones = normalizarVersionesPlan(
+          respuestaVersiones,
+          planIdActual,
         );
-        const versiones = normalizarVersionesPlan(respuestaVersiones, planIdActual);
-        
+
         // Buscar borrador (numeroVersion === 0)
         const borrador = versiones.find((v) => v.numeroVersion === 0);
         const activa = versiones.find((v) => v.activa);
@@ -582,14 +619,18 @@ export function PlanEditorPage() {
           return;
         }
 
-        const respuestaVersion = await apiRequest<VersionPlanCompletaFE | ApiResponse<VersionPlanCompletaFE>>(
+        const respuestaVersion = await apiRequest<
+          VersionPlanCompletaFE | ApiResponse<VersionPlanCompletaFE>
+        >(
           `/planes-alimentacion/version/${seleccionada.idPlanAlimentacionVersion}`,
-          { token }
+          { token },
         );
         const versionCompleta = desenvolverRespuestaApi(respuestaVersion);
 
         if (cancelado) return;
-        setEstructura(completarEstructuraManual(versionCompleta.datosJson?.estructura));
+        setEstructura(
+          completarEstructuraManual(versionCompleta.datosJson?.estructura),
+        );
         setVersionSeleccionadaId(seleccionada.idPlanAlimentacionVersion);
       } catch {
         if (!cancelado) setEstructura(crearEstructuraInicial());
@@ -615,7 +656,7 @@ export function PlanEditorPage() {
         await apiRequest(
           `/planes-alimentacion/${planIdActual}/persistir-manual`,
           {
-            method: 'POST',
+            method: "POST",
             body: estructuraToPayload(estructuraParaGuardar),
           },
         );
@@ -640,45 +681,55 @@ export function PlanEditorPage() {
     }
   }, [debouncedEstructura, persistirSilencioso, planBloqueadoPorIa]);
 
-  // Guardar versión explicitamente (V1, V2, etc.)
-  const guardarVersionExplicita = async () => {
+  // Helper: realiza el POST /guardar-version sin duplicar lógica.
+  const ejecutarGuardarYPublicar = async () => {
     if (!planIdActual) return;
-    if (planBloqueadoPorIa) {
-      toast.info('El plan está bloqueado por generación IA', {
-        description: 'Esperá a que termine la generación para guardar una versión definitiva.',
-      });
-      return;
-    }
     setGuardandoBorrador(true);
     try {
-      if (haSidoModificadoRef.current) {
-        await apiRequest(
-          `/planes-alimentacion/${planIdActual}/persistir-manual`,
-          {
-            method: 'POST',
-            body: estructuraToPayload(estructura),
-          },
-        );
-      }
-      const res = await apiRequest<RespuestaPlanSemanalV2FE | ApiResponse<RespuestaPlanSemanalV2FE>>(
-        `/planes-alimentacion/${planIdActual}/guardar-version`,
-        {
-          method: 'POST',
-        },
+      const res = await apiRequest<
+        RespuestaPlanSemanalV2FE | ApiResponse<RespuestaPlanSemanalV2FE>
+      >(`/planes-alimentacion/${planIdActual}/guardar-version`, {
+        method: "POST",
+      });
+      const planData = normalizarRespuestaConMacros(
+        desenvolverRespuestaApi(res),
       );
-      const planData = normalizarRespuestaConMacros(desenvolverRespuestaApi(res));
       setRespuesta(planData);
       setVersionSeleccionadaId(planData.versionId);
       haSidoModificadoRef.current = false;
-      toast.success('Nueva versión guardada correctamente', {
+      toast.success("Versión guardada y publicada", {
         description: `Se creó la versión v${planData.numeroVersion} y se activó para el socio.`,
       });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al guardar la versión';
+      const msg =
+        err instanceof Error ? err.message : "Error al guardar la versión";
       toast.error(msg);
     } finally {
       setGuardandoBorrador(false);
+      setConfirmarPublicarAbierto(false);
+      setBandaParaConfirmar(null);
     }
+  };
+
+  // Guardar y publicar. Si la banda != VERDE, abre el modal de aviso.
+  const guardarVersionExplicita = () => {
+    if (!planIdActual) return;
+    if (planBloqueadoPorIa) {
+      toast.info("El plan está bloqueado por generación IA", {
+        description:
+          "Esperá a que termine la generación para guardar y publicar.",
+      });
+      return;
+    }
+    const banda =
+      respuesta?.macros?.bandaGlobal ??
+      (estructuraTieneContenido(estructura) ? "ROJO" : "VERDE");
+    if (banda !== "VERDE") {
+      setBandaParaConfirmar(banda);
+      setConfirmarPublicarAbierto(true);
+      return;
+    }
+    void ejecutarGuardarYPublicar();
   };
 
   // Vaciar todas las comidas del plan (DELETE /planes-alimentacion/:id/contenido).
@@ -695,9 +746,9 @@ export function PlanEditorPage() {
         opcionesEliminadas: number;
         vaciadoEn: string;
       }>(`/planes-alimentacion/${planIdActual}/contenido`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
-      toast.success(respuesta.mensaje || 'Plan vaciado correctamente', {
+      toast.success(respuesta.mensaje || "Plan vaciado correctamente", {
         description: `Se eliminaron ${respuesta.diasEliminados} días y ${respuesta.opcionesEliminadas} opciones de comida.`,
       });
       setEstructura(crearEstructuraInicial());
@@ -707,7 +758,7 @@ export function PlanEditorPage() {
       const mensaje =
         err instanceof Error
           ? err.message
-          : 'Error al vaciar el contenido del plan';
+          : "Error al vaciar el contenido del plan";
       toast.error(mensaje);
     } finally {
       setVaciandoContenido(false);
@@ -735,14 +786,16 @@ export function PlanEditorPage() {
       const idea = active.data.current as IdeaComidaIa | undefined;
       if (!idea || idea.idTemp !== ideaIdTemp) return;
 
-      const guionIdx = slotKey.indexOf('-');
+      const guionIdx = slotKey.indexOf("-");
       if (guionIdx === -1) return;
       const dia = slotKey.slice(0, guionIdx) as DiaSemana;
       const tipoComida = slotKey.slice(guionIdx + 1) as TipoComidaPlan;
 
       const diaIdx = estructura.findIndex((d) => d.dia === dia);
       if (diaIdx === -1) return;
-      const comidaIdx = estructura[diaIdx].comidas.findIndex((c) => c.tipo === tipoComida);
+      const comidaIdx = estructura[diaIdx].comidas.findIndex(
+        (c) => c.tipo === tipoComida,
+      );
       if (comidaIdx === -1) return;
 
       const nuevaAlternativa = {
@@ -778,11 +831,14 @@ export function PlanEditorPage() {
     [estructura, planBloqueadoPorIa],
   );
 
-  const handleEstructuraChange = useCallback((nueva: EstructuraDiaFE[]) => {
-    if (planBloqueadoPorIa) return;
-    setEstructura(nueva);
-    haSidoModificadoRef.current = true;
-  }, [planBloqueadoPorIa]);
+  const handleEstructuraChange = useCallback(
+    (nueva: EstructuraDiaFE[]) => {
+      if (planBloqueadoPorIa) return;
+      setEstructura(nueva);
+      haSidoModificadoRef.current = true;
+    },
+    [planBloqueadoPorIa],
+  );
 
   const handleAddIdea = useCallback(
     (dia: DiaSemana, tipoComida: TipoComidaPlan, idea: IdeaComidaIa) => {
@@ -821,16 +877,16 @@ export function PlanEditorPage() {
     [planBloqueadoPorIa],
   );
 
-  const handleSelectSlotForIa = useCallback((dia: DiaSemana, tipoComida: TipoComidaPlan) => {
-    if (planBloqueadoPorIa) return;
-    setSlotIdeasIa({ dia, tipoComida });
-  }, [planBloqueadoPorIa]);
+  const handleSelectSlotForIa = useCallback(
+    (dia: DiaSemana, tipoComida: TipoComidaPlan) => {
+      if (planBloqueadoPorIa) return;
+      setSlotIdeasIa({ dia, tipoComida });
+    },
+    [planBloqueadoPorIa],
+  );
 
-
-
-
-
-  const planIdEditorManual = respuesta?.planAlimentacionId ?? planManualExistenteId;
+  const planIdEditorManual =
+    respuesta?.planAlimentacionId ?? planManualExistenteId;
 
   if (!puedeEditarPlanes) {
     return (
@@ -885,7 +941,7 @@ export function PlanEditorPage() {
                 </h1>
                 <p className="text-sm text-muted-foreground">
                   {paciente.nombreCompleto}
-                  {paciente.dni ? ` · DNI ${paciente.dni}` : ''}
+                  {paciente.dni ? ` · DNI ${paciente.dni}` : ""}
                 </p>
               </div>
             </>
@@ -909,7 +965,12 @@ export function PlanEditorPage() {
                 {ultimoGuardado && !guardandoBorrador && (
                   <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
                     <CheckCircle2 className="size-3.5" />
-                    Guardado {ultimoGuardado.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    Guardado{" "}
+                    {ultimoGuardado.toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                    })}
                   </div>
                 )}
                 {guardandoBorrador && (
@@ -956,21 +1017,22 @@ export function PlanEditorPage() {
                 Limpiar comidas
               </Button>
 
-              {/* Botón: Guardar versión definitiva */}
+              {/* Botón: Guardar y publicar */}
               <Button
                 type="button"
                 onClick={guardarVersionExplicita}
-                disabled={guardandoBorrador || cargandoEstructura || planBloqueadoPorIa}
+                disabled={
+                  guardandoBorrador || cargandoEstructura || planBloqueadoPorIa
+                }
                 size="sm"
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-9 flex items-center justify-center gap-1.5 rounded-xl transition-all shadow"
                 data-testid="guardar-version-btn"
               >
                 <Save className="size-4" />
-                Guardar versión definitiva
+                Guardar y publicar
               </Button>
             </>
           )}
-
         </div>
       </header>
 
@@ -995,7 +1057,6 @@ export function PlanEditorPage() {
                 className="flex flex-col gap-6 w-full animate-in fade-in duration-300"
                 data-testid="plan-editor-layout"
               >
-
                 <DialogGenerarIdeasIa
                   open={slotIdeasIa !== null && !planBloqueadoPorIa}
                   onOpenChange={(open) => {
@@ -1007,27 +1068,46 @@ export function PlanEditorPage() {
                 />
 
                 {/* Dialog modal para GeneradorPlanSemanal */}
-                <Dialog open={generadorIaAbierto} onOpenChange={setGeneradorIaAbierto}>
+                <Dialog
+                  open={generadorIaAbierto}
+                  onOpenChange={setGeneradorIaAbierto}
+                >
                   <DialogContent className="max-w-2xl rounded-2xl border bg-background p-6 shadow-xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle className="text-lg font-bold flex items-center gap-2">
-                        <Sparkles className="size-5 text-fuchsia-500" aria-hidden="true" />
+                        <Sparkles
+                          className="size-5 text-fuchsia-500"
+                          aria-hidden="true"
+                        />
                         Generar plan semanal con IA
                       </DialogTitle>
                     </DialogHeader>
                     <GeneradorPlanSemanal
                       planAlimentacionId={planIdEditorManual}
                       socioIdPreseleccionado={socioIdNumero}
-                      fichaDisponible={!!ficha && !cargandoFicha && !sinPermisos && !sinFicha && !errorFicha}
+                      fichaDisponible={
+                        !!ficha &&
+                        !cargandoFicha &&
+                        !sinPermisos &&
+                        !sinFicha &&
+                        !errorFicha
+                      }
                       datosPaciente={ficha}
                       modoBackground
                       generacionBloqueada={planBloqueadoPorIa}
                       onGeneracionIniciada={registrarGeneracionIniciada}
                       onSuccess={(data) => {
-                        const respuestaNormalizada = normalizarRespuestaConMacros(data);
+                        const respuestaNormalizada =
+                          normalizarRespuestaConMacros(data);
                         setRespuesta(respuestaNormalizada);
-                        setEstructura(completarEstructuraManual(respuestaNormalizada.plan.estructura));
-                        setVersionSeleccionadaId(respuestaNormalizada.versionId);
+                        setEstructura(
+                          completarEstructuraManual(
+                            respuestaNormalizada.plan.estructura,
+                          ),
+                        );
+                        setVersionSeleccionadaId(
+                          respuestaNormalizada.versionId,
+                        );
                         haSidoModificadoRef.current = false;
                         setGeneradorIaAbierto(false);
                       }}
@@ -1061,7 +1141,10 @@ export function PlanEditorPage() {
                 <main className="flex flex-col gap-6 min-w-0">
                   {cargandoEstructura ? (
                     <div className="flex items-center justify-center gap-2 py-16 text-center text-sm text-muted-foreground bg-card/25 rounded-2xl border border-dashed">
-                      <Loader2 className="size-5 animate-spin text-muted-foreground" aria-hidden="true" />
+                      <Loader2
+                        className="size-5 animate-spin text-muted-foreground"
+                        aria-hidden="true"
+                      />
                       Cargando borrador del plan...
                     </div>
                   ) : (
@@ -1073,9 +1156,13 @@ export function PlanEditorPage() {
                         >
                           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                             <div>
-                              <p className="font-semibold">Preview IA en progreso</p>
+                              <p className="font-semibold">
+                                Preview IA en progreso
+                              </p>
                               <p className="text-xs text-amber-800/80 dark:text-amber-200/80">
-                                El plan se completa comida por comida. Podés revisar lo generado, pero la edición sigue bloqueada hasta que termine.
+                                El plan se completa comida por comida. Podés
+                                revisar lo generado, pero la edición sigue
+                                bloqueada hasta que termine.
                               </p>
                             </div>
                             {textoProgresoPreviewIa && (
@@ -1084,10 +1171,14 @@ export function PlanEditorPage() {
                               </span>
                             )}
                           </div>
-                          {(generacionVisible?.diaActual || generacionVisible?.comidaActual) && (
+                          {(generacionVisible?.diaActual ||
+                            generacionVisible?.comidaActual) && (
                             <p className="mt-2 text-xs text-amber-800/80 dark:text-amber-200/80">
-                              Generando ahora: {generacionVisible?.diaActual ?? 'día pendiente'} ·{' '}
-                              {generacionVisible?.comidaActual ?? 'comida pendiente'}
+                              Generando ahora:{" "}
+                              {generacionVisible?.diaActual ?? "día pendiente"}{" "}
+                              ·{" "}
+                              {generacionVisible?.comidaActual ??
+                                "comida pendiente"}
                             </p>
                           )}
                         </section>
@@ -1139,18 +1230,24 @@ export function PlanEditorPage() {
                   )}
                 </main>
               </div>
-            ) : (cargandoPlanExistente || cargandoPlanManual) ? (
+            ) : cargandoPlanExistente || cargandoPlanManual ? (
               <div className="flex items-center justify-center gap-2 py-16 text-center text-sm text-muted-foreground">
                 <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                 Cargando editor de plan…
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center gap-4 py-16 text-center max-w-md mx-auto">
-                <PenLine className="size-12 text-muted-foreground/30" aria-hidden="true" />
+                <PenLine
+                  className="size-12 text-muted-foreground/30"
+                  aria-hidden="true"
+                />
                 <div>
-                  <h3 className="font-semibold text-lg">Comenzá a planificar</h3>
+                  <h3 className="font-semibold text-lg">
+                    Comenzá a planificar
+                  </h3>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Podés generar un plan semanal completo usando IA, o empezar a cargarlo de forma manual slot por slot.
+                    Podés generar un plan semanal completo usando IA, o empezar
+                    a cargarlo de forma manual slot por slot.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 w-full pt-4">
@@ -1162,17 +1259,32 @@ export function PlanEditorPage() {
                     <GeneradorPlanSemanal
                       planAlimentacionId={undefined}
                       socioIdPreseleccionado={socioIdNumero}
-                      fichaDisponible={!!ficha && !cargandoFicha && !sinPermisos && !sinFicha && !errorFicha}
+                      fichaDisponible={
+                        !!ficha &&
+                        !cargandoFicha &&
+                        !sinPermisos &&
+                        !sinFicha &&
+                        !errorFicha
+                      }
                       datosPaciente={ficha}
                       modoBackground
                       generacionBloqueada={planBloqueadoPorIa}
                       onGeneracionIniciada={registrarGeneracionIniciada}
                       onSuccess={(data) => {
-                        const respuestaNormalizada = normalizarRespuestaConMacros(data);
+                        const respuestaNormalizada =
+                          normalizarRespuestaConMacros(data);
                         setRespuesta(respuestaNormalizada);
-                        setPlanManualExistenteId(respuestaNormalizada.planAlimentacionId);
-                        setEstructura(completarEstructuraManual(respuestaNormalizada.plan.estructura));
-                        setVersionSeleccionadaId(respuestaNormalizada.versionId);
+                        setPlanManualExistenteId(
+                          respuestaNormalizada.planAlimentacionId,
+                        );
+                        setEstructura(
+                          completarEstructuraManual(
+                            respuestaNormalizada.plan.estructura,
+                          ),
+                        );
+                        setVersionSeleccionadaId(
+                          respuestaNormalizada.versionId,
+                        );
                         haSidoModificadoRef.current = false;
                       }}
                     />
@@ -1180,17 +1292,23 @@ export function PlanEditorPage() {
 
                   <div className="relative flex py-2 items-center">
                     <div className="flex-grow border-t border-border/60"></div>
-                    <span className="flex-shrink mx-4 text-muted-foreground text-xs font-medium uppercase">o también</span>
+                    <span className="flex-shrink mx-4 text-muted-foreground text-xs font-medium uppercase">
+                      o también
+                    </span>
                     <div className="flex-grow border-t border-border/60"></div>
                   </div>
 
                   <Button
                     onClick={manejarCrearPlanManual}
-                    disabled={cargandoPlanManual || !socioIdNumero || planBloqueadoPorIa}
+                    disabled={
+                      cargandoPlanManual || !socioIdNumero || planBloqueadoPorIa
+                    }
                     variant="outline"
                     className="w-full h-11 text-sm font-semibold border-dashed"
                   >
-                    {cargandoPlanManual ? 'Creando…' : 'Opción B: Crear plan manual vacío'}
+                    {cargandoPlanManual
+                      ? "Creando…"
+                      : "Opción B: Crear plan manual vacío"}
                   </Button>
                 </div>
               </div>
@@ -1214,26 +1332,35 @@ export function PlanEditorPage() {
                     versionSeleccionadaId={versionSeleccionadaId}
                     onSelect={async (vid) => {
                       if (planBloqueadoPorIa) {
-                        toast.info('El plan está bloqueado por generación IA', {
-                          description: 'Esperá a que termine la generación para cargar otra versión.',
+                        toast.info("El plan está bloqueado por generación IA", {
+                          description:
+                            "Esperá a que termine la generación para cargar otra versión.",
                         });
                         return;
                       }
                       setVersionSeleccionadaId(vid);
                       try {
-                        const res = await apiRequest<VersionPlanCompletaFE | ApiResponse<VersionPlanCompletaFE>>(
-                          `/planes-alimentacion/version/${vid}`,
-                          { token }
-                        );
+                        const res = await apiRequest<
+                          | VersionPlanCompletaFE
+                          | ApiResponse<VersionPlanCompletaFE>
+                        >(`/planes-alimentacion/version/${vid}`, { token });
                         const versionCompleta = desenvolverRespuestaApi(res);
-                        setEstructura(completarEstructuraManual(versionCompleta.datosJson?.estructura));
+                        setEstructura(
+                          completarEstructuraManual(
+                            versionCompleta.datosJson?.estructura,
+                          ),
+                        );
                         haSidoModificadoRef.current = false;
-                        setModo('editor');
-                        toast.success(`Versión v${versionCompleta.numeroVersion} cargada`, {
-                          description: 'La estructura del editor se actualizó con esta versión.',
-                        });
+                        setModo("editor");
+                        toast.success(
+                          `Versión v${versionCompleta.numeroVersion} cargada`,
+                          {
+                            description:
+                              "La estructura del editor se actualizó con esta versión.",
+                          },
+                        );
                       } catch {
-                        toast.error('Error al cargar la versión');
+                        toast.error("Error al cargar la versión");
                       }
                     }}
                   />
@@ -1272,7 +1399,9 @@ export function PlanEditorPage() {
           onOpenChange={setFeedbackAbierto}
           versionId={respuesta.versionId}
           onSuccess={() => {
-            toast.success('Feedback registrado. La IA aprende para próximos planes.');
+            toast.success(
+              "Feedback registrado. La IA aprende para próximos planes.",
+            );
           }}
         />
       )}
@@ -1295,9 +1424,9 @@ export function PlanEditorPage() {
               ¿Limpiar todas las comidas?
             </DialogTitle>
             <DialogDescription>
-              Esta acción elimina <strong>todas las comidas y los días</strong> del
-              borrador actual. El plan en sí no se borra: queda como un borrador
-              vacío listo para que vuelvas a armarlo desde cero.
+              Esta acción elimina <strong>todas las comidas y los días</strong>{" "}
+              del borrador actual. El plan en sí no se borra: queda como un
+              borrador vacío listo para que vuelvas a armarlo desde cero.
             </DialogDescription>
           </DialogHeader>
           <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-900/80 dark:text-amber-200/80">
@@ -1331,6 +1460,70 @@ export function PlanEditorPage() {
                 <>
                   <Trash2 className="size-4" aria-hidden="true" />
                   Sí, limpiar comidas
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={confirmarPublicarAbierto}
+        onOpenChange={(open) => {
+          if (guardandoBorrador) return;
+          setConfirmarPublicarAbierto(open);
+          if (!open) setBandaParaConfirmar(null);
+        }}
+      >
+        <DialogContent
+          className="max-w-md"
+          data-testid="confirmar-publicar-dialog"
+        >
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
+              <AlertCircle className="size-5" aria-hidden="true" />
+              ¿Guardar y publicar de todas formas?
+            </DialogTitle>
+            <DialogDescription>
+              Las macros del plan están en banda{" "}
+              <strong>{bandaParaConfirmar ?? "ROJO"}</strong>. Podés publicarlo
+              igual; el socio lo verá con esa advertencia y la banda quedará
+              registrada en la auditoría.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-900/80 dark:text-amber-200/80">
+            Tip: revisá los días o nutrientes marcados en rojo antes de
+            continuar. Si querés, podés cancelar y ajustar el plan.
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setConfirmarPublicarAbierto(false);
+                setBandaParaConfirmar(null);
+              }}
+              disabled={guardandoBorrador}
+              data-testid="cancelar-publicar-banda-no-verde-btn"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={() => void ejecutarGuardarYPublicar()}
+              disabled={guardandoBorrador}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold gap-1.5"
+              data-testid="confirmar-publicar-banda-no-verde-btn"
+            >
+              {guardandoBorrador ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                  Publicando…
+                </>
+              ) : (
+                <>
+                  <Save className="size-4" aria-hidden="true" />
+                  Guardar y publicar
                 </>
               )}
             </Button>

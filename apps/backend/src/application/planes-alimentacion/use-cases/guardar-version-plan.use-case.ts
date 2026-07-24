@@ -41,6 +41,7 @@ import { RespuestaGuardarVersionDto } from '../dtos';
 import { UnidadMedida } from 'src/domain/entities/Alimento/UnidadMedida';
 import { BloqueoGeneracionPlanIaService } from '../services/bloqueo-generacion-plan-ia.service';
 import { prepararActivacionExclusivaPlan } from '../services/activacion-exclusiva-plan.service';
+import type { MotivoCambio } from 'src/domain/entities/PlanAlimentacionVersion/plan-alimentacion-datos-json';
 
 export interface SolicitudGuardarVersion {
   planAlimentacionId: number;
@@ -265,15 +266,6 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
             { codigo: 'PLAN_ESTRUCTURA_INVALIDA' },
           );
         }
-        if (macros.bandaGlobal !== 'VERDE') {
-          throw new BadRequestError(
-            `MACROS_NO_VERDES: el borrador tiene banda global ${macros.bandaGlobal}.`,
-            {
-              codigo: 'MACROS_NO_VERDES',
-              bandaGlobal: macros.bandaGlobal,
-            },
-          );
-        }
         const validacion = RestriccionesValidatorV2.validarPlanCompleto(
           datosJson,
           fichaClinica,
@@ -313,12 +305,16 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
           alimentos.map((alimento) => [alimento.idAlimento, alimento]),
         );
 
+        const bandaGlobalPublicada = macros.bandaGlobal;
+        const motivoCambioFinal: MotivoCambio = (motivoCambio ??
+          'edicion_manual') as MotivoCambio;
+
         // 8a) Crear la versión inactiva para no solapar punteros activos.
         const versionCreada = versionRepo.create({
           idPlanAlimentacion: planAlimentacionId,
           numeroVersion: nuevoNumeroVersion,
           datosJson,
-          motivoCambio: motivoCambio || 'edicion_manual',
+          motivoCambio: motivoCambioFinal,
           activa: false,
           createdBy: creadorPersonaId,
         });
@@ -414,7 +410,8 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
           nuevaVersion: savedVersion,
           nuevoNumeroVersion,
           datosJson,
-          motivoCambio,
+          motivoCambio: motivoCambioFinal,
+          bandaGlobalPublicada,
           macros,
           validacion,
         };
@@ -425,6 +422,7 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
       nuevoNumeroVersion,
       datosJson,
       motivoCambio,
+      bandaGlobalPublicada,
       macros,
       validacion,
     } = resultadoGuardado;
@@ -471,6 +469,7 @@ export class GuardarVersionPlanUseCase implements BaseUseCase {
           versionId: nuevaVersion.idPlanAlimentacionVersion,
           numeroVersion: nuevoNumeroVersion,
           motivoCambio: nuevaVersion.motivoCambio,
+          bandaGlobalPublicada,
         },
       });
     } catch (error) {
