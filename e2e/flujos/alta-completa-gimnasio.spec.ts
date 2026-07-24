@@ -516,14 +516,61 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
         headers: { Authorization: `Bearer ${authNutri.token}` },
       });
 
-      await page.route('**/ia/plan-semanal*', async (route) => {
+      const generacionIdMock = 999;
+      const planMock = construirPlanIaMock(socioId);
+
+      const generarCompletada = {
+        id: generacionIdMock,
+        socioId,
+        nutricionistaId,
+        gimnasioId: 0,
+        planAlimentacionId: planMock.planAlimentacionId,
+        estado: 'COMPLETADO',
+        proveedorActual: 'mock',
+        mensajeEstado: 'Plan generado',
+        errorMensaje: null,
+        respuestaJson: planMock,
+        progresoActual: 100,
+        progresoTotal: 100,
+        diaActual: null,
+        comidaActual: null,
+        snapshotParcialJson: null,
+        creadoEn: new Date().toISOString(),
+        actualizadoEn: new Date().toISOString(),
+        iniciadoEn: new Date().toISOString(),
+        finalizadoEn: new Date().toISOString(),
+      };
+
+      await page.route('**/ia/plan-semanal/generaciones*', async (route) => {
         if (route.request().method() !== 'POST') {
           return route.continue();
         }
         await route.fulfill({
           status: 201,
           contentType: 'application/json',
-          body: JSON.stringify(construirPlanIaMock(socioId)),
+          body: JSON.stringify({
+            ...generarCompletada,
+            estado: 'PENDIENTE',
+            respuestaJson: null,
+            progresoActual: 0,
+            finalizadoEn: null,
+          }),
+        });
+      });
+
+      await page.route(`**/ia/plan-semanal/generaciones/${generacionIdMock}`, async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(generarCompletada),
+        });
+      });
+
+      await page.route('**/ia/plan-semanal/generaciones/activa**', async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(generarCompletada),
         });
       });
 
@@ -535,11 +582,56 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
       );
       if (await botonGenerar.isVisible({ timeout: 8000 }).catch(() => false)) {
         await botonGenerar.click();
-        await expect(page.getByText(/LUNES|lunes|Desayuno|DESAYUNO/i).first()).toBeVisible({
-          timeout: 15000,
+        await expect(page.getByText(/Plan generado correctamente/i)).toBeVisible({
+          timeout: 30000,
         });
+        await page.waitForTimeout(2000);
         await capturarEvidencia(page, '11-plan-ia-generado', { socioId, nutricionistaId });
       }
+
+      await logoutUi(page);
+    });
+
+    await test.step('8. SOCIO ve el plan y descarga el PDF', async () => {
+      await loginUi(page, socio.email, PASSWORD_DEFINITIVA);
+
+      const planParaSocio = {
+        idPlanAlimentacion: 9999,
+        versionId: 9999,
+        nutricionistaId,
+        nutricionistaNombre: 'Nutri E2E Test',
+        fechaInicio: new Date().toISOString(),
+        objetivoNutricional: 'Bajar de peso y mejorar composición corporal',
+        plan: construirPlanIaMock(socioId).plan,
+      };
+
+      await page.route('**/planes-alimentacion/socio/*/activo', async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([planParaSocio]),
+        });
+      });
+
+      await page.goto('/mi-plan');
+      await page.waitForLoadState('networkidle');
+      await expect(page.getByTestId('mi-plan-cards-container')).toBeVisible({
+        timeout: 10000,
+      });
+      await expect(page.getByText('Nutri E2E Test')).toBeVisible({ timeout: 5000 });
+      await capturarEvidencia(page, '12-socio-mi-plan', { socioEmail: socio.email });
+
+      const downloadPromise = page.waitForEvent('download', { timeout: 30000 });
+      const botonPdf = page.getByTestId('boton-descargar-pdf');
+      await expect(botonPdf).toBeVisible({ timeout: 10000 });
+      await botonPdf.click();
+      const download = await downloadPromise;
+      const sugerenciaNombre = download.suggestedFilename();
+      expect(sugerenciaNombre).toMatch(/\.pdf$/i);
+      await download.saveAs(`e2e/flujos/evidencia/12-socio-plan-${sufixUnico()}.pdf`);
+      await capturarEvidencia(page, '13-socio-descarga-pdf', {
+        pdfFilename: sugerenciaNombre,
+      });
 
       await logoutUi(page);
     });
