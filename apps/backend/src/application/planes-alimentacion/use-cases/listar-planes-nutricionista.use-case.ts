@@ -19,9 +19,6 @@ export class ListarPlanesNutricionistaUseCase implements BaseUseCase {
   async execute(
     nutricionistaId: number,
   ): Promise<PlanAlimentacionResponseDto[]> {
-    // Filtra planes soft-deleted. El seed legacy o auto-creates antiguos pueden
-    // haber dejado duplicados; el script `scripts/dedupe-planes.ts` los marca
-    // con `eliminadoEn`. No los mostramos en la UI del nutricionista.
     const planes = await this.planRepo.find({
       where: {
         nutricionista: {
@@ -38,6 +35,27 @@ export class ListarPlanesNutricionistaUseCase implements BaseUseCase {
       order: { fechaCreacion: 'DESC' },
     });
 
-    return planes.map(mapPlanToResponse);
+    const mejorPlanPorSocio = new Map<number, PlanAlimentacionOrmEntity>();
+
+    for (const plan of planes) {
+      const socioId = (plan.socio as { idPersona: number }).idPersona;
+      const existente = mejorPlanPorSocio.get(socioId);
+
+      if (!existente) {
+        mejorPlanPorSocio.set(socioId, plan);
+        continue;
+      }
+
+      const planGanaPorSerActivo = plan.activo && !existente.activo;
+      const mismoEstadoPeroMasNuevo =
+        plan.activo === existente.activo &&
+        plan.fechaCreacion > existente.fechaCreacion;
+
+      if (planGanaPorSerActivo || mismoEstadoPeroMasNuevo) {
+        mejorPlanPorSocio.set(socioId, plan);
+      }
+    }
+
+    return Array.from(mejorPlanPorSocio.values()).map(mapPlanToResponse);
   }
 }
