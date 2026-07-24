@@ -76,6 +76,7 @@ export function mapPlanToResponse(
   dto.fechaCreacion = plan.fechaCreacion;
   dto.objetivoNutricional = plan.objetivoNutricional;
   dto.activo = plan.activo;
+  dto.estado = plan.estado;
   dto.eliminadoEn = plan.eliminadoEn;
   dto.motivoEliminacion = plan.motivoEliminacion;
   dto.motivoEdicion = plan.motivoEdicion;

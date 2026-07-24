@@ -41,6 +41,7 @@ export class PlanAlimentacionResponseDto {
   fechaCreacion: Date;
   objetivoNutricional: string;
   activo: boolean;
+  estado: string;
   eliminadoEn: Date | null;
   motivoEliminacion: string | null;
   motivoEdicion: string | null;
