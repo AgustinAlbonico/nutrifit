@@ -90,6 +90,24 @@ async function logoutUi(page: Page): Promise<void> {
   await page.waitForLoadState('networkidle');
 }
 
+async function capturarEvidencia(
+  page: Page,
+  nombre: string,
+  datos: Record<string, unknown> = {},
+): Promise<void> {
+  const screenshotPath = `e2e/flujos/evidencia/${nombre}.png`;
+  await page.screenshot({ path: screenshotPath, fullPage: true });
+  const url = page.url();
+  const titulo = await page.title();
+  console.log(`\n📸 [${nombre}]`);
+  console.log(`   URL: ${url}`);
+  console.log(`   Título: ${titulo}`);
+  console.log(`   Screenshot: ${screenshotPath}`);
+  if (Object.keys(datos).length > 0) {
+    console.log(`   Datos: ${JSON.stringify(datos, null, 2)}`);
+  }
+}
+
 async function extraerContrasenaProvisional(page: Page): Promise<string> {
   const modal = page.getByTestId('contrasena-provisional');
   await expect(modal).toBeVisible({ timeout: 10000 });
@@ -250,6 +268,7 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
       await loginUi(page, USUARIOS_PRUEBA.SUPERADMIN.email, USUARIOS_PRUEBA.SUPERADMIN.password);
       await page.goto('/admin/gimnasios/nuevo');
       await page.waitForLoadState('networkidle');
+      await capturarEvidencia(page, '01-superadmin-wizard-paso1', { gimnasio: nombreGimnasio });
 
       await page.getByLabel(/Nombre del gimnasio/).fill(nombreGimnasio);
       await page.getByLabel(/Dirección/).first().fill('Av. Test 1234');
@@ -267,6 +286,10 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
       await page.getByRole('button', { name: 'Crear Gimnasio' }).click();
 
       admin.password = await extraerContrasenaProvisional(page);
+      await capturarEvidencia(page, '02-modal-contrasena-admin', {
+        adminEmail: admin.email,
+        contrasenaProvisional: admin.password,
+      });
       await cerrarModalContrasena(page);
       await logoutUi(page);
     });
@@ -295,6 +318,9 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
       await page.locator('#crear-matricula').fill(`MN-${sufixUnico().slice(0, 6).toUpperCase()}`);
       await page.locator('#crear-anios').fill('5');
       await page.locator('#crear-tarifa').fill('5000');
+      await capturarEvidencia(page, '03-admin-form-nutricionista-lleno', {
+        nutriEmail: nutricionista.email,
+      });
 
       nutricionista.password = await clickYEsperarContrasena(
         page,
@@ -319,6 +345,9 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
       await page.locator('#crear-ciudad').fill('Rosario');
       await page.locator('#crear-provincia').fill('Santa Fe');
       await page.locator('#crear-email').fill(recepcionista.email);
+      await capturarEvidencia(page, '04-admin-form-recepcionista-lleno', {
+        recepEmail: recepcionista.email,
+      });
 
       recepcionista.password = await clickYEsperarContrasena(
         page,
@@ -351,6 +380,9 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
       await page.locator(`#agenda-inicio-${sufijoBloque}`).fill('08:00');
       await page.locator(`#agenda-fin-${sufijoBloque}`).fill('20:00');
       await page.locator('#agenda-duracion-global').fill('30');
+      await capturarEvidencia(page, '05-nutricionista-agenda-llena', {
+        dia: diaSemanaHoy(),
+      });
 
       await page.getByRole('button', { name: 'Guardar horarios' }).click();
 
@@ -378,6 +410,7 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
       await page.locator('#crear-ciudad').fill('Rosario');
       await page.locator('#crear-provincia').fill('Santa Fe');
       await page.locator('#crear-email').fill(socio.email);
+      await capturarEvidencia(page, '06-recepcionista-form-socio-lleno', { socioEmail: socio.email });
 
       socio.password = await clickYEsperarContrasena(page, 'Crear socio', '/socio');
       await page.waitForTimeout(1000);
@@ -426,14 +459,16 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
         .filter({ hasText: /Disponible/ })
         .first();
       await expect(slot).toBeVisible({ timeout: 8000 });
+      await capturarEvidencia(page, '07-socio-slot-disponible', { nutriId: nutricionistaId });
       await slot.click();
 
       await page.getByRole('button', { name: 'Reservar turno' }).click();
 
-      await page.waitForURL(/\/turnos\/\d+\/confirmado/, { timeout: 15000 });
+      await       page.waitForURL(/\/turnos\/\d+\/confirmado/, { timeout: 15000 });
       const urlMatch = page.url().match(/\/turnos\/(\d+)\/confirmado/);
       expect(urlMatch).toBeTruthy();
       turnoId = Number(urlMatch![1]);
+      await capturarEvidencia(page, '08-turno-confirmado', { turnoId, socioId });
       await logoutUi(page);
     });
 
@@ -453,6 +488,7 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
       await page.goto(`/profesional/consulta/${turnoId}`);
       await page.waitForLoadState('networkidle');
       await expect(page.getByText('Consulta Profesional')).toBeVisible({ timeout: 10000 });
+      await capturarEvidencia(page, '09-consulta-contexto', { turnoId });
 
       await page.getByRole('button', { name: /3\. Mediciones/ }).click();
       await page.waitForTimeout(500);
@@ -460,6 +496,7 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
       const inputPeso = page.locator('#peso').or(page.getByLabel(/peso/i).locator('input')).first();
       await expect(inputPeso).toBeVisible({ timeout: 10000 });
       await inputPeso.fill('76.5');
+      await capturarEvidencia(page, '10-consulta-mediciones-llenas', { peso: '76.5' });
 
       const inputAltura = page.locator('#altura').or(page.getByLabel(/altura/i).locator('input')).first();
       if (await inputAltura.isVisible({ timeout: 3000 }).catch(() => false)) {
@@ -501,6 +538,7 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
         await expect(page.getByText(/LUNES|lunes|Desayuno|DESAYUNO/i).first()).toBeVisible({
           timeout: 15000,
         });
+        await capturarEvidencia(page, '11-plan-ia-generado', { socioId, nutricionistaId });
       }
 
       await logoutUi(page);
@@ -513,5 +551,16 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
     expect(nutricionistaId).toBeGreaterThan(0);
     expect(socioId).toBeGreaterThan(0);
     expect(turnoId).toBeGreaterThan(0);
+
+    console.log('\n========================================');
+    console.log('✅ FLUJO E2E COMPLETO - RESUMEN FINAL');
+    console.log('========================================');
+    console.log(`Gimnasio: ${nombreGimnasio}`);
+    console.log(`Admin: ${admin.email}`);
+    console.log(`Nutricionista: ${nutricionista.email} (id: ${nutricionistaId})`);
+    console.log(`Recepcionista: ${recepcionista.email}`);
+    console.log(`Socio: ${socio.email} (id: ${socioId})`);
+    console.log(`Turno reservado: ${turnoId}`);
+    console.log('========================================\n');
   });
 });
