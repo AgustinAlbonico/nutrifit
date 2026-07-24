@@ -179,30 +179,28 @@ async function seleccionarFechaAgendarTurno(page: Page): Promise<void> {
   await page.waitForTimeout(500);
 }
 
-function construirPlanIaMock(socioId: number) {
-  const dias = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
-  const comidas = ['DESAYUNO', 'ALMUERZO', 'MERIENDA', 'CENA'];
+function construirPlanIaMock(socioId: number, dias = 7, comidas = 4, alternativas = 1) {
+  const diasArr = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'].slice(0, dias);
+  const comidasArr = ['DESAYUNO', 'ALMUERZO', 'MERIENDA', 'CENA'].slice(0, comidas);
   const caloriasObjetivo = 2000;
 
-  const estructura = dias.map((dia) => ({
+  const estructura = diasArr.map((dia) => ({
     dia,
-    comidas: comidas.map((tipo) => ({
+    comidas: comidasArr.map((tipo) => ({
       tipo,
-      alternativas: [
-        {
-          nombre: `${tipo} — ${dia}`,
-          alimentos: [{ alimentoId: 1, cantidad: 150, unidad: 'g' }],
-          calorias: Math.round(caloriasObjetivo / 4),
-          proteinas: 30,
-          carbohidratos: 60,
-          grasas: 15,
-        },
-      ],
+      alternativas: Array.from({ length: alternativas }, (_, idxAlt) => ({
+        nombre: `${tipo} — ${dia} (opción ${idxAlt + 1})`,
+        alimentos: [{ alimentoId: 1, cantidad: 150, unidad: 'g' }],
+        calorias: Math.round(caloriasObjetivo / Math.max(comidas, 1)),
+        proteinas: 30,
+        carbohidratos: 60,
+        grasas: 15,
+      })),
     })),
   }));
 
   const macrosPorDia = Object.fromEntries(
-    dias.map((dia) => [
+    diasArr.map((dia) => [
       dia,
       {
         calorias: caloriasObjetivo,
@@ -517,19 +515,25 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
       });
 
       const generacionIdMock = 999;
-      const planMock = construirPlanIaMock(socioId);
+      const parametrosIa = { dias: 5, comidas: 2, alternativas: 1 };
+      const planMock = construirPlanIaMock(
+        socioId,
+        parametrosIa.dias,
+        parametrosIa.comidas,
+        parametrosIa.alternativas,
+      );
 
-      const generarCompletada = {
+      const construirGeneracionCompletada = (plan: typeof planMock) => ({
         id: generacionIdMock,
         socioId,
         nutricionistaId,
         gimnasioId: 0,
-        planAlimentacionId: planMock.planAlimentacionId,
-        estado: 'COMPLETADO',
+        planAlimentacionId: plan.planAlimentacionId,
+        estado: 'COMPLETADO' as const,
         proveedorActual: 'mock',
         mensajeEstado: 'Plan generado',
         errorMensaje: null,
-        respuestaJson: planMock,
+        respuestaJson: plan,
         progresoActual: 100,
         progresoTotal: 100,
         diaActual: null,
@@ -539,7 +543,7 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
         actualizadoEn: new Date().toISOString(),
         iniciadoEn: new Date().toISOString(),
         finalizadoEn: new Date().toISOString(),
-      };
+      });
 
       await page.route('**/ia/plan-semanal/generaciones*', async (route) => {
         if (route.request().method() !== 'POST') {
@@ -549,7 +553,7 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
           status: 201,
           contentType: 'application/json',
           body: JSON.stringify({
-            ...generarCompletada,
+            ...construirGeneracionCompletada(planMock),
             estado: 'PENDIENTE',
             respuestaJson: null,
             progresoActual: 0,
@@ -562,7 +566,7 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify(generarCompletada),
+          body: JSON.stringify(construirGeneracionCompletada(planMock)),
         });
       });
 
@@ -570,12 +574,23 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify(generarCompletada),
+          body: JSON.stringify(construirGeneracionCompletada(planMock)),
         });
       });
 
       await page.goto(`/profesional/plan/${socioId}/editar`);
       await page.waitForLoadState('networkidle');
+
+      await page.locator('#diasAGenerar').fill('5');
+      await page.getByTestId('comidas-por-dia-select').click();
+      await page.getByRole('option', { name: /^2 comidas$/ }).click();
+      await page.locator('#alternativasPorComida').fill('1');
+
+      await capturarEvidencia(page, '11a-formulario-ia-lleno', {
+        dias: 5,
+        comidas: 2,
+        alternativas: 1,
+      });
 
       const botonGenerar = page.getByTestId('generar-plan-button').or(
         page.getByRole('button', { name: /Generar plan/i }),
@@ -586,7 +601,12 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
           timeout: 30000,
         });
         await page.waitForTimeout(2000);
-        await capturarEvidencia(page, '11-plan-ia-generado', { socioId, nutricionistaId });
+        await capturarEvidencia(page, '11b-plan-ia-generado', {
+          socioId,
+          nutricionistaId,
+          dias: 5,
+          comidas: 2,
+        });
       }
 
       await logoutUi(page);
@@ -602,7 +622,7 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
         nutricionistaNombre: 'Nutri E2E Test',
         fechaInicio: new Date().toISOString(),
         objetivoNutricional: 'Bajar de peso y mejorar composición corporal',
-        plan: construirPlanIaMock(socioId).plan,
+        plan: construirPlanIaMock(socioId, 5, 2, 1).plan,
       };
 
       await page.route('**/planes-alimentacion/socio/*/activo', async (route) => {
