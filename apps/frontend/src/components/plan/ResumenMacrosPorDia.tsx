@@ -34,10 +34,15 @@ const ABREVIACION_DIA: Record<string, string> = {
   DOMINGO: 'Dom',
 };
 
+const CON_UN_DECIMAL = new Intl.NumberFormat('es-AR', {
+  maximumFractionDigits: 1,
+  minimumFractionDigits: 0,
+});
+
 function formatoKcal(valor: number): string {
-  if (valor >= 1000) return `${(valor / 1000).toFixed(1).replace('.0', '')}k`;
   if (valor === 0) return '0';
-  return String(valor);
+  if (valor >= 1000) return `${(valor / 1000).toFixed(1).replace('.0', '')}k`;
+  return CON_UN_DECIMAL.format(valor);
 }
 
 /**
@@ -137,15 +142,15 @@ export function ResumenMacrosPorDia({
               <ul className="mt-0.5 flex flex-col gap-0.5 text-[9px] tabular-nums opacity-90">
                 <li className="flex items-center gap-1">
                   <Beef className="size-2.5 shrink-0 text-rose-500" aria-hidden="true" />
-                  <span className="font-medium">{Math.round(macros.proteinas)}g</span>
+                  <span className="font-medium">{CON_UN_DECIMAL.format(macros.proteinas)}g</span>
                 </li>
                 <li className="flex items-center gap-1">
                   <Wheat className="size-2.5 shrink-0 text-amber-500" aria-hidden="true" />
-                  <span className="font-medium">{Math.round(macros.carbohidratos)}g</span>
+                  <span className="font-medium">{CON_UN_DECIMAL.format(macros.carbohidratos)}g</span>
                 </li>
                 <li className="flex items-center gap-1">
                   <Droplet className="size-2.5 shrink-0 text-sky-500" aria-hidden="true" />
-                  <span className="font-medium">{Math.round(macros.grasas)}g</span>
+                  <span className="font-medium">{CON_UN_DECIMAL.format(macros.grasas)}g</span>
                 </li>
               </ul>
             </article>
