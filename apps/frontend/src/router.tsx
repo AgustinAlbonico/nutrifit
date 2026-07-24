@@ -21,6 +21,7 @@ import { TurnoConfirmadoPage } from '@/pages/TurnoConfirmadoPage';
 import { TurnosProfesional } from '@/pages/TurnosProfesional';
 import { Configuracion } from '@/pages/Configuracion';
 import { Socios } from '@/pages/Socios';
+import { AltaSocioPage } from '@/pages/AltaSocioPage';
 import { RecepcionTurnosPage } from '@/pages/RecepcionTurnosPage';
 import { ConsultaProfesionalPage } from '@/pages/ConsultaProfesionalPage';
 import { PlanSocioPage } from '@/pages/PlanSocioPage';
@@ -185,6 +186,12 @@ const sociosRoute = createRoute({
   getParentRoute: () => authLayoutRoute,
   path: '/socios',
   component: Socios,
+});
+
+const altaSocioRoute = createRoute({
+  getParentRoute: () => authLayoutRoute,
+  path: '/socios/nuevo',
+  component: AltaSocioPage,
 });
 
 // Recepcionistas route
@@ -462,6 +469,7 @@ const routeTree = rootRoute.addChildren([
     recepcionistasRoute,
     perfilNutricionistaRoute,
     sociosRoute,
+    altaSocioRoute,
     permisosRoute,
     agendaRoute,
     turnosRoute,
