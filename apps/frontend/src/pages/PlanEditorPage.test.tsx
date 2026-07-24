@@ -54,9 +54,11 @@ vi.mock('@tanstack/react-router', () => ({
   RouterProvider: ({ children }: { children: ReactNode }) => children,
 }));
 
+import { GeneracionPlanIaProvider } from '@/contexts/GeneracionPlanIaContext';
 import { server } from '@/mocks/server';
 import { PlanEditorPage } from '@/pages/PlanEditorPage';
 import type {
+  GeneracionPlanIaFE,
   PlanAlimentacionDatosJsonFE,
   RespuestaPlanSemanalV2FE,
   VersionPlanFE,
@@ -71,8 +73,62 @@ function crearWrapper() {
     },
   });
   return ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <GeneracionPlanIaProvider>{children}</GeneracionPlanIaProvider>
+    </QueryClientProvider>
   );
+}
+
+/**
+ * Genera una generación IA en estado COMPLETADO con la respuesta V2 indicada.
+ * El editor consume el resultado desde el polling del contexto, no del submit.
+ */
+function crearGeneracionCompletada(
+  respuesta: RespuestaPlanSemanalV2FE,
+): GeneracionPlanIaFE {
+  return {
+    id: 501,
+    socioId: 42,
+    nutricionistaId: 1,
+    gimnasioId: 1,
+    planAlimentacionId: respuesta.planAlimentacionId,
+    estado: 'COMPLETADO',
+    proveedorActual: 'gemini',
+    mensajeEstado: null,
+    errorMensaje: null,
+    respuestaJson: respuesta,
+    progresoActual: 35,
+    progresoTotal: 35,
+    diaActual: null,
+    comidaActual: null,
+    snapshotParcialJson: null,
+    creadoEn: '2026-06-25T10:00:00.000Z',
+    actualizadoEn: '2026-06-25T10:05:00.000Z',
+    iniciadoEn: '2026-06-25T10:00:05.000Z',
+    finalizadoEn: '2026-06-25T10:05:00.000Z',
+  };
+}
+
+/**
+ * Handlers de los endpoints que pollea el contexto: la generación activa del
+ * socio y el seguimiento por ID que el contexto engancha al detectarla.
+ */
+function mockGeneracionActiva(generacion: GeneracionPlanIaFE | null) {
+  const cuerpo = {
+    success: true,
+    message: 'Datos obtenidos correctamente',
+    data: generacion,
+    meta: null,
+    errors: [],
+  };
+  return [
+    http.get('/ia/plan-semanal/generaciones/activa', () =>
+      HttpResponse.json(cuerpo),
+    ),
+    http.get('/ia/plan-semanal/generaciones/:generacionId', () =>
+      HttpResponse.json(cuerpo),
+    ),
+  ];
 }
 
 function crearRespuestaV2(): RespuestaPlanSemanalV2FE {
@@ -268,6 +324,7 @@ describe('PlanEditorPage (Packet 5b)', () => {
 
     // Default: endpoint de pacientes vacío (no encuentra paciente)
     server.use(
+      ...mockGeneracionActiva(null),
       http.get('/turnos/profesional/1/pacientes', () =>
         HttpResponse.json({ data: [], meta: { total: 0 } }),
       ),
@@ -323,37 +380,42 @@ describe('PlanEditorPage (Packet 5b)', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('renderiza el layout principal con GeneradorPlanSemanal', async () => {
+  it('entra directo a la grilla vacía y expone el generador IA en el header', async () => {
+    const user = userEvent.setup();
     render(<PlanEditorPage />, { wrapper: crearWrapper() });
 
-    // El generador está presente en la pantalla de opciones
+    // La grilla se muestra sin pasar por una pantalla intermedia de opciones
+    expect(await screen.findByTestId('grilla-manual-slots')).toBeInTheDocument();
+
+    // El formulario de generación vive en el diálogo que abre el header
+    expect(screen.queryByTestId('generar-plan-button')).not.toBeInTheDocument();
+    await user.click(screen.getByTestId('abrir-generador-ia-btn'));
     expect(await screen.findByTestId('generar-plan-button')).toBeInTheDocument();
 
-    // Botón flotante de feedback NO está visible todavía (no hay plan)
+    // Botón flotante de feedback NO está visible todavía (no hay plan generado)
     expect(
       screen.queryByTestId('feedback-floating-button'),
     ).not.toBeInTheDocument();
   });
 
-  it('crea un plan manual desde una respuesta ApiResponse envuelta', async () => {
+  it('no crea el plan al entrar: lo crea recién al guardar y publicar', async () => {
+    let crearManualLlamado = 0;
     server.use(
-      http.post('/planes-alimentacion/crear-manual/42', () =>
-        HttpResponse.json({
+      http.post('/planes-alimentacion/crear-manual/42', () => {
+        crearManualLlamado += 1;
+        return HttpResponse.json({
           success: true,
           message: 'Creado correctamente',
           data: crearRespuestaV2(),
           meta: null,
           errors: [],
-        }),
-      ),
-      http.get('/planes-alimentacion/99/versiones', () =>
+        });
+      }),
+      http.post('/planes-alimentacion/99/guardar-version', () =>
         HttpResponse.json({
           success: true,
-          message: 'Datos obtenidos correctamente',
-          data: {
-            idPlanAlimentacionVersion: 1,
-            datosJson: crearRespuestaV2().plan,
-          },
+          message: 'Creado correctamente',
+          data: crearRespuestaV2(),
           meta: null,
           errors: [],
         }),
@@ -363,10 +425,18 @@ describe('PlanEditorPage (Packet 5b)', () => {
     const user = userEvent.setup();
     render(<PlanEditorPage />, { wrapper: crearWrapper() });
 
-    await user.click(await screen.findByRole('button', { name: /Opción B: Crear plan manual vacío/i }));
-
     expect(await screen.findByTestId('grilla-manual-slots')).toBeInTheDocument();
-    expect(toast.success).toHaveBeenCalledWith('Plan manual creado');
+    expect(crearManualLlamado).toBe(0);
+
+    await user.click(screen.getByTestId('guardar-version-btn'));
+
+    await waitFor(() => {
+      expect(crearManualLlamado).toBe(1);
+    });
+    expect(toast.success).toHaveBeenCalledWith(
+      'Versión guardada y publicada',
+      expect.objectContaining({ description: expect.any(String) }),
+    );
     expect(toast.error).not.toHaveBeenCalled();
   });
 
@@ -447,41 +517,33 @@ describe('PlanEditorPage (Packet 5b)', () => {
     render(<PlanEditorPage />, { wrapper: crearWrapper() });
 
     expect(await screen.findByTestId('grilla-manual-slots')).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: /Opción B: Crear plan manual vacío/i }),
-    ).not.toBeInTheDocument();
     expect(crearManualLlamado).toBe(false);
   });
 
-  it('al generar un plan muestra la grilla V2 + razonamiento + sidebar + botón feedback', async () => {
+  it('al completarse la generación IA muestra grilla V2 + razonamiento + botón feedback', async () => {
     server.use(
-      http.post('/ia/plan-semanal', () =>
-        HttpResponse.json(crearRespuestaV2()),
-      ),
+      ...mockGeneracionActiva(crearGeneracionCompletada(crearRespuestaV2())),
       http.get('/planes-alimentacion/99/versiones', () =>
         HttpResponse.json({ versiones: [] }),
       ),
     );
 
-    const user = userEvent.setup();
     render(<PlanEditorPage />, { wrapper: crearWrapper() });
 
-    // Llenar y enviar el form (socioId ya está preseleccionado)
-    await user.click(await screen.findByTestId('generar-plan-button'));
-
-    // Esperar a que aparezca la grilla manual de slots
+    // Razonamiento de cumplimiento visible con el resultado de la generación
     await waitFor(() => {
-      expect(screen.getByTestId('grilla-manual-slots')).toBeInTheDocument();
+      expect(screen.getByText(/vegano/i)).toBeInTheDocument();
     });
-
-    // Razonamiento de cumplimiento visible
-    expect(screen.getByText(/vegano/i)).toBeInTheDocument();
     expect(screen.getByText(/sin gluten/i)).toBeInTheDocument();
 
+    // La grilla queda montada una vez que terminó de cargarse el borrador
+    await waitFor(() => {
+      expect(screen.queryByText(/Cargando borrador del plan/i)).toBeNull();
+    });
+    expect(screen.getByTestId('grilla-manual-slots')).toBeInTheDocument();
+
     // Botón flotante de feedback aparece
-    expect(
-      screen.getByTestId('feedback-floating-button'),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('feedback-floating-button')).toBeInTheDocument();
   });
 
   it.skip('al regenerar un día envía POST /ia/plan-semanal/regenerar con scope=DIA', async () => {
@@ -586,9 +648,7 @@ describe('PlanEditorPage (Packet 5b)', () => {
 
   it('abre el FeedbackModal al clickear el botón flotante', async () => {
     server.use(
-      http.post('/ia/plan-semanal', () =>
-        HttpResponse.json(crearRespuestaV2()),
-      ),
+      ...mockGeneracionActiva(crearGeneracionCompletada(crearRespuestaV2())),
       http.get('/planes-alimentacion/99/versiones', () =>
         HttpResponse.json({ versiones: [] }),
       ),
@@ -597,11 +657,9 @@ describe('PlanEditorPage (Packet 5b)', () => {
     const user = userEvent.setup();
     render(<PlanEditorPage />, { wrapper: crearWrapper() });
 
-    // Generar plan primero
-    await user.click(await screen.findByTestId('generar-plan-button'));
-    await waitFor(() => {
-      expect(screen.getByTestId('feedback-floating-button')).toBeInTheDocument();
-    });
+    expect(
+      await screen.findByTestId('feedback-floating-button'),
+    ).toBeInTheDocument();
 
     // Click en botón flotante abre el modal
     await user.click(screen.getByTestId('feedback-floating-button'));
@@ -637,18 +695,28 @@ describe('PlanEditorPage (Packet 5b)', () => {
     ];
 
     server.use(
-      http.post('/ia/plan-semanal', () =>
-        HttpResponse.json(crearRespuestaV2()),
-      ),
+      ...mockGeneracionActiva(crearGeneracionCompletada(crearRespuestaV2())),
       http.get('/planes-alimentacion/99/versiones', () =>
         HttpResponse.json({ versiones: versionesMock }),
+      ),
+      http.get('/planes-alimentacion/version/:versionId', () =>
+        HttpResponse.json({
+          id: 1,
+          planAlimentacionId: 99,
+          numeroVersion: 1,
+          motivoCambio: 'creacion_inicial',
+          activa: true,
+          createdAt: '2026-06-24T10:00:00.000Z',
+          createdBy: 1,
+          datosJson: crearRespuestaV2().plan,
+        }),
       ),
     );
 
     const user = userEvent.setup();
     render(<PlanEditorPage />, { wrapper: crearWrapper() });
 
-    await user.click(await screen.findByTestId('generar-plan-button'));
+    await screen.findByTestId('grilla-manual-slots');
 
     // Hacer click en la pestaña de Historial de versiones
     await user.click(screen.getByRole('tab', { name: /Historial de versiones/i }));
@@ -659,24 +727,19 @@ describe('PlanEditorPage (Packet 5b)', () => {
   });
 
   it('muestra advertencias del backend cuando las hay', async () => {
-    server.use(
-      http.post('/ia/plan-semanal', () => {
-        const respuesta = crearRespuestaV2();
-        respuesta.advertencias = [
-          'Macros en MARTES fuera de rango (±10%)',
-          'Estructura incompleta para SABADO',
-        ];
-        return HttpResponse.json(respuesta);
-      }),
+    const respuestaConAdvertencias = crearRespuestaV2();
+    respuestaConAdvertencias.advertencias = [
+      'Macros en MARTES fuera de rango (±10%)',
+      'Estructura incompleta para SABADO',
+    ];
+
+    server.use(      ...mockGeneracionActiva(crearGeneracionCompletada(respuestaConAdvertencias)),
       http.get('/planes-alimentacion/99/versiones', () =>
         HttpResponse.json({ versiones: [] }),
       ),
     );
 
-    const user = userEvent.setup();
     render(<PlanEditorPage />, { wrapper: crearWrapper() });
-
-    await user.click(await screen.findByTestId('generar-plan-button'));
 
     await waitFor(() => {
       expect(screen.getByText(/Advertencias \(2\)/i)).toBeInTheDocument();
