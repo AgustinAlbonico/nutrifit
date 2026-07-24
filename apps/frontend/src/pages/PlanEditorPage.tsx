@@ -40,7 +40,6 @@ import {
   Loader2,
   Lock,
   Trash2,
-  PenLine,
   History,
   Save,
   CheckCircle2,
@@ -320,7 +319,7 @@ export function PlanEditorPage() {
   // El estado de generación IA (ID específico, bloqueo, etc.) vive en
   // GeneracionPlanIaContext para que el badge persista al navegar.
   // `planBloqueadoPorIaRef` se mantiene como puente para callbacks estables
-  // (no queremos que `manejarCrearPlanManual` se recree en cada cambio de estado IA).
+  // (no queremos que `crearPlanManualVacio` se recree en cada cambio de estado IA).
   const planBloqueadoPorIaRef = useRef(false);
 
   // Ficha de salud del paciente
@@ -398,8 +397,12 @@ export function PlanEditorPage() {
 
   const [cargandoPlanManual, setCargandoPlanManual] = useState(false);
 
-  const manejarCrearPlanManual = useCallback(async () => {
-    if (!socioIdNumero || planBloqueadoPorIaRef.current) return;
+  /**
+   * Crea el plan manual vacío en el backend y devuelve su id (null si falla).
+   * No toca la estructura local: puede invocarse con la grilla ya editada.
+   */
+  const crearPlanManualVacio = useCallback(async (): Promise<number | null> => {
+    if (!socioIdNumero || planBloqueadoPorIaRef.current) return null;
     setCargandoPlanManual(true);
     try {
       const res = await apiRequest<
@@ -411,14 +414,13 @@ export function PlanEditorPage() {
       const planData = normalizarRespuestaConMacros(
         desenvolverRespuestaApi(res),
       );
-      setRespuesta(planData);
       setPlanManualExistenteId(planData.planAlimentacionId);
-      setEstructura(crearEstructuraInicial());
-      setModo("editor");
+      return planData.planAlimentacionId;
     } catch (err) {
       const msg =
         err instanceof Error ? err.message : "Error al crear plan manual";
       toast.error(msg);
+      return null;
     } finally {
       setCargandoPlanManual(false);
     }
@@ -475,6 +477,28 @@ export function PlanEditorPage() {
   };
 
   const planIdActual = respuesta?.planAlimentacionId ?? planManualExistenteId;
+
+  // El plan se persiste recién cuando hace falta (primera edición, generación
+  // IA o publicación): entrar al editor no debe dejar planes vacíos en la base.
+  const planIdActualRef = useRef<number | null>(null);
+  planIdActualRef.current = planIdActual;
+  const creacionPlanEnCursoRef = useRef<Promise<number | null> | null>(null);
+  const planCreadoEnEstaSesionRef = useRef<number | null>(null);
+
+  const asegurarPlanId = useCallback(async (): Promise<number | null> => {
+    if (planIdActualRef.current) return planIdActualRef.current;
+    if (creacionPlanEnCursoRef.current) return creacionPlanEnCursoRef.current;
+
+    const creacion = crearPlanManualVacio();
+    creacionPlanEnCursoRef.current = creacion;
+    try {
+      const idCreado = await creacion;
+      planCreadoEnEstaSesionRef.current = idCreado;
+      return idCreado;
+    } finally {
+      creacionPlanEnCursoRef.current = null;
+    }
+  }, [crearPlanManualVacio]);
 
   // El polling y el badge persistente viven en GeneracionPlanIaContext.
   // Aquí solo consumimos el estado y sincronizamos los IDs del socio/plan.
@@ -591,6 +615,9 @@ export function PlanEditorPage() {
   // Carga el borrador o versión activa al montar o cambiar de plan
   useEffect(() => {
     if (!planIdActual) return;
+    // Un plan recién creado desde este editor arranca vacío en el backend:
+    // recargarlo pisaría la grilla que el nutricionista ya está editando.
+    if (planIdActual === planCreadoEnEstaSesionRef.current) return;
     let cancelado = false;
 
     const cargarBorradorOActiva = async () => {
@@ -645,17 +672,19 @@ export function PlanEditorPage() {
   const debouncedEstructura = useDebounce(estructura, 800);
 
   const persistirSilencioso = useCallback(
-    async (estructuraParaGuardar: EstructuraDiaFE[]) => {
-      if (!planIdActual || planBloqueadoPorIa) return;
+    async (
+      estructuraParaGuardar: EstructuraDiaFE[],
+      planIdForzado?: number,
+    ) => {
+      if (planBloqueadoPorIa) return;
+      const idPlan = planIdForzado ?? (await asegurarPlanId());
+      if (!idPlan) return;
       setGuardandoBorrador(true);
       try {
-        await apiRequest(
-          `/planes-alimentacion/${planIdActual}/persistir-manual`,
-          {
-            method: "POST",
-            body: estructuraToPayload(estructuraParaGuardar),
-          },
-        );
+        await apiRequest(`/planes-alimentacion/${idPlan}/persistir-manual`, {
+          method: "POST",
+          body: estructuraToPayload(estructuraParaGuardar),
+        });
         setUltimoGuardado(new Date());
       } catch {
         // Silencioso
@@ -663,7 +692,7 @@ export function PlanEditorPage() {
         setGuardandoBorrador(false);
       }
     },
-    [planBloqueadoPorIa, planIdActual],
+    [asegurarPlanId, planBloqueadoPorIa],
   );
 
   useEffect(() => {
@@ -679,12 +708,17 @@ export function PlanEditorPage() {
 
   // Helper: realiza el POST /guardar-version sin duplicar lógica.
   const ejecutarGuardarYPublicar = async () => {
-    if (!planIdActual) return;
+    const idPlan = await asegurarPlanId();
+    if (!idPlan) return;
+    // El borrador debe estar persistido antes de versionar.
+    if (haSidoModificadoRef.current) {
+      await persistirSilencioso(estructura, idPlan);
+    }
     setGuardandoBorrador(true);
     try {
       const res = await apiRequest<
         RespuestaPlanSemanalV2FE | ApiResponse<RespuestaPlanSemanalV2FE>
-      >(`/planes-alimentacion/${planIdActual}/guardar-version`, {
+      >(`/planes-alimentacion/${idPlan}/guardar-version`, {
         method: "POST",
       });
       const planData = normalizarRespuestaConMacros(
@@ -709,7 +743,6 @@ export function PlanEditorPage() {
 
   // Guardar y publicar. Si la banda != VERDE, abre el modal de aviso.
   const guardarVersionExplicita = () => {
-    if (!planIdActual) return;
     if (planBloqueadoPorIa) {
       toast.info("El plan está bloqueado por generación IA", {
         description:
@@ -731,8 +764,15 @@ export function PlanEditorPage() {
   // Vaciar todas las comidas del plan (DELETE /planes-alimentacion/:id/contenido).
   // Solo nutricionista dueño del plan o admin — el backend valida el rol.
   const manejarVaciarContenido = async () => {
-    if (!planIdActual || vaciandoContenido) return;
+    if (vaciandoContenido) return;
     setConfirmacionVaciadoAbierta(false);
+    // Sin plan persistido todavía alcanza con limpiar la grilla local.
+    if (!planIdActual) {
+      setEstructura(crearEstructuraInicial());
+      haSidoModificadoRef.current = false;
+      setUltimoGuardado(null);
+      return;
+    }
     setVaciandoContenido(true);
     try {
       const respuesta = await apiRequest<{
@@ -876,9 +916,13 @@ export function PlanEditorPage() {
   const handleSelectSlotForIa = useCallback(
     (dia: DiaSemana, tipoComida: TipoComidaPlan) => {
       if (planBloqueadoPorIa) return;
-      setSlotIdeasIa({ dia, tipoComida });
+      // Las ideas por slot necesitan un plan persistido contra el cual generar.
+      void (async () => {
+        const idPlan = await asegurarPlanId();
+        if (idPlan) setSlotIdeasIa({ dia, tipoComida });
+      })();
     },
-    [planBloqueadoPorIa],
+    [asegurarPlanId, planBloqueadoPorIa],
   );
 
   const planIdEditorManual =
@@ -954,81 +998,81 @@ export function PlanEditorPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 sm:ml-auto">
-          {planIdActual && (
-            <>
-              {/* Estado de autoguardado */}
-              <div className="flex items-center gap-1.5 text-xs mr-1">
-                {ultimoGuardado && !guardandoBorrador && (
-                  <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
-                    <CheckCircle2 className="size-3.5" />
-                    Guardado{" "}
-                    {ultimoGuardado.toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      second: "2-digit",
-                    })}
-                  </div>
-                )}
-                {guardandoBorrador && (
-                  <div className="flex items-center gap-1 text-muted-foreground animate-pulse">
-                    <Loader2 className="size-3.5 animate-spin" />
-                    Guardando...
-                  </div>
-                )}
+          {/* Estado de autoguardado */}
+          <div className="flex items-center gap-1.5 text-xs mr-1">
+            {ultimoGuardado && !guardandoBorrador && (
+              <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+                <CheckCircle2 className="size-3.5" />
+                Guardado{" "}
+                {ultimoGuardado.toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                })}
               </div>
+            )}
+            {guardandoBorrador && (
+              <div className="flex items-center gap-1 text-muted-foreground animate-pulse">
+                <Loader2 className="size-3.5 animate-spin" />
+                Guardando...
+              </div>
+            )}
+          </div>
 
-              {/* Botón: Generar con IA */}
-              <Button
-                type="button"
-                onClick={() => setGeneradorIaAbierto(true)}
-                disabled={planBloqueadoPorIa}
-                size="sm"
-                className="bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-700 hover:to-indigo-700 text-white font-semibold text-xs h-9 rounded-xl transition-all shadow gap-1.5"
-                data-testid="abrir-generador-ia-btn"
-              >
-                <Sparkles className="size-4" aria-hidden="true" />
-                Generar plan completo con IA
-              </Button>
+          {/* Botón: Generar con IA */}
+          <Button
+            type="button"
+            onClick={() => setGeneradorIaAbierto(true)}
+            disabled={planBloqueadoPorIa}
+            size="sm"
+            className="bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-700 hover:to-indigo-700 text-white font-semibold text-xs h-9 rounded-xl transition-all shadow gap-1.5"
+            data-testid="abrir-generador-ia-btn"
+          >
+            <Sparkles className="size-4" aria-hidden="true" />
+            Generar plan completo con IA
+          </Button>
 
-              {/* Botón: Limpiar comidas (solo nutricionista) */}
-              <Button
-                type="button"
-                onClick={() => setConfirmacionVaciadoAbierta(true)}
-                disabled={
-                  vaciandoContenido ||
-                  guardandoBorrador ||
-                  cargandoEstructura ||
-                  planBloqueadoPorIa
-                }
-                size="sm"
-                variant="outline"
-                className="font-semibold text-xs h-9 flex items-center gap-1.5 rounded-xl border-amber-500/40 text-amber-700 hover:bg-amber-50 hover:text-amber-800 dark:text-amber-300 dark:hover:bg-amber-950/40 dark:hover:text-amber-200"
-                data-testid="limpiar-comidas-btn"
-              >
-                {vaciandoContenido ? (
-                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                ) : (
-                  <Trash2 className="size-4" aria-hidden="true" />
-                )}
-                Limpiar comidas
-              </Button>
+          {/* Botón: Limpiar comidas (solo nutricionista) */}
+          <Button
+            type="button"
+            onClick={() => setConfirmacionVaciadoAbierta(true)}
+            disabled={
+              vaciandoContenido ||
+              guardandoBorrador ||
+              cargandoEstructura ||
+              cargandoPlanManual ||
+              planBloqueadoPorIa
+            }
+            size="sm"
+            variant="outline"
+            className="font-semibold text-xs h-9 flex items-center gap-1.5 rounded-xl border-amber-500/40 text-amber-700 hover:bg-amber-50 hover:text-amber-800 dark:text-amber-300 dark:hover:bg-amber-950/40 dark:hover:text-amber-200"
+            data-testid="limpiar-comidas-btn"
+          >
+            {vaciandoContenido ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <Trash2 className="size-4" aria-hidden="true" />
+            )}
+            Limpiar comidas
+          </Button>
 
-              {/* Botón: Guardar y publicar */}
-              <Button
-                type="button"
-                onClick={guardarVersionExplicita}
-                disabled={
-                  guardandoBorrador || cargandoEstructura || planBloqueadoPorIa
-                }
-                size="sm"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-9 flex items-center justify-center gap-1.5 rounded-xl transition-all shadow"
-                data-testid="guardar-version-btn"
-              >
-                <Save className="size-4" />
-                Guardar y publicar
-              </Button>
-            </>
-          )}
+          {/* Botón: Guardar y publicar */}
+          <Button
+            type="button"
+            onClick={guardarVersionExplicita}
+            disabled={
+              guardandoBorrador ||
+              cargandoEstructura ||
+              cargandoPlanManual ||
+              planBloqueadoPorIa
+            }
+            size="sm"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-9 flex items-center justify-center gap-1.5 rounded-xl transition-all shadow"
+            data-testid="guardar-version-btn"
+          >
+            <Save className="size-4" />
+            Guardar y publicar
+          </Button>
         </div>
       </header>
 
@@ -1048,20 +1092,27 @@ export function PlanEditorPage() {
         {/* Tab: Editor */}
         <TabsContent value="editor" className="mt-0">
           <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-            {planIdEditorManual ? (
+            {cargandoPlanExistente ? (
+              <div className="flex items-center justify-center gap-2 py-16 text-center text-sm text-muted-foreground">
+                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                Cargando editor de plan…
+              </div>
+            ) : (
               <div
                 className="flex flex-col gap-6 w-full animate-in fade-in duration-300"
                 data-testid="plan-editor-layout"
               >
-                <DialogGenerarIdeasIa
-                  open={slotIdeasIa !== null && !planBloqueadoPorIa}
-                  onOpenChange={(open) => {
-                    if (!open) setSlotIdeasIa(null);
-                  }}
-                  planId={planIdEditorManual}
-                  slot={slotIdeasIa}
-                  onAddIdea={handleAddIdea}
-                />
+                {planIdEditorManual && (
+                  <DialogGenerarIdeasIa
+                    open={slotIdeasIa !== null && !planBloqueadoPorIa}
+                    onOpenChange={(open) => {
+                      if (!open) setSlotIdeasIa(null);
+                    }}
+                    planId={planIdEditorManual}
+                    slot={slotIdeasIa}
+                    onAddIdea={handleAddIdea}
+                  />
+                )}
 
                 {/* Dialog modal para GeneradorPlanSemanal */}
                 <Dialog
@@ -1079,7 +1130,7 @@ export function PlanEditorPage() {
                       </DialogTitle>
                     </DialogHeader>
                     <GeneradorPlanSemanal
-                      planAlimentacionId={planIdEditorManual}
+                      planAlimentacionId={planIdEditorManual ?? undefined}
                       socioIdPreseleccionado={socioIdNumero}
                       fichaDisponible={
                         !!ficha &&
@@ -1096,6 +1147,9 @@ export function PlanEditorPage() {
                         const respuestaNormalizada =
                           normalizarRespuestaConMacros(data);
                         setRespuesta(respuestaNormalizada);
+                        setPlanManualExistenteId(
+                          respuestaNormalizada.planAlimentacionId,
+                        );
                         setEstructura(
                           completarEstructuraManual(
                             respuestaNormalizada.plan.estructura,
@@ -1225,88 +1279,6 @@ export function PlanEditorPage() {
                     </section>
                   )}
                 </main>
-              </div>
-            ) : cargandoPlanExistente || cargandoPlanManual ? (
-              <div className="flex items-center justify-center gap-2 py-16 text-center text-sm text-muted-foreground">
-                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                Cargando editor de plan…
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center gap-4 py-16 text-center max-w-md mx-auto">
-                <PenLine
-                  className="size-12 text-muted-foreground/30"
-                  aria-hidden="true"
-                />
-                <div>
-                  <h3 className="font-semibold text-lg">
-                    Comenzá a planificar
-                  </h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Podés generar un plan semanal completo usando IA, o empezar
-                    a cargarlo de forma manual slot por slot.
-                  </p>
-                </div>
-                <div className="flex flex-col gap-2 w-full pt-4">
-                  <Card className="rounded-2xl border-border/50 p-4 text-left">
-                    <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
-                      <Sparkles className="size-4 text-fuchsia-500" />
-                      Opción A: Generar con IA
-                    </h4>
-                    <GeneradorPlanSemanal
-                      planAlimentacionId={undefined}
-                      socioIdPreseleccionado={socioIdNumero}
-                      fichaDisponible={
-                        !!ficha &&
-                        !cargandoFicha &&
-                        !sinPermisos &&
-                        !sinFicha &&
-                        !errorFicha
-                      }
-                      datosPaciente={ficha}
-                      modoBackground
-                      generacionBloqueada={planBloqueadoPorIa}
-                      onGeneracionIniciada={registrarGeneracionIniciada}
-                      onSuccess={(data) => {
-                        const respuestaNormalizada =
-                          normalizarRespuestaConMacros(data);
-                        setRespuesta(respuestaNormalizada);
-                        setPlanManualExistenteId(
-                          respuestaNormalizada.planAlimentacionId,
-                        );
-                        setEstructura(
-                          completarEstructuraManual(
-                            respuestaNormalizada.plan.estructura,
-                          ),
-                        );
-                        setVersionSeleccionadaId(
-                          respuestaNormalizada.versionId,
-                        );
-                        haSidoModificadoRef.current = false;
-                      }}
-                    />
-                  </Card>
-
-                  <div className="relative flex py-2 items-center">
-                    <div className="flex-grow border-t border-border/60"></div>
-                    <span className="flex-shrink mx-4 text-muted-foreground text-xs font-medium uppercase">
-                      o también
-                    </span>
-                    <div className="flex-grow border-t border-border/60"></div>
-                  </div>
-
-                  <Button
-                    onClick={manejarCrearPlanManual}
-                    disabled={
-                      cargandoPlanManual || !socioIdNumero || planBloqueadoPorIa
-                    }
-                    variant="outline"
-                    className="w-full h-11 text-sm font-semibold border-dashed"
-                  >
-                    {cargandoPlanManual
-                      ? "Creando…"
-                      : "Opción B: Crear plan manual vacío"}
-                  </Button>
-                </div>
               </div>
             )}
           </DndContext>
