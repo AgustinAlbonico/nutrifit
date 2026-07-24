@@ -42,7 +42,7 @@ async function loginApi(
   password: string,
 ): Promise<{ token: string; rol: string; debeCambiarPassword: boolean }> {
   const res = await request.post(`${API}/auth/login`, {
-    data: { email, password },
+    data: { email, contrasena: password },
   });
   if (!res.ok()) {
     throw new Error(`Login API falló para ${email}: ${res.status()} ${await res.text()}`);
@@ -98,6 +98,38 @@ async function extraerContrasenaProvisional(page: Page): Promise<string> {
   return contrasena;
 }
 
+async function clickYEsperarContrasena(
+  page: Page,
+  boton: string,
+  endpointPath: string,
+): Promise<string> {
+  const pathFinal = new URL(endpointPath, 'http://x').pathname;
+  const respPromise = page.waitForResponse(
+    (r) => {
+      if (r.request().method() !== 'POST') return false;
+      try {
+        const url = new URL(r.url());
+        return url.pathname === pathFinal || url.pathname.startsWith(`${pathFinal}?`);
+      } catch {
+        return false;
+      }
+    },
+    { timeout: 15000 },
+  );
+  await page.getByRole('button', { name: boton }).click();
+  const resp = await respPromise;
+  if (!resp.ok()) {
+    throw new Error(`POST ${endpointPath} falló: ${resp.status()} ${await resp.text()}`);
+  }
+  const body = await resp.json();
+  const data = body.data ?? body;
+  const contrasena = data.contrasenaProvisional;
+  if (!contrasena) {
+    throw new Error(`No se encontró contrasenaProvisional en la respuesta de ${endpointPath}`);
+  }
+  return contrasena;
+}
+
 async function cerrarModalContrasena(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Entendido' }).click();
   await expect(page.getByTestId('contrasena-provisional')).toHaveCount(0, { timeout: 5000 });
@@ -114,6 +146,19 @@ async function seleccionarFechaNacimiento(page: Page): Promise<void> {
     .last();
   await celdaDia.click();
   await page.waitForTimeout(300);
+}
+
+async function seleccionarFechaAgendarTurno(page: Page): Promise<void> {
+  const trigger = page.getByRole('button', { name: /Seleccionar fecha/ }).last();
+  await trigger.click();
+  await page.waitForTimeout(500);
+  const primeraDisponible = page
+    .locator('[role="gridcell"] button:not([disabled])')
+    .filter({ hasText: /^\d+$/ })
+    .first();
+  await expect(primeraDisponible).toBeVisible({ timeout: 5000 });
+  await primeraDisponible.click();
+  await page.waitForTimeout(500);
 }
 
 function construirPlanIaMock(socioId: number) {
@@ -191,6 +236,20 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
   test('recorre el ciclo de vida multi-rol de punta a punta', async ({ page, request }) => {
     test.setTimeout(300000);
 
+    const consola: string[] = [];
+    const networkLog: string[] = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'error' || msg.type() === 'warning') {
+        consola.push(`[${msg.type()}] ${msg.text()}`);
+      }
+    });
+    page.on('response', async (res) => {
+      const url = res.url();
+      if (url.includes('/gimnasios') || url.includes('/auth/login')) {
+        networkLog.push(`${res.status()} ${res.request().method()} ${url}`);
+      }
+    });
+
     const admin: CredencialesUsuario = { email: '', password: PASSWORD_DEFINITIVA };
     const nutricionista: CredencialesUsuario = { email: '', password: PASSWORD_DEFINITIVA };
     const recepcionista: CredencialesUsuario = { email: '', password: PASSWORD_DEFINITIVA };
@@ -208,7 +267,7 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
 
       await page.getByLabel(/Nombre del gimnasio/).fill(nombreGimnasio);
       await page.getByLabel(/Dirección/).first().fill('Av. Test 1234');
-      await page.getByLabel(/Teléfono/).first().fill('+54 11 1234-5678');
+      await page.getByLabel(/Teléfono/).first().fill('+549111234567');
       await page.getByLabel(/Email de contacto/).fill(`contacto-${sufixUnico()}@e2e-test.com`);
       await page.getByRole('button', { name: 'Siguiente' }).first().click();
 
@@ -218,7 +277,24 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
       await page.getByRole('button', { name: 'Siguiente' }).first().click();
 
       await expect(page.getByText('Confirmar creación')).toBeVisible({ timeout: 5000 });
+
+      const respCrearPromise = page.waitForResponse(
+        (r) => r.url().includes('/gimnasios') && r.request().method() === 'POST',
+        { timeout: 15000 },
+      );
       await page.getByRole('button', { name: 'Crear Gimnasio' }).click();
+
+      try {
+        const respCrear = await respCrearPromise;
+        const body = await respCrear.text();
+        networkLog.push(`CREAR GIMNASIO: ${respCrear.status()} body=${body.substring(0, 300)}`);
+      } catch (e) {
+        networkLog.push(`CREAR GIMNASIO: no se capturó response (${e instanceof Error ? e.message : '?'})`);
+      }
+
+      await page.waitForTimeout(2000);
+      console.log('[DEBUG] Consola del navegador:', consola.join('\n'));
+      console.log('[DEBUG] Network log:', networkLog.join('\n'));
 
       admin.password = await extraerContrasenaProvisional(page);
       await cerrarModalContrasena(page);
@@ -233,7 +309,7 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
       await page.goto('/nutricionistas');
       await page.waitForLoadState('networkidle');
       await page.getByRole('button', { name: 'Nuevo nutricionista' }).click();
-      await expect(page.getByRole('dialog').getByText('Nuevo nutricionista')).toBeVisible({
+      await expect(page.getByRole('heading', { name: 'Nuevo nutricionista' })).toBeVisible({
         timeout: 5000,
       });
 
@@ -250,15 +326,17 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
       await page.locator('#crear-anios').fill('5');
       await page.locator('#crear-tarifa').fill('5000');
 
-      await page.getByRole('button', { name: 'Crear nutricionista' }).click();
-      nutricionista.password = await extraerContrasenaProvisional(page);
-      await cerrarModalContrasena(page);
+      nutricionista.password = await clickYEsperarContrasena(
+        page,
+        'Crear nutricionista',
+        '/profesional',
+      );
 
       recepcionista.email = emailUnico('recep');
       await page.goto('/recepcionistas');
       await page.waitForLoadState('networkidle');
       await page.getByRole('button', { name: 'Nuevo recepcionista' }).click();
-      await expect(page.getByRole('dialog').getByText('Nuevo recepcionista')).toBeVisible({
+      await expect(page.getByRole('heading', { name: 'Nuevo recepcionista' })).toBeVisible({
         timeout: 5000,
       });
 
@@ -272,9 +350,11 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
       await page.locator('#crear-provincia').fill('Santa Fe');
       await page.locator('#crear-email').fill(recepcionista.email);
 
-      await page.getByRole('button', { name: 'Crear recepcionista' }).click();
-      recepcionista.password = await extraerContrasenaProvisional(page);
-      await cerrarModalContrasena(page);
+      recepcionista.password = await clickYEsperarContrasena(
+        page,
+        'Crear recepcionista',
+        '/recepcionistas',
+      );
       await logoutUi(page);
     });
 
@@ -329,9 +409,8 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
       await page.locator('#crear-provincia').fill('Santa Fe');
       await page.locator('#crear-email').fill(socio.email);
 
-      await page.getByRole('button', { name: 'Crear socio' }).click();
-      socio.password = await extraerContrasenaProvisional(page);
-      await cerrarModalContrasena(page);
+      socio.password = await clickYEsperarContrasena(page, 'Crear socio', '/socio');
+      await page.waitForTimeout(1000);
       await logoutUi(page);
     });
 
@@ -370,28 +449,14 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
       await expect(botonNutri).toBeVisible({ timeout: 10000 });
       await botonNutri.click();
 
-      await page.waitForTimeout(1000);
-      const primerSlot = page
+      await seleccionarFechaAgendarTurno(page);
+
+      const slot = page
         .getByRole('button', { name: /\d{2}:\d{2} - \d{2}:\d{2}/ })
         .filter({ hasText: /Disponible/ })
         .first();
-
-      if (await primerSlot.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await primerSlot.click();
-      } else {
-        const manana = new Date();
-        manana.setDate(manana.getDate() + 1);
-        const triggerFecha = page.locator('button:has-text("Seleccionar fecha"), [class*="datepicker"] button').first();
-        if (await triggerFecha.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await triggerFecha.click();
-          await page.waitForTimeout(500);
-        }
-        const slotAlt = page
-          .getByRole('button', { name: /\d{2}:\d{2} - \d{2}:\d{2}/ })
-          .first();
-        await expect(slotAlt).toBeVisible({ timeout: 5000 });
-        await slotAlt.click();
-      }
+      await expect(slot).toBeVisible({ timeout: 8000 });
+      await slot.click();
 
       await page.getByRole('button', { name: 'Reservar turno' }).click();
 
@@ -418,6 +483,9 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
       await page.goto(`/profesional/consulta/${turnoId}`);
       await page.waitForLoadState('networkidle');
       await expect(page.getByText('Consulta Profesional')).toBeVisible({ timeout: 10000 });
+
+      await page.getByRole('button', { name: /3\. Mediciones/ }).click();
+      await page.waitForTimeout(500);
 
       const inputPeso = page.locator('#peso').or(page.getByLabel(/peso/i).locator('input')).first();
       await expect(inputPeso).toBeVisible({ timeout: 10000 });
@@ -458,7 +526,7 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
       );
       if (await botonGenerar.isVisible({ timeout: 8000 }).catch(() => false)) {
         await botonGenerar.click();
-        await expect(page.getByText(/LUNES|lunes|Desayuno|DESAYUNO/i)).toBeVisible({
+        await expect(page.getByText(/LUNES|lunes|Desayuno|DESAYUNO/i).first()).toBeVisible({
           timeout: 15000,
         });
       }
