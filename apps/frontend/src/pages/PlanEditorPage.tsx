@@ -443,9 +443,6 @@ export function PlanEditorPage() {
 
         if (planEditable) {
           setPlanManualExistenteId(planEditable.idPlanAlimentacion ?? null);
-        } else {
-          // Auto-crear plan manual vacío silenciosamente
-          await manejarCrearPlanManual();
         }
       } catch {
         if (!cancelado) setPlanManualExistenteId(null);
@@ -463,7 +460,6 @@ export function PlanEditorPage() {
     token,
     personaId,
     socioIdNumero,
-    manejarCrearPlanManual,
   ]);
 
   const volverAlPlan = () => {
