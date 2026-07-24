@@ -236,20 +236,6 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
   test('recorre el ciclo de vida multi-rol de punta a punta', async ({ page, request }) => {
     test.setTimeout(300000);
 
-    const consola: string[] = [];
-    const networkLog: string[] = [];
-    page.on('console', (msg) => {
-      if (msg.type() === 'error' || msg.type() === 'warning') {
-        consola.push(`[${msg.type()}] ${msg.text()}`);
-      }
-    });
-    page.on('response', async (res) => {
-      const url = res.url();
-      if (url.includes('/gimnasios') || url.includes('/auth/login')) {
-        networkLog.push(`${res.status()} ${res.request().method()} ${url}`);
-      }
-    });
-
     const admin: CredencialesUsuario = { email: '', password: PASSWORD_DEFINITIVA };
     const nutricionista: CredencialesUsuario = { email: '', password: PASSWORD_DEFINITIVA };
     const recepcionista: CredencialesUsuario = { email: '', password: PASSWORD_DEFINITIVA };
@@ -278,23 +264,7 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
 
       await expect(page.getByText('Confirmar creación')).toBeVisible({ timeout: 5000 });
 
-      const respCrearPromise = page.waitForResponse(
-        (r) => r.url().includes('/gimnasios') && r.request().method() === 'POST',
-        { timeout: 15000 },
-      );
       await page.getByRole('button', { name: 'Crear Gimnasio' }).click();
-
-      try {
-        const respCrear = await respCrearPromise;
-        const body = await respCrear.text();
-        networkLog.push(`CREAR GIMNASIO: ${respCrear.status()} body=${body.substring(0, 300)}`);
-      } catch (e) {
-        networkLog.push(`CREAR GIMNASIO: no se capturó response (${e instanceof Error ? e.message : '?'})`);
-      }
-
-      await page.waitForTimeout(2000);
-      console.log('[DEBUG] Consola del navegador:', consola.join('\n'));
-      console.log('[DEBUG] Network log:', networkLog.join('\n'));
 
       admin.password = await extraerContrasenaProvisional(page);
       await cerrarModalContrasena(page);
@@ -499,7 +469,9 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
       const botonGuardarMed = page.getByRole('button', { name: /Guardar mediciones/i }).first();
       if (await botonGuardarMed.isVisible({ timeout: 3000 }).catch(() => false)) {
         await botonGuardarMed.click();
-        await expect(page.getByText(/Mediciones guardadas/i)).toBeVisible({ timeout: 10000 });
+        await expect(page.getByText(/Mediciones guardadas/i).first()).toBeVisible({
+          timeout: 10000,
+        });
       }
 
       const authNutri = await loginApi(request, nutricionista.email, PASSWORD_DEFINITIVA);
