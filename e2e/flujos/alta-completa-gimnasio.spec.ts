@@ -170,87 +170,30 @@ async function seleccionarFechaAgendarTurno(page: Page): Promise<void> {
   const trigger = page.getByRole('button', { name: /Seleccionar fecha/ }).last();
   await trigger.click();
   await page.waitForTimeout(500);
-  const primeraDisponible = page
+  // El check-in exige turno del día actual: elegir el día de hoy en el calendario.
+  const diaHoy = String(new Date().getDate());
+  const celdaHoy = page
     .locator('[role="gridcell"] button:not([disabled])')
-    .filter({ hasText: /^\d+$/ })
+    .filter({ hasText: new RegExp(`^${diaHoy}$`) })
     .first();
-  await expect(primeraDisponible).toBeVisible({ timeout: 5000 });
-  await primeraDisponible.click();
+  if (await celdaHoy.isVisible({ timeout: 2000 }).catch(() => false)) {
+    await celdaHoy.click();
+  } else {
+    const primeraDisponible = page
+      .locator('[role="gridcell"] button:not([disabled])')
+      .filter({ hasText: /^\d+$/ })
+      .first();
+    await expect(primeraDisponible).toBeVisible({ timeout: 5000 });
+    await primeraDisponible.click();
+  }
   await page.waitForTimeout(500);
-}
-
-function construirPlanIaMock(socioId: number, dias = 7, comidas = 4, alternativas = 1) {
-  const diasArr = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'].slice(0, dias);
-  const comidasArr = ['DESAYUNO', 'ALMUERZO', 'MERIENDA', 'CENA'].slice(0, comidas);
-  const caloriasObjetivo = 2000;
-
-  const estructura = diasArr.map((dia) => ({
-    dia,
-    comidas: comidasArr.map((tipo) => ({
-      tipo,
-      alternativas: Array.from({ length: alternativas }, (_, idxAlt) => ({
-        nombre: `${tipo} — ${dia} (opción ${idxAlt + 1})`,
-        alimentos: [{ alimentoId: 1, cantidad: 150, unidad: 'g' }],
-        calorias: Math.round(caloriasObjetivo / Math.max(comidas, 1)),
-        proteinas: 30,
-        carbohidratos: 60,
-        grasas: 15,
-      })),
-    })),
-  }));
-
-  const macrosPorDia = Object.fromEntries(
-    diasArr.map((dia) => [
-      dia,
-      {
-        calorias: caloriasObjetivo,
-        proteinas: 120,
-        carbohidratos: 250,
-        grasas: 65,
-        desvioPorcentaje: 1,
-        banda: 'VERDE',
-        detallePorMacro: {
-          calorias: { real: caloriasObjetivo, objetivo: caloriasObjetivo, desvio: 1, banda: 'VERDE' },
-          proteinas: { real: 120, objetivo: 120, desvio: 1, banda: 'VERDE' },
-          carbohidratos: { real: 250, objetivo: 250, desvio: 1, banda: 'VERDE' },
-          grasas: { real: 65, objetivo: 65, desvio: 1, banda: 'VERDE' },
-        },
-      },
-    ]),
-  );
-
-  return {
-    planAlimentacionId: 0,
-    versionId: 0,
-    numeroVersion: 1,
-    socioId,
-    plan: {
-      estructura,
-      macrosPorDia,
-      razonamientoCumplimiento: {
-        restriccionesCumplidas: [],
-        restriccionesNoCumplidas: [],
-      },
-    },
-    macros: {
-      cumpleEstructura: true,
-      diasFaltantes: [],
-      macrosPorDia,
-      bandaGlobal: 'VERDE',
-      puedeAceptar: true,
-    },
-    validacion: {
-      restriccionesCumplidas: [],
-      restriccionesNoCumplidas: [],
-      advertencias: [],
-    },
-    advertencias: [],
-  };
 }
 
 test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () => {
   test('recorre el ciclo de vida multi-rol de punta a punta', async ({ page, request }) => {
-    test.setTimeout(300000);
+    // La generación IA es real (7 días × 5 comidas × 2 alternativas) y los
+    // proveedores pueden reintentar por timeout: necesita margen amplio.
+    test.setTimeout(2700000);
 
     const admin: CredencialesUsuario = { email: '', password: PASSWORD_DEFINITIVA };
     const nutricionista: CredencialesUsuario = { email: '', password: PASSWORD_DEFINITIVA };
@@ -375,8 +318,9 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
       const sufijoBloque = idBloque?.replace('agenda-dia-', '') ?? '';
 
       await page.locator(`#agenda-dia-${sufijoBloque}`).selectOption({ label: diaSemanaHoy() });
+      // Ventana amplia hasta la noche: si el E2E corre de tarde, aún hay slots futuros.
       await page.locator(`#agenda-inicio-${sufijoBloque}`).fill('08:00');
-      await page.locator(`#agenda-fin-${sufijoBloque}`).fill('20:00');
+      await page.locator(`#agenda-fin-${sufijoBloque}`).fill('23:30');
       await page.locator('#agenda-duracion-global').fill('30');
       await capturarEvidencia(page, '05-nutricionista-agenda-llena', {
         dia: diaSemanaHoy(),
@@ -514,100 +458,86 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
         headers: { Authorization: `Bearer ${authNutri.token}` },
       });
 
-      const generacionIdMock = 999;
-      const parametrosIa = { dias: 5, comidas: 2, alternativas: 1 };
-      const planMock = construirPlanIaMock(
-        socioId,
-        parametrosIa.dias,
-        parametrosIa.comidas,
-        parametrosIa.alternativas,
-      );
-
-      const construirGeneracionCompletada = (plan: typeof planMock) => ({
-        id: generacionIdMock,
-        socioId,
-        nutricionistaId,
-        gimnasioId: 0,
-        planAlimentacionId: plan.planAlimentacionId,
-        estado: 'COMPLETADO' as const,
-        proveedorActual: 'mock',
-        mensajeEstado: 'Plan generado',
-        errorMensaje: null,
-        respuestaJson: plan,
-        progresoActual: 100,
-        progresoTotal: 100,
-        diaActual: null,
-        comidaActual: null,
-        snapshotParcialJson: null,
-        creadoEn: new Date().toISOString(),
-        actualizadoEn: new Date().toISOString(),
-        iniciadoEn: new Date().toISOString(),
-        finalizadoEn: new Date().toISOString(),
-      });
-
-      await page.route('**/ia/plan-semanal/generaciones*', async (route) => {
-        if (route.request().method() !== 'POST') {
-          return route.continue();
-        }
-        await route.fulfill({
-          status: 201,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            ...construirGeneracionCompletada(planMock),
-            estado: 'PENDIENTE',
-            respuestaJson: null,
-            progresoActual: 0,
-            finalizadoEn: null,
-          }),
-        });
-      });
-
-      await page.route(`**/ia/plan-semanal/generaciones/${generacionIdMock}`, async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(construirGeneracionCompletada(planMock)),
-        });
-      });
-
-      await page.route('**/ia/plan-semanal/generaciones/activa**', async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(construirGeneracionCompletada(planMock)),
-        });
-      });
-
+      // La generación con IA es real: no se mockea ningún endpoint de /ia.
       await page.goto(`/profesional/plan/${socioId}/editar`);
       await page.waitForLoadState('networkidle');
 
-      await page.locator('#diasAGenerar').fill('5');
-      await page.getByTestId('comidas-por-dia-select').click();
-      await page.getByRole('option', { name: /^2 comidas$/ }).click();
-      await page.locator('#alternativasPorComida').fill('1');
+      // El editor entra directo a la grilla (sin pantalla "Comenzá a planificar").
+      await expect(page.getByTestId('grilla-manual-slots')).toBeVisible({
+        timeout: 15000,
+      });
+      await expect(
+        page.getByText(/Comenzá a planificar/i),
+      ).toHaveCount(0);
+      await expect(
+        page.getByRole('button', { name: /Opción B: Crear plan manual vacío/i }),
+      ).toHaveCount(0);
+      await capturarEvidencia(page, '11-plan-grilla-directa', { socioId });
 
-      await capturarEvidencia(page, '11a-formulario-ia-lleno', {
-        dias: 5,
-        comidas: 2,
-        alternativas: 1,
+      // El formulario de IA vive en un diálogo abierto desde el header.
+      await page.getByTestId('abrir-generador-ia-btn').click();
+      await expect(page.getByTestId('generar-plan-button')).toBeVisible({
+        timeout: 8000,
       });
 
-      const botonGenerar = page.getByTestId('generar-plan-button').or(
-        page.getByRole('button', { name: /Generar plan/i }),
-      );
-      if (await botonGenerar.isVisible({ timeout: 8000 }).catch(() => false)) {
-        await botonGenerar.click();
-        await expect(page.getByText(/Plan generado correctamente/i)).toBeVisible({
-          timeout: 30000,
-        });
-        await page.waitForTimeout(2000);
-        await capturarEvidencia(page, '11b-plan-ia-generado', {
-          socioId,
-          nutricionistaId,
-          dias: 5,
-          comidas: 2,
-        });
+      // Personalización pedida: las 5 comidas del día y 2 opciones por comida.
+      // Los días quedan en el default del formulario (7 = semana completa).
+      const diasAGenerar = Number(await page.locator('#diasAGenerar').inputValue());
+      await page.getByTestId('comidas-por-dia-select').click();
+      await page.getByRole('option', { name: /^5 comidas$/ }).click();
+      await page.locator('#alternativasPorComida').fill('2');
+
+      await capturarEvidencia(page, '11a-formulario-ia-lleno', {
+        dias: diasAGenerar,
+        comidas: 5,
+        alternativas: 2,
+      });
+
+      await page.getByTestId('generar-plan-button').click();
+
+      // Arranca en segundo plano y el editor queda bloqueado mientras genera.
+      await expect(
+        page.getByText(/Generación iniciada en segundo plano/i),
+      ).toBeVisible({ timeout: 20000 });
+
+      // Espera a que la IA termine las 7×5 comidas (generación real, no mock).
+      // El botón de feedback aparece recién cuando el editor aplica la respuesta
+      // de una generación COMPLETADO, así que es la señal de "terminó todo".
+      await expect(page.getByTestId('feedback-floating-button')).toBeVisible({
+        timeout: 1800000,
+      });
+
+      await expect(page.getByTestId('grilla-manual-slots')).toBeVisible();
+
+      // Ningún slot puede quedar vacío: la IA cubrió los 5 tipos de comida por día.
+      const slotsVacios = page
+        .getByTestId('grilla-manual-slots')
+        .getByText(/^Vacío$/);
+      await expect(slotsVacios).toHaveCount(0, { timeout: 30000 });
+
+      await capturarEvidencia(page, '11b-plan-ia-generado', {
+        socioId,
+        nutricionistaId,
+        dias: diasAGenerar,
+        comidas: 5,
+        alternativas: 2,
+      });
+
+      // Publicar la versión: es lo que activa el plan para el socio (paso 8).
+      await page.getByTestId('guardar-version-btn').click();
+
+      // Si los macros no quedaron en banda VERDE el editor pide confirmación.
+      const dialogoBanda = page.getByTestId('confirmar-publicar-dialog');
+      if (await dialogoBanda.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await page
+          .getByTestId('confirmar-publicar-banda-no-verde-btn')
+          .click();
       }
+
+      await expect(
+        page.getByText(/Versión guardada y publicada/i),
+      ).toBeVisible({ timeout: 30000 });
+      await capturarEvidencia(page, '11c-plan-publicado', { socioId });
 
       await logoutUi(page);
     });
@@ -615,24 +545,8 @@ test.describe.serial('Flujo E2E completo: alta de gimnasio hasta plan IA', () =>
     await test.step('8. SOCIO ve el plan y descarga el PDF', async () => {
       await loginUi(page, socio.email, PASSWORD_DEFINITIVA);
 
-      const planParaSocio = {
-        idPlanAlimentacion: 9999,
-        versionId: 9999,
-        nutricionistaId,
-        nutricionistaNombre: 'Nutri E2E Test',
-        fechaInicio: new Date().toISOString(),
-        objetivoNutricional: 'Bajar de peso y mejorar composición corporal',
-        plan: construirPlanIaMock(socioId, 5, 2, 1).plan,
-      };
-
-      await page.route('**/planes-alimentacion/socio/*/activo', async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify([planParaSocio]),
-        });
-      });
-
+      // Sin mocks: el socio lee el plan real que la IA generó y el
+      // nutricionista publicó en el paso anterior.
       await page.goto('/mi-plan');
       await page.waitForLoadState('networkidle');
       await expect(page.getByTestId('mi-plan-cards-container')).toBeVisible({
