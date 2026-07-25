@@ -144,6 +144,12 @@ const TIMEOUT_BACKOFF_MS = 5000;
 const TEMPERATURA_PLAN_COMPLETO = 0.4;
 const MAX_TOKENS_PLAN_COMPLETO = 8192;
 const TIMEOUT_PLAN_COMPLETO_MS = 120000;
+// Una comida suelta es una respuesta chica (~500 tokens útiles) y en las
+// mediciones tarda entre 23s y 71s. Pasado ese techo el proveedor está
+// divagando hasta agotar el presupuesto de tokens (termina en truncado o en los
+// 120s del plan completo), así que cortar acá libera el lote y deja que el
+// orquestador pruebe el proveedor siguiente.
+const TIMEOUT_COMIDA_MS = 75000;
 // Cada comida es una llamada IA independiente. Generar 4 en paralelo reduce
 // el tiempo total (~28 comidas) sin saturar el proveedor. Si subís este valor
 // y empezás a ver rate limits del proveedor, bajalo de nuevo.
@@ -1208,7 +1214,7 @@ Requisitos exactos:
           {
             temperature: TEMPERATURA_PLAN_COMPLETO,
             max_tokens: MAX_TOKENS_PLAN_COMPLETO,
-            timeoutMs: TIMEOUT_PLAN_COMPLETO_MS,
+            timeoutMs: TIMEOUT_COMIDA_MS,
           },
         );
       } catch (error) {
